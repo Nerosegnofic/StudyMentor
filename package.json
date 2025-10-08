@@ -18,7 +18,7 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "@playwright/test": "^1.55.0",
-    "electron": "^38.1.0",
+    "electron": "^38.2.2",
     "playwright": "^1.55.0"
   },
   "dependencies": {
