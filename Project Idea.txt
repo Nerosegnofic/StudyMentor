@@ -1,2 +1,0 @@
-GP7: Automatic Electron GUI Automation and Testcase Generation Using Playwright MCP.
-Leverage MCP and LLMs to generate automated test scripts for Electron applications, enhancing GUI testing efficiency with minimal human intervention.
