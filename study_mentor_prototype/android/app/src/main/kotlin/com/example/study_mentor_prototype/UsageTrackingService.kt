@@ -13,10 +13,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import androidx.compose.ui.test.cancel
 import androidx.core.app.NotificationCompat
-import androidx.core.content.getSystemService
-import androidx.privacysandbox.tools.core.generator.build
 import java.util.concurrent.TimeUnit
 
 class UsageTrackingService : Service() {
@@ -29,7 +26,7 @@ class UsageTrackingService : Service() {
 
     // Handler and Runnable for periodic foreground app checking
     private val handler = Handler(Looper.getMainLooper())
-    private lateinit var usageCheckRunnable: kotlinx.coroutines.Runnable
+    private lateinit var usageCheckRunnable: Runnable // Corrected type: No "kotlinx.coroutines"
 
     override fun onCreate() {
         super.onCreate()
@@ -40,14 +37,12 @@ class UsageTrackingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("UsageTrackingService", "Service started.")
 
-        // Retrieve the session time from the intent, default to 0 if not provided
         val sessionTimeMinutes = intent?.getIntExtra("sessionTimeMinutes", 0) ?: 0
         sessionTimeMillis = TimeUnit.MINUTES.toMillis(sessionTimeMinutes.toLong())
 
         val notification = createNotification("Study session started. Time remaining: $sessionTimeMinutes minutes")
         startForeground(NOTIFICATION_ID, notification)
 
-        // Start the countdown
         startTimer()
         startUsageChecking() // Start checking the foreground app
 
@@ -55,8 +50,7 @@ class UsageTrackingService : Service() {
     }
 
     private fun startTimer() {
-        // Cancel any existing timer before starting a new one
-        countdownTimer?.cancel()
+        countdownTimer?.cancel() // Correct usage of cancel()
 
         if (sessionTimeMillis <= 0) {
             Log.w("UsageTrackingService", "Invalid session time. Not starting timer.")
@@ -65,12 +59,9 @@ class UsageTrackingService : Service() {
 
         countdownTimer = object : CountDownTimer(sessionTimeMillis, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                // Update notification with remaining time
                 val minutesRemaining = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished)
                 val secondsRemaining = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
                 val timeString = String.format("%02d:%02d", minutesRemaining, secondsRemaining)
-
-                Log.d("UsageTrackingService", "Time remaining: $timeString")
                 updateNotification("Time remaining: $timeString")
             }
 
@@ -84,7 +75,8 @@ class UsageTrackingService : Service() {
     }
 
     private fun startUsageChecking() {
-        usageCheckRunnable = kotlinx.coroutines.Runnable {
+        // Use the correct Runnable from java.lang
+        usageCheckRunnable = Runnable {
             val foregroundApp = getForegroundApp()
             Log.d("UsageTrackingService", "Current foreground app: $foregroundApp")
 
@@ -99,6 +91,7 @@ class UsageTrackingService : Service() {
     }
 
     private fun getForegroundApp(): String? {
+        // Correct usage of getSystemService
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val time = System.currentTimeMillis()
         // Query stats for the last 10 seconds
@@ -118,7 +111,7 @@ class UsageTrackingService : Service() {
     }
 
     private fun createNotification(contentText: String): Notification {
-        // Create a basic notification for the foreground service.
+        // Correct usage of NotificationCompat.Builder
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Study Mentor is Active")
             .setContentText(contentText)
