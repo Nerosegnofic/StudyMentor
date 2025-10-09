@@ -1,25 +1,30 @@
 package com.example.study_mentor_prototype
 
+import android.app.AppOpsManager
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.annotation.NonNull
-import androidx.compose.ui.semantics.error
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugins.GeneratedPluginRegistrant
 
-class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.example.study_mentor_prototype/usage_tracking"
+class MainActivity : FlutterActivity() {
+    // Channel for starting/stopping the service
+    private val USAGE_TRACKING_CHANNEL = "com.example.study_mentor_prototype/usage_tracking"
+    // Channel for handling special permissions
+    private val PERMISSIONS_CHANNEL = "com.example.study_mentor_prototype/permissions"
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         GeneratedPluginRegistrant.registerWith(flutterEngine)
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler {
-                call, result ->
+        // --- Method Channel for Usage Tracking Service ---
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, USAGE_TRACKING_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startTracking" -> {
-                    // Extract arguments sent from Flutter
                     val childId = call.argument<String>("childId")
                     val sessionTimeMinutes = call.argument<Int>("sessionTimeMinutes")
 
@@ -39,8 +44,36 @@ class MainActivity: FlutterActivity() {
                 }
             }
         }
+
+        // --- Method Channel for Special Permissions ---
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PERMISSIONS_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "hasUsageStatsPermission" -> {
+                    result.success(hasUsageStatsPermission())
+                }
+                "requestUsageStatsPermission" -> {
+                    // Opens the specific Android settings page
+                    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                    startActivity(intent)
+                    result.success(null)
+                }
+                "hasSystemAlertWindowPermission" -> {
+                    result.success(hasSystemAlertWindowPermission())
+                }
+                "requestSystemAlertWindowPermission" -> {
+                    // Opens the specific Android settings page for drawing over other apps
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                    startActivity(intent)
+                    result.success(null)
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
     }
 
+    // --- Helper methods for Usage Tracking Service ---
     private fun startUsageTrackingService(childId: String, sessionTimeMinutes: Int) {
         val serviceIntent = Intent(this, UsageTrackingService::class.java).apply {
             putExtra("childId", childId)
@@ -57,5 +90,26 @@ class MainActivity: FlutterActivity() {
     private fun stopUsageTrackingService() {
         val serviceIntent = Intent(this, UsageTrackingService::class.java)
         stopService(serviceIntent)
+    }
+
+    // --- Helper methods for checking special permissions ---
+    private fun hasUsageStatsPermission(): Boolean {
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), packageName)
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), packageName)
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun hasSystemAlertWindowPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            // This permission was granted automatically on older Android versions
+            true
+        }
     }
 }

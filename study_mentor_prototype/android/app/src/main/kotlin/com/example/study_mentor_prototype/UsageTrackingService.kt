@@ -14,6 +14,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.study_mentor_prototype.flutter_overlay_window.FlutterOverlayWindow // NEW IMPORT
 import java.util.concurrent.TimeUnit
 
 class UsageTrackingService : Service() {
@@ -24,9 +25,8 @@ class UsageTrackingService : Service() {
     private var countdownTimer: CountDownTimer? = null
     private var sessionTimeMillis: Long = 0
 
-    // Handler and Runnable for periodic foreground app checking
     private val handler = Handler(Looper.getMainLooper())
-    private lateinit var usageCheckRunnable: Runnable // Corrected type: No "kotlinx.coroutines"
+    private lateinit var usageCheckRunnable: Runnable
 
     override fun onCreate() {
         super.onCreate()
@@ -44,14 +44,13 @@ class UsageTrackingService : Service() {
         startForeground(NOTIFICATION_ID, notification)
 
         startTimer()
-        startUsageChecking() // Start checking the foreground app
+        startUsageChecking()
 
         return START_STICKY
     }
 
     private fun startTimer() {
-        countdownTimer?.cancel() // Correct usage of cancel()
-
+        countdownTimer?.cancel()
         if (sessionTimeMillis <= 0) {
             Log.w("UsageTrackingService", "Invalid session time. Not starting timer.")
             return
@@ -66,35 +65,39 @@ class UsageTrackingService : Service() {
             }
 
             override fun onFinish() {
-                Log.d("UsageTrackingService", "Timer finished! Time to trigger quiz.")
-                // TODO: TASK 2B & 2C - Trigger the lock screen / quiz screen here.
+                Log.d("UsageTrackingService", "Timer finished! Triggering lock screen overlay.")
+
+                // -----------------------------------------------------------------
+                // NEW: TRIGGER THE FLUTTER OVERLAY WINDOW
+                // This is the call that shows the LockingScreen.
+                FlutterOverlayWindow.showOverlay(
+                    height = 2000, // Make it large enough to cover the screen
+                    width = 1000
+                )
+                // -----------------------------------------------------------------
+
                 updateNotification("Study session finished!")
-                stopSelf()
+                stopSelf() // Stop the service after triggering the overlay
             }
         }.start()
     }
 
     private fun startUsageChecking() {
-        // Use the correct Runnable from java.lang
         usageCheckRunnable = Runnable {
             val foregroundApp = getForegroundApp()
             Log.d("UsageTrackingService", "Current foreground app: $foregroundApp")
 
             // TODO: Add logic here to check if the foregroundApp is allowed or not.
-            // For example: if (foregroundApp !in allowedApps) { triggerWarning(); }
+            // For example: if (foregroundApp !in allowedApps) { showLockScreen(); }
 
-            // Schedule the next check in 2 seconds
             handler.postDelayed(usageCheckRunnable, 2000)
         }
-        // Start the first check
         handler.post(usageCheckRunnable)
     }
 
     private fun getForegroundApp(): String? {
-        // Correct usage of getSystemService
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val time = System.currentTimeMillis()
-        // Query stats for the last 10 seconds
         val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000 * 10, time)
 
         if (stats != null && stats.isNotEmpty()) {
@@ -111,7 +114,6 @@ class UsageTrackingService : Service() {
     }
 
     private fun createNotification(contentText: String): Notification {
-        // Correct usage of NotificationCompat.Builder
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Study Mentor is Active")
             .setContentText(contentText)
@@ -141,7 +143,6 @@ class UsageTrackingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Stop the timer and the usage checking loop
         countdownTimer?.cancel()
         handler.removeCallbacks(usageCheckRunnable)
         Log.d("UsageTrackingService", "Service destroyed, timer and usage checking stopped.")
