@@ -4,11 +4,14 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.CountDownTimer
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.compose.ui.test.cancel
 import androidx.core.app.NotificationCompat
@@ -23,6 +26,10 @@ class UsageTrackingService : Service() {
 
     private var countdownTimer: CountDownTimer? = null
     private var sessionTimeMillis: Long = 0
+
+    // Handler and Runnable for periodic foreground app checking
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var usageCheckRunnable: kotlinx.coroutines.Runnable
 
     override fun onCreate() {
         super.onCreate()
@@ -42,6 +49,7 @@ class UsageTrackingService : Service() {
 
         // Start the countdown
         startTimer()
+        startUsageChecking() // Start checking the foreground app
 
         return START_STICKY
     }
@@ -51,11 +59,11 @@ class UsageTrackingService : Service() {
         countdownTimer?.cancel()
 
         if (sessionTimeMillis <= 0) {
-            Log.d("UsageTrackingService", "Invalid session time. Not starting timer.")
+            Log.w("UsageTrackingService", "Invalid session time. Not starting timer.")
             return
         }
 
-        countdownTimer = object : CountDownTimer(sessionTimeMillis, 1000) { // Tick every second
+        countdownTimer = object : CountDownTimer(sessionTimeMillis, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 // Update notification with remaining time
                 val minutesRemaining = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished)
@@ -68,18 +76,39 @@ class UsageTrackingService : Service() {
 
             override fun onFinish() {
                 Log.d("UsageTrackingService", "Timer finished! Time to trigger quiz.")
-
-                // -----------------------------------------------------------------
                 // TODO: TASK 2B & 2C - Trigger the lock screen / quiz screen here.
-                // We will later invoke a method on the platform channel to tell Flutter
-                // to show the quiz screen.
-                // -----------------------------------------------------------------
-
                 updateNotification("Study session finished!")
-                // Stop the service gracefully
                 stopSelf()
             }
         }.start()
+    }
+
+    private fun startUsageChecking() {
+        usageCheckRunnable = kotlinx.coroutines.Runnable {
+            val foregroundApp = getForegroundApp()
+            Log.d("UsageTrackingService", "Current foreground app: $foregroundApp")
+
+            // TODO: Add logic here to check if the foregroundApp is allowed or not.
+            // For example: if (foregroundApp !in allowedApps) { triggerWarning(); }
+
+            // Schedule the next check in 2 seconds
+            handler.postDelayed(usageCheckRunnable, 2000)
+        }
+        // Start the first check
+        handler.post(usageCheckRunnable)
+    }
+
+    private fun getForegroundApp(): String? {
+        val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val time = System.currentTimeMillis()
+        // Query stats for the last 10 seconds
+        val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000 * 10, time)
+
+        if (stats != null && stats.isNotEmpty()) {
+            val sortedStats = stats.sortedByDescending { it.lastTimeUsed }
+            return sortedStats.firstOrNull()?.packageName
+        }
+        return null
     }
 
     private fun updateNotification(contentText: String) {
@@ -95,7 +124,7 @@ class UsageTrackingService : Service() {
             .setContentText(contentText)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOnlyAlertOnce(true) // Prevents sound/vibration on update
+            .setOnlyAlertOnce(true)
             .build()
     }
 
@@ -107,7 +136,6 @@ class UsageTrackingService : Service() {
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
             }
-            // Register the channel with the system
             val notificationManager: NotificationManager =
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
@@ -115,14 +143,14 @@ class UsageTrackingService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? {
-        // This is an unbound service, so we return null.
         return null
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // IMPORTANT: Clean up the timer when the service is destroyed
+        // Stop the timer and the usage checking loop
         countdownTimer?.cancel()
-        Log.d("UsageTrackingService", "Service destroyed, timer cancelled.")
+        handler.removeCallbacks(usageCheckRunnable)
+        Log.d("UsageTrackingService", "Service destroyed, timer and usage checking stopped.")
     }
 }
