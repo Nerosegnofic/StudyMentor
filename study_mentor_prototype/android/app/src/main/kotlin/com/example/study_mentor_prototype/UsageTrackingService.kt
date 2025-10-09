@@ -14,7 +14,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.study_mentor_prototype.flutter_overlay_window.FlutterOverlayWindow // NEW IMPORT
+import io.flutter.plugins.flutter_overlay_window.FlutterOverlayWindow
 import java.util.concurrent.TimeUnit
 
 class UsageTrackingService : Service() {
@@ -67,14 +67,11 @@ class UsageTrackingService : Service() {
             override fun onFinish() {
                 Log.d("UsageTrackingService", "Timer finished! Triggering lock screen overlay.")
 
-                // -----------------------------------------------------------------
-                // NEW: TRIGGER THE FLUTTER OVERLAY WINDOW
                 // This is the call that shows the LockingScreen.
                 FlutterOverlayWindow.showOverlay(
                     height = 2000, // Make it large enough to cover the screen
                     width = 1000
                 )
-                // -----------------------------------------------------------------
 
                 updateNotification("Study session finished!")
                 stopSelf() // Stop the service after triggering the overlay
