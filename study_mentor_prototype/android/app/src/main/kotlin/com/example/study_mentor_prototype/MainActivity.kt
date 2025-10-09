@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.annotation.NonNull
+import androidx.core.content.getSystemService
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -18,11 +19,22 @@ class MainActivity : FlutterActivity() {
     // Channel for handling special permissions
     private val PERMISSIONS_CHANNEL = "com.example.study_mentor_prototype/permissions"
 
+    // This companion object makes the channel accessible from the service.
+    companion object {
+        var channel: MethodChannel? = null
+    }
+
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         GeneratedPluginRegistrant.registerWith(flutterEngine)
 
+        // Create the channel object once
+        val usageTrackingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, USAGE_TRACKING_CHANNEL)
+
+        // This is the crucial link. We are storing the channel where the service can find it.
+        channel = usageTrackingChannel
+
         // --- Method Channel for Usage Tracking Service ---
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, USAGE_TRACKING_CHANNEL).setMethodCallHandler { call, result ->
+        usageTrackingChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "startTracking" -> {
                     val childId = call.argument<String>("childId")
@@ -73,7 +85,7 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // --- Helper methods for Usage Tracking Service ---
+    // --- Helper methods for Usage Tracking Service (UNCHANGED) ---
     private fun startUsageTrackingService(childId: String, sessionTimeMinutes: Int) {
         val serviceIntent = Intent(this, UsageTrackingService::class.java).apply {
             putExtra("childId", childId)
@@ -92,7 +104,7 @@ class MainActivity : FlutterActivity() {
         stopService(serviceIntent)
     }
 
-    // --- Helper methods for checking special permissions ---
+    // --- Helper methods for checking special permissions (UNCHANGED) ---
     private fun hasUsageStatsPermission(): Boolean {
         val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -14,94 +13,58 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import io.flutter.plugins.flutter_overlay_window.FlutterOverlayWindow
 import java.util.concurrent.TimeUnit
 
 class UsageTrackingService : Service() {
 
     private val CHANNEL_ID = "UsageTrackingServiceChannel"
-    private val NOTIFICATION_ID = 1
+    private val NOTIFICATION_ID = 12345
 
     private var countdownTimer: CountDownTimer? = null
-    private var sessionTimeMillis: Long = 0
-
-    private val handler = Handler(Looper.getMainLooper())
-    private lateinit var usageCheckRunnable: Runnable
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        Log.d("UsageTrackingService", "Service created.")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("UsageTrackingService", "Service started.")
+        val sessionTimeMinutes = intent?.getIntExtra("sessionTimeMinutes", 1) ?: 1
+        val sessionTimeMillis = TimeUnit.MINUTES.toMillis(sessionTimeMinutes.toLong())
 
-        val sessionTimeMinutes = intent?.getIntExtra("sessionTimeMinutes", 0) ?: 0
-        sessionTimeMillis = TimeUnit.MINUTES.toMillis(sessionTimeMinutes.toLong())
+        Log.d("UsageTrackingService", "Service started with session time: $sessionTimeMinutes minutes.")
 
-        val notification = createNotification("Study session started. Time remaining: $sessionTimeMinutes minutes")
+        val notification = createNotification("Study session in progress...")
         startForeground(NOTIFICATION_ID, notification)
 
-        startTimer()
-        startUsageChecking()
+        startTimer(sessionTimeMillis)
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
-    private fun startTimer() {
-        countdownTimer?.cancel()
-        if (sessionTimeMillis <= 0) {
-            Log.w("UsageTrackingService", "Invalid session time. Not starting timer.")
-            return
-        }
-
+    private fun startTimer(sessionTimeMillis: Long) {
+        countdownTimer?.cancel() // Cancel any existing timer
         countdownTimer = object : CountDownTimer(sessionTimeMillis, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                val minutesRemaining = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished)
-                val secondsRemaining = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
-                val timeString = String.format("%02d:%02d", minutesRemaining, secondsRemaining)
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished)
+                val seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
+                val timeString = String.format("%02d:%02d", minutes, seconds)
                 updateNotification("Time remaining: $timeString")
             }
 
             override fun onFinish() {
-                Log.d("UsageTrackingService", "Timer finished! Triggering lock screen overlay.")
+                Log.d("UsageTrackingService", "Timer finished! Notifying Flutter to lock screen.")
 
-                // This is the call that shows the LockingScreen.
-                FlutterOverlayWindow.showOverlay(
-                    height = 2000, // Make it large enough to cover the screen
-                    width = 1000
-                )
+                // *** THIS IS THE CRITICAL FIX ***
+                // Use a Handler to post the action to the main thread.
+                // Invoke the "onTimeUp" method on the channel stored in MainActivity.
+                Handler(Looper.getMainLooper()).post {
+                    MainActivity.channel?.invokeMethod("onTimeUp", null)
+                }
 
                 updateNotification("Study session finished!")
-                stopSelf() // Stop the service after triggering the overlay
+                stopSelf() // Stop the service
             }
         }.start()
-    }
-
-    private fun startUsageChecking() {
-        usageCheckRunnable = Runnable {
-            val foregroundApp = getForegroundApp()
-            Log.d("UsageTrackingService", "Current foreground app: $foregroundApp")
-
-            // TODO: Add logic here to check if the foregroundApp is allowed or not.
-            // For example: if (foregroundApp !in allowedApps) { showLockScreen(); }
-
-            handler.postDelayed(usageCheckRunnable, 2000)
-        }
-        handler.post(usageCheckRunnable)
-    }
-
-    private fun getForegroundApp(): String? {
-        val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val time = System.currentTimeMillis()
-        val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000 * 10, time)
-
-        if (stats != null && stats.isNotEmpty()) {
-            val sortedStats = stats.sortedByDescending { it.lastTimeUsed }
-            return sortedStats.firstOrNull()?.packageName
-        }
-        return null
     }
 
     private fun updateNotification(contentText: String) {
@@ -111,37 +74,36 @@ class UsageTrackingService : Service() {
     }
 
     private fun createNotification(contentText: String): Notification {
+        // You must have an 'ic_launcher' icon in your mipmap folders
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Study Mentor is Active")
+            .setContentTitle("Study Mentor")
             .setContentText(contentText)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOnlyAlertOnce(true)
+            .setOnlyAlertOnce(true) // Prevents the notification from making a sound on every update
             .build()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Usage Tracking Service"
-            val descriptionText = "Monitors app usage to enforce study sessions."
-            val importance = NotificationManager.IMPORTANCE_LOW
+            val name = "Study Mentor Service"
+            val descriptionText = "Channel for the Study Mentor background service."
+            val importance = NotificationManager.IMPORTANCE_LOW // Use LOW to avoid sound on each update
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
             }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
 
     override fun onBind(intent: Intent?): IBinder? {
+        // We don't provide binding, so return null
         return null
     }
 
     override fun onDestroy() {
         super.onDestroy()
         countdownTimer?.cancel()
-        handler.removeCallbacks(usageCheckRunnable)
-        Log.d("UsageTrackingService", "Service destroyed, timer and usage checking stopped.")
+        Log.d("UsageTrackingService", "Service destroyed, timer cancelled.")
     }
 }
