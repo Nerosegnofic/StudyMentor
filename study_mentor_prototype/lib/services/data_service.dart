@@ -210,6 +210,7 @@ class DataService {
       }
     }
     await saveDatabase();
+    await analyzePerformance(childId);
   }
 
   Future<void> clearDatabaseForTesting() async {
@@ -223,5 +224,62 @@ class DataService {
     } catch (e) {
       print("Error clearing database: $e");
     }
+  }
+
+  Future<void> analyzePerformance(String childId) async {
+    final users = _database['users'] as List;
+    final index = users.indexWhere((u) => u['id'] == childId && u['role'] == 'child');
+    if (index == -1) {
+      print("Child not found: $childId");
+      return;
+    }
+
+
+    final child = Child.fromJson(users[index]);
+    if (child.quizzes.isEmpty) {
+      print("No quizzes found for child $childId");
+      return;
+    }
+
+    final Map<String, List<double>> topicScores = {};
+
+
+    for (final quiz in child.quizzes) {
+      for (final q in quiz.questions) {
+        final topic = q.tags.topic;
+
+        bool isCorrect = false;
+        try {
+          isCorrect = q.correctOptionIndex == q.correctOptionIndex;
+        } catch (_) {}
+
+        topicScores.putIfAbsent(topic, () => []);
+        topicScores[topic]!.add(isCorrect ? 1.0 : 0.0);
+      }
+    }
+
+    final strengths = <String>[];
+    final weaknesses = <String>[];
+
+    topicScores.forEach((topic, scores) {
+      final avg = (scores.reduce((a, b) => a + b) / scores.length) * 100;
+      if (avg >= 80) {
+        strengths.add(topic);
+      } else if (avg <= 50) {
+        weaknesses.add(topic);
+      }
+    });
+
+    final updatedChild = Child(
+      userInfo: child.userInfo,
+      config: child.config,
+      quizzes: child.quizzes,
+      analysis: Analysis(strengths: strengths, weaknesses: weaknesses),
+    );
+
+    users[index] = updatedChild.toJson();
+    _database['users'] = users;
+    await saveDatabase();
+    print("Analysis complete for $childId");
   }
 }
