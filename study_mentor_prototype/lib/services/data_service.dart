@@ -6,7 +6,7 @@ import '../data/data_models.dart';
 class DataService {
   Map<String, dynamic> _database = {};
 
-  // --- 1. File Handling & Core Methods (Unchanged) ---
+  // --- 1. File Handling & Core Methods ---
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
@@ -84,8 +84,7 @@ class DataService {
     }
   }
 
-  // --- 2. User & Data Access Methods (Unchanged) ---
-
+  // --- 2. User & Data Access Methods ---
   List<Parent> getParents() {
     final users = _database['users'] as List;
     return users
@@ -106,8 +105,8 @@ class DataService {
     final children = getChildren();
     try {
       return children.firstWhere((child) => child.userInfo.id == childId);
-    } catch(e) {
-      return null; // Return null if not found
+    } catch (e) {
+      return null;
     }
   }
 
@@ -132,12 +131,10 @@ class DataService {
     saveDatabase();
   }
 
-  // --- 3. NEW & UPDATED Data Modification Methods ---
+  // --- 3. Data Modification Methods ---
 
-  /// Adds a new child and links them to the parent.
   Future<void> addChild(String parentId, Child newChild) async {
     final users = _database['users'] as List;
-
     users.add(newChild.toJson());
 
     for (var i = 0; i < users.length; i++) {
@@ -152,17 +149,46 @@ class DataService {
     await saveDatabase();
   }
 
-  /// Updates the configuration for a specific child.
+  Future<void> updateChild(String childId, Child updatedChild) async {
+    final users = _database['users'] as List;
+    for (var i = 0; i < users.length; i++) {
+      if (users[i]['id'] == childId && users[i]['role'] == 'child') {
+        users[i] = updatedChild.toJson();
+        break;
+      }
+    }
+    await saveDatabase();
+  }
+
+  /// 🗑️ Delete a child
+  Future<void> deleteChild(String parentId, String childId) async {
+    final users = _database['users'] as List;
+
+    // Remove the child from users list
+    users.removeWhere((userJson) =>
+    userJson['id'] == childId && userJson['role'] == 'child');
+
+    // Remove childId from parent's childrenIds
+    for (var i = 0; i < users.length; i++) {
+      if (users[i]['id'] == parentId && users[i]['role'] == 'parent') {
+        final parent = Parent.fromJson(users[i]);
+        parent.childrenIds.remove(childId);
+        users[i] = parent.toJson();
+        break;
+      }
+    }
+
+    await saveDatabase();
+  }
+
   Future<void> updateChildConfig(String childId, ChildConfig newConfig) async {
     final users = _database['users'] as List;
     for (var i = 0; i < users.length; i++) {
       if (users[i]['id'] == childId) {
-        // Create a Child object from the existing data
         final child = Child.fromJson(users[i]);
-        // Create a new Child object with the updated config
         final updatedChild = Child(
           userInfo: child.userInfo,
-          config: newConfig, // Use the new config
+          config: newConfig,
           quizzes: child.quizzes,
           analysis: child.analysis,
         );
@@ -173,7 +199,6 @@ class DataService {
     await saveDatabase();
   }
 
-  /// Adds a quiz result to a specific child's record.
   Future<void> addQuizResult(String childId, QuizResult result) async {
     final users = _database['users'] as List;
     for (var i = 0; i < users.length; i++) {

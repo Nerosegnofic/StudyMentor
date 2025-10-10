@@ -50,7 +50,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     );
 
     if (widget.existingChild == null) {
-      // new child
+      // Create new child
       final newId = const Uuid().v4();
       final newChild = Child(
         userInfo: User(
@@ -65,23 +65,66 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
       );
       await widget.dataService.addChild(widget.parent.userInfo.id, newChild);
     } else {
-      // update existing
-      await widget.dataService.updateChildConfig(
+      // Update existing child
+      final updatedChild = Child(
+        userInfo: User(
+          id: widget.existingChild!.userInfo.id,
+          username: _usernameCtrl.text,
+          password: _passwordCtrl.text,
+          role: UserRole.child,
+        ),
+        config: config,
+        quizzes: widget.existingChild!.quizzes,
+        analysis: widget.existingChild!.analysis,
+      );
+
+      await widget.dataService.updateChild(
         widget.existingChild!.userInfo.id,
-        config,
+        updatedChild,
       );
     }
 
     if (mounted) Navigator.pop(context);
   }
 
+  Future<void> _deleteChild() async {
+    if (widget.existingChild == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Child'),
+        content: Text(
+            'Are you sure you want to delete "${widget.existingChild!.userInfo.username}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await widget.dataService.deleteChild(
+        widget.parent.userInfo.id,
+        widget.existingChild!.userInfo.id,
+      );
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.existingChild != null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.existingChild == null
-            ? 'Create Child'
-            : 'Edit Child'),
+        title: Text(isEditing ? 'Edit Child' : 'Create Child'),
+        actions: [
+          if (isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: _deleteChild,
+            ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -92,14 +135,12 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
               TextFormField(
                 controller: _usernameCtrl,
                 decoration: const InputDecoration(labelText: 'Child Username'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Enter a username' : null,
+                validator: (v) => v == null || v.isEmpty ? 'Enter a username' : null,
               ),
               TextFormField(
                 controller: _passwordCtrl,
                 decoration: const InputDecoration(labelText: 'Password'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Enter a password' : null,
+                validator: (v) => v == null || v.isEmpty ? 'Enter a password' : null,
               ),
               TextFormField(
                 controller: _gradeCtrl,
@@ -108,8 +149,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
               ),
               TextFormField(
                 controller: _sessionCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Session Time (minutes)'),
+                decoration: const InputDecoration(labelText: 'Session Time (minutes)'),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
@@ -118,17 +158,15 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 children: ['Math', 'Science', 'English']
                     .map(
                       (s) => FilterChip(
-                        label: Text(s),
-                        selected: _subjects.contains(s),
-                        onSelected: (val) {
-                          setState(() {
-                            val
-                                ? _subjects.add(s)
-                                : _subjects.remove(s);
-                          });
-                        },
-                      ),
-                    )
+                    label: Text(s),
+                    selected: _subjects.contains(s),
+                    onSelected: (val) {
+                      setState(() {
+                        val ? _subjects.add(s) : _subjects.remove(s);
+                      });
+                    },
+                  ),
+                )
                     .toList(),
               ),
               const SizedBox(height: 24),
@@ -136,6 +174,16 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 onPressed: _saveChild,
                 child: const Text('Save'),
               ),
+              if (isEditing) ...[
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: _deleteChild,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                  ),
+                  child: const Text('Delete Child'),
+                ),
+              ],
             ],
           ),
         ),

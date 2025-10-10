@@ -51,6 +51,20 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     _loadParentAndChildren(); // Refresh after returning
   }
 
+  Future<void> _openEditChildForm(Child child) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChildFormScreen(
+          dataService: widget.dataService,
+          parent: _parent,
+          existingChild: child,
+        ),
+      ),
+    );
+    _loadParentAndChildren(); // Refresh after returning
+  }
+
   void _openChildStats(Child child) {
     Navigator.push(
       context,
@@ -75,7 +89,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               widget.dataService.logout();
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (Route<dynamic> route) => false,
+                    (Route<dynamic> route) => false,
               );
             },
           ),
@@ -83,26 +97,36 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       ),
       body: _children.isEmpty
           ? const Center(
-              child: Text(
-                'No children yet. Add one to get started!',
-                style: TextStyle(fontSize: 18),
-              ),
-            )
+        child: Text(
+          'No children yet. Add one to get started!',
+          style: TextStyle(fontSize: 18),
+        ),
+      )
           : ListView.builder(
-              itemCount: _children.length,
-              itemBuilder: (context, index) {
-                final child = _children[index];
-                return Card(
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(child.userInfo.username),
-                    subtitle: Text('Grade: ${child.config.grade}'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _openChildStats(child),
+        itemCount: _children.length,
+        itemBuilder: (context, index) {
+          final child = _children[index];
+          return Card(
+            margin: const EdgeInsets.all(8),
+            child: ListTile(
+              title: Text(child.userInfo.username),
+              subtitle: Text('Grade: ${child.config.grade}'),
+              onTap: () => _openChildStats(child),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    tooltip: 'Edit Child',
+                    onPressed: () => _openEditChildForm(child),
                   ),
-                );
-              },
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
             ),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddChildForm,
         tooltip: 'Add Child',
