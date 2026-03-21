@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "546676894438",
+    "project_id": "fcai-studymentor",
+    "storage_bucket": "fcai-studymentor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:546676894438:android:4b12802b89e9e02a0ba927",
+        "android_client_info": {
+          "package_name": "com.example.studymentor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6MRFekWzbpyNZeqQiHrkgHsfRSQNoPAA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
