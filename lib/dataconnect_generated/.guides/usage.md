@@ -1,15 +1,11 @@
 # Basic Usage
 
 ```dart
-ExampleConnector.instance.CreateMovie(createMovieVariables).execute();
-ExampleConnector.instance.UpsertUser(upsertUserVariables).execute();
-ExampleConnector.instance.AddReview(addReviewVariables).execute();
-ExampleConnector.instance.DeleteReview(deleteReviewVariables).execute();
-ExampleConnector.instance.ListMovies().execute();
+ExampleConnector.instance.InsertUser(insertUserVariables).execute();
+ExampleConnector.instance.UpsertCurrentUser(upsertCurrentUserVariables).execute();
+ExampleConnector.instance.DeleteUser().execute();
 ExampleConnector.instance.ListUsers().execute();
-ExampleConnector.instance.ListUserReviews().execute();
-ExampleConnector.instance.GetMovieById(getMovieByIdVariables).execute();
-ExampleConnector.instance.SearchMovie(searchMovieVariables).execute();
+ExampleConnector.instance.GetUserByUid(getUserByUidVariables).execute();
 
 ```
 
@@ -22,8 +18,8 @@ Optional fields can be discovered based on classes that have `Optional` object t
 This is an example of a mutation with an optional field:
 
 ```dart
-await ExampleConnector.instance.SearchMovie({ ... })
-.titleInput(...)
+await ExampleConnector.instance.UpsertCurrentUser({ ... })
+.fullName(...)
 .execute();
 ```
 

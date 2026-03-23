@@ -1,30 +1,31 @@
 part of 'generated.dart';
 
-class ListUsersVariablesBuilder {
-  
+class GetUserByUidVariablesBuilder {
+  String uid;
+
   final FirebaseDataConnect _dataConnect;
-  ListUsersVariablesBuilder(this._dataConnect, );
-  Deserializer<ListUsersData> dataDeserializer = (dynamic json)  => ListUsersData.fromJson(jsonDecode(json));
-  
-  Future<QueryResult<ListUsersData, void>> execute() {
+  GetUserByUidVariablesBuilder(this._dataConnect, {required  this.uid,});
+  Deserializer<GetUserByUidData> dataDeserializer = (dynamic json)  => GetUserByUidData.fromJson(jsonDecode(json));
+  Serializer<GetUserByUidVariables> varsSerializer = (GetUserByUidVariables vars) => jsonEncode(vars.toJson());
+  Future<QueryResult<GetUserByUidData, GetUserByUidVariables>> execute() {
     return ref().execute();
   }
 
-  QueryRef<ListUsersData, void> ref() {
-    
-    return _dataConnect.query("ListUsers", dataDeserializer, emptySerializer, null);
+  QueryRef<GetUserByUidData, GetUserByUidVariables> ref() {
+    GetUserByUidVariables vars= GetUserByUidVariables(uid: uid,);
+    return _dataConnect.query("GetUserByUid", dataDeserializer, varsSerializer, vars);
   }
 }
 
 @immutable
-class ListUsersUsers {
+class GetUserByUidUser {
   final String uid;
   final String email;
   final String? fullName;
   final EnumValue<Role> role;
   final bool isActive;
   final Timestamp? createdAt;
-  ListUsersUsers.fromJson(dynamic json):
+  GetUserByUidUser.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
   email = nativeFromJson<String>(json['email']),
@@ -41,7 +42,7 @@ class ListUsersUsers {
       return false;
     }
 
-    final ListUsersUsers otherTyped = other as ListUsersUsers;
+    final GetUserByUidUser otherTyped = other as GetUserByUidUser;
     return uid == otherTyped.uid && 
     email == otherTyped.email && 
     fullName == otherTyped.fullName && 
@@ -71,7 +72,7 @@ class ListUsersUsers {
     return json;
   }
 
-  ListUsersUsers({
+  GetUserByUidUser({
     required this.uid,
     required this.email,
     this.fullName,
@@ -82,13 +83,11 @@ class ListUsersUsers {
 }
 
 @immutable
-class ListUsersData {
-  final List<ListUsersUsers> users;
-  ListUsersData.fromJson(dynamic json):
+class GetUserByUidData {
+  final GetUserByUidUser? user;
+  GetUserByUidData.fromJson(dynamic json):
   
-  users = (json['users'] as List<dynamic>)
-        .map((e) => ListUsersUsers.fromJson(e))
-        .toList();
+  user = json['user'] == null ? null : GetUserByUidUser.fromJson(json['user']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -98,22 +97,59 @@ class ListUsersData {
       return false;
     }
 
-    final ListUsersData otherTyped = other as ListUsersData;
-    return users == otherTyped.users;
+    final GetUserByUidData otherTyped = other as GetUserByUidData;
+    return user == otherTyped.user;
     
   }
   @override
-  int get hashCode => users.hashCode;
+  int get hashCode => user.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['users'] = users.map((e) => e.toJson()).toList();
+    if (user != null) {
+      json['user'] = user!.toJson();
+    }
     return json;
   }
 
-  ListUsersData({
-    required this.users,
+  GetUserByUidData({
+    this.user,
+  });
+}
+
+@immutable
+class GetUserByUidVariables {
+  final String uid;
+  @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
+  GetUserByUidVariables.fromJson(Map<String, dynamic> json):
+  
+  uid = nativeFromJson<String>(json['uid']);
+  @override
+  bool operator ==(Object other) {
+    if(identical(this, other)) {
+      return true;
+    }
+    if(other.runtimeType != runtimeType) {
+      return false;
+    }
+
+    final GetUserByUidVariables otherTyped = other as GetUserByUidVariables;
+    return uid == otherTyped.uid;
+    
+  }
+  @override
+  int get hashCode => uid.hashCode;
+  
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> json = {};
+    json['uid'] = nativeToJson<String>(uid);
+    return json;
+  }
+
+  GetUserByUidVariables({
+    required this.uid,
   });
 }
 
