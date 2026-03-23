@@ -1,1 +1,33 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"fcai-studymentor","appId":"1:546676894438:android:4b12802b89e9e02a0ba927","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"fcai-studymentor","configurations":{"android":"1:546676894438:android:4b12802b89e9e02a0ba927","ios":"1:546676894438:ios:a87ba8d55cbb964f0ba927","macos":"1:546676894438:ios:a87ba8d55cbb964f0ba927","web":"1:546676894438:web:ddb97d19877360c10ba927","windows":"1:546676894438:web:1bb2f14bef4db4d70ba927"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fcai-studymentor",
+          "appId": "1:546676894438:android:4b12802b89e9e02a0ba927",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fcai-studymentor",
+          "configurations": {
+            "android": "1:546676894438:android:4b12802b89e9e02a0ba927",
+            "ios": "1:546676894438:ios:a87ba8d55cbb964f0ba927",
+            "macos": "1:546676894438:ios:a87ba8d55cbb964f0ba927",
+            "web": "1:546676894438:web:ddb97d19877360c10ba927",
+            "windows": "1:546676894438:web:1bb2f14bef4db4d70ba927"
+          }
+        }
+      }
+    }
+  },
+  "emulators": {
+    "dataconnect": {
+      "dataDir": "dataconnect/.dataconnect/pgliteData"
+    }
+  },
+  "dataconnect": {
+    "source": "dataconnect"
+  }
+}
