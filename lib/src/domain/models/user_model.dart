@@ -1,8 +1,8 @@
 class UserModel {
-  final String uid; // Firebase uid
+  final String uid;
   final String email;
   final String fullName;
-  final String role; // "Parent" or "Student"
+  final String role;
   final bool isActive;
   final DateTime createdAt;
 

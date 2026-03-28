@@ -11,23 +11,30 @@ import 'src/presentation/screens/forgot_password_screen.dart';
 import 'src/presentation/screens/parent_screen.dart';
 import 'src/presentation/screens/student_screen.dart';
 import 'src/data/providers/firebase_auth_provider.dart';
-import 'src/data/providers/cloud_function_provider.dart';
+import 'src/data/providers/dataconnect_provider.dart';
 import 'src/data/repositories/auth_repository_impl.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  // Instantiate providers and repository (adjust constructors if needed).
   final firebaseProvider = FirebaseAuthProvider();
-  final cloudProvider = CloudFunctionProvider();
-  final authRepository = AuthRepositoryImpl(firebase: firebaseProvider, cloud: cloudProvider);
+
+  final dataConnectProvider = DataConnectProvider(
+    endpoint: "https://us-east1-fcai-studymentor.cloudfunctions.net/studymentor-api/graphql",
+  );
+
+  final authRepository = AuthRepositoryImpl(
+    firebase: firebaseProvider,
+    dataConnect: dataConnectProvider,
+  );
 
   runApp(StudyMentorApp(authRepository: authRepository));
 }
 
 class StudyMentorApp extends StatelessWidget {
   final dynamic authRepository;
+
   const StudyMentorApp({super.key, required this.authRepository});
 
   @override
@@ -35,17 +42,16 @@ class StudyMentorApp extends StatelessWidget {
     return RepositoryProvider.value(
       value: authRepository,
       child: BlocProvider(
-        create: (context) => AuthBloc(repository: authRepository)..add(AppStarted()),
+        create: (context) =>
+            AuthBloc(repository: authRepository)..add(AppStarted()),
         child: MaterialApp(
           title: 'StudyMentor',
-          // Keep named routes for direct navigation where appropriate:
           routes: {
             '/login': (_) => LoginScreen(),
             '/register': (_) => RegisterScreen(),
             '/confirm-email': (_) => ConfirmEmailScreen(),
             '/forgot-password': (_) => ForgotPasswordScreen(),
           },
-          // RootPage decides which screen to show based on AuthBloc state.
           home: const RootPage(),
         ),
       ),
@@ -62,7 +68,9 @@ class RootPage extends StatelessWidget {
       listenWhen: (prev, curr) => curr is AuthError,
       listener: (context, state) {
         if (state is AuthError) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message)),
+          );
         }
       },
       builder: (context, state) {
@@ -71,23 +79,26 @@ class RootPage extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
+
         if (state is AuthUnauthenticated) {
           return LoginScreen();
         }
+
         if (state is AuthEmailUnverified) {
-          // Confirm email screen will let user send verification and refresh status
           return ConfirmEmailScreen();
         }
+
         if (state is AuthAuthenticated) {
           final role = state.user.role.toLowerCase();
           final fullName = state.user.fullName;
+
           if (role == 'parent') {
             return ParentScreen(fullName: fullName);
           } else {
             return StudentScreen(fullName: fullName);
           }
         }
-        // Fallback
+
         return LoginScreen();
       },
     );

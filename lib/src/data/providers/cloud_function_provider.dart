@@ -1,7 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
 class CloudFunctionProvider {
-  final FirebaseFunctions functions = FirebaseFunctions.instance;
+  final FirebaseFunctions functions = FirebaseFunctions.instanceFor(region: 'us-east1');
 
   Future<void> createUserProfile({
     required String uid,

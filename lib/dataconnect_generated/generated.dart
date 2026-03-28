@@ -4,15 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
+part 'list_users.dart';
+
+part 'get_user_by_uid.dart';
+
 part 'insert_user.dart';
 
 part 'upsert_current_user.dart';
 
 part 'delete_user.dart';
-
-part 'list_users.dart';
-
-part 'get_user_by_uid.dart';
 
 
 
@@ -96,6 +96,16 @@ class Unknown extends EnumValue<Never> {
 class ExampleConnector {
   
   
+  ListUsersVariablesBuilder listUsers () {
+    return ListUsersVariablesBuilder(dataConnect, );
+  }
+  
+  
+  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
+    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
   InsertUserVariablesBuilder insertUser ({required String email, required Role role, }) {
     return InsertUserVariablesBuilder(dataConnect, email: email,role: role,);
   }
@@ -108,16 +118,6 @@ class ExampleConnector {
   
   DeleteUserVariablesBuilder deleteUser () {
     return DeleteUserVariablesBuilder(dataConnect, );
-  }
-  
-  
-  ListUsersVariablesBuilder listUsers () {
-    return ListUsersVariablesBuilder(dataConnect, );
-  }
-  
-  
-  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
-    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
   }
   
 

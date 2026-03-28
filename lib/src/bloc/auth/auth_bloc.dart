@@ -115,7 +115,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   String _mapException(dynamic e) {
-    // Map Firebase exceptions or network errors to human friendly messages
     final msg = e.toString();
     if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
       return 'Invalid credentials.';
