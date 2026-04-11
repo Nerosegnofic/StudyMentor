@@ -19,9 +19,7 @@ Future<void> main() async {
   await Firebase.initializeApp();
 
   final firebaseProvider = FirebaseAuthProvider();
-
- final dataConnectProvider = DataConnectProvider();
-
+  final dataConnectProvider = DataConnectProvider();
   final authRepository = AuthRepositoryImpl(
     firebase: firebaseProvider,
     dataConnect: dataConnectProvider,
@@ -45,10 +43,20 @@ class StudyMentorApp extends StatelessWidget {
         child: MaterialApp(
           title: 'StudyMentor',
           routes: {
-            '/login': (_) => LoginScreen(),
-            '/register': (_) => RegisterScreen(),
-            '/confirm-email': (_) => ConfirmEmailScreen(),
-            '/forgot-password': (_) => ForgotPasswordScreen(),
+            '/login': (_) => const LoginScreen(),
+            '/register': (_) => const RegisterScreen(),
+            '/confirm-email': (_) => const ConfirmEmailScreen(),
+            '/forgot-password': (_) => const ForgotPasswordScreen(),
+            '/parent': (context) {
+              final user =
+                  (context.read<AuthBloc>().state as AuthAuthenticated).user;
+              return ParentScreen(fullName: user.fullName);
+            },
+            '/student': (context) {
+              final user =
+                  (context.read<AuthBloc>().state as AuthAuthenticated).user;
+              return StudentScreen(fullName: user.fullName);
+            },
           },
           home: const RootPage(),
         ),
@@ -79,11 +87,11 @@ class RootPage extends StatelessWidget {
         }
 
         if (state is AuthUnauthenticated) {
-          return LoginScreen();
+          return const LoginScreen();
         }
 
         if (state is AuthEmailUnverified) {
-          return ConfirmEmailScreen();
+          return const ConfirmEmailScreen();
         }
 
         if (state is AuthAuthenticated) {
@@ -97,7 +105,7 @@ class RootPage extends StatelessWidget {
           }
         }
 
-        return LoginScreen();
+        return const LoginScreen();
       },
     );
   }

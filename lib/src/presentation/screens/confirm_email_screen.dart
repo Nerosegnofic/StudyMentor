@@ -2,39 +2,58 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
+import '../../bloc/auth/auth_state.dart';
 
 class ConfirmEmailScreen extends StatelessWidget {
   const ConfirmEmailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Confirm Email')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Please verify your email.'),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => context.read<AuthBloc>().add(
-                SendEmailVerificationRequested(),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          Navigator.pushReplacementNamed(
+            context,
+            state.user.role.toLowerCase() == 'parent' ? '/parent' : '/student',
+          );
+        }
+        if (state is AuthUnauthenticated) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+        if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message)),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text('Confirm Email')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Please verify your email.'),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.read<AuthBloc>().add(
+                  SendEmailVerificationRequested(),
+                ),
+                child: Text('Send Email Verification Link'),
               ),
-              child: Text('Send Email Verification Link'),
-            ),
-            ElevatedButton(
-              onPressed: () => context.read<AuthBloc>().add(
-                CheckEmailVerificationRequested(),
+              ElevatedButton(
+                onPressed: () => context.read<AuthBloc>().add(
+                  CheckEmailVerificationRequested(),
+                ),
+                child: Text('I have verified — Refresh'),
               ),
-              child: Text('I have verified — Refresh'),
-            ),
-            TextButton(
-              onPressed: () {
-                context.read<AuthBloc>().add(LogoutRequested());
-              },
-              child: Text('Cancel / Logout'),
-            ),
-          ],
+              TextButton(
+                onPressed: () => context.read<AuthBloc>().add(
+                  LogoutRequested(),
+                ),
+                child: Text('Cancel / Logout'),
+              ),
+            ],
+          ),
         ),
       ),
     );
