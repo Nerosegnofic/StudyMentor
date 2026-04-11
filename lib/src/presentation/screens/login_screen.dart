@@ -28,14 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
           } else {
             setState(() => _loading = false);
           }
-
-          if (state is AuthAuthenticated) {
-            if (state.user.role == 'Parent') {
-              Navigator.pushReplacementNamed(context, '/parent');
-            } else {
-              Navigator.pushReplacementNamed(context, '/student');
-            }
-          }
           if (state is AuthEmailUnverified) {
             Navigator.pushReplacementNamed(context, '/confirm-email');
           }

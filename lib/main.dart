@@ -80,32 +80,33 @@ class RootPage extends StatelessWidget {
           ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
+      buildWhen: (prev, curr) =>
+          curr is AuthInitial ||
+          curr is AuthLoading ||
+          curr is AuthAuthenticated ||
+          curr is AuthUnauthenticated ||
+          curr is AuthEmailUnverified,
       builder: (context, state) {
         if (state is AuthInitial || state is AuthLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
         if (state is AuthUnauthenticated) {
           return const LoginScreen();
         }
-
         if (state is AuthEmailUnverified) {
           return const ConfirmEmailScreen();
         }
-
         if (state is AuthAuthenticated) {
           final role = state.user.role.toLowerCase();
           final fullName = state.user.fullName;
-
           if (role == 'parent') {
             return ParentScreen(fullName: fullName, uid: state.user.uid);
           } else {
             return StudentScreen(fullName: fullName, uid: state.user.uid);
           }
         }
-
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
