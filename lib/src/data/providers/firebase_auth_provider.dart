@@ -2,9 +2,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class FirebaseAuthProvider {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  String? _cachedPassword; // temporary in-memory cache [Ahmed Abdelnabi's Note: This is a security risk]
 
   Future<UserCredential> signUp(String email, String password) =>
       _auth.createUserWithEmailAndPassword(email: email, password: password);
+
+  Future<void> signIn(String email, String password) async {
+    _cachedPassword = password;
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> signInWithPassword(String email, String password) async {
+    _cachedPassword = password;
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  String? get cachedPassword => _cachedPassword;
 
   Future<void> sendEmailVerification() async {
     final user = _auth.currentUser;
@@ -13,10 +26,10 @@ class FirebaseAuthProvider {
     }
   }
 
-  Future<void> signIn(String email, String password) =>
-      _auth.signInWithEmailAndPassword(email: email, password: password);
-
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signOut() async {
+    _cachedPassword = null;
+    await _auth.signOut();
+  }
 
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);

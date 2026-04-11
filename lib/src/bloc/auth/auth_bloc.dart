@@ -13,25 +13,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SendEmailVerificationRequested>(_onSendEmailVerification);
     on<CheckEmailVerificationRequested>(_onCheckEmailVerification);
     on<PasswordResetRequested>(_onPasswordReset);
+    on<CreateStudentRequested>(_onCreateStudent);
+    on<LoadStudentsRequested>(_onLoadStudents);
+    on<LoadParentNameRequested>(_onLoadParentName);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-  try {
-    final profile = await repository.getUserProfile();
-    if (profile != null) {
-      final verified = await repository.isEmailVerified();
-      if (!verified) {
-        emit(AuthEmailUnverified(profile.email));
+    try {
+      final profile = await repository.getUserProfile();
+      if (profile != null) {
+        final verified = await repository.isEmailVerified();
+        if (!verified) {
+          emit(AuthEmailUnverified(profile.email));
+        } else {
+          emit(AuthAuthenticated(profile));
+        }
       } else {
-        emit(AuthAuthenticated(profile));
+        emit(AuthUnauthenticated());
       }
-    } else {
+    } catch (e) {
       emit(AuthUnauthenticated());
     }
-  } catch (e) {
-    emit(AuthUnauthenticated());
   }
-}
 
   Future<void> _onRegister(
     RegisterRequested event,
@@ -79,7 +82,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       await repository.sendEmailVerification();
-      emit(AuthInitial());
+      final email = (await repository.getUserProfile())?.email ?? '';
+      emit(AuthEmailUnverified(email));
     } catch (e) {
       emit(AuthError(_mapException(e)));
     }
@@ -99,9 +103,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } else {
       emit(
-        AuthEmailUnverified(
-          (await repository.getUserProfile())?.email ?? '',
-        ),
+        AuthEmailUnverified((await repository.getUserProfile())?.email ?? ''),
       );
     }
   }
@@ -130,5 +132,48 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return 'Network error. Check your connection.';
     }
     return 'Authentication error: $msg';
+  }
+
+  Future<void> _onCreateStudent(
+    CreateStudentRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final parent = await repository.createStudent(
+        fullName: event.fullName,
+        email: event.email,
+        password: event.password,
+        parentUid: event.parentUid,
+      );
+      emit(StudentCreated());
+      emit(AuthAuthenticated(parent));
+    } catch (e) {
+      emit(AuthError(_mapException(e)));
+    }
+  }
+
+  Future<void> _onLoadStudents(
+    LoadStudentsRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final students = await repository.getStudentsByParent(event.parentUid);
+      emit(StudentsLoaded(students));
+    } catch (e) {
+      emit(AuthError(_mapException(e)));
+    }
+  }
+
+  Future<void> _onLoadParentName(
+    LoadParentNameRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final parentName = await repository.getParentFullName(event.studentUid);
+      emit(ParentNameLoaded(parentName));
+    } catch (e) {
+      emit(ParentNameLoaded('Unknown'));
+    }
   }
 }

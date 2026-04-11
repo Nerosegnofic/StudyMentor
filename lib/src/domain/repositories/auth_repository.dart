@@ -1,4 +1,5 @@
 import '../models/user_model.dart';
+import '../models/student_model.dart';
 
 abstract class AuthRepository {
   Future<UserModel> signUp({
@@ -12,4 +13,12 @@ abstract class AuthRepository {
   Future<void> signOut();
   Future<void> sendPasswordReset(String email);
   Future<UserModel?> getUserProfile();
+  Future<UserModel> createStudent({
+    required String fullName,
+    required String email,
+    required String password,
+    required String parentUid,
+  });
+  Future<List<StudentModel>> getStudentsByParent(String parentUid);
+  Future<String> getParentFullName(String studentUid);
 }

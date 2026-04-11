@@ -42,6 +42,7 @@ class StudyMentorApp extends StatelessWidget {
             AuthBloc(repository: authRepository)..add(AppStarted()),
         child: MaterialApp(
           title: 'StudyMentor',
+          debugShowCheckedModeBanner: false,
           routes: {
             '/login': (_) => const LoginScreen(),
             '/register': (_) => const RegisterScreen(),
@@ -50,12 +51,12 @@ class StudyMentorApp extends StatelessWidget {
             '/parent': (context) {
               final user =
                   (context.read<AuthBloc>().state as AuthAuthenticated).user;
-              return ParentScreen(fullName: user.fullName);
+              return ParentScreen(fullName: user.fullName, uid: user.uid);
             },
             '/student': (context) {
               final user =
                   (context.read<AuthBloc>().state as AuthAuthenticated).user;
-              return StudentScreen(fullName: user.fullName);
+              return StudentScreen(fullName: user.fullName, uid: user.uid);
             },
           },
           home: const RootPage(),
@@ -74,9 +75,9 @@ class RootPage extends StatelessWidget {
       listenWhen: (prev, curr) => curr is AuthError,
       listener: (context, state) {
         if (state is AuthError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       builder: (context, state) {
@@ -99,13 +100,13 @@ class RootPage extends StatelessWidget {
           final fullName = state.user.fullName;
 
           if (role == 'parent') {
-            return ParentScreen(fullName: fullName);
+            return ParentScreen(fullName: fullName, uid: state.user.uid);
           } else {
-            return StudentScreen(fullName: fullName);
+            return StudentScreen(fullName: fullName, uid: state.user.uid);
           }
         }
 
-        return const LoginScreen();
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }

@@ -17,15 +17,21 @@ class DataConnectProvider {
         .execute();
   }
 
+  Future<void> createParentProfile() async {
+    await _connector.insertParent().execute();
+  }
+
+  Future<void> createStudentProfile({required String parentUid}) async {
+    await _connector.insertStudent(parentUid: parentUid).execute();
+  }
+
   Future<Map<String, dynamic>> getUserProfile(String uid) async {
     final result = await _connector.getUserByUid(uid: uid).execute();
     final user = result.data.user;
     if (user == null) throw Exception('User not found in DataConnect');
-
     final createdAt = DateTime.fromMillisecondsSinceEpoch(
       user.createdAt.seconds * 1000,
     );
-
     return {
       'uid': user.uid,
       'email': user.email,
@@ -34,5 +40,34 @@ class DataConnectProvider {
       'is_active': user.isActive,
       'created_at': createdAt.toIso8601String(),
     };
+  }
+
+  Future<List<Map<String, dynamic>>> getStudentsByParent(
+    String parentUid,
+  ) async {
+    final result = await _connector
+        .getStudentsByParent(parentUid: parentUid)
+        .execute();
+    return result.data.students
+        .map(
+          (s) => {
+            'uid': s.uid,
+            'full_name': s.user.fullName,
+            'email': s.user.email,
+            'grade_level': s.gradeLevel,
+            'total_xp': s.totalXp,
+            'total_coins': s.totalCoins,
+          },
+        )
+        .toList();
+  }
+
+  Future<String> getParentFullName(String studentUid) async {
+    final result = await _connector
+        .getStudentWithParent(uid: studentUid)
+        .execute();
+    final student = result.data.student;
+    if (student == null) throw Exception('Student not found');
+    return student.parent.user.fullName;
   }
 }

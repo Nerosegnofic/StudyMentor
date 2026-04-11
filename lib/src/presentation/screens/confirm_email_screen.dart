@@ -9,7 +9,7 @@ class ConfirmEmailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           Navigator.pushReplacementNamed(
@@ -21,41 +21,45 @@ class ConfirmEmailScreen extends StatelessWidget {
           Navigator.pushReplacementNamed(context, '/login');
         }
         if (state is AuthError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
-      child: Scaffold(
-        appBar: AppBar(title: Text('Confirm Email')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Please verify your email.'),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.read<AuthBloc>().add(
-                  SendEmailVerificationRequested(),
-                ),
-                child: Text('Send Email Verification Link'),
-              ),
-              ElevatedButton(
-                onPressed: () => context.read<AuthBloc>().add(
-                  CheckEmailVerificationRequested(),
-                ),
-                child: Text('I have verified — Refresh'),
-              ),
-              TextButton(
-                onPressed: () => context.read<AuthBloc>().add(
-                  LogoutRequested(),
-                ),
-                child: Text('Cancel / Logout'),
-              ),
-            ],
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
+        return Scaffold(
+          appBar: AppBar(title: const Text('Confirm Email')),
+          body: Center(
+            child: isLoading
+                ? const CircularProgressIndicator()
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Please verify your email.'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => context.read<AuthBloc>().add(
+                          SendEmailVerificationRequested(),
+                        ),
+                        child: const Text('Send Email Verification Link'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => context.read<AuthBloc>().add(
+                          CheckEmailVerificationRequested(),
+                        ),
+                        child: const Text('I have verified — Refresh'),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            context.read<AuthBloc>().add(LogoutRequested()),
+                        child: const Text('Cancel / Logout'),
+                      ),
+                    ],
+                  ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

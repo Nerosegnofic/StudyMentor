@@ -1,5 +1,5 @@
-query ListUsers @auth(level: NO_ACCESS) {
-  users {
+query GetUserByUid($uid: String!) @auth(level: USER) {
+  user(key: { uid: $uid }) {
     uid
     email
     fullName
@@ -9,13 +9,26 @@ query ListUsers @auth(level: NO_ACCESS) {
   }
 }
 
-query GetUserByUid($uid: String!) @auth(level: USER) {
-  user(key: { uid: $uid }) {
+query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
+  students(where: { parent: { uid: { eq: $parentUid } } }) {
     uid
-    email
-    fullName
-    role
-    isActive
-    createdAt
+    user {
+      fullName
+      email
+    }
+    gradeLevel
+    totalXp
+    totalCoins
+  }
+}
+
+query GetStudentWithParent($uid: String!) @auth(level: USER) {
+  student(key: { uid: $uid }) {
+    uid
+    parent {
+      user {
+        fullName
+      }
+    }
   }
 }
