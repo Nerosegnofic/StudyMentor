@@ -20,9 +20,7 @@ Future<void> main() async {
 
   final firebaseProvider = FirebaseAuthProvider();
 
-  final dataConnectProvider = DataConnectProvider(
-    endpoint: "https://us-east1-fcai-studymentor.cloudfunctions.net/studymentor-api/graphql",
-  );
+ final dataConnectProvider = DataConnectProvider();
 
   final authRepository = AuthRepositoryImpl(
     firebase: firebaseProvider,

@@ -1,79 +1,32 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../../dataconnect_generated/generated.dart';
 
 class DataConnectProvider {
-  final String endpoint;
-
-  DataConnectProvider({required this.endpoint});
-
-  Future<Map<String, dynamic>> _sendQuery(
-    String query, {
-    Map<String, dynamic>? variables,
-  }) async {
-    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
-
-    final response = await http.post(
-      Uri.parse(endpoint),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'query': query,
-        'variables': variables ?? {},
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('DataConnect error: ${response.body}');
-    }
-
-    final data = jsonDecode(response.body);
-
-    if (data['errors'] != null) {
-      throw Exception(data['errors'][0]['message']);
-    }
-
-    return data['data'];
-  }
+  final _connector = ExampleConnector.instance;
 
   Future<void> createUserProfile({
-    required String uid,
     required String email,
     required String fullName,
     required String role,
   }) async {
-    const mutation = r'''
-      mutation CreateUser($uid: String!, $email: String!, $fullName: String!, $role: String!) {
-        insertUser(uid: $uid, email: $email, fullName: $fullName, role: $role) {
-          uid
-        }
-      }
-    ''';
-
-    await _sendQuery(mutation, variables: {
-      'uid': uid,
-      'email': email,
-      'fullName': fullName,
-      'role': role,
-    });
+    await _connector.insertUser(
+      email: email,
+      role: role == 'Parent' ? Role.Parent : Role.Student,
+    ).execute();
   }
 
   Future<Map<String, dynamic>> getUserProfile(String uid) async {
-    const query = r'''
-      query GetUser($uid: String!) {
-        user(uid: $uid) {
-          uid
-          email
-          fullName
-          role
-          createdAt
-        }
-      }
-    ''';
-
-    final result = await _sendQuery(query, variables: {'uid': uid});
-    return result['user'];
+    final result = await _connector.getUserByUid(uid: uid).execute();
+    final user = result.data.user;
+    if (user == null) {
+      throw Exception('User not found in DataConnect');
+    }
+    return {
+      'uid': user.uid,
+      'email': user.email,
+      'full_name': user.fullName ?? '',
+      'role': user.role.stringValue,
+      'is_active': user.isActive,
+      'created_at': user.createdAt?.toString() ?? DateTime.now().toIso8601String(),
+    };
   }
 }

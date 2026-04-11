@@ -72,5 +72,5 @@ extend type User {
   """
   A generated field that is used for caching results in SDKs.
   """
-  _id: ID! @fdc_generated(from: "User.uid", purpose: GLOBAL_ID)
+  _id: ID! @fdc_generated(from: "User.uid", purpose: ENTITY_ID)
 }

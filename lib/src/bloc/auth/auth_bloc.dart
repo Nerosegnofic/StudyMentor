@@ -16,6 +16,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
+  try {
     final profile = await repository.getUserProfile();
     if (profile != null) {
       final verified = await repository.isEmailVerified();
@@ -27,7 +28,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } else {
       emit(AuthUnauthenticated());
     }
+  } catch (e) {
+    emit(AuthUnauthenticated());
   }
+}
 
   Future<void> _onRegister(
     RegisterRequested event,

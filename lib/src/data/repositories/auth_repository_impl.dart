@@ -7,10 +7,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final FirebaseAuthProvider firebase;
   final DataConnectProvider dataConnect;
 
-  AuthRepositoryImpl({
-    required this.firebase,
-    required this.dataConnect,
-  });
+  AuthRepositoryImpl({required this.firebase, required this.dataConnect});
 
   @override
   Future<UserModel> signUp({
@@ -24,7 +21,6 @@ class AuthRepositoryImpl implements AuthRepository {
     await firebase.sendEmailVerification();
 
     await dataConnect.createUserProfile(
-      uid: uid,
       email: email,
       fullName: fullName,
       role: 'Parent',
@@ -49,8 +45,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> sendEmailVerification() =>
-      firebase.sendEmailVerification();
+  Future<void> sendEmailVerification() => firebase.sendEmailVerification();
 
   @override
   Future<bool> isEmailVerified() async {

@@ -1,11 +1,11 @@
 # Basic Usage
 
 ```dart
-ExampleConnector.instance.ListUsers().execute();
-ExampleConnector.instance.GetUserByUid(getUserByUidVariables).execute();
 ExampleConnector.instance.InsertUser(insertUserVariables).execute();
 ExampleConnector.instance.UpsertCurrentUser(upsertCurrentUserVariables).execute();
 ExampleConnector.instance.DeleteUser().execute();
+ExampleConnector.instance.ListUsers().execute();
+ExampleConnector.instance.GetUserByUid(getUserByUidVariables).execute();
 
 ```
 
