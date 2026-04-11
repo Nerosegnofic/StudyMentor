@@ -116,33 +116,16 @@ ref.subscribe(...);
 #### Required Arguments
 ```dart
 String email = ...;
+String fullName = ...;
 Role role = ...;
 ExampleConnector.instance.insertUser(
   email: email,
+  fullName: fullName,
   role: role,
 ).execute();
 ```
 
-#### Optional Arguments
-We return a builder for each query. For InsertUser, we created `InsertUserBuilder`. For queries and mutations with optional parameters, we return a builder class.
-The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
-```dart
-class InsertUserVariablesBuilder {
-  ...
-   InsertUserVariablesBuilder fullName(String? t) {
-   _fullName.value = t;
-   return this;
-  }
 
-  ...
-}
-ExampleConnector.instance.insertUser(
-  email: email,
-  role: role,
-)
-.fullName(fullName)
-.execute();
-```
 
 #### Return Type
 `execute()` returns a `OperationResult<InsertUserData, InsertUserVariables>`
@@ -157,6 +140,7 @@ class OperationResult<Data, Variables> {
 
 final result = await ExampleConnector.instance.insertUser(
   email: email,
+  fullName: fullName,
   role: role,
 );
 InsertUserData data = result.data;
@@ -168,10 +152,12 @@ Each builder returns an `execute` function, which is a helper function that crea
 An example of how to use the `Ref` object is shown below:
 ```dart
 String email = ...;
+String fullName = ...;
 Role role = ...;
 
 final ref = ExampleConnector.instance.insertUser(
   email: email,
+  fullName: fullName,
   role: role,
 ).ref();
 ref.execute();

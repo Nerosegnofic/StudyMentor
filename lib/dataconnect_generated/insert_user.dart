@@ -2,15 +2,11 @@ part of 'generated.dart';
 
 class InsertUserVariablesBuilder {
   String email;
-  Optional<String> _fullName = Optional.optional(nativeFromJson, nativeToJson);
+  String fullName;
   Role role;
 
-  final FirebaseDataConnect _dataConnect;  InsertUserVariablesBuilder fullName(String? t) {
-   _fullName.value = t;
-   return this;
-  }
-
-  InsertUserVariablesBuilder(this._dataConnect, {required  this.email,required  this.role,});
+  final FirebaseDataConnect _dataConnect;
+  InsertUserVariablesBuilder(this._dataConnect, {required  this.email,required  this.fullName,required  this.role,});
   Deserializer<InsertUserData> dataDeserializer = (dynamic json)  => InsertUserData.fromJson(jsonDecode(json));
   Serializer<InsertUserVariables> varsSerializer = (InsertUserVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<InsertUserData, InsertUserVariables>> execute() {
@@ -18,7 +14,7 @@ class InsertUserVariablesBuilder {
   }
 
   MutationRef<InsertUserData, InsertUserVariables> ref() {
-    InsertUserVariables vars= InsertUserVariables(email: email,fullName: _fullName,role: role,);
+    InsertUserVariables vars= InsertUserVariables(email: email,fullName: fullName,role: role,);
     return _dataConnect.mutation("InsertUser", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -94,21 +90,14 @@ class InsertUserData {
 @immutable
 class InsertUserVariables {
   final String email;
-  late final Optional<String>fullName;
+  final String fullName;
   final Role role;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   InsertUserVariables.fromJson(Map<String, dynamic> json):
   
   email = nativeFromJson<String>(json['email']),
-  role = Role.values.byName(json['role']) {
-  
-  
-  
-    fullName = Optional.optional(nativeFromJson, nativeToJson);
-    fullName.value = json['fullName'] == null ? null : nativeFromJson<String>(json['fullName']);
-  
-  
-  }
+  fullName = nativeFromJson<String>(json['fullName']),
+  role = Role.values.byName(json['role']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -131,9 +120,7 @@ class InsertUserVariables {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['email'] = nativeToJson<String>(email);
-    if(fullName.state == OptionalState.set) {
-      json['fullName'] = fullName.toJson();
-    }
+    json['fullName'] = nativeToJson<String>(fullName);
     json['role'] = 
     role.name
     ;

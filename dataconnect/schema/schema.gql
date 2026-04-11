@@ -6,8 +6,8 @@ enum Role {
 type User @table(name: "users", key: ["uid"]) {
   uid: String! @default(expr: "auth.uid")
   email: String! @col(dataType: "varchar(255)")
-  fullName: String @col(dataType: "varchar(255)")
-  role: Role! 
+  fullName: String! @col(dataType: "varchar(255)")
+  role: Role!
   isActive: Boolean! @default(expr: "true")
-  createdAt: Timestamp
+  createdAt: Timestamp! @default(expr: "request.time")
 }

@@ -1,4 +1,4 @@
-mutation InsertUser($email: String!, $fullName: String, $role: Role!) @auth(level: USER) {
+mutation InsertUser($email: String!, $fullName: String!, $role: Role!) @auth(level: USER) {
   user_insert(
     data: {
       uid_expr: "auth.uid"

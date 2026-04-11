@@ -96,8 +96,8 @@ class Unknown extends EnumValue<Never> {
 class ExampleConnector {
   
   
-  InsertUserVariablesBuilder insertUser ({required String email, required Role role, }) {
-    return InsertUserVariablesBuilder(dataConnect, email: email,role: role,);
+  InsertUserVariablesBuilder insertUser ({required String email, required String fullName, required Role role, }) {
+    return InsertUserVariablesBuilder(dataConnect, email: email,fullName: fullName,role: role,);
   }
   
   

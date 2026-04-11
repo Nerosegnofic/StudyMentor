@@ -125,19 +125,19 @@ input User_Data {
   """
   uid_expr: String_Expr @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `User`.`createdAt` of type `Timestamp`
+  ✨ Generated from Field `User`.`createdAt` of type `Timestamp!`
   """
   createdAt: Timestamp
   """
-  ✨ `_expr` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp`)
+  ✨ `_expr` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp!`)
   """
   createdAt_expr: Timestamp_Expr @fdc_forbiddenInVariables
   """
-  ✨ `_time` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp`)
+  ✨ `_time` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp!`)
   """
   createdAt_time: Timestamp_Relative @fdc_forbiddenInVariables
   """
-  ✨ `_update` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp`)
+  ✨ `_update` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp!`)
   """
   createdAt_update: [Timestamp_Update!] @fdc_forbiddenInVariables
   """
@@ -149,11 +149,11 @@ input User_Data {
   """
   email_expr: String_Expr @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `User`.`fullName` of type `String`
+  ✨ Generated from Field `User`.`fullName` of type `String!`
   """
   fullName: String
   """
-  ✨ `_expr` server value variant of `fullName` (✨ Generated from Field `User`.`fullName` of type `String`)
+  ✨ `_expr` server value variant of `fullName` (✨ Generated from Field `User`.`fullName` of type `String!`)
   """
   fullName_expr: String_Expr @fdc_forbiddenInVariables
   """
@@ -194,7 +194,7 @@ input User_Filter {
   """
   uid: String_Filter
   """
-  ✨ Generated from Field `User`.`createdAt` of type `Timestamp`
+  ✨ Generated from Field `User`.`createdAt` of type `Timestamp!`
   """
   createdAt: Timestamp_Filter
   """
@@ -202,7 +202,7 @@ input User_Filter {
   """
   email: String_Filter
   """
-  ✨ Generated from Field `User`.`fullName` of type `String`
+  ✨ Generated from Field `User`.`fullName` of type `String!`
   """
   fullName: String_Filter
   """
@@ -319,7 +319,7 @@ input User_Order {
   """
   uid: OrderDirection
   """
-  ✨ Generated from Field `User`.`createdAt` of type `Timestamp`
+  ✨ Generated from Field `User`.`createdAt` of type `Timestamp!`
   """
   createdAt: OrderDirection
   """
@@ -327,7 +327,7 @@ input User_Order {
   """
   email: OrderDirection
   """
-  ✨ Generated from Field `User`.`fullName` of type `String`
+  ✨ Generated from Field `User`.`fullName` of type `String!`
   """
   fullName: OrderDirection
   """

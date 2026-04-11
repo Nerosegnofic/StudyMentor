@@ -21,18 +21,18 @@ class GetUserByUidVariablesBuilder {
 class GetUserByUidUser {
   final String uid;
   final String email;
-  final String? fullName;
+  final String fullName;
   final EnumValue<Role> role;
   final bool isActive;
-  final Timestamp? createdAt;
+  final Timestamp createdAt;
   GetUserByUidUser.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
   email = nativeFromJson<String>(json['email']),
-  fullName = json['fullName'] == null ? null : nativeFromJson<String>(json['fullName']),
+  fullName = nativeFromJson<String>(json['fullName']),
   role = roleDeserializer(json['role']),
   isActive = nativeFromJson<bool>(json['isActive']),
-  createdAt = json['createdAt'] == null ? null : Timestamp.fromJson(json['createdAt']);
+  createdAt = Timestamp.fromJson(json['createdAt']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -59,26 +59,22 @@ class GetUserByUidUser {
     Map<String, dynamic> json = {};
     json['uid'] = nativeToJson<String>(uid);
     json['email'] = nativeToJson<String>(email);
-    if (fullName != null) {
-      json['fullName'] = nativeToJson<String?>(fullName);
-    }
+    json['fullName'] = nativeToJson<String>(fullName);
     json['role'] = 
     roleSerializer(role)
     ;
     json['isActive'] = nativeToJson<bool>(isActive);
-    if (createdAt != null) {
-      json['createdAt'] = createdAt!.toJson();
-    }
+    json['createdAt'] = createdAt.toJson();
     return json;
   }
 
   GetUserByUidUser({
     required this.uid,
     required this.email,
-    this.fullName,
+    required this.fullName,
     required this.role,
     required this.isActive,
-    this.createdAt,
+    required this.createdAt,
   });
 }
 
