@@ -30,9 +30,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           } else {
             setState(() => _loading = false);
           }
-
           if (state is AuthEmailUnverified) {
-            Navigator.pushReplacementNamed(context, '/confirm-email');
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/', (route) => false);
           }
           if (state is AuthError) {
             ScaffoldMessenger.of(
