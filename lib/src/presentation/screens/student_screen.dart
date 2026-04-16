@@ -58,7 +58,6 @@ class _StudentScreenState extends State<StudentScreen> {
         if (state is ParentVerificationFailed) {
           _showVerificationDialog(errorMessage: state.message);
         }
-        // No explicit navigation for AuthUnauthenticated — RootPage handles it
       },
       child: Scaffold(
         appBar: AppBar(
@@ -85,14 +84,6 @@ class _StudentScreenState extends State<StudentScreen> {
                     Text(
                       'Your parent is $_parentFullName',
                       style: const TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Logout requires parent verification',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
                     ),
                   ],
                 ),
