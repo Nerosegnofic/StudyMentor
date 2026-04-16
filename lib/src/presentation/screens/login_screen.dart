@@ -29,14 +29,14 @@ class _LoginScreenState extends State<LoginScreen> {
             setState(() => _loading = false);
           }
           if (state is AuthAuthenticated) {
-            final role = state.user.role.toLowerCase();
-            Navigator.pushReplacementNamed(
+            Navigator.of(
               context,
-              role == 'parent' ? '/parent' : '/student',
-            );
+            ).pushNamedAndRemoveUntil('/', (route) => false);
           }
           if (state is AuthEmailUnverified) {
-            Navigator.pushReplacementNamed(context, '/confirm-email');
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/', (route) => false);
           }
           if (state is AuthError) {
             ScaffoldMessenger.of(

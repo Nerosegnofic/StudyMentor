@@ -4,6 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
+part 'get_user_by_uid.dart';
+
+part 'get_students_by_parent.dart';
+
+part 'get_student_with_parent.dart';
+
 part 'insert_user.dart';
 
 part 'upsert_current_user.dart';
@@ -13,12 +19,6 @@ part 'delete_user.dart';
 part 'insert_parent.dart';
 
 part 'insert_student.dart';
-
-part 'get_user_by_uid.dart';
-
-part 'get_students_by_parent.dart';
-
-part 'get_student_with_parent.dart';
 
 
 
@@ -102,6 +102,21 @@ class Unknown extends EnumValue<Never> {
 class ExampleConnector {
   
   
+  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
+    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetStudentsByParentVariablesBuilder getStudentsByParent ({required String parentUid, }) {
+    return GetStudentsByParentVariablesBuilder(dataConnect, parentUid: parentUid,);
+  }
+  
+  
+  GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
+    return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
   InsertUserVariablesBuilder insertUser ({required String email, required String fullName, required Role role, }) {
     return InsertUserVariablesBuilder(dataConnect, email: email,fullName: fullName,role: role,);
   }
@@ -124,21 +139,6 @@ class ExampleConnector {
   
   InsertStudentVariablesBuilder insertStudent ({required String parentUid, }) {
     return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,);
-  }
-  
-  
-  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
-    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetStudentsByParentVariablesBuilder getStudentsByParent ({required String parentUid, }) {
-    return GetStudentsByParentVariablesBuilder(dataConnect, parentUid: parentUid,);
-  }
-  
-  
-  GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
-    return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
   }
   
 
