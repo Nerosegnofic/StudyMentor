@@ -73,10 +73,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onLogout(
-    LogoutRequested event,
-    Emitter<AuthState> emit,
-  ) async {
+  Future<void> _onLogout(LogoutRequested event, Emitter<AuthState> emit) async {
     await repository.signOut();
     emit(AuthUnauthenticated());
   }
@@ -108,9 +105,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } else {
       emit(
-        AuthEmailUnverified(
-          (await repository.getUserProfile())?.email ?? '',
-        ),
+        AuthEmailUnverified((await repository.getUserProfile())?.email ?? ''),
       );
     }
   }
@@ -185,7 +180,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     VerifyParentAndLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    // DO NOT emit AuthLoading here — it causes RootPage to replace
+    // StudentScreen with a loading spinner, killing the BlocListener
+    // that needs to catch ParentVerificationFailed.
     try {
       final isValid = await repository.verifyParentCredentials(
         studentUid: event.studentUid,
@@ -196,16 +193,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await repository.signOut();
         emit(AuthUnauthenticated());
       } else {
-        emit(ParentVerificationFailed(
-          message: 'Invalid parent credentials. Logout denied.',
-          studentUid: event.studentUid,
-        ));
+        emit(
+          ParentVerificationFailed(
+            message: 'Invalid parent credentials. Logout denied.',
+            studentUid: event.studentUid,
+          ),
+        );
       }
     } catch (e) {
-      emit(ParentVerificationFailed(
-        message: _mapParentVerificationException(e),
-        studentUid: event.studentUid,
-      ));
+      emit(
+        ParentVerificationFailed(
+          message: _mapParentVerificationException(e),
+          studentUid: event.studentUid,
+        ),
+      );
     }
   }
 
