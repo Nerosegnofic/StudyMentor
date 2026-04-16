@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class FirebaseAuthProvider {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  String? _cachedPassword; // temporary in-memory cache [Ahmed Abdelnabi's Note: This is a security risk]
+  String? _cachedPassword;
 
   Future<UserCredential> signUp(String email, String password) =>
       _auth.createUserWithEmailAndPassword(email: email, password: password);
@@ -46,5 +47,47 @@ class FirebaseAuthProvider {
     final user = _auth.currentUser;
     if (user == null) return null;
     return await user.getIdToken(true);
+  }
+
+  /// Verifies credentials using a secondary FirebaseAuth instance
+  /// to avoid disrupting the current user session.
+  /// Returns the authenticated UID if successful, null otherwise.
+  Future<String?> verifyCredentialsAndGetUid(
+    String email,
+    String password,
+  ) async {
+    try {
+      final existingApp = Firebase.apps.cast<FirebaseApp?>().firstWhere(
+        (app) => app?.name == '_parentVerifier',
+        orElse: () => null,
+      );
+
+      FirebaseAuth secondaryAuth;
+      if (existingApp != null) {
+        secondaryAuth = FirebaseAuth.instanceFor(app: existingApp);
+      } else {
+        final app = await Firebase.initializeApp(
+          name: '_parentVerifier',
+          options: Firebase.app().options,
+        );
+        secondaryAuth = FirebaseAuth.instanceFor(app: app);
+      }
+
+      final credential = await secondaryAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final uid = credential.user?.uid;
+
+      // Sign out the secondary instance immediately — no session leakage
+      await secondaryAuth.signOut();
+
+      return uid;
+    } on FirebaseAuthException {
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }

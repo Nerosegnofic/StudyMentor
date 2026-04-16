@@ -26,8 +26,11 @@ query GetStudentWithParent($uid: String!) @auth(level: USER) {
   student(key: { uid: $uid }) {
     uid
     parent {
+      uid
       user {
+        uid
         fullName
+        email
       }
     }
   }

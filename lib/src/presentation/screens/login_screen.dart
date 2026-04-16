@@ -28,6 +28,13 @@ class _LoginScreenState extends State<LoginScreen> {
           } else {
             setState(() => _loading = false);
           }
+          if (state is AuthAuthenticated) {
+            final role = state.user.role.toLowerCase();
+            Navigator.pushReplacementNamed(
+              context,
+              role == 'parent' ? '/parent' : '/student',
+            );
+          }
           if (state is AuthEmailUnverified) {
             Navigator.pushReplacementNamed(context, '/confirm-email');
           }
