@@ -85,14 +85,15 @@ class RootPage extends StatelessWidget {
           curr is AuthLoading ||
           curr is AuthAuthenticated ||
           curr is AuthUnauthenticated ||
-          curr is AuthEmailUnverified,
+          curr is AuthEmailUnverified ||
+          curr is AuthError,
       builder: (context, state) {
         if (state is AuthInitial || state is AuthLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (state is AuthUnauthenticated) {
+        if (state is AuthUnauthenticated || state is AuthError) {
           return const LoginScreen();
         }
         if (state is AuthEmailUnverified) {
