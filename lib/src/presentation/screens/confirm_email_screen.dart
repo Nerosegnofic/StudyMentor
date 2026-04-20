@@ -17,7 +17,8 @@ class ConfirmEmailScreen extends StatelessWidget {
         if (state is AuthUnauthenticated) {
           Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
         }
-        if (state is AuthError) {
+        // Show rate-limit / send errors as a snackbar without leaving the screen
+        if (state is EmailVerificationError) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(state.message)));
