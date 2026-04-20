@@ -46,6 +46,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
     required String parentUid,
+    required int gradeLevel,
   }) async {
     final parentEmail = firebase.currentUser?.email;
     final parentPassword = firebase.cachedPassword;
@@ -63,7 +64,10 @@ class AuthRepositoryImpl implements AuthRepository {
       fullName: fullName,
       role: 'Student',
     );
-    await dataConnect.createStudentProfile(parentUid: parentUid);
+    await dataConnect.createStudentProfile(
+      parentUid: parentUid,
+      gradeLevel: gradeLevel,
+    );
 
     await firebase.signOut();
     await firebase.signInWithPassword(parentEmail, parentPassword);
@@ -114,8 +118,9 @@ class AuthRepositoryImpl implements AuthRepository {
     required String parentPassword,
   }) async {
     // Step 1: Look up the parent_uid linked to this student
-    final linkedParentUid =
-        await dataConnect.getParentUidForStudent(studentUid);
+    final linkedParentUid = await dataConnect.getParentUidForStudent(
+      studentUid,
+    );
 
     // Step 2: Verify the supplied credentials using a secondary auth instance
     // This returns the UID of the authenticated user, or null on failure
