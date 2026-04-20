@@ -21,30 +21,30 @@ class _StudentScreenState extends State<StudentScreen> {
   @override
   void initState() {
     super.initState();
-    
 
-    // Load parent name (existing behaviour — unchanged)
     context.read<AuthBloc>().add(
       LoadParentNameRequested(studentUid: widget.uid),
     );
 
-    // ── Start overlay service ────────────────────────────────────────────────
-    // init() requests permissions and configures monitored apps.
-    // start() begins the polling loop.
-    // Both calls are fire-and-forget; errors are logged inside the service.
     MascotOverlayService.instance
         .init(
           monitoredApps: MascotOverlayService.dummyMonitoredApps,
-          usageThresholdMinutes: 1, // lower value makes testing easier
+          usageThresholdMinutes: 1,
         )
         .then((_) => MascotOverlayService.instance.start());
   }
 
   @override
   void dispose() {
-    // Stop monitoring when the student screen is disposed (e.g. on logout).
     MascotOverlayService.instance.stop();
     super.dispose();
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _parentFullName = null);
+    context.read<AuthBloc>().add(
+      LoadParentNameRequested(studentUid: widget.uid),
+    );
   }
 
   void _showVerificationDialog({String? errorMessage}) {
@@ -95,20 +95,33 @@ class _StudentScreenState extends State<StudentScreen> {
             ),
           ],
         ),
-        body: Center(
-          child: _parentFullName == null
-              ? const CircularProgressIndicator()
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.school, size: 64, color: Colors.blue),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Your parent is $_parentFullName',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ],
-                ),
+        body: RefreshIndicator(
+          onRefresh: _refresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: 400,
+              child: Center(
+                child: _parentFullName == null
+                    ? const CircularProgressIndicator()
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.school,
+                            size: 64,
+                            color: Colors.blue,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Your parent is $_parentFullName',
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
         ),
       ),
     );
