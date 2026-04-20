@@ -47,8 +47,14 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String parentUid,
   }) async {
-    final parentEmail = firebase.currentUser!.email!;
-    final parentPassword = firebase.cachedPassword!;
+    final parentEmail = firebase.currentUser?.email;
+    final parentPassword = firebase.cachedPassword;
+
+    if (parentEmail == null || parentPassword == null) {
+      throw Exception(
+        'Session expired. Please log out and log in again before adding a student.',
+      );
+    }
 
     await firebase.signUp(email, password);
 
