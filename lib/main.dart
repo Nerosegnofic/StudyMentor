@@ -82,7 +82,9 @@ class RootPage extends StatelessWidget {
       },
       buildWhen: (prev, curr) =>
           curr is AuthInitial ||
-          curr is AuthLoading ||
+          (curr is AuthLoading &&
+              prev is! AuthUnauthenticated &&
+              prev is! AuthError) ||
           curr is AuthAuthenticated ||
           curr is AuthUnauthenticated ||
           curr is AuthEmailUnverified ||
