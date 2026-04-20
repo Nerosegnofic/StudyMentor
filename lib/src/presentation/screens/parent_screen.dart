@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
@@ -32,70 +33,78 @@ class _ParentScreenState extends State<ParentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is StudentsLoaded) {
-          setState(() {
-            _students = state.students;
-            _isLoading = false;
-          });
-        }
-        if (state is AuthError) {
-          setState(() => _isLoading = false);
-        }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) SystemNavigator.pop();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Welcome, ${widget.fullName}'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
-            ),
-          ],
-        ),
-        body: RefreshIndicator(
-          onRefresh: _refresh,
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _students.isEmpty
-              ? const SingleChildScrollView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: 300,
-                    child: Center(child: Text('No students yet. Add one!')),
-                  ),
-                )
-              : ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: _students.length,
-                  itemBuilder: (context, index) {
-                    final student = _students[index];
-                    return ListTile(
-                      leading: const Icon(Icons.person),
-                      title: Text(student.fullName),
-                      subtitle: Text(student.email),
-                      trailing: Text('XP: ${student.totalXp ?? 0}'),
-                    );
-                  },
-                ),
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => AddStudentScreen(parentUid: widget.uid),
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is StudentsLoaded) {
+            setState(() {
+              _students = state.students;
+              _isLoading = false;
+            });
+          }
+          if (state is AuthError) {
+            setState(() => _isLoading = false);
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('Welcome, ${widget.fullName}'),
+            automaticallyImplyLeading: false, // hide back arrow on home screen
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () =>
+                    context.read<AuthBloc>().add(LogoutRequested()),
               ),
-            );
-            if (mounted) {
-              context.read<AuthBloc>().add(
-                LoadStudentsRequested(parentUid: widget.uid),
+            ],
+          ),
+          body: RefreshIndicator(
+            onRefresh: _refresh,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _students.isEmpty
+                ? const SingleChildScrollView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: 300,
+                      child: Center(child: Text('No students yet. Add one!')),
+                    ),
+                  )
+                : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: _students.length,
+                    itemBuilder: (context, index) {
+                      final student = _students[index];
+                      return ListTile(
+                        leading: const Icon(Icons.person),
+                        title: Text(student.fullName),
+                        subtitle: Text(student.email),
+                        trailing: Text('XP: ${student.totalXp ?? 0}'),
+                      );
+                    },
+                  ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AddStudentScreen(parentUid: widget.uid),
+                ),
               );
-            }
-          },
-          icon: const Icon(Icons.person_add),
-          label: const Text('Add Student'),
+              if (mounted) {
+                context.read<AuthBloc>().add(
+                  LoadStudentsRequested(parentUid: widget.uid),
+                );
+              }
+            },
+            icon: const Icon(Icons.person_add),
+            label: const Text('Add Student'),
+          ),
         ),
       ),
     );
