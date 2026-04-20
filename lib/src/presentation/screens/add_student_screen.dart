@@ -36,6 +36,30 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     super.dispose();
   }
 
+  void _showSuccessAndPop() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '🎉 Student Registered Successfully!',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'On your child\'s phone, open the app and log in with the credentials you just created. They\'ll need to verify their email before getting started.',
+              style: TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+        duration: Duration(seconds: 10),
+      ),
+    );
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -46,10 +70,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
           setState(() => _loading = false);
         }
         if (state is StudentCreated) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Student added successfully!')),
-          );
-          Navigator.pop(context);
+          _showSuccessAndPop();
         }
         if (state is AuthError) {
           ScaffoldMessenger.of(
@@ -58,7 +79,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Add Student')),
+        appBar: AppBar(title: const Text('Register Your Child')),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: Form(
@@ -127,7 +148,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                         },
                   child: _loading
                       ? const CircularProgressIndicator()
-                      : const Text('Add Student'),
+                      : const Text('Register Student'),
                 ),
               ],
             ),
