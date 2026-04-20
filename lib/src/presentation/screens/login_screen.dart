@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passCtl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _loading = false;
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -58,8 +59,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 TextFormField(
                   controller: _passCtl,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  obscureText: _obscurePassword,
                   validator: (v) => v!.isNotEmpty ? null : 'Required',
                 ),
                 const SizedBox(height: 16),

@@ -20,11 +20,16 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   final _confirmCtl = TextEditingController();
   int? _selectedGrade;
   bool _loading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   static const List<Map<String, dynamic>> _gradeOptions = [
     {'label': 'Grade 1', 'value': 1},
     {'label': 'Grade 2', 'value': 2},
     {'label': 'Grade 3', 'value': 3},
+    {'label': 'Grade 4', 'value': 4},
+    {'label': 'Grade 5', 'value': 5},
+    {'label': 'Grade 6', 'value': 6},
   ];
 
   @override
@@ -115,17 +120,37 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _passCtl,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  obscureText: _obscurePassword,
                   validator: (v) => v!.length >= 6 ? null : 'Min 6 characters',
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _confirmCtl,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Confirm Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirm
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscureConfirm = !_obscureConfirm),
+                    ),
                   ),
-                  obscureText: true,
+                  obscureText: _obscureConfirm,
                   validator: (v) =>
                       v == _passCtl.text ? null : 'Passwords do not match',
                 ),
