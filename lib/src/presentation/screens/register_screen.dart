@@ -36,6 +36,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ).pushNamedAndRemoveUntil('/', (route) => false);
           }
           if (state is AuthError) {
+            _passCtl.clear();
+            _confirmCtl.clear();
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));

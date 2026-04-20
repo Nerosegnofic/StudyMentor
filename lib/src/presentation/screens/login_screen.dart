@@ -39,6 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ).pushNamedAndRemoveUntil('/', (route) => false);
           }
           if (state is AuthError) {
+            _passCtl.clear();
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
