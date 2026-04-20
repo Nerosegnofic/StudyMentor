@@ -21,11 +21,9 @@ class _StudentScreenState extends State<StudentScreen> {
   @override
   void initState() {
     super.initState();
-
     context.read<AuthBloc>().add(
       LoadParentNameRequested(studentUid: widget.uid),
     );
-
     MascotOverlayService.instance
         .init(
           monitoredApps: MascotOverlayService.dummyMonitoredApps,
@@ -69,56 +67,69 @@ class _StudentScreenState extends State<StudentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is ParentNameLoaded) {
-          setState(() => _parentFullName = state.parentFullName);
-        }
-        if (state is StudentLogoutVerificationRequired) {
-          _showVerificationDialog();
-        }
-        if (state is ParentVerificationFailed) {
-          _showVerificationDialog(errorMessage: state.message);
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        // Back button triggers the parent verification flow instead of
+        // navigating away — same as tapping the logout button.
+        if (!didPop) {
+          context.read<AuthBloc>().add(
+            StudentLogoutVerificationRequested(studentUid: widget.uid),
+          );
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Welcome, ${widget.fullName}'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                context.read<AuthBloc>().add(
-                  StudentLogoutVerificationRequested(studentUid: widget.uid),
-                );
-              },
-            ),
-          ],
-        ),
-        body: RefreshIndicator(
-          onRefresh: _refresh,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: SizedBox(
-              height: 400,
-              child: Center(
-                child: _parentFullName == null
-                    ? const CircularProgressIndicator()
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.school,
-                            size: 64,
-                            color: Colors.blue,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Your parent is $_parentFullName',
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ],
-                      ),
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is ParentNameLoaded) {
+            setState(() => _parentFullName = state.parentFullName);
+          }
+          if (state is StudentLogoutVerificationRequired) {
+            _showVerificationDialog();
+          }
+          if (state is ParentVerificationFailed) {
+            _showVerificationDialog(errorMessage: state.message);
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('Welcome, ${widget.fullName}'),
+            automaticallyImplyLeading: false, // hide back arrow on home screen
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () {
+                  context.read<AuthBloc>().add(
+                    StudentLogoutVerificationRequested(studentUid: widget.uid),
+                  );
+                },
+              ),
+            ],
+          ),
+          body: RefreshIndicator(
+            onRefresh: _refresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: 400,
+                child: Center(
+                  child: _parentFullName == null
+                      ? const CircularProgressIndicator()
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.school,
+                              size: 64,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Your parent is $_parentFullName',
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                          ],
+                        ),
+                ),
               ),
             ),
           ),
