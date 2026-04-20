@@ -51,3 +51,20 @@ class ParentNameLoaded extends AuthState {
   @override
   List<Object?> get props => [parentFullName];
 }
+
+/// Tells the UI to show the parent-verification dialog.
+class StudentLogoutVerificationRequired extends AuthState {
+  final String studentUid;
+  StudentLogoutVerificationRequired({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Emitted when parent credential verification fails.
+class ParentVerificationFailed extends AuthState {
+  final String message;
+  final String studentUid;
+  ParentVerificationFailed({required this.message, required this.studentUid});
+  @override
+  List<Object?> get props => [message, studentUid];
+}

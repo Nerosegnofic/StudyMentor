@@ -31,6 +31,7 @@ class _ParentScreenState extends State<ParentScreen> {
         if (state is StudentsLoaded) {
           setState(() => _students = state.students);
         }
+        // No explicit navigation for AuthUnauthenticated — RootPage handles it
       },
       child: Scaffold(
         appBar: AppBar(
@@ -38,8 +39,7 @@ class _ParentScreenState extends State<ParentScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.logout),
-              onPressed: () =>
-                  context.read<AuthBloc>().add(LogoutRequested()),
+              onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
             ),
           ],
         ),
@@ -65,7 +65,6 @@ class _ParentScreenState extends State<ParentScreen> {
                 builder: (_) => AddStudentScreen(parentUid: widget.uid),
               ),
             );
-            // Refresh students list after returning
             if (mounted) {
               context.read<AuthBloc>().add(
                 LoadStudentsRequested(parentUid: widget.uid),

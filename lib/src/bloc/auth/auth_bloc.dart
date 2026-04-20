@@ -16,6 +16,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CreateStudentRequested>(_onCreateStudent);
     on<LoadStudentsRequested>(_onLoadStudents);
     on<LoadParentNameRequested>(_onLoadParentName);
+    on<StudentLogoutVerificationRequested>(_onStudentLogoutVerification);
+    on<VerifyParentAndLogoutRequested>(_onVerifyParentAndLogout);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -120,20 +122,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  String _mapException(dynamic e) {
-    final msg = e.toString();
-    if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
-      return 'Invalid credentials.';
-    }
-    if (msg.contains('weak-password')) {
-      return 'Password is too weak.';
-    }
-    if (msg.contains('network-request-failed')) {
-      return 'Network error. Check your connection.';
-    }
-    return 'Authentication error: $msg';
-  }
-
   Future<void> _onCreateStudent(
     CreateStudentRequested event,
     Emitter<AuthState> emit,
@@ -175,5 +163,78 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(ParentNameLoaded('Unknown'));
     }
+  }
+
+  /// When a student taps logout, emit a state that tells the UI
+  /// to show the parent-verification dialog instead of logging out.
+  Future<void> _onStudentLogoutVerification(
+    StudentLogoutVerificationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentLogoutVerificationRequired(studentUid: event.studentUid));
+  }
+
+  /// Verify the parent credentials against the linked parent and
+  /// only log out if they match.
+  Future<void> _onVerifyParentAndLogout(
+    VerifyParentAndLogoutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    // DO NOT emit AuthLoading here — it causes RootPage to replace
+    // StudentScreen with a loading spinner, killing the BlocListener
+    // that needs to catch ParentVerificationFailed.
+    try {
+      final isValid = await repository.verifyParentCredentials(
+        studentUid: event.studentUid,
+        parentEmail: event.parentEmail,
+        parentPassword: event.parentPassword,
+      );
+      if (isValid) {
+        await repository.signOut();
+        emit(AuthUnauthenticated());
+      } else {
+        emit(
+          ParentVerificationFailed(
+            message: 'Invalid parent credentials. Logout denied.',
+            studentUid: event.studentUid,
+          ),
+        );
+      }
+    } catch (e) {
+      emit(
+        ParentVerificationFailed(
+          message: _mapParentVerificationException(e),
+          studentUid: event.studentUid,
+        ),
+      );
+    }
+  }
+
+  String _mapException(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
+      return 'Invalid credentials.';
+    }
+    if (msg.contains('weak-password')) {
+      return 'Password is too weak.';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection.';
+    }
+    return 'Authentication error: $msg';
+  }
+
+  String _mapParentVerificationException(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
+      return 'Invalid parent credentials. Logout denied.';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    if (msg.contains('parent-mismatch')) {
+      return 'These credentials do not belong to your linked parent.';
+    }
+    return 'Verification failed: $msg';
   }
 }

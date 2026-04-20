@@ -70,4 +70,23 @@ class DataConnectProvider {
     if (student == null) throw Exception('Student not found');
     return student.parent.user.fullName;
   }
+
+  /// Returns the parent's uid linked to the given student.
+  /// Now works because the GQL query selects `uid` on the parent.
+  Future<String> getParentUidForStudent(String studentUid) async {
+    final result = await _connector
+        .getStudentWithParent(uid: studentUid)
+        .execute();
+    final student = result.data.student;
+    if (student == null) throw Exception('Student not found');
+    return student.parent.uid;
+  }
+
+  /// Returns the email stored for a given user UID.
+  Future<String> getEmailForUid(String uid) async {
+    final result = await _connector.getUserByUid(uid: uid).execute();
+    final user = result.data.user;
+    if (user == null) throw Exception('User not found in DataConnect');
+    return user.email;
+  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../bloc/auth/auth_state.dart';
+import '../widgets/parent_verification_dialog.dart';
 import '../../services/overlay/mascot_overlay_service.dart';
 
 class StudentScreen extends StatefulWidget {
@@ -46,12 +47,38 @@ class _StudentScreenState extends State<StudentScreen> {
     super.dispose();
   }
 
+  void _showVerificationDialog({String? errorMessage}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => ParentVerificationDialog(
+        errorMessage: errorMessage,
+        onSubmit: (email, password) {
+          Navigator.of(dialogContext).pop();
+          context.read<AuthBloc>().add(
+            VerifyParentAndLogoutRequested(
+              studentUid: widget.uid,
+              parentEmail: email,
+              parentPassword: password,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is ParentNameLoaded) {
           setState(() => _parentFullName = state.parentFullName);
+        }
+        if (state is StudentLogoutVerificationRequired) {
+          _showVerificationDialog();
+        }
+        if (state is ParentVerificationFailed) {
+          _showVerificationDialog(errorMessage: state.message);
         }
       },
       child: Scaffold(
@@ -60,15 +87,28 @@ class _StudentScreenState extends State<StudentScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.logout),
-              onPressed: () =>
-                  context.read<AuthBloc>().add(LogoutRequested()),
+              onPressed: () {
+                context.read<AuthBloc>().add(
+                  StudentLogoutVerificationRequested(studentUid: widget.uid),
+                );
+              },
             ),
           ],
         ),
         body: Center(
           child: _parentFullName == null
               ? const CircularProgressIndicator()
-              : Text('Your parent is $_parentFullName'),
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.school, size: 64, color: Colors.blue),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Your parent is $_parentFullName',
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

@@ -106,4 +106,35 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<String> getParentFullName(String studentUid) =>
       dataConnect.getParentFullName(studentUid);
+
+  @override
+  Future<bool> verifyParentCredentials({
+    required String studentUid,
+    required String parentEmail,
+    required String parentPassword,
+  }) async {
+    // Step 1: Look up the parent_uid linked to this student
+    final linkedParentUid =
+        await dataConnect.getParentUidForStudent(studentUid);
+
+    // Step 2: Verify the supplied credentials using a secondary auth instance
+    // This returns the UID of the authenticated user, or null on failure
+    final authenticatedUid = await firebase.verifyCredentialsAndGetUid(
+      parentEmail,
+      parentPassword,
+    );
+
+    if (authenticatedUid == null) {
+      // Credentials are invalid (wrong email/password)
+      return false;
+    }
+
+    // Step 3: Ensure the authenticated UID matches the linked parent
+    if (authenticatedUid != linkedParentUid) {
+      // Valid credentials but they belong to a different user, not the linked parent
+      throw Exception('parent-mismatch');
+    }
+
+    return true;
+  }
 }

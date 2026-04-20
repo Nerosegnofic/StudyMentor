@@ -21,4 +21,13 @@ abstract class AuthRepository {
   });
   Future<List<StudentModel>> getStudentsByParent(String parentUid);
   Future<String> getParentFullName(String studentUid);
+
+  /// Verifies that the provided email/password belong to the parent
+  /// linked to the given student via `parent_uid`.
+  /// Returns `true` if credentials are valid and match the linked parent.
+  Future<bool> verifyParentCredentials({
+    required String studentUid,
+    required String parentEmail,
+    required String parentPassword,
+  });
 }
