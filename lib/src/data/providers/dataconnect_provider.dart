@@ -21,8 +21,14 @@ class DataConnectProvider {
     await _connector.insertParent().execute();
   }
 
-  Future<void> createStudentProfile({required String parentUid}) async {
-    await _connector.insertStudent(parentUid: parentUid).execute();
+  Future<void> createStudentProfile({
+    required String parentUid,
+    required int gradeLevel,
+  }) async {
+    await _connector
+        .insertStudent(parentUid: parentUid)
+        .gradeLevel(gradeLevel)
+        .execute();
   }
 
   Future<Map<String, dynamic>> getUserProfile(String uid) async {
@@ -72,7 +78,6 @@ class DataConnectProvider {
   }
 
   /// Returns the parent's uid linked to the given student.
-  /// Now works because the GQL query selects `uid` on the parent.
   Future<String> getParentUidForStudent(String studentUid) async {
     final result = await _connector
         .getStudentWithParent(uid: studentUid)

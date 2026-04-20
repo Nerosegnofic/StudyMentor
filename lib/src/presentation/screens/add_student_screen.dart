@@ -18,7 +18,14 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   final _emailCtl = TextEditingController();
   final _passCtl = TextEditingController();
   final _confirmCtl = TextEditingController();
+  int? _selectedGrade;
   bool _loading = false;
+
+  static const List<Map<String, dynamic>> _gradeOptions = [
+    {'label': 'Grade 1', 'value': 1},
+    {'label': 'Grade 2', 'value': 2},
+    {'label': 'Grade 3', 'value': 3},
+  ];
 
   @override
   void dispose() {
@@ -64,6 +71,21 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   validator: (v) => v!.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: _selectedGrade,
+                  decoration: const InputDecoration(labelText: 'Grade'),
+                  items: _gradeOptions
+                      .map(
+                        (g) => DropdownMenuItem<int>(
+                          value: g['value'] as int,
+                          child: Text(g['label'] as String),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _selectedGrade = value),
+                  validator: (v) => v == null ? 'Please select a grade' : null,
+                ),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailCtl,
                   decoration: const InputDecoration(labelText: 'Email'),
@@ -98,6 +120,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                                 email: _emailCtl.text.trim(),
                                 password: _passCtl.text.trim(),
                                 parentUid: widget.parentUid,
+                                gradeLevel: _selectedGrade!,
                               ),
                             );
                           }
