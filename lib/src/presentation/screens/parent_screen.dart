@@ -17,6 +17,7 @@ class ParentScreen extends StatefulWidget {
 
 class _ParentScreenState extends State<ParentScreen> {
   List<StudentModel> _students = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -25,6 +26,7 @@ class _ParentScreenState extends State<ParentScreen> {
   }
 
   Future<void> _refresh() async {
+    setState(() => _isLoading = true);
     context.read<AuthBloc>().add(LoadStudentsRequested(parentUid: widget.uid));
   }
 
@@ -33,7 +35,13 @@ class _ParentScreenState extends State<ParentScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is StudentsLoaded) {
-          setState(() => _students = state.students);
+          setState(() {
+            _students = state.students;
+            _isLoading = false;
+          });
+        }
+        if (state is AuthError) {
+          setState(() => _isLoading = false);
         }
       },
       child: Scaffold(
@@ -48,7 +56,9 @@ class _ParentScreenState extends State<ParentScreen> {
         ),
         body: RefreshIndicator(
           onRefresh: _refresh,
-          child: _students.isEmpty
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _students.isEmpty
               ? const SingleChildScrollView(
                   physics: AlwaysScrollableScrollPhysics(),
                   child: SizedBox(
