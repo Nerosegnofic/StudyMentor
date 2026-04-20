@@ -82,12 +82,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SendEmailVerificationRequested event,
     Emitter<AuthState> emit,
   ) async {
+    final email = (await repository.getUserProfile())?.email ?? '';
     try {
       await repository.sendEmailVerification();
-      final email = (await repository.getUserProfile())?.email ?? '';
       emit(AuthEmailUnverified(email));
     } catch (e) {
-      emit(AuthError(_mapException(e)));
+      // Stay on the confirm email screen — just surface the error as a snackbar.
+      // Emitting AuthError here would cause RootPage to redirect to LoginScreen.
+      emit(EmailVerificationError(_mapException(e), email));
     }
   }
 

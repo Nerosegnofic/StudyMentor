@@ -34,6 +34,17 @@ class AuthError extends AuthState {
   List<Object?> get props => [message];
 }
 
+/// Emitted when sending a verification email fails (e.g. rate-limited).
+/// Unlike AuthError, this does NOT cause RootPage to redirect to LoginScreen.
+/// The ConfirmEmailScreen listens for this and shows a snackbar instead.
+class EmailVerificationError extends AuthState {
+  final String message;
+  final String email;
+  EmailVerificationError(this.message, this.email);
+  @override
+  List<Object?> get props => [message, email];
+}
+
 class PasswordResetEmailSent extends AuthState {}
 
 class StudentCreated extends AuthState {}
