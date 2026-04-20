@@ -133,6 +133,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
         parentUid: event.parentUid,
+        gradeLevel: event.gradeLevel,
       );
       emit(StudentCreated());
       emit(AuthAuthenticated(parent));

@@ -48,16 +48,18 @@ class CreateStudentRequested extends AuthEvent {
   final String email;
   final String password;
   final String parentUid;
+  final int gradeLevel;
 
   CreateStudentRequested({
     required this.fullName,
     required this.email,
     required this.password,
     required this.parentUid,
+    required this.gradeLevel,
   });
 
   @override
-  List<Object?> get props => [fullName, email, parentUid];
+  List<Object?> get props => [fullName, email, parentUid, gradeLevel];
 }
 
 class LoadStudentsRequested extends AuthEvent {
