@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Register')),
+      appBar: AppBar(title: const Text('Register as a Parent')),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthLoading) {
@@ -51,31 +51,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 TextFormField(
                   controller: _fullNameCtl,
-                  decoration: InputDecoration(labelText: 'Full Name'),
+                  decoration: const InputDecoration(labelText: 'Full Name'),
                   validator: (v) => v!.isEmpty ? 'Required' : null,
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailCtl,
-                  decoration: InputDecoration(labelText: 'Email'),
+                  decoration: const InputDecoration(labelText: 'Email'),
                   validator: (v) => v!.contains('@') ? null : 'Invalid email',
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _passCtl,
-                  decoration: InputDecoration(labelText: 'Password'),
+                  decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
                   validator: (v) => v!.length >= 6 ? null : 'Min 6 chars',
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _confirmCtl,
-                  decoration: InputDecoration(labelText: 'Confirm Password'),
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm Password',
+                  ),
                   obscureText: true,
                   validator: (v) =>
                       v == _passCtl.text ? null : 'Passwords do not match',
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: _loading
                       ? null
@@ -91,13 +93,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           }
                         },
                   child: _loading
-                      ? CircularProgressIndicator()
-                      : Text('Register'),
+                      ? const CircularProgressIndicator()
+                      : const Text('Register'),
                 ),
                 TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, '/login'),
-                  child: Text('Already registered? Login'),
+                  child: const Text('Already registered? Login'),
                 ),
               ],
             ),

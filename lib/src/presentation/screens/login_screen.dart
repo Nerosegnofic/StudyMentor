@@ -20,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login')),
+      appBar: AppBar(title: const Text('Login')),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthLoading) {
@@ -53,16 +53,16 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 TextFormField(
                   controller: _emailCtl,
-                  decoration: InputDecoration(labelText: 'Email'),
+                  decoration: const InputDecoration(labelText: 'Email'),
                   validator: (v) => v!.contains('@') ? null : 'Invalid email',
                 ),
                 TextFormField(
                   controller: _passCtl,
-                  decoration: InputDecoration(labelText: 'Password'),
+                  decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
                   validator: (v) => v!.isNotEmpty ? null : 'Required',
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: _loading
                       ? null
@@ -76,17 +76,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           }
                         },
-                  child: _loading ? CircularProgressIndicator() : Text('Login'),
+                  child: _loading
+                      ? const CircularProgressIndicator()
+                      : const Text('Login'),
                 ),
                 TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, '/register'),
-                  child: Text('Not registered yet? Register'),
+                  child: const Text('Not registered yet? Register as a Parent'),
                 ),
                 TextButton(
                   onPressed: () =>
                       Navigator.pushNamed(context, '/forgot-password'),
-                  child: Text('Forgot Password?'),
+                  child: const Text('Forgot Password?'),
                 ),
               ],
             ),
