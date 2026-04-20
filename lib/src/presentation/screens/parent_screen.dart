@@ -24,6 +24,10 @@ class _ParentScreenState extends State<ParentScreen> {
     context.read<AuthBloc>().add(LoadStudentsRequested(parentUid: widget.uid));
   }
 
+  Future<void> _refresh() async {
+    context.read<AuthBloc>().add(LoadStudentsRequested(parentUid: widget.uid));
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -31,7 +35,6 @@ class _ParentScreenState extends State<ParentScreen> {
         if (state is StudentsLoaded) {
           setState(() => _students = state.students);
         }
-        // No explicit navigation for AuthUnauthenticated — RootPage handles it
       },
       child: Scaffold(
         appBar: AppBar(
@@ -43,20 +46,30 @@ class _ParentScreenState extends State<ParentScreen> {
             ),
           ],
         ),
-        body: _students.isEmpty
-            ? const Center(child: Text('No students yet. Add one!'))
-            : ListView.builder(
-                itemCount: _students.length,
-                itemBuilder: (context, index) {
-                  final student = _students[index];
-                  return ListTile(
-                    leading: const Icon(Icons.person),
-                    title: Text(student.fullName),
-                    subtitle: Text(student.email),
-                    trailing: Text('XP: ${student.totalXp ?? 0}'),
-                  );
-                },
-              ),
+        body: RefreshIndicator(
+          onRefresh: _refresh,
+          child: _students.isEmpty
+              ? const SingleChildScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: 300,
+                    child: Center(child: Text('No students yet. Add one!')),
+                  ),
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: _students.length,
+                  itemBuilder: (context, index) {
+                    final student = _students[index];
+                    return ListTile(
+                      leading: const Icon(Icons.person),
+                      title: Text(student.fullName),
+                      subtitle: Text(student.email),
+                      trailing: Text('XP: ${student.totalXp ?? 0}'),
+                    );
+                  },
+                ),
+        ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () async {
             await Navigator.push(
