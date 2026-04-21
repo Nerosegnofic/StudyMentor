@@ -1,3 +1,5 @@
+// lib/src/bloc/auth/auth_bloc.dart
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -5,6 +7,7 @@ import '../../domain/repositories/auth_repository.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
+
   AuthBloc({required this.repository}) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<RegisterRequested>(_onRegister);
@@ -16,6 +19,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CreateStudentRequested>(_onCreateStudent);
     on<LoadStudentsRequested>(_onLoadStudents);
     on<LoadParentNameRequested>(_onLoadParentName);
+    on<RefreshStudentVerificationsRequested>(_onRefreshStudentVerifications);
     on<StudentLogoutVerificationRequested>(_onStudentLogoutVerification);
     on<VerifyParentAndLogoutRequested>(_onVerifyParentAndLogout);
   }
@@ -87,8 +91,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await repository.sendEmailVerification();
       emit(AuthEmailUnverified(email));
     } catch (e) {
-      // Stay on the confirm email screen — just surface the error as a snackbar.
-      // Emitting AuthError here would cause RootPage to redirect to LoginScreen.
       emit(EmailVerificationError(_mapException(e), email));
     }
   }
@@ -168,8 +170,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// When a student taps logout, emit a state that tells the UI
-  /// to show the parent-verification dialog instead of logging out.
+  /// Re-checks DataConnect for the `isActive` flag of each unverified student.
+  /// Emits a new [StudentsLoaded] only if at least one status changed, so
+  /// the UI does not rebuild unnecessarily.
+  Future<void> _onRefreshStudentVerifications(
+    RefreshStudentVerificationsRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final updated = await repository.refreshStudentVerificationStatus(
+        event.currentStudents,
+      );
+
+      // Only emit if something actually changed.
+      final changed = updated.any((s) {
+        final old = event.currentStudents.firstWhere((o) => o.uid == s.uid);
+        return old.isEmailVerified != s.isEmailVerified;
+      });
+
+      if (changed) {
+        emit(StudentsLoaded(updated));
+      }
+    } catch (_) {
+      // Silent — this is a background poll; don't surface errors to the user.
+    }
+  }
+
   Future<void> _onStudentLogoutVerification(
     StudentLogoutVerificationRequested event,
     Emitter<AuthState> emit,
@@ -177,15 +203,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(StudentLogoutVerificationRequired(studentUid: event.studentUid));
   }
 
-  /// Verify the parent credentials against the linked parent and
-  /// only log out if they match.
   Future<void> _onVerifyParentAndLogout(
     VerifyParentAndLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    // DO NOT emit AuthLoading here — it causes RootPage to replace
-    // StudentScreen with a loading spinner, killing the BlocListener
-    // that needs to catch ParentVerificationFailed.
     try {
       final isValid = await repository.verifyParentCredentials(
         studentUid: event.studentUid,
@@ -218,9 +239,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
       return 'Invalid credentials.';
     }
-    if (msg.contains('weak-password')) {
-      return 'Password is too weak.';
-    }
+    if (msg.contains('weak-password')) return 'Password is too weak.';
     if (msg.contains('network-request-failed')) {
       return 'Network error. Check your connection.';
     }

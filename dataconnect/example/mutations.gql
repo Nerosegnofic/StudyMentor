@@ -17,6 +17,7 @@ mutation UpsertCurrentUser($email: String!, $fullName: String, $role: Role!) @au
       email: $email
       fullName: $fullName
       role: $role
+      isActive: true
     }
   )
 }
@@ -46,5 +47,12 @@ mutation InsertStudent($parentUid: String!, $gradeLevel: Int) @auth(level: USER)
       totalXp: 0
       totalCoins: 0
     }
+  )
+}
+
+mutation SetUserInactive @auth(level: USER) {
+  user_update(
+    key: { uid_expr: "auth.uid" }
+    data: { isActive: false }
   )
 }
