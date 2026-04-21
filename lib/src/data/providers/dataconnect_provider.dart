@@ -1,3 +1,17 @@
+// lib/src/data/providers/dataconnect_provider.dart
+//
+// getStudentsByParent now returns `is_email_verified` mapped from the
+// student user's `isActive` field.  `isActive` starts as `true` in the
+// schema default, so we introduce a separate semantic:
+//
+//   • When a student is created we call updateStudentVerified(uid, false)
+//     via a direct DataConnect mutation to mark them unverified.
+//   • When the student successfully logs in (email verified) the
+//     AuthRepositoryImpl calls updateStudentVerified(uid, true).
+//
+// This keeps verification state in DataConnect without needing Cloud
+// Functions or Admin SDK access.
+
 import '../../../dataconnect_generated/generated.dart';
 
 class DataConnectProvider {
@@ -48,6 +62,8 @@ class DataConnectProvider {
     };
   }
 
+  /// Returns all students for the given parent, including their
+  /// `is_email_verified` status sourced from `user.isActive`.
   Future<List<Map<String, dynamic>>> getStudentsByParent(
     String parentUid,
   ) async {
@@ -63,6 +79,10 @@ class DataConnectProvider {
             'grade_level': s.gradeLevel,
             'total_xp': s.totalXp,
             'total_coins': s.totalCoins,
+            // isActive doubles as the email-verification flag:
+            // false  → student created but email not yet verified
+            // true   → student logged in at least once with verified email
+            'is_email_verified': s.user.isActive,
           },
         )
         .toList();
@@ -93,5 +113,14 @@ class DataConnectProvider {
     final user = result.data.user;
     if (user == null) throw Exception('User not found in DataConnect');
     return user.email;
+  }
+
+  /// Returns the `isActive` flag for a given user UID.
+  /// Used to poll email-verification status from the parent's session.
+  Future<bool> getIsActiveForUid(String uid) async {
+    final result = await _connector.getUserByUid(uid: uid).execute();
+    final user = result.data.user;
+    if (user == null) return false;
+    return user.isActive;
   }
 }

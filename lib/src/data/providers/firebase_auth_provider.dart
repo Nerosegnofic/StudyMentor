@@ -1,9 +1,17 @@
+// lib/src/data/providers/firebase_auth_provider.dart
+//
+// Added: checkEmailVerifiedForUid() — signs into a secondary Firebase app
+// with stored student credentials to read their emailVerified flag, then
+// immediately signs out.  The parent's primary session is never touched.
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 class FirebaseAuthProvider {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String? _cachedPassword;
+
+  // ── basic auth ─────────────────────────────────────────────────────────────
 
   Future<UserCredential> signUp(String email, String password) =>
       _auth.createUserWithEmailAndPassword(email: email, password: password);
@@ -49,41 +57,70 @@ class FirebaseAuthProvider {
     return await user.getIdToken(true);
   }
 
-  /// Verifies credentials using a secondary FirebaseAuth instance
-  /// to avoid disrupting the current user session.
-  /// Returns the authenticated UID if successful, null otherwise.
+  // ── secondary-app helpers ──────────────────────────────────────────────────
+
+  /// Returns the secondary FirebaseAuth instance, creating the secondary
+  /// Firebase app if it does not exist yet.
+  Future<FirebaseAuth> _getSecondaryAuth() async {
+    final existingApp = Firebase.apps.cast<FirebaseApp?>().firstWhere(
+      (app) => app?.name == '_parentVerifier',
+      orElse: () => null,
+    );
+
+    if (existingApp != null) {
+      return FirebaseAuth.instanceFor(app: existingApp);
+    }
+
+    final app = await Firebase.initializeApp(
+      name: '_parentVerifier',
+      options: Firebase.app().options,
+    );
+    return FirebaseAuth.instanceFor(app: app);
+  }
+
+  /// Verifies credentials using the secondary Firebase app so the current
+  /// parent session is not disrupted.
+  /// Returns the authenticated UID on success, null on failure.
   Future<String?> verifyCredentialsAndGetUid(
     String email,
     String password,
   ) async {
     try {
-      final existingApp = Firebase.apps.cast<FirebaseApp?>().firstWhere(
-        (app) => app?.name == '_parentVerifier',
-        orElse: () => null,
-      );
-
-      FirebaseAuth secondaryAuth;
-      if (existingApp != null) {
-        secondaryAuth = FirebaseAuth.instanceFor(app: existingApp);
-      } else {
-        final app = await Firebase.initializeApp(
-          name: '_parentVerifier',
-          options: Firebase.app().options,
-        );
-        secondaryAuth = FirebaseAuth.instanceFor(app: app);
-      }
-
+      final secondaryAuth = await _getSecondaryAuth();
       final credential = await secondaryAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
       final uid = credential.user?.uid;
-
-      // Sign out the secondary instance immediately — no session leakage
       await secondaryAuth.signOut();
-
       return uid;
+    } on FirebaseAuthException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Checks whether the Firebase account identified by [email] / [password]
+  /// has verified their email address.
+  ///
+  /// Uses the secondary app so the parent's session is unaffected.
+  /// Returns `null` if the credentials are wrong or any error occurs.
+  Future<bool?> checkEmailVerifiedForCredentials(
+    String email,
+    String password,
+  ) async {
+    try {
+      final secondaryAuth = await _getSecondaryAuth();
+      final credential = await secondaryAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      // Force a fresh token so emailVerified is not stale.
+      await credential.user?.reload();
+      final verified = secondaryAuth.currentUser?.emailVerified;
+      await secondaryAuth.signOut();
+      return verified;
     } on FirebaseAuthException {
       return null;
     } catch (_) {

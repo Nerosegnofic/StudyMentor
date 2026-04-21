@@ -14,6 +14,8 @@ part 'insert_parent.dart';
 
 part 'insert_student.dart';
 
+part 'set_user_inactive.dart';
+
 part 'get_user_by_uid.dart';
 
 part 'get_students_by_parent.dart';
@@ -124,6 +126,11 @@ class ExampleConnector {
   
   InsertStudentVariablesBuilder insertStudent ({required String parentUid, }) {
     return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,);
+  }
+  
+  
+  SetUserInactiveVariablesBuilder setUserInactive () {
+    return SetUserInactiveVariablesBuilder(dataConnect, );
   }
   
   

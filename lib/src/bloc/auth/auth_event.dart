@@ -1,4 +1,7 @@
+// lib/src/bloc/auth/auth_event.dart
+
 import 'package:equatable/equatable.dart';
+import '../../domain/models/student_model.dart';
 
 abstract class AuthEvent extends Equatable {
   @override
@@ -76,9 +79,16 @@ class LoadParentNameRequested extends AuthEvent {
   List<Object?> get props => [studentUid];
 }
 
+/// Fired periodically by ParentScreen to re-check the email-verification
+/// status of any students that are still unverified.
+class RefreshStudentVerificationsRequested extends AuthEvent {
+  final List<StudentModel> currentStudents;
+  RefreshStudentVerificationsRequested({required this.currentStudents});
+  @override
+  List<Object?> get props => [currentStudents];
+}
+
 /// Fired when a student taps the logout button.
-/// The bloc will check the user's role and either logout directly (Parent)
-/// or emit a state that tells the UI to show the parent-verification dialog.
 class StudentLogoutVerificationRequested extends AuthEvent {
   final String studentUid;
   StudentLogoutVerificationRequested({required this.studentUid});

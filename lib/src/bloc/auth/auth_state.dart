@@ -1,3 +1,5 @@
+// lib/src/bloc/auth/auth_state.dart
+
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
 import 'package:equatable/equatable.dart';
@@ -36,7 +38,6 @@ class AuthError extends AuthState {
 
 /// Emitted when sending a verification email fails (e.g. rate-limited).
 /// Unlike AuthError, this does NOT cause RootPage to redirect to LoginScreen.
-/// The ConfirmEmailScreen listens for this and shows a snackbar instead.
 class EmailVerificationError extends AuthState {
   final String message;
   final String email;
