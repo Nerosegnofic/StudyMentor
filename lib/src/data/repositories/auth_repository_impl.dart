@@ -1,8 +1,21 @@
+// lib/src/data/repositories/auth_repository_impl.dart
+//
+// Key changes:
+//  • createStudent() now marks the new student's user record as isActive=false
+//    immediately after creation, using UpsertCurrentUser while the student's
+//    Firebase session is still active (before we sign back in as the parent).
+//  • refreshStudentVerificationStatus() polls DataConnect for each student's
+//    isActive flag and maps it to StudentModel.isEmailVerified.
+//  • signIn() calls upsertCurrentUser with isActive=true, which is the trigger
+//    that flips a student's verification status after they verify their email
+//    and log in for the first time.
+
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../providers/firebase_auth_provider.dart';
 import '../providers/dataconnect_provider.dart';
+import '../../../dataconnect_generated/generated.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final FirebaseAuthProvider firebase;
@@ -36,8 +49,36 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     await firebase.signIn(email, password);
     final uid = firebase.currentUser!.uid;
+
+    // Force reload to get fresh emailVerified status from Firebase
+    await firebase.reloadUser();
+
+    final isVerified = firebase.currentUser?.emailVerified ?? false;
+    if (isVerified) {
+      await _markUserActive(email: email, uid: uid);
+    }
+
     final profile = await dataConnect.getUserProfile(uid);
     return UserModel.fromJson(profile);
+  }
+
+  /// Upserts the user record with isActive=true.  Called after a verified
+  /// sign-in so DataConnect stays in sync with Firebase Auth.
+  Future<void> _markUserActive({
+    required String email,
+    required String uid,
+  }) async {
+    // We need the user's role to satisfy the UpsertCurrentUser mutation.
+    try {
+      final profile = await dataConnect.getUserProfile(uid);
+      final roleStr = profile['role'] as String;
+      final role = roleStr == 'Parent' ? Role.Parent : Role.Student;
+      await ExampleConnector.instance
+          .upsertCurrentUser(email: email, role: role)
+          .execute();
+    } catch (_) {
+      // Best-effort — don't break login if this fails.
+    }
   }
 
   @override
@@ -57,8 +98,12 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
+    // 1. Create the Firebase Auth account for the student.
     await firebase.signUp(email, password);
 
+    // 2. While signed in as the new student, create DataConnect records.
+    //    isActive defaults to `true` in the schema, so we immediately
+    //    upsert it to `false` to flag the account as unverified.
     await dataConnect.createUserProfile(
       email: email,
       fullName: fullName,
@@ -69,6 +114,17 @@ class AuthRepositoryImpl implements AuthRepository {
       gradeLevel: gradeLevel,
     );
 
+    // 3. Mark the student as inactive (email not yet verified).
+    try {
+      await ExampleConnector.instance.setUserInactive().execute();
+    } catch (_) {
+      // Non-fatal.
+    }
+
+    // 4. Send the verification email while still signed in as the student.
+    await firebase.sendEmailVerification();
+
+    // 5. Sign back in as the parent.
     await firebase.signOut();
     await firebase.signInWithPassword(parentEmail, parentPassword);
 
@@ -81,6 +137,30 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<List<StudentModel>> getStudentsByParent(String parentUid) async {
     final students = await dataConnect.getStudentsByParent(parentUid);
     return students.map(StudentModel.fromJson).toList();
+  }
+
+  /// Polls DataConnect for the current `isActive` value of each student and
+  /// returns an updated list.  Only students whose `isEmailVerified` is
+  /// currently `false` are re-fetched to minimise network calls.
+  @override
+  Future<List<StudentModel>> refreshStudentVerificationStatus(
+    List<StudentModel> students,
+  ) async {
+    final results = <StudentModel>[];
+    for (final student in students) {
+      if (student.isEmailVerified) {
+        // Already verified — no need to re-check.
+        results.add(student);
+      } else {
+        try {
+          final isActive = await dataConnect.getIsActiveForUid(student.uid);
+          results.add(student.copyWith(isEmailVerified: isActive));
+        } catch (_) {
+          results.add(student);
+        }
+      }
+    }
+    return results;
   }
 
   @override
@@ -117,26 +197,18 @@ class AuthRepositoryImpl implements AuthRepository {
     required String parentEmail,
     required String parentPassword,
   }) async {
-    // Step 1: Look up the parent_uid linked to this student
     final linkedParentUid = await dataConnect.getParentUidForStudent(
       studentUid,
     );
 
-    // Step 2: Verify the supplied credentials using a secondary auth instance
-    // This returns the UID of the authenticated user, or null on failure
     final authenticatedUid = await firebase.verifyCredentialsAndGetUid(
       parentEmail,
       parentPassword,
     );
 
-    if (authenticatedUid == null) {
-      // Credentials are invalid (wrong email/password)
-      return false;
-    }
+    if (authenticatedUid == null) return false;
 
-    // Step 3: Ensure the authenticated UID matches the linked parent
     if (authenticatedUid != linkedParentUid) {
-      // Valid credentials but they belong to a different user, not the linked parent
       throw Exception('parent-mismatch');
     }
 

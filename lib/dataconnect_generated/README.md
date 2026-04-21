@@ -436,3 +436,37 @@ final ref = ExampleConnector.instance.insertStudent(
 ref.execute();
 ```
 
+
+### SetUserInactive
+#### Required Arguments
+```dart
+// No required arguments
+ExampleConnector.instance.setUserInactive().execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<SetUserInactiveData, void>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.setUserInactive();
+SetUserInactiveData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+final ref = ExampleConnector.instance.setUserInactive().ref();
+ref.execute();
+```
+
