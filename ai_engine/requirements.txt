@@ -1,0 +1,16 @@
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+llama-parse
+langchain
+langchain-text-splitters
+langchain-core
+langchain-postgres
+langchain-cohere
+sqlalchemy
+python-dotenv
+psycopg2-binary
+python-multipart
+langchain-google-genai
+pymupdf
