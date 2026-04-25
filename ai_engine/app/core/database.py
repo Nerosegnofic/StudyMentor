@@ -1,5 +1,5 @@
 from langchain_postgres import PGVector
-from langchain_cohere import CohereEmbeddings
+from app.core.embeddings import RateLimitedCohereEmbeddings
 from app.core.config import settings
 
 def get_vector_store() -> PGVector:
@@ -7,7 +7,7 @@ def get_vector_store() -> PGVector:
     Initializes and returns the PGVector store connected to the Postgres vector database.
     We use CohereEmbeddings as they provide an excellent free tier for Arabic multilingual embeddings.
     """
-    embeddings = CohereEmbeddings(
+    embeddings = RateLimitedCohereEmbeddings(
         cohere_api_key=settings.COHERE_API_KEY,
         model="embed-multilingual-v3.0"
     )

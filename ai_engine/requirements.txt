@@ -13,4 +13,5 @@ python-dotenv
 psycopg2-binary
 python-multipart
 langchain-google-genai
+langchain-experimental
 pymupdf

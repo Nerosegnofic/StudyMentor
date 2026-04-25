@@ -11,8 +11,13 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID):
     if langchain_docs:
         vector_store = get_vector_store()
         chunk_ids = [str(uuid.uuid4()) for _ in langchain_docs]
+        
+        # We don't need manual batching loops here anymore because
+        # the RateLimitedCohereEmbeddings wrapper automatically handles
+        # safe batching and sleeping to respect API limits!
         vector_store.add_documents(langchain_docs, ids=chunk_ids)
-        print(f"[{document_id}] Successfully saved vectorized chunks into PGVector!")
+        
+        print(f"[{document_id}] Successfully saved all vectorized chunks into PGVector!")
     else:
         print(f"Warning: No text could be extracted from document {document_id}")
 

@@ -17,7 +17,7 @@ class LlamaParseStrategy(DocumentParserStrategy):
             language="ar",
             verbose=True
         )
-        print(f"[{document_id}] Starting LlamaParse extraction...")
+        print(f"[{document_id}] Starting LlamaParse extraction...", flush=True)
         documents = parser.load_data(temp_file_path)
-        print(f"[{document_id}] Extraction complete! Found {len(documents)} pages.")
+        print(f"[{document_id}] Extraction complete! Found {len(documents)} pages.", flush=True)
         return "\n\n".join([doc.text for doc in documents])

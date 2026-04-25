@@ -5,11 +5,28 @@ from uuid import UUID
 from app.services.rag.parsers.context import ParserContext
 from app.services.rag.parsers.llama_strategy import LlamaParseStrategy
 from app.services.rag.chunkers.context import ChunkerContext
-from app.services.rag.chunkers.markdown_strategy import MarkdownRecursiveChunkerStrategy
+from app.services.rag.chunkers.semantic_strategy import SemanticChunkerStrategy
+from app.services.rag.chunkers.basic_strategy import BasicRecursiveChunkerStrategy
 from app.services.rag.store import save_chunks_to_pgvector, delete_document_embeddings
 
 parser_context = ParserContext(strategy=LlamaParseStrategy())
-chunker_context = ChunkerContext(strategy=MarkdownRecursiveChunkerStrategy())
+chunker_context = ChunkerContext(strategy=BasicRecursiveChunkerStrategy())
+
+def preprocess_parsed_text(text: str) -> str:
+    """
+    Clean up LlamaParse artifacts before semantic analysis.
+    Strips fake markdown headers (single numbers, short labels).
+    """
+    cleaned_lines = []
+    for line in text.split('\n'):
+        stripped = line.strip()
+        if stripped.startswith('#'):
+            content = stripped.lstrip('#').strip()
+            if content:
+                cleaned_lines.append(content)
+        else:
+            cleaned_lines.append(line)
+    return '\n'.join(cleaned_lines)
 
 def process_and_ingest_document(document_id: UUID, file_content: bytes, filename: str):
     """
@@ -27,9 +44,15 @@ def process_and_ingest_document(document_id: UUID, file_content: bytes, filename
     try:
         # Step 1: Parse
         full_text = parser_context.execute_parse(document_id, temp_file_path)
+
+        # Preprocess text to clean artifacts
+        cleaned_text = preprocess_parsed_text(full_text)
         
+        with open(f"debug_{document_id}.md", "w", encoding="utf-8") as f:
+            f.write(cleaned_text)
+            
         # Step 2: Chunk
-        langchain_docs = chunker_context.execute_chunking(full_text, document_id)
+        langchain_docs = chunker_context.execute_chunking(cleaned_text, document_id)
         
         # Step 3: Store
         save_chunks_to_pgvector(langchain_docs, document_id)
