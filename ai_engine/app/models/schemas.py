@@ -15,8 +15,10 @@ class GenerateQuizRequest(BaseModel):
     topic_configs: List[TopicQuizConfig] = Field(..., description="Per-topic quiz specifications")
     student_id: Optional[str] = None
 
+import uuid
+
 class QuestionSchema(BaseModel):
-    question_id: str = Field(..., description="Unique alphanumeric identifier for the question, e.g., 'q_01'")
+    question_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Backend-generated unique ID. Ignore this field.")
     question_text: str
     options: List[str]
     correct_answer: str

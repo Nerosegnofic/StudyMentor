@@ -14,14 +14,13 @@ Total questions to generate: {total_count}
 
 Guidelines:
 1. Generate EXACTLY the number of questions specified for each topic at the requested difficulty level.
-2. Ensure each question has a unique `question_id` (e.g., "q_01", "q_02").
-3. The `difficulty` field of each generated question MUST match the difficulty requested for its topic.
-4. Provide exactly 3 progressive `hints` in Arabic to help the student solve the problem before looking at the answer.
-5. The questions must be strictly based on the provided curriculum context below to avoid factually incorrect math or hallucinated concepts.
-6. Ensure the vocabulary, tone, and difficulty are perfectly suited for a 5th-grade Egyptian student.
-7. Provide 4 multiple-choice options for each question.
-8. Clearly state the correct answer (which must exactly match one of the options).
-9. Provide a brief, supportive explanation for why the answer is correct.
+2. The `difficulty` field of each generated question MUST match the difficulty requested for its topic.
+3. Provide exactly 3 progressive `hints` in Arabic to help the student solve the problem before looking at the answer.
+4. The questions must be strictly based on the provided curriculum context below to avoid factually incorrect math or hallucinated concepts.
+5. Ensure the vocabulary, tone, and difficulty are perfectly suited for a 5th-grade Egyptian student.
+6. Provide 4 multiple-choice options for each question.
+7. Clearly state the correct answer (which must exactly match one of the options).
+8. Provide a brief, supportive explanation for why the answer is correct.
 """),
     ("human", "Curriculum Context:\n{context}\n\nPlease generate the adaptive math quiz now.")
 ])
