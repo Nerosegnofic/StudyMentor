@@ -17,6 +17,10 @@ class RateLimitedCohereEmbeddings(CohereEmbeddings):
             print(f"Embedding {len(texts)} items across {total_batches} batches to respect rate limits...")
         
         for i in range(0, len(texts), batch_size):
+            batch_num = (i // batch_size) + 1
+            if batch_num == 1 or batch_num % 10 == 0 or batch_num == total_batches:
+                print(f"Progress: Batch {batch_num}/{total_batches} embedded...", flush=True)
+                
             batch = texts[i:i + batch_size]
             
             try:
@@ -31,9 +35,7 @@ class RateLimitedCohereEmbeddings(CohereEmbeddings):
                 
             # If there are more batches left, sleep before sending the next one
             if i + batch_size < len(texts):
-                # Sleep 6 seconds between batches -> ~10 batches a minute.
-                # 10 batches * 96 sentences = ~960 sentences/minute.
-                # This keeps us safely below the 100,000 TPM and 100 RPM limit.
-                time.sleep(6)
+                # Sleep 12 seconds between batches to stay under 100,000 tokens per minute.
+                time.sleep(12)
                 
         return all_embeddings

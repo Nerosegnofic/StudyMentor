@@ -1,24 +1,27 @@
 from typing import List
 from app.core.database import get_vector_store
 
-def retrieve_context_for_topics(topics: List[str], k: int = 5) -> str:
+def retrieve_context_for_topics(topics: List[str], k: int = 8) -> str:
     """
-    Retrieves the most relevant textbook chunks for the given math topics
-    using a vector database similarity search.
-    
-    Args:
-        topics (List[str]): The math topics to search for.
-        k (int): Number of chunks to retrieve (default is 5).
-        
-    Returns:
-        str: A concatenated block of markdown chunk context.
+    Retrieves the most relevant textbook chunks for the given topics.
+    Prioritizes 'substantive' content (actual lessons/problems) over 
+    'structural' content (TOC/headers).
     """
     vector_store = get_vector_store()
-    
-    # Combine topics into a single query string for retrieval
     query = " ".join(topics)
-    docs = vector_store.similarity_search(query, k=k)
     
-    # Combine the returned document chunks into a single context string
+    # 1. Try to get only substantive chunks first
+    docs = vector_store.similarity_search(
+        query, 
+        k=k, 
+        filter={"content_type": "substantive"}
+    )
+    
+    # 2. If we found very few substantive chunks, fall back to a normal search
+    # This ensures we don't return an empty context if the classifier was too strict
+    if len(docs) < (k // 2):
+        docs = vector_store.similarity_search(query, k=k)
+    
+    # Combine chunks into context
     context = "\n\n---\n\n".join([doc.page_content for doc in docs])
     return context
