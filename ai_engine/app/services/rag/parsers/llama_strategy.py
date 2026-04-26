@@ -14,7 +14,8 @@ class LlamaParseStrategy(DocumentParserStrategy):
             
         parser = LlamaParse(
             result_type="markdown",
-            language="ar",
+            premium_mode=True,  # Uses Vision AI to preserve complex tables and textbook layouts
+            language="en,ar",   # Hint to the OCR engine to expect both English and Arabic
             verbose=True
         )
         print(f"[{document_id}] Starting LlamaParse extraction...", flush=True)
