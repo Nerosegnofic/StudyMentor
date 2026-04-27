@@ -1,27 +1,46 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
+# IDE settings and workspaces
+.idea/
+.vscode/
 *.iml
 *.ipr
 *.iws
-.idea/
+*.swp
+*.swo
+*~
+*.bak
+.atom/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Any loose python artifacts at root (ai_engine will handle its own)
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Logs
+*.log
+.buildlog/
+.history
+
+# Miscellaneous
+*.class
+.build/
+.swiftpm/
+migrate_working_dir/
+.svn/
+
+# IntelliJ related
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
-#.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
