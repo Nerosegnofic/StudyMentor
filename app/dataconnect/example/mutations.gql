@@ -6,10 +6,18 @@ mutation InsertUser($email: String!, $fullName: String!, $role: Role!) @auth(lev
       fullName: $fullName
       role: $role
       isActive: true
+      isEmailVerified: false
     }
   )
 }
 
+# UpsertCurrentUser is only called from _markUserActive(), which is only
+# called when firebase.currentUser.emailVerified == true.  So it is safe
+# (and necessary) to hard-code isEmailVerified: true here.  This fixes the
+# "Path B" bug where a student who clicks the verification link and then
+# logs in fresh bypasses ConfirmEmailScreen entirely, meaning
+# markEmailVerifiedInDatabase() was never called and the DataConnect field
+# stayed false forever.
 mutation UpsertCurrentUser($email: String!, $fullName: String, $role: Role!) @auth(level: USER) {
   user_upsert(
     data: {
@@ -18,6 +26,7 @@ mutation UpsertCurrentUser($email: String!, $fullName: String, $role: Role!) @au
       fullName: $fullName
       role: $role
       isActive: true
+      isEmailVerified: true
     }
   )
 }
@@ -54,5 +63,12 @@ mutation SetUserInactive @auth(level: USER) {
   user_update(
     key: { uid_expr: "auth.uid" }
     data: { isActive: false }
+  )
+}
+
+mutation MarkEmailVerified @auth(level: USER) {
+  user_update(
+    key: { uid_expr: "auth.uid" }
+    data: { isEmailVerified: true }
   )
 }

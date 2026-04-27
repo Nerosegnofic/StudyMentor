@@ -79,10 +79,10 @@ class DataConnectProvider {
             'grade_level': s.gradeLevel,
             'total_xp': s.totalXp,
             'total_coins': s.totalCoins,
-            // isActive doubles as the email-verification flag:
+            // isEmailVerified doubles as the email-verification flag:
             // false  → student created but email not yet verified
             // true   → student logged in at least once with verified email
-            'is_email_verified': s.user.isActive,
+            'is_email_verified': s.user.isEmailVerified,
           },
         )
         .toList();
@@ -122,5 +122,9 @@ class DataConnectProvider {
     final user = result.data.user;
     if (user == null) return false;
     return user.isActive;
+  }
+
+  Future<void> markEmailVerified() async {
+    await ExampleConnector.instance.markEmailVerified().execute();
   }
 }

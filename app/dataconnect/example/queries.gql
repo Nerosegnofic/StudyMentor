@@ -16,6 +16,7 @@ query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
       fullName
       email
       isActive
+      isEmailVerified 
     }
     gradeLevel
     totalXp

@@ -1,14 +1,4 @@
 // lib/src/data/repositories/auth_repository_impl.dart
-//
-// Key changes:
-//  • createStudent() now marks the new student's user record as isActive=false
-//    immediately after creation, using UpsertCurrentUser while the student's
-//    Firebase session is still active (before we sign back in as the parent).
-//  • refreshStudentVerificationStatus() polls DataConnect for each student's
-//    isActive flag and maps it to StudentModel.isEmailVerified.
-//  • signIn() calls upsertCurrentUser with isActive=true, which is the trigger
-//    that flips a student's verification status after they verify their email
-//    and log in for the first time.
 
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
@@ -50,7 +40,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await firebase.signIn(email, password);
     final uid = firebase.currentUser!.uid;
 
-    // Force reload to get fresh emailVerified status from Firebase
+    // Force reload to get fresh emailVerified status from Firebase.
     await firebase.reloadUser();
 
     final isVerified = firebase.currentUser?.emailVerified ?? false;
@@ -62,13 +52,18 @@ class AuthRepositoryImpl implements AuthRepository {
     return UserModel.fromJson(profile);
   }
 
-  /// Upserts the user record with isActive=true.  Called after a verified
-  /// sign-in so DataConnect stays in sync with Firebase Auth.
+  /// Upserts the user record with isActive=true AND isEmailVerified=true.
+  ///
+  /// This method is only ever called when [firebase.currentUser.emailVerified]
+  /// is true, so setting both flags here is always correct.
+  ///
+  /// Belt-and-suspenders: we also call [dataConnect.markEmailVerified()]
+  /// directly so the field is written even if the UpsertCurrentUser mutation
+  /// is replaced or refactored in the future.
   Future<void> _markUserActive({
     required String email,
     required String uid,
   }) async {
-    // We need the user's role to satisfy the UpsertCurrentUser mutation.
     try {
       final profile = await dataConnect.getUserProfile(uid);
       final roleStr = profile['role'] as String;
@@ -76,6 +71,16 @@ class AuthRepositoryImpl implements AuthRepository {
       await ExampleConnector.instance
           .upsertCurrentUser(email: email, role: role)
           .execute();
+    } catch (_) {
+      // Best-effort — don't break login if this fails.
+    }
+
+    // Explicitly write isEmailVerified=true regardless of whether the
+    // upsert above succeeded.  This covers Path B: the student clicks the
+    // verification link, reopens the app, and logs in fresh — bypassing
+    // ConfirmEmailScreen and the markEmailVerifiedInDatabase() call there.
+    try {
+      await dataConnect.markEmailVerified();
     } catch (_) {
       // Best-effort — don't break login if this fails.
     }
@@ -139,28 +144,18 @@ class AuthRepositoryImpl implements AuthRepository {
     return students.map(StudentModel.fromJson).toList();
   }
 
-  /// Polls DataConnect for the current `isActive` value of each student and
-  /// returns an updated list.  Only students whose `isEmailVerified` is
-  /// currently `false` are re-fetched to minimise network calls.
   @override
   Future<List<StudentModel>> refreshStudentVerificationStatus(
     List<StudentModel> students,
   ) async {
-    final results = <StudentModel>[];
-    for (final student in students) {
-      if (student.isEmailVerified) {
-        // Already verified — no need to re-check.
-        results.add(student);
-      } else {
-        try {
-          final isActive = await dataConnect.getIsActiveForUid(student.uid);
-          results.add(student.copyWith(isEmailVerified: isActive));
-        } catch (_) {
-          results.add(student);
-        }
-      }
-    }
-    return results;
+    if (students.isEmpty) return students;
+
+    // Resolve parent UID for the first student via DataConnect, then re-fetch
+    // the full list so all fields (including isEmailVerified) are fresh.
+    final parentUid = await dataConnect.getParentUidForStudent(
+      students.first.uid,
+    );
+    return await getStudentsByParent(parentUid);
   }
 
   @override
@@ -213,5 +208,10 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     return true;
+  }
+
+  @override
+  Future<void> markEmailVerifiedInDatabase(String uid) async {
+    await dataConnect.markEmailVerified();
   }
 }

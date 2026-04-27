@@ -103,6 +103,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (isVerified) {
       final profile = await repository.getUserProfile();
       if (profile != null) {
+        await repository.markEmailVerifiedInDatabase(profile.uid);
         emit(AuthAuthenticated(profile));
       } else {
         emit(AuthUnauthenticated());

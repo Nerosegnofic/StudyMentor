@@ -16,6 +16,8 @@ part 'insert_student.dart';
 
 part 'set_user_inactive.dart';
 
+part 'mark_email_verified.dart';
+
 part 'get_user_by_uid.dart';
 
 part 'get_students_by_parent.dart';
@@ -131,6 +133,11 @@ class ExampleConnector {
   
   SetUserInactiveVariablesBuilder setUserInactive () {
     return SetUserInactiveVariablesBuilder(dataConnect, );
+  }
+  
+  
+  MarkEmailVerifiedVariablesBuilder markEmailVerified () {
+    return MarkEmailVerifiedVariablesBuilder(dataConnect, );
   }
   
   
