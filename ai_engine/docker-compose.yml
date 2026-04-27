@@ -1,0 +1,15 @@
+services:
+  vectordb:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: vectordb
+    ports:
+      - "5433:5432" # Maps standard pg port to 5433 to match your .env
+    volumes:
+      - pg_vector_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pg_vector_data:
