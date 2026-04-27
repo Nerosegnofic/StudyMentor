@@ -21,7 +21,19 @@ class ChunkClassifier:
         # Table of Contents patterns (e.g., "Lesson 1 ...... 136")
         if re.search(r'(\.\.\.|\.\.\.\.|---|_)\s*\d+', text):
             structural_score += 10 # High penalty for TOC
+
+        # Multiple Lesson references in one chunk (Strong Overview/TOC signal)
+        lesson_refs = len(re.findall(r'(الدرس|Lesson)\s*\(?\d+\)?', text, re.IGNORECASE))
+        if lesson_refs > 1:
+            structural_score += 8
             
+        # Bullet Point Density (Overview lists often have > 40% bulleted lines)
+        lines = [l.strip() for l in text.split('\n') if l.strip()]
+        if lines:
+            bullet_lines = sum(1 for l in lines if l.startswith(('-', '*', '•')))
+            if (bullet_lines / len(lines)) > 0.4:
+                structural_score += 5
+
         # Lesson/Unit/Chapter headers at the start of a chunk
         if re.search(r'^(Unit|Chapter|Lesson|Module|وحدة|فصل|درس|مفهوم)\s*(\d+|(\(\d+))', text.strip(), re.IGNORECASE):
             structural_score += 5
@@ -46,11 +58,14 @@ class ChunkClassifier:
 
         # --- 2. SUBSTANTIVE INDICATORS (Instructional Content) ---
         
-        # Action Verbs (Arabic & English)
-        # We look for "Substantive Action" like "Solve" or "Calculate"
+        # Action Verbs (Arabic & English) - ALL SUBJECTS
+        # Math: أوجد, احسب, حل | Science: صف, فسر, لاحظ | Arabic: أعرب, استخرج, اقرأ | English: Read, Write, Listen
         action_patterns = [
             r'(أوجد|احسب|حل|اختر|أكمل|سؤال|تمرين|قارن|حدد|استنتج|اكتب الناتج)',
-            r'(Find|Solve|Calculate|Choose|Select|Complete|Compare|Question|Exercise|Determine)'
+            r'(صف|فسر|علل|رتب|صنف|لاحظ|ارسم|اقرأ|استمع|عبر)',
+            r'(اذكر|وضح|ميز|حوط|صل|أعرب|استخرج|هات)',
+            r'(Find|Solve|Calculate|Choose|Select|Complete|Compare|Question|Exercise|Determine)',
+            r'(Describe|Explain|Draw|Read|Write|Listen|Match|Circle|Fill|Label|Identify)',
         ]
         
         for pattern in action_patterns:

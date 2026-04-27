@@ -37,7 +37,7 @@ async def generate_quiz(request: GenerateQuizRequest):
         topic_instructions = "\n".join(instruction_lines)
         
         # Step 1: PGVector Retrieval
-        context = retrieve_context_for_topics(all_topics, k=5)
+        context = retrieve_context_for_topics(all_topics, k=8)
         print(context)
         
         # Step 2: LangChain structured generation using Strategy Pattern

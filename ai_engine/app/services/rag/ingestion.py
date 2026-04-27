@@ -7,6 +7,7 @@ from app.services.rag.parsers.context import ParserContext
 from app.services.rag.parsers.llama_strategy import LlamaParseStrategy
 from app.services.rag.chunkers.context import ChunkerContext
 from app.services.rag.chunkers.semantic_strategy import SemanticChunkerStrategy
+from app.services.rag.chunkers.hybrid_strategy import HybridMarkdownSemanticStrategy
 from app.services.rag.chunkers.basic_strategy import BasicRecursiveChunkerStrategy
 from app.services.rag.chunkers.markdown_strategy import MarkdownRecursiveChunkerStrategy
 from app.services.rag.store import save_chunks_to_pgvector, delete_document_embeddings, clear_all_embeddings

@@ -8,8 +8,9 @@ class RateLimitedCohereEmbeddings(CohereEmbeddings):
     Cohere's free tier rate limits (100 Requests/Min, 100,000 Tokens/Min).
     """
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        # Cohere max batch size is 96. We'll send exactly 96 texts at a time.
-        batch_size = 96
+        # Cohere trial tier is limited to 100,000 Tokens Per Minute.
+        # With our larger 1500-2000 char chunks, we must use smaller batches and longer sleeps.
+        batch_size = 48
         all_embeddings = []
         
         total_batches = (len(texts) + batch_size - 1) // batch_size
@@ -18,8 +19,8 @@ class RateLimitedCohereEmbeddings(CohereEmbeddings):
         
         for i in range(0, len(texts), batch_size):
             batch_num = (i // batch_size) + 1
-            if batch_num == 1 or batch_num % 10 == 0 or batch_num == total_batches:
-                print(f"Progress: Batch {batch_num}/{total_batches} embedded...", flush=True)
+            if total_batches > 1 and (batch_num == 1 or batch_num % 5 == 0 or batch_num == total_batches):
+                print(f"Progress: Batch {batch_num}/{total_batches} embedded (Total Chunks: {len(all_embeddings)})...", flush=True)
                 
             batch = texts[i:i + batch_size]
             
@@ -27,15 +28,13 @@ class RateLimitedCohereEmbeddings(CohereEmbeddings):
                 embeddings = super().embed_documents(batch)
                 all_embeddings.extend(embeddings)
             except Exception as e:
-                print(f"Rate limit hit. Sleeping 60 seconds to cool down... Details: {e}")
-                time.sleep(60)
-                # Retry after cooldown
+                print(f"Rate limit hit. Sleeping 30 seconds to cool down... Details: {e}")
+                time.sleep(30)
                 embeddings = super().embed_documents(batch)
                 all_embeddings.extend(embeddings)
                 
-            # If there are more batches left, sleep before sending the next one
             if i + batch_size < len(texts):
-                # Sleep 12 seconds between batches to stay under 100,000 tokens per minute.
-                time.sleep(12)
+                # 15s sleep between 48 chunks (~20k-40k tokens) ensures we stay under 100k/min.
+                time.sleep(15)
                 
         return all_embeddings

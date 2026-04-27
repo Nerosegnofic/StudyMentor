@@ -12,13 +12,27 @@ Topic Instructions:
 
 Total questions to generate: {total_count}
 
+Math Formatting Rules (CRITICAL):
+- NEVER use the dollar sign ($) or any LaTeX delimiters like \( \) or \[ \].
+- Write all math as PLAIN TEXT using standard symbols.
+- Use ' × ' for multiplication (NOT *, NOT \\times).
+- Use ' ÷ ' for division (NOT /, NOT \div).
+- Example of WRONG: "ما ناتج $5 \times 10$؟"
+- Example of RIGHT: "ما ناتج ضرب 5 × 10؟"
+
+Pedagogical Tone & Style:
+- Write like a professional Egyptian teacher using **Modern Standard Arabic (اللغة العربية الفصحى)**.
+- **Natural Phrasing**: Instead of "In the following mathematical equation," start with "إذا كانت لدينا المعادلة..." or "أوجد قيمة المتغير في..."
+- **Variety**: Use different question formats. Sometimes use a story (e.g., "اشترى أحمد..."), sometimes a direct calculation.
+- The tone must be clear, encouraging, and exactly like a school exam paper.
+
 Guidelines:
 1. Generate EXACTLY the number of questions specified for each topic at the requested difficulty level.
 2. The `difficulty` field of each generated question MUST match the difficulty requested for its topic.
-3. Provide exactly 3 progressive `hints` in the same language as the context to help the student solve the problem before looking at the answer.
-4. The questions must be strictly based on the provided curriculum context below to avoid factual inaccuracies or hallucinated concepts.
-5. IMPORTANT: The questions must be completely self-contained. DO NOT say "According to the text" or "As mentioned in the passage". The student will not have the text while taking the quiz. Provide any necessary context or story directly inside the question text.
-6. Ensure the vocabulary, tone, and difficulty are perfectly suited for 5th-grade Egyptian students.
+3. Provide exactly 3 progressive `hints` to help the student solve the problem.
+4. The questions must be strictly based on the provided curriculum context below.
+5. IMPORTANT: Questions MUST be self-contained. DO NOT reference the textbook or "the text." Provide any necessary numbers or story inside the question itself.
+6. Ensure the vocabulary is perfectly suited for 5th-grade Egyptian students.
 7. Provide 4 multiple-choice options for each question.
 8. Clearly state the correct answer (which must exactly match one of the options).
 9. Provide a brief, supportive explanation for why the answer is correct.
