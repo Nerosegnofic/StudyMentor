@@ -1,8 +1,8 @@
 from uuid import UUID
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from app.services.rag.chunkers.base import DocumentChunkerStrategy
-from app.services.rag.chunkers.classifier import ChunkClassifier
-from app.services.rag.chunkers.metadata_extractor import (
+from app.services.rag.processors import (
+    ChunkClassifier,
     detect_chunk_role,
     extract_context_names,
     SequentialContextTracker,

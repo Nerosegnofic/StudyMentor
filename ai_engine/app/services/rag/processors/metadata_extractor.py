@@ -22,16 +22,16 @@ import unicodedata
 # --- STRUCTURAL PATTERNS (Headers, Navigation) ---
 
 UNIT_PATTERNS = [
-    # Arabic: الوحدة (1), الوحدة 1, الفصل (3)
-    re.compile(r'الوحدة\s*\(?\s*\d+\s*\)?', re.IGNORECASE),
-    re.compile(r'الفصل\s*\(?\s*\d+\s*\)?', re.IGNORECASE),
+    # Arabic: الوحدة (1), الوحدة 1, الفصل (3) - Flexible with whitespace and parentheses
+    re.compile(r'الوحدة\s*[\(\[<{]?\s*\d+\s*[\)\]>}]?', re.IGNORECASE),
+    re.compile(r'الفصل\s*[\(\[<{]?\s*\d+\s*[\)\]>}]?', re.IGNORECASE),
     # English: Unit 1, Chapter 3, Module 2
-    re.compile(r'\b(Unit|Chapter|Module)\s+\d+', re.IGNORECASE),
+    re.compile(r'\b(Unit|Chapter|Module|Section)\s+\d+', re.IGNORECASE),
 ]
 
 CONCEPT_PATTERNS = [
-    # Arabic: المفهوم الأول, المفهوم الثاني, مفهوم الوحدة
-    re.compile(r'المفهوم\s+(الأول|الثاني|الثالث|الرابع|الخامس|السادس)', re.IGNORECASE),
+    # Arabic: المفهوم الأول, المفهوم الثاني
+    re.compile(r'المفهوم\s+(الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر)', re.IGNORECASE),
     re.compile(r'مفهوم\s+الوحدة', re.IGNORECASE),
     # English
     re.compile(r'\bConcept\s+\d+', re.IGNORECASE),
@@ -39,7 +39,7 @@ CONCEPT_PATTERNS = [
 
 LESSON_PATTERNS = [
     # Arabic: الدرس (1), الدرسان (2 ، 3)
-    re.compile(r'الدرس(?:ان)?\s*\(?\s*[\d\s،,]+\s*\)?', re.IGNORECASE),
+    re.compile(r'الدرس(?:ان)?\s*[\(\[<{]?\s*[\d\s،,/-]+\s*[\)\]>}]?', re.IGNORECASE),
     # English: Lesson 1
     re.compile(r'\bLesson\s+\d+', re.IGNORECASE),
 ]
@@ -115,22 +115,6 @@ EXPLANATION_PATTERNS = [
     re.compile(r'(خريطة|جغرافيا|تاريخ|تربية\s+وطنية)'),  # Map, Geography, History, Civics
 ]
 
-# === Action verbs used by ChunkClassifier (expanded for all subjects) ===
-# These are exported for use by classifier.py if needed
-ALL_SUBJECT_ACTION_VERBS_AR = (
-    r'(أوجد|احسب|حل|اختر|أكمل|قارن|حدد|استنتج|اكتب|'
-    r'صف|فسر|علل|رتب|صنف|لاحظ|ارسم|اقرأ|استمع|عبر|'
-    r'اذكر|وضح|ميز|حوط|صل|ضع\s+علامة|أعرب|استخرج|هات)'
-)
-
-ALL_SUBJECT_ACTION_VERBS_EN = (
-    r'(Find|Solve|Calculate|Choose|Select|Complete|Compare|'
-    r'Question|Exercise|Determine|Describe|Explain|Draw|'
-    r'Read|Write|Listen|Match|Circle|Fill|Label|Identify|'
-    r'Classify|Order|Sort|Underline|Correct|Rewrite)'
-)
-
-
 def _extract_name(text: str, patterns: list) -> str:
     """Extract the matched name from text using the first matching pattern."""
     for pattern in patterns:
@@ -174,7 +158,7 @@ def detect_chunk_role(text: str) -> str:
     if any(p.search(head) for p in EXPLANATION_PATTERNS):
         return 'explanation'
     
-    return 'content'  # Default: regular instructional content
+    return 'content'
 
 
 def extract_context_names(text: str) -> dict:
@@ -194,33 +178,29 @@ class SequentialContextTracker:
     """
     Tracks the "current" unit, concept, and lesson as we process
     chunks in sequential order (top to bottom of the book).
-    
-    This is the key to Parent-Child: even though a chunk about
-    "Example 3" doesn't mention "Unit 5" directly, we know it
-    belongs to Unit 5 because we saw the Unit 5 header earlier.
-    
-    Works identically regardless of subject or language.
     """
     
     def __init__(self):
         self.current_unit = None
         self.current_concept = None
         self.current_lesson = None
-    
+
     def update_and_tag(self, chunk_role: str, context_names: dict) -> dict:
         """
         Update the tracker state and return the full context for this chunk.
         """
-        # Update state when we encounter a new header
+        # 1. Update Unit Context
         if chunk_role == 'unit_header' and context_names.get('unit_name'):
             self.current_unit = context_names['unit_name']
             self.current_concept = None  # Reset child contexts
             self.current_lesson = None
         
+        # 2. Update Concept Context
         if chunk_role == 'concept_header' and context_names.get('concept_name'):
             self.current_concept = context_names['concept_name']
             self.current_lesson = None  # Reset child context
         
+        # 3. Update Lesson Context
         if chunk_role == 'lesson_header' and context_names.get('lesson_name'):
             self.current_lesson = context_names['lesson_name']
         

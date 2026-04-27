@@ -70,15 +70,79 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID):
 
     print(f"[{document_id}] Successfully synchronized all chunks to PGVector!", flush=True)
 
+def save_mastery_points(mastery_data: Dict[str, List[str]], document_id: UUID):
+    """
+    Saves extracted mastery points to the database.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    
+    with engine.begin() as conn:
+        # 1. Ensure table exists
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS mastery_points (
+                id UUID PRIMARY KEY,
+                document_id UUID,
+                unit TEXT,
+                lesson TEXT,
+                point_text TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        
+        # 2. Clear old mastery points for this document (to allow re-ingestion)
+        conn.execute(
+            text("DELETE FROM mastery_points WHERE document_id = :doc_id"),
+            {"doc_id": document_id}
+        )
+        
+        # 3. Insert new points
+        for lesson_key, points in mastery_data.items():
+            # lesson_key is "Unit - Lesson"
+            parts = lesson_key.split(" - ")
+            unit = parts[0] if len(parts) > 0 else "Unknown"
+            lesson = parts[1] if len(parts) > 1 else "Unknown"
+            
+            for point in points:
+                conn.execute(
+                    text("INSERT INTO mastery_points (id, document_id, unit, lesson, point_text) "
+                         "VALUES (:id, :doc_id, :unit, :lesson, :point)"),
+                    {
+                        "id": uuid.uuid4(),
+                        "doc_id": document_id,
+                        "unit": unit,
+                        "lesson": lesson,
+                        "point": point
+                    }
+                )
+    print(f"[{document_id}] Successfully saved mastery points to database!", flush=True)
+
+def get_mastery_points(document_id: UUID) -> List[Dict]:
+    """
+    Retrieves all mastery points for a given document.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT unit, lesson, point_text FROM mastery_points WHERE document_id = :doc_id ORDER BY created_at ASC"),
+            {"doc_id": document_id}
+        )
+        return [{"unit": row[0], "lesson": row[1], "point_text": row[2]} for row in result]
+
 def delete_document_embeddings(document_id: UUID):
     """
     Deletes all vector embeddings associated with a specific document from the database.
     """
     engine = create_engine(settings.POSTGRES_CONNECTION)
     with engine.begin() as conn:
+        # Delete embeddings
         conn.execute(
             text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'document_id' = :doc_id"),
             {"doc_id": str(document_id)}
+        )
+        # Delete mastery points
+        conn.execute(
+            text("DELETE FROM mastery_points WHERE document_id = :doc_id"),
+            {"doc_id": document_id}
         )
 
 def clear_all_embeddings():
@@ -87,5 +151,19 @@ def clear_all_embeddings():
     """
     engine = create_engine(settings.POSTGRES_CONNECTION)
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE langchain_pg_embedding, langchain_pg_collection CASCADE;"))
+        # Ensure table exists before truncating to avoid UndefinedTable error
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS mastery_points (
+                id UUID PRIMARY KEY,
+                document_id UUID,
+                unit TEXT,
+                lesson TEXT,
+                point_text TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("TRUNCATE langchain_pg_embedding, langchain_pg_collection, mastery_points CASCADE;"))
     print("Database cleared completely!", flush=True)
+
+# Expose new functions
+__all__ = ["save_chunks_to_pgvector", "save_mastery_points", "delete_document_embeddings", "clear_all_embeddings"]

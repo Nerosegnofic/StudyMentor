@@ -20,7 +20,7 @@ class ChunkClassifier:
         
         # Table of Contents patterns (e.g., "Lesson 1 ...... 136")
         if re.search(r'(\.\.\.|\.\.\.\.|---|_)\s*\d+', text):
-            structural_score += 10 # High penalty for TOC
+            structural_score += 12 # Increased penalty for TOC
 
         # Multiple Lesson references in one chunk (Strong Overview/TOC signal)
         lesson_refs = len(re.findall(r'(الدرس|Lesson)\s*\(?\d+\)?', text, re.IGNORECASE))
@@ -30,7 +30,7 @@ class ChunkClassifier:
         # Bullet Point Density (Overview lists often have > 40% bulleted lines)
         lines = [l.strip() for l in text.split('\n') if l.strip()]
         if lines:
-            bullet_lines = sum(1 for l in lines if l.startswith(('-', '*', '•')))
+            bullet_lines = sum(1 for l in lines if l.startswith(('-', '*', '•', '٠'))) # Added Arabic bullet
             if (bullet_lines / len(lines)) > 0.4:
                 structural_score += 5
 
@@ -39,14 +39,12 @@ class ChunkClassifier:
             structural_score += 5
 
         # Learning Objectives Patterns (Metadata about learning, not the content itself)
-        # AR: "يشرح التلميذ", "يستخدم التلميذ", "يضرب التلميذ", "الأهداف"
         objective_markers = [r'يشرح التلميذ', r'يستخدم التلميذ', r'يضرب التلميذ', r'يتعلم التلميذ', r'الأهداف']
         for marker in objective_markers:
             if re.search(marker, text):
                 structural_score += 4 # High penalty for "Learning Objective" language
 
         # OCR Table Headers with no content (Common failure)
-        # If a chunk has column headers but no actual data/numbers
         column_headers = ['الوحدات', 'الكسور العشرية', 'جزء من', 'أحاد', 'عشرات']
         header_matches = sum(1 for h in column_headers if h in text)
         if header_matches >= 2 and len(re.findall(r'\d+', text)) < 5:
@@ -54,26 +52,24 @@ class ChunkClassifier:
 
         # Page numbers/markers (e.g., "Page 56" or just "56" at start/end)
         if re.search(r'^\s*(Page|صفحة)?\s*\d+\s*$', text.strip(), re.IGNORECASE):
-            structural_score += 10
+            structural_score += 12
 
         # --- 2. SUBSTANTIVE INDICATORS (Instructional Content) ---
         
         # Action Verbs (Arabic & English) - ALL SUBJECTS
-        # Math: أوجد, احسب, حل | Science: صف, فسر, لاحظ | Arabic: أعرب, استخرج, اقرأ | English: Read, Write, Listen
         action_patterns = [
             r'(أوجد|احسب|حل|اختر|أكمل|سؤال|تمرين|قارن|حدد|استنتج|اكتب الناتج)',
             r'(صف|فسر|علل|رتب|صنف|لاحظ|ارسم|اقرأ|استمع|عبر)',
-            r'(اذكر|وضح|ميز|حوط|صل|أعرب|استخرج|هات)',
+            r'(اذكر|وضح|ميز|حوط|صل|أعرب|استخرج|هات|بم\s+تفسر|ما\s+النتائج)',
             r'(Find|Solve|Calculate|Choose|Select|Complete|Compare|Question|Exercise|Determine)',
             r'(Describe|Explain|Draw|Read|Write|Listen|Match|Circle|Fill|Label|Identify)',
         ]
         
         for pattern in action_patterns:
             matches = len(re.findall(pattern, text, re.IGNORECASE))
-            substantive_score += matches * 3 # Increased weight for action verbs
+            substantive_score += matches * 3 
 
         # Mathematical & Scientific Symbols
-        # High density of symbols = likely a real math/science problem
         math_symbols = len(re.findall(r'[+×÷=<>≤≥±√∫$]', text))
         if math_symbols > 1:
             substantive_score += min(math_symbols, 10)
@@ -82,6 +78,15 @@ class ChunkClassifier:
         if re.search(r'(\\\w+|\$)', text):
             substantive_score += 5
 
+        # NEW: Data Density Detection (Protects reference tables/charts)
+        # If a chunk has a high ratio of numbers to words, it's likely a data table.
+        words = text.split()
+        if words:
+            numbers = len(re.findall(r'\d+', text))
+            number_ratio = numbers / len(words)
+            if number_ratio > 0.3 and len(words) > 10:
+                substantive_score += 10 # High boost for data-rich chunks
+
         # Final Classification
         content_type = "substantive" if substantive_score >= structural_score else "structural"
         
@@ -89,5 +94,5 @@ class ChunkClassifier:
             "substantive_score": substantive_score,
             "structural_score": structural_score,
             "content_type": content_type,
-            "word_count": len(text.split())
+            "word_count": len(words)
         }

@@ -63,3 +63,13 @@ class StudentProfile(BaseModel):
     skills: Dict[str, StudentSkillState] = Field(default_factory=dict)
     current_step: int = 0
     consecutive_spam_clicks: int = 0
+
+class MasteryPointSchema(BaseModel):
+    id: UUID = Field(default_factory=uuid.uuid4)
+    document_id: UUID
+    unit: str
+    lesson: str
+    point_text: str
+    
+    class Config:
+        from_attributes = True

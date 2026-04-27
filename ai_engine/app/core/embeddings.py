@@ -19,7 +19,7 @@ class RateLimitedCohereEmbeddings(CohereEmbeddings):
         
         for i in range(0, len(texts), batch_size):
             batch_num = (i // batch_size) + 1
-            if total_batches > 1 and (batch_num == 1 or batch_num % 5 == 0 or batch_num == total_batches):
+            if batch_num == 1 or batch_num % 5 == 0 or batch_num == total_batches:
                 print(f"Progress: Batch {batch_num}/{total_batches} embedded (Total Chunks: {len(all_embeddings)})...", flush=True)
                 
             batch = texts[i:i + batch_size]
