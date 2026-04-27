@@ -1,0 +1,999 @@
+"""
+✨ `Parent_KeyOutput` returns the primary key fields of table type `Parent`.
+
+It has the same format as `Parent_Key`, but is only used as mutation return value.
+"""
+scalar Parent_KeyOutput
+"""
+✨ `Role_Expr` is a server value variant of enum type `Role`.
+
+It accepts a CEL expression.
+"""
+scalar Role_Expr
+"""
+✨ `Student_KeyOutput` returns the primary key fields of table type `Student`.
+
+It has the same format as `Student_Key`, but is only used as mutation return value.
+"""
+scalar Student_KeyOutput
+"""
+✨ `User_KeyOutput` returns the primary key fields of table type `User`.
+
+It has the same format as `User_Key`, but is only used as mutation return value.
+"""
+scalar User_KeyOutput
+"""
+✨ Generated data input type for table 'Parent'. It includes all necessary fields for creating or upserting rows into table.
+"""
+input Parent_Data {
+  """
+  ✨ Generated from Field `Parent`.`uid` of type `String!`
+  """
+  uid: String
+  """
+  ✨ `_expr` server value variant of `uid` (✨ Generated from Field `Parent`.`uid` of type `String!`)
+  """
+  uid_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Parent`.`userUid` of type `String!`
+  """
+  userUid: String
+  """
+  ✨ `_expr` server value variant of `userUid` (✨ Generated from Field `Parent`.`userUid` of type `String!`)
+  """
+  userUid_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Parent`.`user` of type `User!`
+  """
+  user: User_Key @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Parent`.`phoneNumber` of type `String`
+  """
+  phoneNumber: String
+  """
+  ✨ `_expr` server value variant of `phoneNumber` (✨ Generated from Field `Parent`.`phoneNumber` of type `String`)
+  """
+  phoneNumber_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Parent`.`pinCode` of type `String`
+  """
+  pinCode: String
+  """
+  ✨ `_expr` server value variant of `pinCode` (✨ Generated from Field `Parent`.`pinCode` of type `String`)
+  """
+  pinCode_expr: String_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated filter input type for table 'Parent'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Parent_Filter {
+  """
+  Apply multiple filter conditions using `AND` logic.
+  """
+  _and: [Parent_Filter!]
+  """
+  Negate the result of the provided filter condition.
+  """
+  _not: Parent_Filter
+  """
+  Apply multiple filter conditions using `OR` logic.
+  """
+  _or: [Parent_Filter!]
+  """
+  ✨ Generated from Field `Parent`.`uid` of type `String!`
+  """
+  uid: String_Filter
+  """
+  ✨ Generated from Field `Parent`.`userUid` of type `String!`
+  """
+  userUid: String_Filter
+  """
+  ✨ Generated from Field `Parent`.`user` of type `User!`
+  """
+  user: User_Filter
+  """
+  ✨ Generated from Field `Parent`.`phoneNumber` of type `String`
+  """
+  phoneNumber: String_Filter
+  """
+  ✨ Generated from Field `Parent`.`pinCode` of type `String`
+  """
+  pinCode: String_Filter
+  """
+  ✨ Generated from Field `Parent`.`students_on_parent` of type `[Student!]!`
+  """
+  students_on_parent: Student_ListFilter
+}
+"""
+✨ Generated first-row input type for table 'Parent'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
+"""
+input Parent_FirstRow {
+  """
+  Order the result by the specified fields.
+  """
+  orderBy: [Parent_Order!]
+  """
+  Filters rows based on the specified conditions.
+  """
+  where: Parent_Filter
+}
+"""
+✨ Generated having input type for table 'Parent'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Parent_Having {
+  """
+  Apply multiple Having conditions using `AND` logic.
+  """
+  _and: [Parent_Having!]
+  """
+  Whether to apply DISTINCT to the aggregate function.
+  """
+  _distinct: Boolean
+  """
+  Negate the result of the provided Having condition.
+  """
+  _not: Parent_Having
+  """
+  Apply multiple Having conditions using `OR` logic.
+  """
+  _or: [Parent_Having!]
+  """
+  ✨ Generated from Field `Parent`.`_count` of type `Int!`
+  """
+  _count: Int_Filter
+  """
+  ✨ Generated from Field `Parent`.`phoneNumber_count` of type `Int!`
+  """
+  phoneNumber_count: Int_Filter
+  """
+  ✨ Generated from Field `Parent`.`pinCode_count` of type `Int!`
+  """
+  pinCode_count: Int_Filter
+  """
+  ✨ Generated from Field `Parent`.`uid_count` of type `Int!`
+  """
+  uid_count: Int_Filter
+  """
+  ✨ Generated from Field `Parent`.`userUid_count` of type `Int!`
+  """
+  userUid_count: Int_Filter
+}
+"""
+✨ Generated key input type for table 'Parent'. It represents the primary key fields used to uniquely identify a row in the table.
+"""
+input Parent_Key {
+  """
+  ✨ Generated from Field `Parent`.`uid` of type `String!`
+  """
+  uid: String
+  """
+  ✨ `_expr` server value variant of `uid` (✨ Generated from Field `Parent`.`uid` of type `String!`)
+  """
+  uid_expr: String_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'Parent'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input Parent_ListFilter {
+  """
+  The desired number of objects that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: Parent_Filter
+}
+"""
+✨ Generated order input type for table 'Parent'. This input defines the sorting order of rows in query results based on one or more fields.
+"""
+input Parent_Order {
+  """
+  ✨ Generated from Field `Parent`.`uid` of type `String!`
+  """
+  uid: OrderDirection
+  """
+  ✨ Generated from Field `Parent`.`userUid` of type `String!`
+  """
+  userUid: OrderDirection
+  """
+  ✨ Generated from Field `Parent`.`user` of type `User!`
+  """
+  user: User_Order
+  """
+  ✨ Generated from Field `Parent`.`phoneNumber` of type `String`
+  """
+  phoneNumber: OrderDirection
+  """
+  ✨ Generated from Field `Parent`.`pinCode` of type `String`
+  """
+  pinCode: OrderDirection
+  """
+  ✨ Generated from Field `Parent`.`_count` of type `Int!`
+  """
+  _count: OrderDirection
+  """
+  ✨ Generated from Field `Parent`.`phoneNumber_count` of type `Int!`
+  """
+  phoneNumber_count: OrderDirection
+  """
+  ✨ Generated from Field `Parent`.`pinCode_count` of type `Int!`
+  """
+  pinCode_count: OrderDirection
+  """
+  ✨ Generated from Field `Parent`.`uid_count` of type `Int!`
+  """
+  uid_count: OrderDirection
+  """
+  ✨ Generated from Field `Parent`.`userUid_count` of type `Int!`
+  """
+  userUid_count: OrderDirection
+}
+"""
+✨ Generated filter input type for table 'Role'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Role_Filter {
+  """
+  Match if field is exactly equal to provided value.
+  """
+  eq: Role
+  """
+  ✨ `_expr` server value variant of `eq` (Match if field is exactly equal to provided value.)
+  """
+  eq_expr: Role_Expr @fdc_forbiddenInVariables
+  """
+  Match if field is not equal to provided value.
+  """
+  ne: Role
+  """
+  ✨ `_expr` server value variant of `ne` (Match if field is not equal to provided value.)
+  """
+  ne_expr: Role_Expr @fdc_forbiddenInVariables
+  """
+  When true, match if field `IS NULL`. When false, match if field is `NOT NULL`.
+  """
+  isNull: Boolean
+  """
+  Match if field value is among the provided list of values.
+  """
+  in: [Role!]
+  """
+  Match if field value is not among the provided list of values.
+  """
+  nin: [Role!]
+  """
+  Match if field value is greater than the provided value, based on index ordering of supported enum values.
+  """
+  gt: Role
+  """
+  ✨ `_expr` server value variant of `gt` (Match if field value is greater than the provided value, based on index ordering of supported enum values.)
+  """
+  gt_expr: Role_Expr @fdc_forbiddenInVariables
+  """
+  Match if field is greater than or equal to the provided value.
+  """
+  ge: Role
+  """
+  ✨ `_expr` server value variant of `ge` (Match if field is greater than or equal to the provided value.)
+  """
+  ge_expr: Role_Expr @fdc_forbiddenInVariables
+  """
+  Match if field value is less than the provided value, based on index ordering of supported enum values.
+  """
+  lt: Role
+  """
+  ✨ `_expr` server value variant of `lt` (Match if field value is less than the provided value, based on index ordering of supported enum values.)
+  """
+  lt_expr: Role_Expr @fdc_forbiddenInVariables
+  """
+  Match if field is less than or equal to the provided value, based on index ordering of supported enum values.
+  """
+  le: Role
+  """
+  ✨ `_expr` server value variant of `le` (Match if field is less than or equal to the provided value, based on index ordering of supported enum values.)
+  """
+  le_expr: Role_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'Role'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input Role_ListFilter {
+  """
+  Match if list field contains the provided value as a member.
+  """
+  includes: Role
+  """
+  ✨ `_expr` server value variant of `includes` (Match if list field contains the provided value as a member.)
+  """
+  includes_expr: Role_Expr @fdc_forbiddenInVariables
+  """
+  Match if list field contains all of the provided values as members.
+  """
+  includesAll: [Role!]
+  """
+  Match if list field does not contain the provided value as a member.
+  """
+  excludes: Role
+  """
+  ✨ `_expr` server value variant of `excludes` (Match if list field does not contain the provided value as a member.)
+  """
+  excludes_expr: Role_Expr @fdc_forbiddenInVariables
+  """
+  Match if list field does not contain any of the provided values as members.
+  """
+  excludesAll: [Role!]
+  """
+  The desired number of enum values that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: Role_Filter
+}
+"""
+✨ Generated data input type for table 'Student'. It includes all necessary fields for creating or upserting rows into table.
+"""
+input Student_Data {
+  """
+  ✨ Generated from Field `Student`.`uid` of type `String!`
+  """
+  uid: String
+  """
+  ✨ `_expr` server value variant of `uid` (✨ Generated from Field `Student`.`uid` of type `String!`)
+  """
+  uid_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`parentUid` of type `String!`
+  """
+  parentUid: String
+  """
+  ✨ `_expr` server value variant of `parentUid` (✨ Generated from Field `Student`.`parentUid` of type `String!`)
+  """
+  parentUid_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`userUid` of type `String!`
+  """
+  userUid: String
+  """
+  ✨ `_expr` server value variant of `userUid` (✨ Generated from Field `Student`.`userUid` of type `String!`)
+  """
+  userUid_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`parent` of type `Parent!`
+  """
+  parent: Parent_Key @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`user` of type `User!`
+  """
+  user: User_Key @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`friendCode` of type `String`
+  """
+  friendCode: String
+  """
+  ✨ `_expr` server value variant of `friendCode` (✨ Generated from Field `Student`.`friendCode` of type `String`)
+  """
+  friendCode_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`gradeLevel` of type `Int`
+  """
+  gradeLevel: Int
+  """
+  ✨ `_expr` server value variant of `gradeLevel` (✨ Generated from Field `Student`.`gradeLevel` of type `Int`)
+  """
+  gradeLevel_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `gradeLevel` (✨ Generated from Field `Student`.`gradeLevel` of type `Int`)
+  """
+  gradeLevel_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`totalCoins` of type `Int`
+  """
+  totalCoins: Int
+  """
+  ✨ `_expr` server value variant of `totalCoins` (✨ Generated from Field `Student`.`totalCoins` of type `Int`)
+  """
+  totalCoins_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `totalCoins` (✨ Generated from Field `Student`.`totalCoins` of type `Int`)
+  """
+  totalCoins_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`totalXp` of type `Int`
+  """
+  totalXp: Int
+  """
+  ✨ `_expr` server value variant of `totalXp` (✨ Generated from Field `Student`.`totalXp` of type `Int`)
+  """
+  totalXp_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `totalXp` (✨ Generated from Field `Student`.`totalXp` of type `Int`)
+  """
+  totalXp_update: [Int_Update!] @fdc_forbiddenInVariables
+}
+"""
+✨ Generated filter input type for table 'Student'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Student_Filter {
+  """
+  Apply multiple filter conditions using `AND` logic.
+  """
+  _and: [Student_Filter!]
+  """
+  Negate the result of the provided filter condition.
+  """
+  _not: Student_Filter
+  """
+  Apply multiple filter conditions using `OR` logic.
+  """
+  _or: [Student_Filter!]
+  """
+  ✨ Generated from Field `Student`.`uid` of type `String!`
+  """
+  uid: String_Filter
+  """
+  ✨ Generated from Field `Student`.`parentUid` of type `String!`
+  """
+  parentUid: String_Filter
+  """
+  ✨ Generated from Field `Student`.`userUid` of type `String!`
+  """
+  userUid: String_Filter
+  """
+  ✨ Generated from Field `Student`.`parent` of type `Parent!`
+  """
+  parent: Parent_Filter
+  """
+  ✨ Generated from Field `Student`.`user` of type `User!`
+  """
+  user: User_Filter
+  """
+  ✨ Generated from Field `Student`.`friendCode` of type `String`
+  """
+  friendCode: String_Filter
+  """
+  ✨ Generated from Field `Student`.`gradeLevel` of type `Int`
+  """
+  gradeLevel: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalCoins` of type `Int`
+  """
+  totalCoins: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalXp` of type `Int`
+  """
+  totalXp: Int_Filter
+}
+"""
+✨ Generated first-row input type for table 'Student'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
+"""
+input Student_FirstRow {
+  """
+  Order the result by the specified fields.
+  """
+  orderBy: [Student_Order!]
+  """
+  Filters rows based on the specified conditions.
+  """
+  where: Student_Filter
+}
+"""
+✨ Generated having input type for table 'Student'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Student_Having {
+  """
+  Apply multiple Having conditions using `AND` logic.
+  """
+  _and: [Student_Having!]
+  """
+  Whether to apply DISTINCT to the aggregate function.
+  """
+  _distinct: Boolean
+  """
+  Negate the result of the provided Having condition.
+  """
+  _not: Student_Having
+  """
+  Apply multiple Having conditions using `OR` logic.
+  """
+  _or: [Student_Having!]
+  """
+  ✨ Generated from Field `Student`.`_count` of type `Int!`
+  """
+  _count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`friendCode_count` of type `Int!`
+  """
+  friendCode_count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_count` of type `Int!`
+  """
+  gradeLevel_count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`parentUid_count` of type `Int!`
+  """
+  parentUid_count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalCoins_count` of type `Int!`
+  """
+  totalCoins_count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalXp_count` of type `Int!`
+  """
+  totalXp_count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`uid_count` of type `Int!`
+  """
+  uid_count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`userUid_count` of type `Int!`
+  """
+  userUid_count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_sum` of type `Int`
+  """
+  gradeLevel_sum: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalCoins_sum` of type `Int`
+  """
+  totalCoins_sum: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalXp_sum` of type `Int`
+  """
+  totalXp_sum: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_avg` of type `Float`
+  """
+  gradeLevel_avg: Float_Filter
+  """
+  ✨ Generated from Field `Student`.`totalCoins_avg` of type `Float`
+  """
+  totalCoins_avg: Float_Filter
+  """
+  ✨ Generated from Field `Student`.`totalXp_avg` of type `Float`
+  """
+  totalXp_avg: Float_Filter
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_min` of type `Int`
+  """
+  gradeLevel_min: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalCoins_min` of type `Int`
+  """
+  totalCoins_min: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalXp_min` of type `Int`
+  """
+  totalXp_min: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_max` of type `Int`
+  """
+  gradeLevel_max: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalCoins_max` of type `Int`
+  """
+  totalCoins_max: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`totalXp_max` of type `Int`
+  """
+  totalXp_max: Int_Filter
+}
+"""
+✨ Generated key input type for table 'Student'. It represents the primary key fields used to uniquely identify a row in the table.
+"""
+input Student_Key {
+  """
+  ✨ Generated from Field `Student`.`uid` of type `String!`
+  """
+  uid: String
+  """
+  ✨ `_expr` server value variant of `uid` (✨ Generated from Field `Student`.`uid` of type `String!`)
+  """
+  uid_expr: String_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'Student'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input Student_ListFilter {
+  """
+  The desired number of objects that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: Student_Filter
+}
+"""
+✨ Generated order input type for table 'Student'. This input defines the sorting order of rows in query results based on one or more fields.
+"""
+input Student_Order {
+  """
+  ✨ Generated from Field `Student`.`uid` of type `String!`
+  """
+  uid: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`parentUid` of type `String!`
+  """
+  parentUid: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`userUid` of type `String!`
+  """
+  userUid: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`parent` of type `Parent!`
+  """
+  parent: Parent_Order
+  """
+  ✨ Generated from Field `Student`.`user` of type `User!`
+  """
+  user: User_Order
+  """
+  ✨ Generated from Field `Student`.`friendCode` of type `String`
+  """
+  friendCode: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`gradeLevel` of type `Int`
+  """
+  gradeLevel: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalCoins` of type `Int`
+  """
+  totalCoins: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalXp` of type `Int`
+  """
+  totalXp: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`_count` of type `Int!`
+  """
+  _count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`friendCode_count` of type `Int!`
+  """
+  friendCode_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_count` of type `Int!`
+  """
+  gradeLevel_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`parentUid_count` of type `Int!`
+  """
+  parentUid_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalCoins_count` of type `Int!`
+  """
+  totalCoins_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalXp_count` of type `Int!`
+  """
+  totalXp_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`uid_count` of type `Int!`
+  """
+  uid_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`userUid_count` of type `Int!`
+  """
+  userUid_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_sum` of type `Int`
+  """
+  gradeLevel_sum: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalCoins_sum` of type `Int`
+  """
+  totalCoins_sum: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalXp_sum` of type `Int`
+  """
+  totalXp_sum: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_avg` of type `Float`
+  """
+  gradeLevel_avg: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalCoins_avg` of type `Float`
+  """
+  totalCoins_avg: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalXp_avg` of type `Float`
+  """
+  totalXp_avg: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_min` of type `Int`
+  """
+  gradeLevel_min: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalCoins_min` of type `Int`
+  """
+  totalCoins_min: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalXp_min` of type `Int`
+  """
+  totalXp_min: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`gradeLevel_max` of type `Int`
+  """
+  gradeLevel_max: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalCoins_max` of type `Int`
+  """
+  totalCoins_max: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`totalXp_max` of type `Int`
+  """
+  totalXp_max: OrderDirection
+}
+"""
+✨ Generated data input type for table 'User'. It includes all necessary fields for creating or upserting rows into table.
+"""
+input User_Data {
+  """
+  ✨ Generated from Field `User`.`uid` of type `String!`
+  """
+  uid: String
+  """
+  ✨ `_expr` server value variant of `uid` (✨ Generated from Field `User`.`uid` of type `String!`)
+  """
+  uid_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `User`.`createdAt` of type `Timestamp!`
+  """
+  createdAt: Timestamp
+  """
+  ✨ `_expr` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp!`)
+  """
+  createdAt_expr: Timestamp_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_time` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp!`)
+  """
+  createdAt_time: Timestamp_Relative @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `createdAt` (✨ Generated from Field `User`.`createdAt` of type `Timestamp!`)
+  """
+  createdAt_update: [Timestamp_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `User`.`email` of type `String!`
+  """
+  email: String
+  """
+  ✨ `_expr` server value variant of `email` (✨ Generated from Field `User`.`email` of type `String!`)
+  """
+  email_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `User`.`fullName` of type `String!`
+  """
+  fullName: String
+  """
+  ✨ `_expr` server value variant of `fullName` (✨ Generated from Field `User`.`fullName` of type `String!`)
+  """
+  fullName_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `User`.`isActive` of type `Boolean!`
+  """
+  isActive: Boolean
+  """
+  ✨ `_expr` server value variant of `isActive` (✨ Generated from Field `User`.`isActive` of type `Boolean!`)
+  """
+  isActive_expr: Boolean_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `User`.`role` of type `Role!`
+  """
+  role: Role
+  """
+  ✨ `_expr` server value variant of `role` (✨ Generated from Field `User`.`role` of type `Role!`)
+  """
+  role_expr: Role_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated filter input type for table 'User'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input User_Filter {
+  """
+  Apply multiple filter conditions using `AND` logic.
+  """
+  _and: [User_Filter!]
+  """
+  Negate the result of the provided filter condition.
+  """
+  _not: User_Filter
+  """
+  Apply multiple filter conditions using `OR` logic.
+  """
+  _or: [User_Filter!]
+  """
+  ✨ Generated from Field `User`.`uid` of type `String!`
+  """
+  uid: String_Filter
+  """
+  ✨ Generated from Field `User`.`createdAt` of type `Timestamp!`
+  """
+  createdAt: Timestamp_Filter
+  """
+  ✨ Generated from Field `User`.`email` of type `String!`
+  """
+  email: String_Filter
+  """
+  ✨ Generated from Field `User`.`fullName` of type `String!`
+  """
+  fullName: String_Filter
+  """
+  ✨ Generated from Field `User`.`isActive` of type `Boolean!`
+  """
+  isActive: Boolean_Filter
+  """
+  ✨ Generated from Field `User`.`role` of type `Role!`
+  """
+  role: Role_Filter
+  """
+  ✨ Generated from Field `User`.`parents_on_user` of type `[Parent!]!`
+  """
+  parents_on_user: Parent_ListFilter
+  """
+  ✨ Generated from Field `User`.`students_on_user` of type `[Student!]!`
+  """
+  students_on_user: Student_ListFilter
+}
+"""
+✨ Generated first-row input type for table 'User'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
+"""
+input User_FirstRow {
+  """
+  Order the result by the specified fields.
+  """
+  orderBy: [User_Order!]
+  """
+  Filters rows based on the specified conditions.
+  """
+  where: User_Filter
+}
+"""
+✨ Generated having input type for table 'User'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input User_Having {
+  """
+  Apply multiple Having conditions using `AND` logic.
+  """
+  _and: [User_Having!]
+  """
+  Whether to apply DISTINCT to the aggregate function.
+  """
+  _distinct: Boolean
+  """
+  Negate the result of the provided Having condition.
+  """
+  _not: User_Having
+  """
+  Apply multiple Having conditions using `OR` logic.
+  """
+  _or: [User_Having!]
+  """
+  ✨ Generated from Field `User`.`_count` of type `Int!`
+  """
+  _count: Int_Filter
+  """
+  ✨ Generated from Field `User`.`createdAt_count` of type `Int!`
+  """
+  createdAt_count: Int_Filter
+  """
+  ✨ Generated from Field `User`.`email_count` of type `Int!`
+  """
+  email_count: Int_Filter
+  """
+  ✨ Generated from Field `User`.`fullName_count` of type `Int!`
+  """
+  fullName_count: Int_Filter
+  """
+  ✨ Generated from Field `User`.`isActive_count` of type `Int!`
+  """
+  isActive_count: Int_Filter
+  """
+  ✨ Generated from Field `User`.`role_count` of type `Int!`
+  """
+  role_count: Int_Filter
+  """
+  ✨ Generated from Field `User`.`uid_count` of type `Int!`
+  """
+  uid_count: Int_Filter
+  """
+  ✨ Generated from Field `User`.`createdAt_min` of type `Timestamp`
+  """
+  createdAt_min: Timestamp_Filter
+  """
+  ✨ Generated from Field `User`.`createdAt_max` of type `Timestamp`
+  """
+  createdAt_max: Timestamp_Filter
+}
+"""
+✨ Generated key input type for table 'User'. It represents the primary key fields used to uniquely identify a row in the table.
+"""
+input User_Key {
+  """
+  ✨ Generated from Field `User`.`uid` of type `String!`
+  """
+  uid: String
+  """
+  ✨ `_expr` server value variant of `uid` (✨ Generated from Field `User`.`uid` of type `String!`)
+  """
+  uid_expr: String_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'User'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input User_ListFilter {
+  """
+  The desired number of objects that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: User_Filter
+}
+"""
+✨ Generated order input type for table 'User'. This input defines the sorting order of rows in query results based on one or more fields.
+"""
+input User_Order {
+  """
+  ✨ Generated from Field `User`.`uid` of type `String!`
+  """
+  uid: OrderDirection
+  """
+  ✨ Generated from Field `User`.`createdAt` of type `Timestamp!`
+  """
+  createdAt: OrderDirection
+  """
+  ✨ Generated from Field `User`.`email` of type `String!`
+  """
+  email: OrderDirection
+  """
+  ✨ Generated from Field `User`.`fullName` of type `String!`
+  """
+  fullName: OrderDirection
+  """
+  ✨ Generated from Field `User`.`isActive` of type `Boolean!`
+  """
+  isActive: OrderDirection
+  """
+  ✨ Generated from Field `User`.`role` of type `Role!`
+  """
+  role: OrderDirection
+  """
+  ✨ Generated from Field `User`.`_count` of type `Int!`
+  """
+  _count: OrderDirection
+  """
+  ✨ Generated from Field `User`.`createdAt_count` of type `Int!`
+  """
+  createdAt_count: OrderDirection
+  """
+  ✨ Generated from Field `User`.`email_count` of type `Int!`
+  """
+  email_count: OrderDirection
+  """
+  ✨ Generated from Field `User`.`fullName_count` of type `Int!`
+  """
+  fullName_count: OrderDirection
+  """
+  ✨ Generated from Field `User`.`isActive_count` of type `Int!`
+  """
+  isActive_count: OrderDirection
+  """
+  ✨ Generated from Field `User`.`role_count` of type `Int!`
+  """
+  role_count: OrderDirection
+  """
+  ✨ Generated from Field `User`.`uid_count` of type `Int!`
+  """
+  uid_count: OrderDirection
+  """
+  ✨ Generated from Field `User`.`createdAt_min` of type `Timestamp`
+  """
+  createdAt_min: OrderDirection
+  """
+  ✨ Generated from Field `User`.`createdAt_max` of type `Timestamp`
+  """
+  createdAt_max: OrderDirection
+}
