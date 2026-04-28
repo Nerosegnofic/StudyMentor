@@ -52,6 +52,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# App build folders
+app/build/
+
 # Symbolication related
 app.*.symbols
 
