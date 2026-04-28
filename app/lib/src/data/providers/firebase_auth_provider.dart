@@ -13,8 +13,13 @@ class FirebaseAuthProvider {
 
   // ── basic auth ─────────────────────────────────────────────────────────────
 
-  Future<UserCredential> signUp(String email, String password) =>
-      _auth.createUserWithEmailAndPassword(email: email, password: password);
+  Future<UserCredential> signUp(String email, String password) async {
+    _cachedPassword = password;
+    return _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
 
   Future<void> signIn(String email, String password) async {
     _cachedPassword = password;

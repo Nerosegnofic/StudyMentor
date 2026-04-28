@@ -42,4 +42,6 @@ abstract class AuthRepository {
     required String parentEmail,
     required String parentPassword,
   });
+
+  Future<void> markEmailVerifiedInDatabase(String uid);
 }

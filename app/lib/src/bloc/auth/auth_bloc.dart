@@ -99,18 +99,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckEmailVerificationRequested event,
     Emitter<AuthState> emit,
   ) async {
-    final isVerified = await repository.isEmailVerified();
-    if (isVerified) {
-      final profile = await repository.getUserProfile();
-      if (profile != null) {
-        emit(AuthAuthenticated(profile));
-      } else {
-        emit(AuthUnauthenticated());
+    emit(AuthLoading()); // show spinner immediately
+    try {
+      final isVerified = await repository.isEmailVerified();
+      if (!isVerified) {
+        final email = (await repository.getUserProfile())?.email ?? '';
+        emit(AuthEmailUnverified(email));
+        return;
       }
-    } else {
-      emit(
-        AuthEmailUnverified((await repository.getUserProfile())?.email ?? ''),
-      );
+
+      final profile = await repository.getUserProfile();
+      if (profile == null) {
+        // Something is transiently wrong — do NOT log the user out.
+        // Stay on the verification screen with an error message.
+        emit(
+          EmailVerificationError(
+            'Could not load your profile. Please try again.',
+            '',
+          ),
+        );
+        return;
+      }
+
+      await repository.markEmailVerifiedInDatabase(profile.uid);
+      emit(AuthAuthenticated(profile));
+    } catch (e) {
+      // Keep the user on ConfirmEmailScreen; show what went wrong.
+      emit(EmailVerificationError(_mapException(e), ''));
     }
   }
 

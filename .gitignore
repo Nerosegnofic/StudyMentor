@@ -52,14 +52,18 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# App build folders
+app/build/
+
 # Symbolication related
 app.*.symbols
 
 # Obfuscation related
 app.*.map.json
 
-# Dump file
+# Dump files
 repo_dump.txt
+repo_paths.txt
 
 # Android Studio will place build artifacts here
 /android/app/debug
