@@ -779,6 +779,14 @@ input User_Data {
   """
   isActive_expr: Boolean_Expr @fdc_forbiddenInVariables
   """
+  ✨ Generated from Field `User`.`isEmailVerified` of type `Boolean!`
+  """
+  isEmailVerified: Boolean
+  """
+  ✨ `_expr` server value variant of `isEmailVerified` (✨ Generated from Field `User`.`isEmailVerified` of type `Boolean!`)
+  """
+  isEmailVerified_expr: Boolean_Expr @fdc_forbiddenInVariables
+  """
   ✨ Generated from Field `User`.`role` of type `Role!`
   """
   role: Role
@@ -823,6 +831,10 @@ input User_Filter {
   ✨ Generated from Field `User`.`isActive` of type `Boolean!`
   """
   isActive: Boolean_Filter
+  """
+  ✨ Generated from Field `User`.`isEmailVerified` of type `Boolean!`
+  """
+  isEmailVerified: Boolean_Filter
   """
   ✨ Generated from Field `User`.`role` of type `Role!`
   """
@@ -889,6 +901,10 @@ input User_Having {
   ✨ Generated from Field `User`.`isActive_count` of type `Int!`
   """
   isActive_count: Int_Filter
+  """
+  ✨ Generated from Field `User`.`isEmailVerified_count` of type `Int!`
+  """
+  isEmailVerified_count: Int_Filter
   """
   ✨ Generated from Field `User`.`role_count` of type `Int!`
   """
@@ -957,6 +973,10 @@ input User_Order {
   """
   isActive: OrderDirection
   """
+  ✨ Generated from Field `User`.`isEmailVerified` of type `Boolean!`
+  """
+  isEmailVerified: OrderDirection
+  """
   ✨ Generated from Field `User`.`role` of type `Role!`
   """
   role: OrderDirection
@@ -980,6 +1000,10 @@ input User_Order {
   ✨ Generated from Field `User`.`isActive_count` of type `Int!`
   """
   isActive_count: OrderDirection
+  """
+  ✨ Generated from Field `User`.`isEmailVerified_count` of type `Int!`
+  """
+  isEmailVerified_count: OrderDirection
   """
   ✨ Generated from Field `User`.`role_count` of type `Int!`
   """
