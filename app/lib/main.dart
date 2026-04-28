@@ -8,7 +8,7 @@ import 'src/presentation/screens/login_screen.dart';
 import 'src/presentation/screens/register_screen.dart';
 import 'src/presentation/screens/confirm_email_screen.dart';
 import 'src/presentation/screens/forgot_password_screen.dart';
-import 'src/presentation/screens/parent_screen.dart';
+import 'src/presentation/screens/parent/parent_screen.dart';
 import 'src/presentation/screens/student_screen.dart';
 import 'src/data/providers/firebase_auth_provider.dart';
 import 'src/data/providers/dataconnect_provider.dart';

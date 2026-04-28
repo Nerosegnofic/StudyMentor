@@ -351,6 +351,15 @@ extend type User {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "User.isActive", purpose: QUERY_COUNT)
   """
+  ✨ Count the number of rows in the `User` table where the `isEmailVerified` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  isEmailVerified_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "User.isEmailVerified", purpose: QUERY_COUNT)
+  """
   ✨ Count the number of rows in the `User` table where the `role` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   role_count(
