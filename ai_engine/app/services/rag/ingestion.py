@@ -46,19 +46,16 @@ def process_and_ingest_document(document_id: UUID, file_content: bytes, filename
 
     try:
         # Step 1: Parse
-        # full_text = parser_context.execute_parse(document_id, temp_file_path)
-
-        document_id = UUID("a5977ed0-601b-4490-9473-43696d49dfe2")
-        with open("debug_a5977ed0-601b-4490-9473-43696d49dfe2.md", "r", encoding="utf-8") as f:
-            cleaned_text = f.read()
+        full_text = parser_context.execute_parse(document_id, temp_file_path)
 
         # Preprocess text to clean artifacts
-        # cleaned_text = preprocess_parsed_text(full_text)
+        cleaned_text = preprocess_parsed_text(full_text)
         
-        # with open(f"debug_{document_id}.md", "w", encoding="utf-8") as f:
-        #     f.write(cleaned_text)
+        # Write to debug file to see its parsing
+        with open(f"debug_{document_id}.md", "w", encoding="utf-8") as f:
+            f.write(cleaned_text)
 
-        clear_all_embeddings()
+        # clear_all_embeddings() # Commented out to avoid wiping the DB on every upload
             
         # Step 2: Chunk
         langchain_docs = chunker_context.execute_chunking(cleaned_text, document_id)
