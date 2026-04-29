@@ -63,11 +63,6 @@ class _ParentScreenState extends State<ParentScreen> {
             title: Text('Welcome, ${widget.fullName}'),
             automaticallyImplyLeading: false,
             actions: [
-              if (_selectedIndex == 1)
-                IconButton(
-                  icon: const Icon(Icons.person_add),
-                  onPressed: _openAddStudentScreen,
-                ),
               IconButton(
                 icon: const Icon(Icons.logout),
                 onPressed: () =>

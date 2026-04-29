@@ -79,8 +79,6 @@ class LoadParentNameRequested extends AuthEvent {
   List<Object?> get props => [studentUid];
 }
 
-/// Fired periodically by ParentScreen to re-check the email-verification
-/// status of any students that are still unverified.
 class RefreshStudentVerificationsRequested extends AuthEvent {
   final List<StudentModel> currentStudents;
   RefreshStudentVerificationsRequested({required this.currentStudents});
@@ -88,7 +86,6 @@ class RefreshStudentVerificationsRequested extends AuthEvent {
   List<Object?> get props => [currentStudents];
 }
 
-/// Fired when a student taps the logout button.
 class StudentLogoutVerificationRequested extends AuthEvent {
   final String studentUid;
   StudentLogoutVerificationRequested({required this.studentUid});
@@ -96,7 +93,6 @@ class StudentLogoutVerificationRequested extends AuthEvent {
   List<Object?> get props => [studentUid];
 }
 
-/// Fired when the student submits the parent credentials in the dialog.
 class VerifyParentAndLogoutRequested extends AuthEvent {
   final String studentUid;
   final String parentEmail;
@@ -110,4 +106,29 @@ class VerifyParentAndLogoutRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [studentUid, parentEmail];
+}
+
+/// Fired when the parent taps "Save" on the Settings screen.
+///
+/// At least one of [newFullName] or [newPassword] must be non-null.
+/// [currentPassword] is required whenever [newPassword] is provided —
+/// Firebase needs it to reauthenticate before a password change.
+class UpdateProfileRequested extends AuthEvent {
+  /// New display name, or null if the name was not changed.
+  final String? newFullName;
+
+  /// The user's current password. Required when [newPassword] is set.
+  final String? currentPassword;
+
+  /// The desired new password, or null if not changing the password.
+  final String? newPassword;
+
+  UpdateProfileRequested({
+    this.newFullName,
+    this.currentPassword,
+    this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [newFullName, newPassword];
 }

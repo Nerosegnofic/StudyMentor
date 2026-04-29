@@ -25,18 +25,12 @@ abstract class AuthRepository {
   Future<List<StudentModel>> getStudentsByParent(String parentUid);
   Future<String> getParentFullName(String studentUid);
 
-  /// Refreshes the email-verification status for each student in [students]
-  /// by re-checking their `isActive` flag in DataConnect (which is set to
-  /// `true` only after the student logs in with a verified email).
-  ///
-  /// Returns the same list with updated [StudentModel.isEmailVerified] values.
+  /// Refreshes the email-verification status for each student in [students].
   Future<List<StudentModel>> refreshStudentVerificationStatus(
     List<StudentModel> students,
   );
 
-  /// Verifies that the provided email/password belong to the parent
-  /// linked to the given student via `parent_uid`.
-  /// Returns `true` if credentials are valid and match the linked parent.
+  /// Verifies parent credentials for a given student.
   Future<bool> verifyParentCredentials({
     required String studentUid,
     required String parentEmail,
@@ -44,4 +38,19 @@ abstract class AuthRepository {
   });
 
   Future<void> markEmailVerifiedInDatabase(String uid);
+
+  /// Updates the current user's profile.
+  ///
+  /// - [newFullName]: if provided, updates the display name in DataConnect.
+  /// - [currentPassword]: required when [newPassword] is provided; used to
+  ///   reauthenticate with Firebase before changing the password.
+  /// - [newPassword]: if provided (along with [currentPassword]), updates the
+  ///   Firebase Auth password.
+  ///
+  /// Returns the updated [UserModel] so the BLoC can refresh [AuthAuthenticated].
+  Future<UserModel> updateProfile({
+    String? newFullName,
+    String? currentPassword,
+    String? newPassword,
+  });
 }

@@ -36,8 +36,6 @@ class AuthError extends AuthState {
   List<Object?> get props => [message];
 }
 
-/// Emitted when sending a verification email fails (e.g. rate-limited).
-/// Unlike AuthError, this does NOT cause RootPage to redirect to LoginScreen.
 class EmailVerificationError extends AuthState {
   final String message;
   final String email;
@@ -64,7 +62,6 @@ class ParentNameLoaded extends AuthState {
   List<Object?> get props => [parentFullName];
 }
 
-/// Tells the UI to show the parent-verification dialog.
 class StudentLogoutVerificationRequired extends AuthState {
   final String studentUid;
   StudentLogoutVerificationRequired({required this.studentUid});
@@ -72,11 +69,35 @@ class StudentLogoutVerificationRequired extends AuthState {
   List<Object?> get props => [studentUid];
 }
 
-/// Emitted when parent credential verification fails.
 class ParentVerificationFailed extends AuthState {
   final String message;
   final String studentUid;
   ParentVerificationFailed({required this.message, required this.studentUid});
   @override
   List<Object?> get props => [message, studentUid];
+}
+
+/// Emitted while the profile update network calls are in flight.
+/// Distinct from [AuthLoading] so the Settings screen can show its own
+/// in-place loading indicator without triggering the global root redirect.
+class ProfileUpdateLoading extends AuthState {}
+
+/// Emitted when the profile update completes successfully.
+/// Contains the refreshed [UserModel] so the UI can update the name field
+/// and the parent AppBar without a full re-login.
+class ProfileUpdateSuccess extends AuthState {
+  final UserModel updatedUser;
+  ProfileUpdateSuccess(this.updatedUser);
+  @override
+  List<Object?> get props => [updatedUser];
+}
+
+/// Emitted when the profile update fails (e.g. wrong current password,
+/// network error). Distinct from [AuthError] so it doesn't cause
+/// [RootPage] to redirect to the login screen.
+class ProfileUpdateError extends AuthState {
+  final String message;
+  ProfileUpdateError(this.message);
+  @override
+  List<Object?> get props => [message];
 }
