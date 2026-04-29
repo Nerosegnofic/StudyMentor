@@ -1,5 +1,4 @@
-from dataclasses import dataclass, field
-from typing import Dict, List
+from dataclasses import dataclass
 
 @dataclass
 class BKTConfig:
@@ -8,9 +7,3 @@ class BKTConfig:
     min_prob: float = 0.01
     max_prob: float = 0.95
     forgetting_rate: float = 0.995
-    prerequisites: Dict[str, List[str]] = field(
-        default_factory=lambda: {
-            "Algebra": ["Addition", "Multiplication"],
-            "Fractions": ["Division"]
-        }
-    )
