@@ -22,6 +22,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<RefreshStudentVerificationsRequested>(_onRefreshStudentVerifications);
     on<StudentLogoutVerificationRequested>(_onStudentLogoutVerification);
     on<VerifyParentAndLogoutRequested>(_onVerifyParentAndLogout);
+    on<UpdateProfileRequested>(_onUpdateProfile);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -99,7 +100,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckEmailVerificationRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading()); // show spinner immediately
+    emit(AuthLoading());
     try {
       final isVerified = await repository.isEmailVerified();
       if (!isVerified) {
@@ -110,8 +111,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       final profile = await repository.getUserProfile();
       if (profile == null) {
-        // Something is transiently wrong — do NOT log the user out.
-        // Stay on the verification screen with an error message.
         emit(
           EmailVerificationError(
             'Could not load your profile. Please try again.',
@@ -124,7 +123,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await repository.markEmailVerifiedInDatabase(profile.uid);
       emit(AuthAuthenticated(profile));
     } catch (e) {
-      // Keep the user on ConfirmEmailScreen; show what went wrong.
       emit(EmailVerificationError(_mapException(e), ''));
     }
   }
@@ -185,9 +183,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Re-checks DataConnect for the `isActive` flag of each unverified student.
-  /// Emits a new [StudentsLoaded] only if at least one status changed, so
-  /// the UI does not rebuild unnecessarily.
   Future<void> _onRefreshStudentVerifications(
     RefreshStudentVerificationsRequested event,
     Emitter<AuthState> emit,
@@ -197,7 +192,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         event.currentStudents,
       );
 
-      // Only emit if something actually changed.
       final changed = updated.any((s) {
         final old = event.currentStudents.firstWhere((o) => o.uid == s.uid);
         return old.isEmailVerified != s.isEmailVerified;
@@ -206,9 +200,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (changed) {
         emit(StudentsLoaded(updated));
       }
-    } catch (_) {
-      // Silent — this is a background poll; don't surface errors to the user.
-    }
+    } catch (_) {}
   }
 
   Future<void> _onStudentLogoutVerification(
@@ -249,6 +241,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  // ── profile update ──────────────────────────────────────────────────────────
+
+  Future<void> _onUpdateProfile(
+    UpdateProfileRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    // Use a dedicated loading state so RootPage doesn't interpret this as
+    // a global auth loading event and redirect to the loading spinner.
+    emit(ProfileUpdateLoading());
+    try {
+      final updatedUser = await repository.updateProfile(
+        newFullName: event.newFullName,
+        currentPassword: event.currentPassword,
+        newPassword: event.newPassword,
+      );
+
+      // Emit success first so the Settings screen can react (show snackbar,
+      // reset form dirty state, etc.), then immediately re-emit
+      // AuthAuthenticated with the fresh user so the AppBar name updates.
+      emit(ProfileUpdateSuccess(updatedUser));
+      emit(AuthAuthenticated(updatedUser));
+    } catch (e) {
+      emit(ProfileUpdateError(_mapProfileUpdateException(e)));
+    }
+  }
+
+  // ── error mappers ───────────────────────────────────────────────────────────
+
   String _mapException(dynamic e) {
     final msg = e.toString();
     if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
@@ -273,5 +293,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return 'These credentials do not belong to your linked parent.';
     }
     return 'Verification failed: $msg';
+  }
+
+  String _mapProfileUpdateException(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('wrong-password') ||
+        msg.contains('invalid-credential') ||
+        msg.contains('INVALID_LOGIN_CREDENTIALS')) {
+      return 'Current password is incorrect.';
+    }
+    if (msg.contains('weak-password')) {
+      return 'New password is too weak. Use at least 6 characters.';
+    }
+    if (msg.contains('requires-recent-login')) {
+      return 'Session expired. Please log out and log in again.';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    return 'Update failed: $msg';
   }
 }

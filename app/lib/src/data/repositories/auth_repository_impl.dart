@@ -40,7 +40,6 @@ class AuthRepositoryImpl implements AuthRepository {
     await firebase.signIn(email, password);
     final uid = firebase.currentUser!.uid;
 
-    // Force reload to get fresh emailVerified status from Firebase.
     await firebase.reloadUser();
 
     final isVerified = firebase.currentUser?.emailVerified ?? false;
@@ -52,14 +51,6 @@ class AuthRepositoryImpl implements AuthRepository {
     return UserModel.fromJson(profile);
   }
 
-  /// Upserts the user record with isActive=true AND isEmailVerified=true.
-  ///
-  /// This method is only ever called when [firebase.currentUser.emailVerified]
-  /// is true, so setting both flags here is always correct.
-  ///
-  /// Belt-and-suspenders: we also call [dataConnect.markEmailVerified()]
-  /// directly so the field is written even if the UpsertCurrentUser mutation
-  /// is replaced or refactored in the future.
   Future<void> _markUserActive({
     required String email,
     required String uid,
@@ -71,19 +62,11 @@ class AuthRepositoryImpl implements AuthRepository {
       await ExampleConnector.instance
           .upsertCurrentUser(email: email, role: role)
           .execute();
-    } catch (_) {
-      // Best-effort — don't break login if this fails.
-    }
+    } catch (_) {}
 
-    // Explicitly write isEmailVerified=true regardless of whether the
-    // upsert above succeeded.  This covers Path B: the student clicks the
-    // verification link, reopens the app, and logs in fresh — bypassing
-    // ConfirmEmailScreen and the markEmailVerifiedInDatabase() call there.
     try {
       await dataConnect.markEmailVerified();
-    } catch (_) {
-      // Best-effort — don't break login if this fails.
-    }
+    } catch (_) {}
   }
 
   @override
@@ -103,12 +86,8 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    // 1. Create the Firebase Auth account for the student.
     await firebase.signUp(email, password);
 
-    // 2. While signed in as the new student, create DataConnect records.
-    //    isActive defaults to `true` in the schema, so we immediately
-    //    upsert it to `false` to flag the account as unverified.
     await dataConnect.createUserProfile(
       email: email,
       fullName: fullName,
@@ -119,17 +98,12 @@ class AuthRepositoryImpl implements AuthRepository {
       gradeLevel: gradeLevel,
     );
 
-    // 3. Mark the student as inactive (email not yet verified).
     try {
       await ExampleConnector.instance.setUserInactive().execute();
-    } catch (_) {
-      // Non-fatal.
-    }
+    } catch (_) {}
 
-    // 4. Send the verification email while still signed in as the student.
     await firebase.sendEmailVerification();
 
-    // 5. Sign back in as the parent.
     await firebase.signOut();
     await firebase.signInWithPassword(parentEmail, parentPassword);
 
@@ -150,8 +124,6 @@ class AuthRepositoryImpl implements AuthRepository {
   ) async {
     if (students.isEmpty) return students;
 
-    // Resolve parent UID for the first student via DataConnect, then re-fetch
-    // the full list so all fields (including isEmailVerified) are fresh.
     final parentUid = await dataConnect.getParentUidForStudent(
       students.first.uid,
     );
@@ -213,5 +185,50 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> markEmailVerifiedInDatabase(String uid) async {
     await dataConnect.markEmailVerified();
+  }
+
+  // ── profile update ──────────────────────────────────────────────────────────
+
+  @override
+  Future<UserModel> updateProfile({
+    String? newFullName,
+    String? currentPassword,
+    String? newPassword,
+  }) async {
+    final user = firebase.currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    final isChangingPassword =
+        newPassword != null &&
+        newPassword.isNotEmpty &&
+        currentPassword != null;
+
+    // Step 1: Reauthenticate if a password change is requested.
+    // Firebase requires a recent login before sensitive operations.
+    if (isChangingPassword) {
+      await firebase.reauthenticate(currentPassword);
+    }
+
+    // Step 2: Update password in Firebase Auth.
+    if (isChangingPassword) {
+      await firebase.updatePassword(newPassword);
+    }
+
+    // Step 3: Update full name in DataConnect via UpsertCurrentUser.
+    // We only call this if the name has actually changed.
+    if (newFullName != null && newFullName.isNotEmpty) {
+      final profile = await dataConnect.getUserProfile(user.uid);
+      final roleStr = profile['role'] as String;
+      final role = roleStr == 'Parent' ? Role.Parent : Role.Student;
+
+      await ExampleConnector.instance
+          .upsertCurrentUser(email: user.email!, role: role)
+          .fullName(newFullName)
+          .execute();
+    }
+
+    // Step 4: Return the freshly fetched profile so AuthAuthenticated is up to date.
+    final updated = await dataConnect.getUserProfile(user.uid);
+    return UserModel.fromJson(updated);
   }
 }

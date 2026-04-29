@@ -1,8 +1,4 @@
 // lib/src/data/providers/firebase_auth_provider.dart
-//
-// Added: checkEmailVerifiedForUid() — signs into a secondary Firebase app
-// with stored student credentials to read their emailVerified flag, then
-// immediately signs out.  The parent's primary session is never touched.
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -60,6 +56,35 @@ class FirebaseAuthProvider {
     final user = _auth.currentUser;
     if (user == null) return null;
     return await user.getIdToken(true);
+  }
+
+  // ── profile update helpers ─────────────────────────────────────────────────
+
+  /// Reauthenticates the current user with their current password.
+  /// Must be called before [updatePassword] to satisfy Firebase's
+  /// recent-login requirement.
+  ///
+  /// Throws [FirebaseAuthException] on wrong password or network error.
+  Future<void> reauthenticate(String currentPassword) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+    if (user.email == null) throw Exception('User has no email address.');
+
+    final credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: currentPassword,
+    );
+    await user.reauthenticateWithCredential(credential);
+  }
+
+  /// Updates the current user's password in Firebase Auth.
+  /// [reauthenticate] must be called first.
+  Future<void> updatePassword(String newPassword) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+    await user.updatePassword(newPassword);
+    // Keep the cached password in sync so createStudent still works.
+    _cachedPassword = newPassword;
   }
 
   // ── secondary-app helpers ──────────────────────────────────────────────────
@@ -121,7 +146,6 @@ class FirebaseAuthProvider {
         email: email,
         password: password,
       );
-      // Force a fresh token so emailVerified is not stale.
       await credential.user?.reload();
       final verified = secondaryAuth.currentUser?.emailVerified;
       await secondaryAuth.signOut();
