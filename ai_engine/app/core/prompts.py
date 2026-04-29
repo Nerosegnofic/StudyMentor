@@ -36,7 +36,6 @@ Guidelines:
 7. Provide 4 multiple-choice options for each question.
 8. Clearly state the correct answer (which must exactly match one of the options).
 9. Provide a brief, supportive explanation for why the answer is correct.
-10. SKILL TAGGING: Look for the "### Mastery Points" in the provided context. You MUST set the `topic` (or skill) of each generated question to perfectly match one of the bullet points listed under "Mastery Points". Do not invent your own topic names if Mastery Points are available.
 """),
     ("human", "Curriculum Context:\n{context}\n\nPlease generate the adaptive quiz now.")
 ])

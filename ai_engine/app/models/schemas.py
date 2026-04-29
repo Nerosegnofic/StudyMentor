@@ -11,13 +11,6 @@ class TopicQuizConfig(BaseModel):
     difficulty: int = Field(..., ge=1, le=5, description="Target difficulty for this topic")
     question_count: int = Field(..., ge=1, le=10, description="Number of questions for this topic")
 
-class QuizPayloadItem(BaseModel):
-    """A single skill-block inside the adaptive quiz payload produced by the
-    BKT → Quiz-Generator bridge."""
-    skill: str = Field(..., description="Skill name from the student's mastery profile")
-    difficulty: int = Field(..., ge=1, le=5, description="Target difficulty derived from mastery via ZPD mapping")
-    count: int = Field(..., ge=1, description="Number of questions allocated to this skill")
-
 class GenerateQuizRequest(BaseModel):
     topic_configs: List[TopicQuizConfig] = Field(..., description="Per-topic quiz specifications")
     student_id: Optional[str] = None

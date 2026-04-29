@@ -22,15 +22,6 @@ class LlamaParseStrategy(DocumentParserStrategy):
             Please preserve the RTL reading order for Arabic sections. 
             Keep technical English terms in-line. 
             Output headers as # and sub-headers as ##.
-
-            CRITICAL INSTRUCTION:
-            At the end of EVERY SINGLE PAGE, you must extract the core learning objectives taught ON THAT SPECIFIC PAGE. 
-            Append them at the bottom of the page's text under the exact header "### Mastery Points". 
-            Do not wait until the end of the chapter. Extract the specific, actionable mathematical concepts and skills as a bulleted list in Arabic. 
-            Example:
-            ### Mastery Points
-            - جمع الكسور ذات المقامات الموحدة
-            - تبسيط الكسور إلى أبسط صورة
             """,
             verbose=True
         )
