@@ -2,6 +2,7 @@
 
 import 'package:equatable/equatable.dart';
 import '../../domain/models/student_model.dart';
+import '../../domain/models/app_config_model.dart';
 
 abstract class AuthEvent extends Equatable {
   @override
@@ -108,19 +109,9 @@ class VerifyParentAndLogoutRequested extends AuthEvent {
   List<Object?> get props => [studentUid, parentEmail];
 }
 
-/// Fired when the parent taps "Save" on the Settings screen.
-///
-/// At least one of [newFullName] or [newPassword] must be non-null.
-/// [currentPassword] is required whenever [newPassword] is provided —
-/// Firebase needs it to reauthenticate before a password change.
 class UpdateProfileRequested extends AuthEvent {
-  /// New display name, or null if the name was not changed.
   final String? newFullName;
-
-  /// The user's current password. Required when [newPassword] is set.
   final String? currentPassword;
-
-  /// The desired new password, or null if not changing the password.
   final String? newPassword;
 
   UpdateProfileRequested({
@@ -131,4 +122,38 @@ class UpdateProfileRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [newFullName, newPassword];
+}
+
+// ── App Configuration Events ─────────────────────────────────────────────────
+
+/// Fired when the parent opens the configuration screen for a student.
+/// Loads existing saved rules from the database.
+class LoadAppRulesRequested extends AuthEvent {
+  final String studentUid;
+  LoadAppRulesRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Fired when the parent taps "Save" on the configuration screen.
+/// Replaces all existing rules with [rules] in the database.
+class SaveAppRulesRequested extends AuthEvent {
+  final String studentUid;
+  final List<PendingAppRule> rules;
+
+  SaveAppRulesRequested({
+    required this.studentUid,
+    required this.rules,
+  });
+
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Fired by the student screen to load their own saved configs.
+class LoadStudentAppConfigRequested extends AuthEvent {
+  final String studentUid;
+  LoadStudentAppConfigRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
 }

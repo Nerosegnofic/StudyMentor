@@ -6,6 +6,7 @@ import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../domain/models/student_model.dart';
 import '../../widgets/student_card.dart';
+import 'student_config_screen.dart';
 
 class ParentStudents extends StatefulWidget {
   final String parentUid;
@@ -55,6 +56,18 @@ class _ParentStudentsState extends State<ParentStudents> {
     setState(() => _isLoading = true);
     context.read<AuthBloc>().add(
       LoadStudentsRequested(parentUid: widget.parentUid),
+    );
+  }
+
+  /// Opens the configuration screen for a verified student.
+  Future<void> _openConfigScreen(StudentModel student) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<AuthBloc>(),
+          child: StudentConfigScreen(student: student),
+        ),
+      ),
     );
   }
 
@@ -153,15 +166,54 @@ class _ParentStudentsState extends State<ParentStudents> {
         .where((s) => !s.isEmailVerified)
         .toList();
 
+    // Show a hint banner when all students are verified so the parent
+    // knows the cards are now interactive.
+    final allVerified =
+        _students.isNotEmpty && _students.every((s) => s.isEmailVerified);
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(top: 12, bottom: 24),
       children: [
         if (unverifiedStudents.isNotEmpty)
           _buildUnverifiedBanner(unverifiedStudents),
+        if (allVerified) _buildTapHintBanner(),
         for (final student in _students)
-          StudentCard(student: student, onTap: null),
+          StudentCard(
+            student: student,
+            // Only verified students get an onTap handler.
+            onTap: student.isEmailVerified
+                ? () => _openConfigScreen(student)
+                : null,
+          ),
       ],
+    );
+  }
+
+  Widget _buildTapHintBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8EDFF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF4A6CF7).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: const [
+          Icon(Icons.touch_app_outlined, color: Color(0xFF4A6CF7), size: 18),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Tap a student card to configure their app usage rules.',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF4A6CF7),
+                  fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

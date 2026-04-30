@@ -23,6 +23,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<StudentLogoutVerificationRequested>(_onStudentLogoutVerification);
     on<VerifyParentAndLogoutRequested>(_onVerifyParentAndLogout);
     on<UpdateProfileRequested>(_onUpdateProfile);
+    // App configuration
+    on<LoadAppRulesRequested>(_onLoadAppRules);
+    on<SaveAppRulesRequested>(_onSaveAppRules);
+    on<LoadStudentAppConfigRequested>(_onLoadStudentAppConfig);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -241,14 +245,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ── profile update ──────────────────────────────────────────────────────────
-
   Future<void> _onUpdateProfile(
     UpdateProfileRequested event,
     Emitter<AuthState> emit,
   ) async {
-    // Use a dedicated loading state so RootPage doesn't interpret this as
-    // a global auth loading event and redirect to the loading spinner.
     emit(ProfileUpdateLoading());
     try {
       final updatedUser = await repository.updateProfile(
@@ -256,14 +256,57 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         currentPassword: event.currentPassword,
         newPassword: event.newPassword,
       );
-
-      // Emit success first so the Settings screen can react (show snackbar,
-      // reset form dirty state, etc.), then immediately re-emit
-      // AuthAuthenticated with the fresh user so the AppBar name updates.
       emit(ProfileUpdateSuccess(updatedUser));
       emit(AuthAuthenticated(updatedUser));
     } catch (e) {
       emit(ProfileUpdateError(_mapProfileUpdateException(e)));
+    }
+  }
+
+  // ── App Configuration Handlers ────────────────────────────────────────────
+
+  /// Parent opens the config screen — load whatever rules are already saved.
+  Future<void> _onLoadAppRules(
+    LoadAppRulesRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AppConfigLoading());
+    try {
+      final rules = await repository.getAppRulesForStudent(event.studentUid);
+      emit(AppRulesLoaded(studentUid: event.studentUid, rules: rules));
+    } catch (e) {
+      emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  /// Parent taps Save — replace all rules in the database.
+  Future<void> _onSaveAppRules(
+    SaveAppRulesRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AppConfigSaving());
+    try {
+      await repository.saveAppRulesForStudent(
+        studentUid: event.studentUid,
+        rules: event.rules,
+      );
+      emit(AppConfigSaved());
+    } catch (e) {
+      emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  /// Student device loads its own saved config.
+  Future<void> _onLoadStudentAppConfig(
+    LoadStudentAppConfigRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AppConfigLoading());
+    try {
+      final rules = await repository.getAppRulesForStudent(event.studentUid);
+      emit(AppRulesLoaded(studentUid: event.studentUid, rules: rules));
+    } catch (e) {
+      emit(AppConfigError(_mapException(e)));
     }
   }
 

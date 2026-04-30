@@ -167,6 +167,55 @@ ref.execute();
 ref.subscribe(...);
 ```
 
+
+### GetAppConfigForStudent
+#### Required Arguments
+```dart
+String studentUid = ...;
+ExampleConnector.instance.getAppConfigForStudent(
+  studentUid: studentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetAppConfigForStudentData, GetAppConfigForStudentVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getAppConfigForStudent(
+  studentUid: studentUid,
+);
+GetAppConfigForStudentData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+
+final ref = ExampleConnector.instance.getAppConfigForStudent(
+  studentUid: studentUid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
 ## Mutations
 
 ### InsertUser
@@ -501,6 +550,110 @@ Each builder returns an `execute` function, which is a helper function that crea
 An example of how to use the `Ref` object is shown below:
 ```dart
 final ref = ExampleConnector.instance.markEmailVerified().ref();
+ref.execute();
+```
+
+
+### InsertAppRule
+#### Required Arguments
+```dart
+String studentUid = ...;
+String packageName = ...;
+String appLabel = ...;
+int usageDurationMinutes = ...;
+int cooldownDurationMinutes = ...;
+ExampleConnector.instance.insertAppRule(
+  studentUid: studentUid,
+  packageName: packageName,
+  appLabel: appLabel,
+  usageDurationMinutes: usageDurationMinutes,
+  cooldownDurationMinutes: cooldownDurationMinutes,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<InsertAppRuleData, InsertAppRuleVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.insertAppRule(
+  studentUid: studentUid,
+  packageName: packageName,
+  appLabel: appLabel,
+  usageDurationMinutes: usageDurationMinutes,
+  cooldownDurationMinutes: cooldownDurationMinutes,
+);
+InsertAppRuleData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+String packageName = ...;
+String appLabel = ...;
+int usageDurationMinutes = ...;
+int cooldownDurationMinutes = ...;
+
+final ref = ExampleConnector.instance.insertAppRule(
+  studentUid: studentUid,
+  packageName: packageName,
+  appLabel: appLabel,
+  usageDurationMinutes: usageDurationMinutes,
+  cooldownDurationMinutes: cooldownDurationMinutes,
+).ref();
+ref.execute();
+```
+
+
+### DeleteAllAppRulesForStudent
+#### Required Arguments
+```dart
+String studentUid = ...;
+ExampleConnector.instance.deleteAllAppRulesForStudent(
+  studentUid: studentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<DeleteAllAppRulesForStudentData, DeleteAllAppRulesForStudentVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.deleteAllAppRulesForStudent(
+  studentUid: studentUid,
+);
+DeleteAllAppRulesForStudentData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+
+final ref = ExampleConnector.instance.deleteAllAppRulesForStudent(
+  studentUid: studentUid,
+).ref();
 ref.execute();
 ```
 

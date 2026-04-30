@@ -8,9 +8,9 @@ ExampleConnector.instance.InsertParent(insertParentVariables).execute();
 ExampleConnector.instance.InsertStudent(insertStudentVariables).execute();
 ExampleConnector.instance.SetUserInactive().execute();
 ExampleConnector.instance.MarkEmailVerified().execute();
+ExampleConnector.instance.InsertAppRule(insertAppRuleVariables).execute();
+ExampleConnector.instance.DeleteAllAppRulesForStudent(deleteAllAppRulesForStudentVariables).execute();
 ExampleConnector.instance.GetUserByUid(getUserByUidVariables).execute();
-ExampleConnector.instance.GetStudentsByParent(getStudentsByParentVariables).execute();
-ExampleConnector.instance.GetStudentWithParent(getStudentWithParentVariables).execute();
 
 ```
 

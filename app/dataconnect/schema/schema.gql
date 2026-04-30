@@ -29,3 +29,17 @@ type Student @table(name: "students", key: ["uid"]) {
   totalXp: Int @default(expr: "0")
   totalCoins: Int @default(expr: "0")
 }
+
+# One row per configured app per student.
+# packageName is the Android package identifier (e.g. "com.google.android.youtube").
+# usageDurationMinutes: how many minutes the student may use the app per session.
+# cooldownDurationMinutes: how many minutes the student must wait after the session ends.
+type AppRule @table(name: "app_rules", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  student: Student!
+  studentUid: String!
+  packageName: String! @col(dataType: "varchar(255)")
+  appLabel: String! @col(dataType: "varchar(255)")
+  usageDurationMinutes: Int!
+  cooldownDurationMinutes: Int!
+}
