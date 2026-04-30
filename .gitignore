@@ -24,6 +24,12 @@ __pycache__/
 *.py[cod]
 *.pyc
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+
 # Logs
 *.log
 .buildlog/
