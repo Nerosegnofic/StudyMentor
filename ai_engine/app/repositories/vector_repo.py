@@ -37,15 +37,12 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID):
         existing_ids = {row[0] for row in result}
 
     # 2. Map docs to their deterministic IDs and filter out duplicates
-    # Using a dict ensures we don't have duplicate IDs in the SAME batch
     new_chunks_registry = {}
     
     for doc in langchain_docs:
         doc.metadata["document_id"] = str(document_id)
-        # Include metadata in the ID generation so context is preserved!
         chunk_id = generate_chunk_id(doc.page_content, doc.metadata, document_id)
         
-        # Only add if it's not in the database AND hasn't been seen in this loop
         if chunk_id not in existing_ids and chunk_id not in new_chunks_registry:
             new_chunks_registry[chunk_id] = doc
 
@@ -59,8 +56,8 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID):
 
     print(f"[{document_id}] Found {total_new} new chunks to embed (Skipped {len(langchain_docs) - total_new} existing).", flush=True)
 
-    # 3. Save in batches to ensure progress is saved even if it crashes
-    batch_size = 190 # Match or slightly exceed the embedding batch size
+    # 3. Save in batches
+    batch_size = 190
     for i in range(0, total_new, batch_size):
         batch_docs = docs_to_add[i:i + batch_size]
         batch_ids = ids_to_add[i:i + batch_size]
@@ -70,9 +67,9 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID):
 
     print(f"[{document_id}] Successfully synchronized all chunks to PGVector!", flush=True)
 
-def delete_document_embeddings(document_id: UUID):
+def delete_vector_embeddings(document_id: UUID):
     """
-    Deletes all vector embeddings associated with a specific document from the database.
+    Deletes all vector embeddings associated with a specific document.
     """
     engine = create_engine(settings.POSTGRES_CONNECTION)
     with engine.begin() as conn:
@@ -81,11 +78,11 @@ def delete_document_embeddings(document_id: UUID):
             {"doc_id": str(document_id)}
         )
 
-def clear_all_embeddings():
+def clear_vector_database():
     """
     Wipes the entire vector database.
     """
     engine = create_engine(settings.POSTGRES_CONNECTION)
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE langchain_pg_embedding, langchain_pg_collection CASCADE;"))
-    print("Database cleared completely!", flush=True)
+    print("Vector database cleared!", flush=True)

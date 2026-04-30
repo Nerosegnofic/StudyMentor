@@ -24,6 +24,12 @@ __pycache__/
 *.py[cod]
 *.pyc
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+
 # Logs
 *.log
 .buildlog/
@@ -69,3 +75,29 @@ repo_paths.txt
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+frontend/build/
+**/build/
+.dart_tool/
+.gradle/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/.pub-cache/
+frontend/.pub/
+frontend/ios/Flutter/ephemeral/
+frontend/linux/flutter/ephemeral/
+frontend/macos/Flutter/ephemeral/
+frontend/windows/flutter/ephemeral/
+frontend/android/local.properties
+frontend/ios/Flutter/Generated.xcconfig
+frontend/ios/Flutter/flutter_export_environment.sh
+frontend/macos/Flutter/ephemeral/Flutter-Generated.xcconfig
+frontend/macos/Flutter/ephemeral/flutter_export_environment.sh
+frontend/windows/flutter/ephemeral/generated_config.cmake
+*.dll
+*.exe
+*.pdb
+*.exp
+*.lib

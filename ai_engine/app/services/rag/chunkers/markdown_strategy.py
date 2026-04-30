@@ -1,10 +1,11 @@
 from uuid import UUID
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from app.services.rag.chunkers.base import DocumentChunkerStrategy
-from app.services.rag.chunkers.classifier import ChunkClassifier
-from app.services.rag.chunkers.metadata_extractor import (
+from app.services.rag.processors import (
+    ChunkClassifier,
     detect_chunk_role,
     extract_context_names,
+    is_garbage_chunk,
     SequentialContextTracker,
 )
 
@@ -18,6 +19,7 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         3. Classify each chunk (substantive vs structural).
         4. Detect chunk role from CONTENT (exercise, example, rule, etc.).
         5. Track sequential context (parent unit, concept, lesson).
+        6. Filter garbage chunks (CamScanner artifacts, orphaned headers).
     """
     def chunk(self, full_text: str, document_id: UUID) -> list:
         headers_to_split_on = [("#", "h1"), ("##", "h2"), ("###", "h3")]
@@ -42,23 +44,36 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         # 4. Sequential context tracking + role detection + classification
         tracker = SequentialContextTracker()
         final_chunks = []
+        garbage_count = 0
         
         for chunk in all_sub_chunks:
             text = chunk.page_content
             
-            # a) Detect role from content (ignores header depth)
+            # a) Classify first to get word_count
+            classification = ChunkClassifier.classify(text)
+            word_count = classification.get('word_count', 0)
+            
+            # b) Filter garbage chunks
+            if is_garbage_chunk(text, word_count):
+                garbage_count += 1
+                continue
+            
+            # c) Detect role from content (ignores header depth)
             role = detect_chunk_role(text)
             
-            # b) Extract names (unit, concept, lesson) if this chunk is a header
+            # d) Extract names (unit, concept, lesson) if this chunk is a header
             context_names = extract_context_names(text)
             
-            # c) Update tracker and get inherited parent context
-            parent_context = tracker.update_and_tag(role, context_names)
+            # e) Pass markdown headers as fallback for lesson detection
+            md_headers = {
+                k: v for k, v in chunk.metadata.items()
+                if k in ('h1', 'h2', 'h3')
+            }
             
-            # d) Classify (substantive vs structural)
-            classification = ChunkClassifier.classify(text)
+            # f) Update tracker and get inherited parent context
+            parent_context = tracker.update_and_tag(role, context_names, md_headers)
             
-            # e) Merge all metadata
+            # g) Merge all metadata
             chunk.metadata.update(classification)
             chunk.metadata.update(parent_context)
             chunk.metadata["document_id"] = str(document_id)
@@ -70,7 +85,7 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         for c in final_chunks:
             r = c.metadata.get('chunk_role', 'unknown')
             roles[r] = roles.get(r, 0) + 1
-        print(f"[{document_id}] Chunking complete: {len(final_chunks)} chunks.", flush=True)
+        print(f"[{document_id}] Chunking complete: {len(final_chunks)} chunks ({garbage_count} garbage filtered).", flush=True)
         print(f"[{document_id}] Role breakdown: {roles}", flush=True)
                 
         return final_chunks

@@ -2,7 +2,7 @@ from uuid import UUID
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from app.services.rag.chunkers.base import DocumentChunkerStrategy
-from app.services.rag.chunkers.classifier import ChunkClassifier
+from app.services.rag.processors import ChunkClassifier
 from app.core.embeddings import RateLimitedCohereEmbeddings
 from app.core.config import settings
 from langchain_core.documents import Document

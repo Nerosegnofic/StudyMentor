@@ -1,7 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
 from uuid import uuid4, UUID
 from app.models.schemas import DocumentUploadResponse
-from app.services.rag.ingestion import process_and_ingest_document, delete_document_embeddings
+from app.services.rag.ingestion import process_and_ingest_document
+from app.repositories.vector_repo import delete_vector_embeddings
+from app.repositories.mastery_repo import delete_mastery_points
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -35,10 +37,11 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
 @router.delete("/{document_id}")
 async def delete_document(document_id: UUID):
     """
-    Deletes all vector embeddings corresponding to a specific document.
+    Deletes all vector embeddings and mastery points corresponding to a specific document.
     """
     try:
-        delete_document_embeddings(document_id)
-        return {"status": "success", "message": f"Document {document_id} embeddings deleted."}
+        delete_vector_embeddings(document_id)
+        delete_mastery_points(document_id)
+        return {"status": "success", "message": f"Document {document_id} data deleted."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
