@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'mascot_state.dart';
 
@@ -11,19 +11,27 @@ class MascotOverlayService {
       MethodChannel('com.example.studymentor/overlay');
   static const _usageChannel =
       MethodChannel('com.example.studymentor/usage_stats');
+  static const _accessibilityChannel =
+      MethodChannel('com.example.studymentor/accessibility');
 
-  bool _running = false;
+  // ── State ──────────────────────────────────────────────────────────────────
+  bool _running        = false;
+  bool _isBlocked      = false;
   bool _overlayVisible = false;
   MascotState _mascotState = MascotState.idle;
+
+  // ── Countdown ──────────────────────────────────────────────────────────────
+  Timer? _countdownTimer;
+  int    _remainingSeconds = 0;
+
+  // ── Polling ────────────────────────────────────────────────────────────────
   Timer? _pollTimer;
-  Timer? _inactivityTimer;
+  int    _monitoredUsageCount = 0;
 
-  List<String> _monitoredApps = [];
-  int _usageThresholdMinutes = 1;
-
-  final Map<String, Duration> _usageAccumulator = {};
-  DateTime? _lastActiveTime;
-  String? _currentForegroundApp;
+  // ── Config ─────────────────────────────────────────────────────────────────
+  List<String> _monitoredApps         = dummyMonitoredApps;
+  int          _usageThresholdSeconds = 20;
+  int          _blockDurationSeconds  = 30;
 
   static const List<String> dummyMonitoredApps = [
     'com.google.android.youtube',
@@ -36,61 +44,140 @@ class MascotOverlayService {
   // ── Public API ─────────────────────────────────────────────────────────────
 
   Future<void> init({
-    List<String> monitoredApps = dummyMonitoredApps,
-    int usageThresholdMinutes = 1,
+    List<String> monitoredApps       = dummyMonitoredApps,
+    int usageThresholdSeconds        = 20,
+    int blockDurationSeconds         = 30,
   }) async {
-    _monitoredApps = monitoredApps;
-    _usageThresholdMinutes = usageThresholdMinutes;
+    _monitoredApps         = monitoredApps;
+    _usageThresholdSeconds = usageThresholdSeconds;
+    _blockDurationSeconds  = blockDurationSeconds;
 
-    // Listen for native callback when countdown finishes
-    // This resets _overlayVisible so the next threshold can trigger again
-    _overlayChannel.setMethodCallHandler((call) async {
-      if (call.method == 'onOverlayDismissed') {
-        _overlayVisible = false;
-        _usageAccumulator.clear();
-        _lastActiveTime = DateTime.now();
-        _currentForegroundApp = null;
-        debugPrint('[MascotOverlayService] Overlay dismissed — ready for next trigger.');
-      }
-    });
+    _overlayChannel.setMethodCallHandler(_handleNativeCallback);
 
-    final hasOverlay = await _requestOverlayPermission();
-    final hasUsage = await _requestUsageStatsPermission();
+    await _accessibilityChannel.invokeMethod(
+      'setMonitoredApps',
+      {'apps': _monitoredApps},
+    );
 
-    if (!hasOverlay || !hasUsage) {
-      debugPrint('[MascotOverlayService] Missing permissions — overlay will not start.');
-    }
+    await _requestOverlayPermission();
+    await _requestUsageStatsPermission();
+    await _requestAccessibilityPermissionIfNeeded();
   }
 
   void start() {
     if (_running) return;
-    _running = true;
-    _lastActiveTime = DateTime.now();
-    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) => _poll());
+    _running  = true;
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _poll());
     debugPrint('[MascotOverlayService] Started.');
   }
 
   Future<void> stop() async {
     _running = false;
     _pollTimer?.cancel();
-    _inactivityTimer?.cancel();
-    await hideOverlay();
+    _countdownTimer?.cancel();
+    await _hideOverlayNative();
+    await _resetAccessibilityState();
+    _isBlocked           = false;
+    _overlayVisible      = false;
+    _remainingSeconds    = 0;
+    _monitoredUsageCount = 0;
     debugPrint('[MascotOverlayService] Stopped.');
   }
 
-  Future<void> showOverlay({MascotState state = MascotState.idle}) async {
-    _mascotState = state;
+  // ── Getters ────────────────────────────────────────────────────────────────
+  bool        get isRunning       => _running;
+  bool        get isBlocked       => _isBlocked;
+  bool        get isOverlayVisible => _overlayVisible;
+  int         get remainingSeconds => _remainingSeconds;
+  MascotState get currentState     => _mascotState;
+
+  // ── Native → Dart callback handler ─────────────────────────────────────────
+
+  Future<dynamic> _handleNativeCallback(MethodCall call) async {
+    switch (call.method) {
+
+      case 'onOverlayDismissed':
+        // Student pressed back or home — overlay hides but countdown keeps running.
+        if (_isBlocked) {
+          _overlayVisible = false;
+          debugPrint(
+            '[MascotOverlayService] Overlay dismissed — '
+            'countdown continues ($_remainingSeconds s remaining).',
+          );
+        }
+
+      case 'onMonitoredAppIntercepted':
+        // Accessibility service blocked a monitored app during the warning period.
+        // Re-show the overlay with the remaining countdown time.
+        if (_isBlocked && !_overlayVisible) {
+          debugPrint('[MascotOverlayService] Monitored app intercepted — re-showing overlay.');
+          await _showOverlayNative(remainingSeconds: _remainingSeconds);
+        }
+    }
+  }
+
+  // ── Warning phase ───────────────────────────────────────────────────────────
+
+  Future<void> _startWarning() async {
+    _isBlocked        = true;
+    _remainingSeconds = _blockDurationSeconds;
+    _mascotState      = MascotState.idle;
+    debugPrint(
+      '[MascotOverlayService] Warning overlay — '
+      '$_blockDurationSeconds s countdown.',
+    );
+
+    await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
+    await _showOverlayNative(remainingSeconds: _remainingSeconds);
+
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+      _remainingSeconds--;
+      debugPrint('[MascotOverlayService] Countdown: $_remainingSeconds s');
+
+      if (_overlayVisible) {
+        try {
+          await _overlayChannel.invokeMethod(
+            'updateCountdown',
+            {'remainingSeconds': _remainingSeconds},
+          );
+        } catch (_) {}
+      }
+
+      if (_remainingSeconds <= 0) {
+        timer.cancel();
+        await _unblock();
+      }
+    });
+  }
+
+  Future<void> _unblock() async {
+    _countdownTimer?.cancel();
+    _isBlocked           = false;
+    _remainingSeconds    = 0;
+    _monitoredUsageCount = 0;
+    _mascotState         = MascotState.idle;
+
+    await _hideOverlayNative();
+    await _resetAccessibilityState();
+    debugPrint('[MascotOverlayService] Unblocked — student is free.');
+  }
+
+  // ── Native overlay helpers ──────────────────────────────────────────────────
+
+  Future<void> _showOverlayNative({required int remainingSeconds}) async {
     _overlayVisible = true;
     try {
       await _overlayChannel.invokeMethod('showOverlay', {
-        'state': state.name,
+        'remainingSeconds': remainingSeconds,
       });
     } on PlatformException catch (e) {
+      _overlayVisible = false;
       debugPrint('[MascotOverlayService] showOverlay error: ${e.message}');
     }
   }
 
-  Future<void> hideOverlay() async {
+  Future<void> _hideOverlayNative() async {
     _overlayVisible = false;
     try {
       await _overlayChannel.invokeMethod('hideOverlay');
@@ -99,108 +186,88 @@ class MascotOverlayService {
     }
   }
 
-  Future<void> updateState(MascotState state) async {
-    _mascotState = state;
-    try {
-      await _overlayChannel.invokeMethod('updateState', {'state': state.name});
-    } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] updateState error: ${e.message}');
-    }
-  }
-
-  Future<void> showQuizZone() async {
-    try {
-      await _overlayChannel.invokeMethod('showQuizZone');
-    } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] showQuizZone error: ${e.message}');
-    }
-  }
-
-  Future<void> hideQuizZone() async {
-    try {
-      await _overlayChannel.invokeMethod('hideQuizZone');
-    } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] hideQuizZone error: ${e.message}');
-    }
-  }
-
-  Future<void> onQuizResult({required bool correct}) async {
-    await updateState(correct ? MascotState.wave : MascotState.encourage);
-    Future.delayed(const Duration(seconds: 4), () => updateState(MascotState.idle));
-  }
-
-  // ── Internal polling ───────────────────────────────────────────────────────
+  // ── Polling ─────────────────────────────────────────────────────────────────
 
   Future<void> _poll() async {
     if (!_running) return;
-    if (_overlayVisible) return;
-
-
     try {
-      final foreground = await _usageChannel.invokeMethod<String>('getForegroundApp');
+      final foreground =
+          await _usageChannel.invokeMethod<String>('getForegroundApp');
       if (foreground == null) return;
 
-      // Inactivity detection
-      if (foreground == _currentForegroundApp &&
-          !_monitoredApps.contains(foreground)) {
-        _inactivityTimer ??= Timer(const Duration(minutes: 5), () {
-          if (!_overlayVisible) showOverlay(state: MascotState.sleep);
-        });
-      } else {
-        _inactivityTimer?.cancel();
-        _inactivityTimer = null;
-      }
-
-      _currentForegroundApp = foreground;
-
-      if (!_monitoredApps.contains(foreground)) {
-        _lastActiveTime = DateTime.now();
+      if (_isBlocked) {
+        // Fallback: if poll still sees a monitored app while overlay is hidden,
+        // re-show it (primary path is via AccessibilityService).
+        if (_monitoredApps.contains(foreground) && !_overlayVisible) {
+          debugPrint(
+            '[MascotOverlayService] Poll fallback: monitored app in foreground '
+            '— re-showing overlay.',
+          );
+          await _showOverlayNative(remainingSeconds: _remainingSeconds);
+        }
         return;
       }
 
-      // Accumulate usage
-      final elapsed = DateTime.now().difference(_lastActiveTime!);
-      _lastActiveTime = DateTime.now();
-      _usageAccumulator[foreground] =
-          (_usageAccumulator[foreground] ?? Duration.zero) + elapsed;
+      if (!_monitoredApps.contains(foreground)) {
+        _monitoredUsageCount = 0;
+        return;
+      }
 
-      final accumulated = _usageAccumulator[foreground]!;
-      final threshold = Duration(minutes: _usageThresholdMinutes);
+      _monitoredUsageCount++;
+      final accumulatedSeconds = _monitoredUsageCount * 5;
+      debugPrint(
+        '[MascotOverlayService] ${foreground.split('.').last} '
+        'usage: ${accumulatedSeconds}s / ${_usageThresholdSeconds}s',
+      );
 
-      if (accumulated >= threshold && !_overlayVisible) {
-        await showOverlay(state: MascotState.idle);
-        // Reset ALL apps accumulator so no app triggers immediately after
-        _usageAccumulator.clear();
-        _lastActiveTime = DateTime.now();
+      if (accumulatedSeconds >= _usageThresholdSeconds) {
+        _monitoredUsageCount = 0;
+        await _startWarning();
       }
     } on PlatformException catch (e) {
       debugPrint('[MascotOverlayService] poll error: ${e.message}');
     }
   }
 
-  // ── Permissions ────────────────────────────────────────────────────────────
+  // ── Accessibility helpers ───────────────────────────────────────────────────
 
-  Future<bool> _requestOverlayPermission() async {
+  Future<void> _resetAccessibilityState() async {
     try {
-      final granted = await _overlayChannel.invokeMethod<bool>('requestOverlayPermission');
-      return granted ?? false;
+      await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': false});
+    } on PlatformException catch (e) {
+      debugPrint('[MascotOverlayService] resetAccessibilityState error: ${e.message}');
+    }
+  }
+
+  // ── Permissions ─────────────────────────────────────────────────────────────
+
+  Future<void> _requestOverlayPermission() async {
+    try {
+      await _overlayChannel.invokeMethod('requestOverlayPermission');
     } on PlatformException catch (e) {
       debugPrint('[MascotOverlayService] overlay permission error: ${e.message}');
-      return false;
     }
   }
 
-  Future<bool> _requestUsageStatsPermission() async {
+  Future<void> _requestUsageStatsPermission() async {
     try {
-      final granted = await _usageChannel.invokeMethod<bool>('requestUsageStatsPermission');
-      return granted ?? false;
+      await _usageChannel.invokeMethod('requestUsageStatsPermission');
     } on PlatformException catch (e) {
       debugPrint('[MascotOverlayService] usage stats permission error: ${e.message}');
-      return false;
     }
   }
 
-  bool get isRunning => _running;
-  bool get isOverlayVisible => _overlayVisible;
-  MascotState get currentState => _mascotState;
+  Future<void> _requestAccessibilityPermissionIfNeeded() async {
+    try {
+      final isEnabled =
+          await _accessibilityChannel.invokeMethod<bool>('isAccessibilityEnabled');
+      if (isEnabled != true) {
+        await _accessibilityChannel.invokeMethod('requestAccessibilityPermission');
+      } else {
+        debugPrint('[MascotOverlayService] Accessibility already enabled.');
+      }
+    } on PlatformException catch (e) {
+      debugPrint('[MascotOverlayService] accessibility permission error: ${e.message}');
+    }
+  }
 }

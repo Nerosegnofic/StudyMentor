@@ -33,11 +33,11 @@ class _StudentScreenState extends State<StudentScreen> {
     // start() begins the polling loop.
     // Both calls are fire-and-forget; errors are logged inside the service.
     MascotOverlayService.instance
-        .init(
-          monitoredApps: MascotOverlayService.dummyMonitoredApps,
-          usageThresholdMinutes: 1, // lower value makes testing easier
-        )
-        .then((_) => MascotOverlayService.instance.start());
+    .init(
+      monitoredApps: MascotOverlayService.dummyMonitoredApps,
+      usageThresholdSeconds: 20,
+    )
+    .then((_) => MascotOverlayService.instance.start());
   }
 
   @override

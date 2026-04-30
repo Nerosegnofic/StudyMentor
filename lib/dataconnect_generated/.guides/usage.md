@@ -1,14 +1,14 @@
 # Basic Usage
 
 ```dart
-ExampleConnector.instance.GetUserByUid(getUserByUidVariables).execute();
-ExampleConnector.instance.GetStudentsByParent(getStudentsByParentVariables).execute();
-ExampleConnector.instance.GetStudentWithParent(getStudentWithParentVariables).execute();
 ExampleConnector.instance.InsertUser(insertUserVariables).execute();
 ExampleConnector.instance.UpsertCurrentUser(upsertCurrentUserVariables).execute();
 ExampleConnector.instance.DeleteUser().execute();
 ExampleConnector.instance.InsertParent(insertParentVariables).execute();
 ExampleConnector.instance.InsertStudent(insertStudentVariables).execute();
+ExampleConnector.instance.GetUserByUid(getUserByUidVariables).execute();
+ExampleConnector.instance.GetStudentsByParent(getStudentsByParentVariables).execute();
+ExampleConnector.instance.GetStudentWithParent(getStudentWithParentVariables).execute();
 
 ```
 

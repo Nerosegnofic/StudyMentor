@@ -13,9 +13,9 @@ import 'src/presentation/screens/student_screen.dart';
 import 'src/data/providers/firebase_auth_provider.dart';
 import 'src/data/providers/dataconnect_provider.dart';
 import 'src/data/repositories/auth_repository_impl.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp();
 
   final firebaseProvider = FirebaseAuthProvider();
