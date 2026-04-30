@@ -1,18 +1,25 @@
 import math
 from typing import Tuple
 from app.models.schemas import StudentProfile, StudentSkillState
-from app.services.bkt.config import BKTConfig
-from app.services.bkt.base import AdaptiveEvaluationStrategy
+from app.services.evaluation.config import BKTConfig
 
-class BKTStrategy(AdaptiveEvaluationStrategy):
+class BKTEngine:
+    """
+    Bayesian Knowledge Tracing (BKT) Engine.
+    Tracks a student's mastery probability over time as they practice.
+    Focuses on the "When": deciding when a student has learned a skill.
+    """
     def __init__(self, config=None):
         self.cfg = config if config else BKTConfig()
         self.SPAM_THRESHOLD = 3
 
-    def clamp(self, x: float) -> float:
+    def _clamp(self, x: float) -> float:
         return min(self.cfg.max_prob, max(self.cfg.min_prob, x))
 
-    def adjust_parameters(self, difficulty: int, response_time: float) -> Tuple[float, float]:
+    def _adjust_parameters(self, difficulty: int, response_time: float) -> Tuple[float, float]:
+        """
+        Adjusts guess and slip rates based on item difficulty and response time.
+        """
         delta = difficulty - 3
         guess = self.cfg.base_guess * math.exp(-0.40 * delta)
         slip = self.cfg.base_slip * math.exp(+0.30 * delta)
@@ -24,9 +31,12 @@ class BKTStrategy(AdaptiveEvaluationStrategy):
             guess *= 1.3
             slip *= 0.8
 
-        return self.clamp(guess), self.clamp(slip)
+        return self._clamp(guess), self._clamp(slip)
 
-    def bayesian_update(self, mastery: float, correct: bool, guess: float, slip: float, learn_rate: float) -> float:
+    def _bayesian_update(self, mastery: float, correct: bool, guess: float, slip: float, learn_rate: float) -> float:
+        """
+        Standard BKT update using Hidden Markov Model logic.
+        """
         if correct:
             numerator = mastery * (1 - slip)
             denominator = numerator + (1 - mastery) * guess
@@ -36,9 +46,12 @@ class BKTStrategy(AdaptiveEvaluationStrategy):
 
         knew_prob = numerator / denominator
         new_mastery = knew_prob + (1 - knew_prob) * learn_rate
-        return self.clamp(new_mastery)
+        return self._clamp(new_mastery)
 
-    def process_answer(self, profile: StudentProfile, skill: str, difficulty: int, correct: bool, response_time: float = 10.0, hints_used: int = 0) -> bool:
+    def update_mastery(self, profile: StudentProfile, skill: str, difficulty: int, correct: bool, response_time: float = 10.0, hints_used: int = 0) -> bool:
+        """
+        Main entry point for updating a student's cognitive state after an answer.
+        """
         profile.current_step += 1
         
         if skill not in profile.skills:
@@ -47,7 +60,7 @@ class BKTStrategy(AdaptiveEvaluationStrategy):
         data = profile.skills[skill]
 
         old_mastery = data.mastery
-        guess, slip = self.adjust_parameters(difficulty, response_time)
+        guess, slip = self._adjust_parameters(difficulty, response_time)
         effective_quality = max(0.1, 1.0 - (hints_used * 0.3))
         
         trigger_punishment = False 
@@ -63,10 +76,10 @@ class BKTStrategy(AdaptiveEvaluationStrategy):
         else:
             profile.consecutive_spam_clicks = 0
 
-        updated = self.bayesian_update(old_mastery, correct, guess, slip, data.learn_rate)
+        updated = self._bayesian_update(old_mastery, correct, guess, slip, data.learn_rate)
         new_mastery = old_mastery + effective_quality * (updated - old_mastery)
         
-        data.mastery = self.clamp(new_mastery)
+        data.mastery = self._clamp(new_mastery)
         data.attempts += 1
         data.last_seen_step = profile.current_step
 

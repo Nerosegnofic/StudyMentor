@@ -10,12 +10,10 @@ import sys, os
 # Allow running from the repo root without installing the package
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.services.bkt.mastery_utils import (
-    mastery_to_difficulty,
-    build_quiz_payload,
-    _skill_priority_weight,
-    _allocate_questions,
-)
+from app.services.quiz.difficulty_mapper import mastery_to_difficulty
+from app.services.quiz.builder import build_quiz_payload
+from app.services.quiz.priority_engine import compute_skill_priority_weight as _skill_priority_weight
+from app.services.quiz.allocator import allocate_questions as _allocate_questions
 
 
 # ====================================================================

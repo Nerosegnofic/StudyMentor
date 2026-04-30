@@ -3,7 +3,7 @@ from app.core.config import settings
 from app.controllers.routes_documents import router as documents_router
 from app.controllers.routes_quizzes import router as quizzes_router
 from app.controllers.routes_analytics import router as analytics_router
-from app.core.database import get_vector_store
+from app.core.database import get_vector_store, init_db
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -18,6 +18,10 @@ async def startup_event():
     Tests the connection to the PGVector extension to avoid late-stage crashes.
     """
     try:
+        # 1. Initialize relational tables
+        init_db()
+        
+        # 2. Test PGVector connectivity
         # Langchain-postgres handles setup on instantiation or first interaction
         _ = get_vector_store()
         print("PGVector connectivity initialized on startup.")

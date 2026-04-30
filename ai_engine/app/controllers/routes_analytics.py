@@ -2,18 +2,15 @@ from fastapi import APIRouter, HTTPException
 from app.models.schemas import QuizSubmissionRequest, QuizSubmissionResponse, StudentProfile
 import logging
 from typing import Dict
-from app.services.bkt.context import EvaluationContext
-from app.services.bkt.bkt_strategy import BKTStrategy
-from app.services.bkt.irt_strategy import IRTStrategy
+from app.services.evaluation.bkt_engine import BKTEngine
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 # Global in-memory storage for MVP (Mock Database)
-# Dictionary tracking each student_id to their StudentProfile data
 student_profiles: Dict[str, StudentProfile] = {}
 
-# Instantiate the Context with the Bayesian Strategy (can swap to IRTStrategy())
-evaluation_context = EvaluationContext(strategy=BKTStrategy())
+# Instantiate the Bayesian Knowledge Tracing Engine
+bkt_engine = BKTEngine()
 
 @router.post("/submit", response_model=QuizSubmissionResponse)
 async def submit_quiz(request: QuizSubmissionRequest):
@@ -51,8 +48,8 @@ async def submit_quiz(request: QuizSubmissionRequest):
             # Fallback to "General Math" if no topic provided
             skill_name = ans.topic if ans.topic else "General Math"
             
-            # Pass the profile state and metrics to the stateless evaluation context
-            punished = evaluation_context.execute_evaluation(
+            # Pass the profile state and metrics to the BKT Engine
+            punished = bkt_engine.update_mastery(
                 profile=profile,
                 skill=skill_name,
                 difficulty=ans.difficulty,
