@@ -1,0 +1,31 @@
+enum Role {
+  Parent
+  Student
+}
+
+type User @table(name: "users", key: ["uid"]) {
+  uid: String! @default(expr: "auth.uid")
+  email: String! @col(dataType: "varchar(255)")
+  fullName: String! @col(dataType: "varchar(255)")
+  role: Role!
+  isActive: Boolean! @default(expr: "true")
+  createdAt: Timestamp! @default(expr: "request.time")
+  isEmailVerified: Boolean! @default(expr: "false")
+}
+
+type Parent @table(name: "parents", key: ["uid"]) {
+  uid: String! @default(expr: "auth.uid")
+  user: User!
+  pinCode: String @col(dataType: "varchar(10)")
+  phoneNumber: String @col(dataType: "varchar(20)")
+}
+
+type Student @table(name: "students", key: ["uid"]) {
+  uid: String! @default(expr: "auth.uid")
+  user: User!
+  parent: Parent!
+  friendCode: String @col(dataType: "varchar(20)")
+  gradeLevel: Int
+  totalXp: Int @default(expr: "0")
+  totalCoins: Int @default(expr: "0")
+}
