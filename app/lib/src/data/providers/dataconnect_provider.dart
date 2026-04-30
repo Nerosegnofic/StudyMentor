@@ -1,16 +1,4 @@
 // lib/src/data/providers/dataconnect_provider.dart
-//
-// getStudentsByParent now returns `is_email_verified` mapped from the
-// student user's `isActive` field.  `isActive` starts as `true` in the
-// schema default, so we introduce a separate semantic:
-//
-//   • When a student is created we call updateStudentVerified(uid, false)
-//     via a direct DataConnect mutation to mark them unverified.
-//   • When the student successfully logs in (email verified) the
-//     AuthRepositoryImpl calls updateStudentVerified(uid, true).
-//
-// This keeps verification state in DataConnect without needing Cloud
-// Functions or Admin SDK access.
 
 import '../../../dataconnect_generated/generated.dart';
 
@@ -62,8 +50,6 @@ class DataConnectProvider {
     };
   }
 
-  /// Returns all students for the given parent, including their
-  /// `is_email_verified` status sourced from `user.isActive`.
   Future<List<Map<String, dynamic>>> getStudentsByParent(
     String parentUid,
   ) async {
@@ -79,9 +65,6 @@ class DataConnectProvider {
             'grade_level': s.gradeLevel,
             'total_xp': s.totalXp,
             'total_coins': s.totalCoins,
-            // isEmailVerified doubles as the email-verification flag:
-            // false  → student created but email not yet verified
-            // true   → student logged in at least once with verified email
             'is_email_verified': s.user.isEmailVerified,
           },
         )
@@ -97,7 +80,6 @@ class DataConnectProvider {
     return student.parent.user.fullName;
   }
 
-  /// Returns the parent's uid linked to the given student.
   Future<String> getParentUidForStudent(String studentUid) async {
     final result = await _connector
         .getStudentWithParent(uid: studentUid)
@@ -107,7 +89,6 @@ class DataConnectProvider {
     return student.parent.uid;
   }
 
-  /// Returns the email stored for a given user UID.
   Future<String> getEmailForUid(String uid) async {
     final result = await _connector.getUserByUid(uid: uid).execute();
     final user = result.data.user;
@@ -115,8 +96,6 @@ class DataConnectProvider {
     return user.email;
   }
 
-  /// Returns the `isActive` flag for a given user UID.
-  /// Used to poll email-verification status from the parent's session.
   Future<bool> getIsActiveForUid(String uid) async {
     final result = await _connector.getUserByUid(uid: uid).execute();
     final user = result.data.user;
@@ -126,5 +105,50 @@ class DataConnectProvider {
 
   Future<void> markEmailVerified() async {
     await ExampleConnector.instance.markEmailVerified().execute();
+  }
+
+  // ── App Rules ─────────────────────────────────────────────────────────────
+
+  /// Returns all app rules for [studentUid] as raw maps.
+  Future<List<Map<String, dynamic>>> getAppRulesForStudent(
+      String studentUid) async {
+    final result = await _connector
+        .getAppConfigForStudent(studentUid: studentUid)
+        .execute();
+    return result.data.appRules
+        .map((r) => {
+              'id': r.id,
+              'package_name': r.packageName,
+              'app_label': r.appLabel,
+              'usage_duration_minutes': r.usageDurationMinutes,
+              'cooldown_duration_minutes': r.cooldownDurationMinutes,
+            })
+        .toList();
+  }
+
+  /// Deletes all existing AppRule rows for [studentUid].
+  Future<void> deleteAllAppRulesForStudent(String studentUid) async {
+    await _connector
+        .deleteAllAppRulesForStudent(studentUid: studentUid)
+        .execute();
+  }
+
+  /// Inserts a single AppRule row.
+  Future<void> insertAppRule({
+    required String studentUid,
+    required String packageName,
+    required String appLabel,
+    required int usageDurationMinutes,
+    required int cooldownDurationMinutes,
+  }) async {
+    await _connector
+        .insertAppRule(
+          studentUid: studentUid,
+          packageName: packageName,
+          appLabel: appLabel,
+          usageDurationMinutes: usageDurationMinutes,
+          cooldownDurationMinutes: cooldownDurationMinutes,
+        )
+        .execute();
   }
 }

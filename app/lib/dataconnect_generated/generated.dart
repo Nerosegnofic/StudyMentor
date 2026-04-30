@@ -18,11 +18,17 @@ part 'set_user_inactive.dart';
 
 part 'mark_email_verified.dart';
 
+part 'insert_app_rule.dart';
+
+part 'delete_all_app_rules_for_student.dart';
+
 part 'get_user_by_uid.dart';
 
 part 'get_students_by_parent.dart';
 
 part 'get_student_with_parent.dart';
+
+part 'get_app_config_for_student.dart';
 
 
 
@@ -141,6 +147,16 @@ class ExampleConnector {
   }
   
   
+  InsertAppRuleVariablesBuilder insertAppRule ({required String studentUid, required String packageName, required String appLabel, required int usageDurationMinutes, required int cooldownDurationMinutes, }) {
+    return InsertAppRuleVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,usageDurationMinutes: usageDurationMinutes,cooldownDurationMinutes: cooldownDurationMinutes,);
+  }
+  
+  
+  DeleteAllAppRulesForStudentVariablesBuilder deleteAllAppRulesForStudent ({required String studentUid, }) {
+    return DeleteAllAppRulesForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
   GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
     return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
   }
@@ -153,6 +169,11 @@ class ExampleConnector {
   
   GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
     return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
+    return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
   }
   
 

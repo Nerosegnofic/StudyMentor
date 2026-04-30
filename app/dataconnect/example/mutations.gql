@@ -11,13 +11,6 @@ mutation InsertUser($email: String!, $fullName: String!, $role: Role!) @auth(lev
   )
 }
 
-# UpsertCurrentUser is only called from _markUserActive(), which is only
-# called when firebase.currentUser.emailVerified == true.  So it is safe
-# (and necessary) to hard-code isEmailVerified: true here.  This fixes the
-# "Path B" bug where a student who clicks the verification link and then
-# logs in fresh bypasses ConfirmEmailScreen entirely, meaning
-# markEmailVerifiedInDatabase() was never called and the DataConnect field
-# stayed false forever.
 mutation UpsertCurrentUser($email: String!, $fullName: String, $role: Role!) @auth(level: USER) {
   user_upsert(
     data: {
@@ -71,4 +64,30 @@ mutation MarkEmailVerified @auth(level: USER) {
     key: { uid_expr: "auth.uid" }
     data: { isEmailVerified: true }
   )
+}
+
+# ── App Rule Mutations ────────────────────────────────────────────────────────
+
+# Inserts a single app rule for a student.
+mutation InsertAppRule(
+  $studentUid: String!
+  $packageName: String!
+  $appLabel: String!
+  $usageDurationMinutes: Int!
+  $cooldownDurationMinutes: Int!
+) @auth(level: USER) {
+  appRule_insert(
+    data: {
+      studentUid: $studentUid
+      packageName: $packageName
+      appLabel: $appLabel
+      usageDurationMinutes: $usageDurationMinutes
+      cooldownDurationMinutes: $cooldownDurationMinutes
+    }
+  )
+}
+
+# Deletes ALL app rules for a student — used before re-saving the full list.
+mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
+  appRule_deleteMany(where: { studentUid: { eq: $studentUid } })
 }

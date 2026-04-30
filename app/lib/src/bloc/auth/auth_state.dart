@@ -2,6 +2,7 @@
 
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
+import '../../domain/models/app_config_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AuthState extends Equatable {
@@ -77,14 +78,8 @@ class ParentVerificationFailed extends AuthState {
   List<Object?> get props => [message, studentUid];
 }
 
-/// Emitted while the profile update network calls are in flight.
-/// Distinct from [AuthLoading] so the Settings screen can show its own
-/// in-place loading indicator without triggering the global root redirect.
 class ProfileUpdateLoading extends AuthState {}
 
-/// Emitted when the profile update completes successfully.
-/// Contains the refreshed [UserModel] so the UI can update the name field
-/// and the parent AppBar without a full re-login.
 class ProfileUpdateSuccess extends AuthState {
   final UserModel updatedUser;
   ProfileUpdateSuccess(this.updatedUser);
@@ -92,12 +87,42 @@ class ProfileUpdateSuccess extends AuthState {
   List<Object?> get props => [updatedUser];
 }
 
-/// Emitted when the profile update fails (e.g. wrong current password,
-/// network error). Distinct from [AuthError] so it doesn't cause
-/// [RootPage] to redirect to the login screen.
 class ProfileUpdateError extends AuthState {
   final String message;
   ProfileUpdateError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── App Configuration States ──────────────────────────────────────────────────
+
+/// Emitted while app rules are being loaded from the database.
+/// Distinct from [AuthLoading] — does not affect the root navigation.
+class AppConfigLoading extends AuthState {}
+
+/// Emitted when app rules have been successfully loaded.
+/// [studentUid] is included so the config screen knows which student
+/// these rules belong to (safe for multi-student households).
+class AppRulesLoaded extends AuthState {
+  final String studentUid;
+  final List<AppRuleModel> rules;
+
+  AppRulesLoaded({required this.studentUid, required this.rules});
+
+  @override
+  List<Object?> get props => [studentUid, rules];
+}
+
+/// Emitted while the save operation is in flight.
+class AppConfigSaving extends AuthState {}
+
+/// Emitted when the save completes successfully.
+class AppConfigSaved extends AuthState {}
+
+/// Emitted when any app config operation fails.
+class AppConfigError extends AuthState {
+  final String message;
+  AppConfigError(this.message);
   @override
   List<Object?> get props => [message];
 }
