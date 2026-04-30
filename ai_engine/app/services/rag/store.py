@@ -70,15 +70,121 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID):
 
     print(f"[{document_id}] Successfully synchronized all chunks to PGVector!", flush=True)
 
+def save_mastery_points(mastery_data: list, document_id: UUID, source: str = "regex"):
+    """
+    Saves extracted mastery points to the database.
+    
+    Args:
+        mastery_data: List of dicts, each with:
+            {'unit': str, 'lesson': str, 'objectives': [str, ...], 'skill_ids': [str, ...] (optional)}
+        document_id: UUID of the source document.
+        source: Origin of the points — 'regex' or 'llm_refined'.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    
+    with engine.begin() as conn:
+        # 1. Ensure table exists
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS mastery_points (
+                id UUID PRIMARY KEY,
+                document_id UUID,
+                unit TEXT,
+                lesson TEXT,
+                skill_id TEXT,
+                point_text TEXT,
+                source TEXT DEFAULT 'regex',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        
+        # Ensure new columns exist on older tables
+        for col, col_type, default in [
+            ('skill_id', 'TEXT', None),
+            ('source', 'TEXT', "'regex'"),
+        ]:
+            try:
+                alter_sql = f"ALTER TABLE mastery_points ADD COLUMN IF NOT EXISTS {col} {col_type}"
+                if default:
+                    alter_sql += f" DEFAULT {default}"
+                conn.execute(text(alter_sql))
+            except Exception:
+                pass  # Column already exists
+        
+        # 2. Clear old mastery points for this document and source
+        conn.execute(
+            text("DELETE FROM mastery_points WHERE document_id = :doc_id AND source = :source"),
+            {"doc_id": document_id, "source": source}
+        )
+        
+        # 3. Insert new points
+        total = 0
+        for entry in mastery_data:
+            unit = entry.get('unit', 'Unknown')
+            lesson = entry.get('lesson', 'Unknown')
+            objectives = entry.get('objectives', [])
+            skill_ids = entry.get('skill_ids', [])  # May be empty for regex source
+            
+            for idx, point in enumerate(objectives):
+                sid = skill_ids[idx] if idx < len(skill_ids) else None
+                conn.execute(
+                    text("INSERT INTO mastery_points (id, document_id, unit, lesson, skill_id, point_text, source) "
+                         "VALUES (:id, :doc_id, :unit, :lesson, :skill_id, :point, :source)"),
+                    {
+                        "id": uuid.uuid4(),
+                        "doc_id": document_id,
+                        "unit": unit,
+                        "lesson": lesson,
+                        "skill_id": sid,
+                        "point": point,
+                        "source": source,
+                    }
+                )
+                total += 1
+    print(f"[{document_id}] Successfully saved {total} mastery points (source={source}) to database!", flush=True)
+
+def get_mastery_points(document_id: UUID, source: str = None) -> List[Dict]:
+    """
+    Retrieves mastery points for a given document.
+    
+    Args:
+        document_id: UUID of the document.
+        source: If provided, filter by source ('regex' or 'llm_refined').
+                If None, returns all sources.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    with engine.connect() as conn:
+        if source:
+            result = conn.execute(
+                text("SELECT unit, lesson, skill_id, point_text, source FROM mastery_points "
+                     "WHERE document_id = :doc_id AND source = :source ORDER BY created_at ASC"),
+                {"doc_id": document_id, "source": source}
+            )
+        else:
+            result = conn.execute(
+                text("SELECT unit, lesson, skill_id, point_text, source FROM mastery_points "
+                     "WHERE document_id = :doc_id ORDER BY created_at ASC"),
+                {"doc_id": document_id}
+            )
+        return [
+            {"unit": row[0], "lesson": row[1], "skill_id": row[2], "point_text": row[3], "source": row[4]}
+            for row in result
+        ]
+
 def delete_document_embeddings(document_id: UUID):
     """
     Deletes all vector embeddings associated with a specific document from the database.
     """
     engine = create_engine(settings.POSTGRES_CONNECTION)
     with engine.begin() as conn:
+        # Delete embeddings
         conn.execute(
             text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'document_id' = :doc_id"),
             {"doc_id": str(document_id)}
+        )
+        # Delete mastery points
+        conn.execute(
+            text("DELETE FROM mastery_points WHERE document_id = :doc_id"),
+            {"doc_id": document_id}
         )
 
 def clear_all_embeddings():
@@ -87,5 +193,21 @@ def clear_all_embeddings():
     """
     engine = create_engine(settings.POSTGRES_CONNECTION)
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE langchain_pg_embedding, langchain_pg_collection CASCADE;"))
+        # Ensure table exists before truncating to avoid UndefinedTable error
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS mastery_points (
+                id UUID PRIMARY KEY,
+                document_id UUID,
+                unit TEXT,
+                lesson TEXT,
+                skill_id TEXT,
+                point_text TEXT,
+                source TEXT DEFAULT 'regex',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("TRUNCATE langchain_pg_embedding, langchain_pg_collection, mastery_points CASCADE;"))
     print("Database cleared completely!", flush=True)
+
+# Expose new functions
+__all__ = ["save_chunks_to_pgvector", "save_mastery_points", "delete_document_embeddings", "clear_all_embeddings"]
