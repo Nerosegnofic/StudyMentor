@@ -16,6 +16,7 @@ import 'src/data/repositories/auth_repository_impl.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp();
 
   final firebaseProvider = FirebaseAuthProvider();
