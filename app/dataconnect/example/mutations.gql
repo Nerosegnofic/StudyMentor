@@ -1,0 +1,93 @@
+mutation InsertUser($email: String!, $fullName: String!, $role: Role!) @auth(level: USER) {
+  user_insert(
+    data: {
+      uid_expr: "auth.uid"
+      email: $email
+      fullName: $fullName
+      role: $role
+      isActive: true
+      isEmailVerified: false
+    }
+  )
+}
+
+mutation UpsertCurrentUser($email: String!, $fullName: String, $role: Role!) @auth(level: USER) {
+  user_upsert(
+    data: {
+      uid_expr: "auth.uid"
+      email: $email
+      fullName: $fullName
+      role: $role
+      isActive: true
+      isEmailVerified: true
+    }
+  )
+}
+
+mutation DeleteUser @auth(level: USER) {
+  user_delete(key: { uid_expr: "auth.uid" })
+}
+
+mutation InsertParent($pinCode: String, $phoneNumber: String) @auth(level: USER) {
+  parent_insert(
+    data: {
+      uid_expr: "auth.uid"
+      userUid_expr: "auth.uid"
+      pinCode: $pinCode
+      phoneNumber: $phoneNumber
+    }
+  )
+}
+
+mutation InsertStudent($parentUid: String!, $gradeLevel: Int) @auth(level: USER) {
+  student_insert(
+    data: {
+      uid_expr: "auth.uid"
+      userUid_expr: "auth.uid"
+      parentUid: $parentUid
+      gradeLevel: $gradeLevel
+      totalXp: 0
+      totalCoins: 0
+    }
+  )
+}
+
+mutation SetUserInactive @auth(level: USER) {
+  user_update(
+    key: { uid_expr: "auth.uid" }
+    data: { isActive: false }
+  )
+}
+
+mutation MarkEmailVerified @auth(level: USER) {
+  user_update(
+    key: { uid_expr: "auth.uid" }
+    data: { isEmailVerified: true }
+  )
+}
+
+# ── App Rule Mutations ────────────────────────────────────────────────────────
+
+# Inserts a single app rule for a student.
+mutation InsertAppRule(
+  $studentUid: String!
+  $packageName: String!
+  $appLabel: String!
+  $usageDurationMinutes: Int!
+  $cooldownDurationMinutes: Int!
+) @auth(level: USER) {
+  appRule_insert(
+    data: {
+      studentUid: $studentUid
+      packageName: $packageName
+      appLabel: $appLabel
+      usageDurationMinutes: $usageDurationMinutes
+      cooldownDurationMinutes: $cooldownDurationMinutes
+    }
+  )
+}
+
+# Deletes ALL app rules for a student — used before re-saving the full list.
+mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
+  appRule_deleteMany(where: { studentUid: { eq: $studentUid } })
+}

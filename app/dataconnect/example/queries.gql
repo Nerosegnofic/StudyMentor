@@ -1,0 +1,51 @@
+query GetUserByUid($uid: String!) @auth(level: USER) {
+  user(key: { uid: $uid }) {
+    uid
+    email
+    fullName
+    role
+    isActive
+    createdAt
+  }
+}
+
+query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
+  students(where: { parent: { uid: { eq: $parentUid } } }) {
+    uid
+    user {
+      fullName
+      email
+      isActive
+      isEmailVerified
+    }
+    gradeLevel
+    totalXp
+    totalCoins
+  }
+}
+
+query GetStudentWithParent($uid: String!) @auth(level: USER) {
+  student(key: { uid: $uid }) {
+    uid
+    parent {
+      uid
+      user {
+        uid
+        fullName
+        email
+      }
+    }
+  }
+}
+
+# Fetches the app configuration and all app rules for a given student.
+# Used by the parent config screen and by the student device to sync rules.
+query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
+  appRules(where: { studentUid: { eq: $studentUid } }) {
+    id
+    packageName
+    appLabel
+    usageDurationMinutes
+    cooldownDurationMinutes
+  }
+}
