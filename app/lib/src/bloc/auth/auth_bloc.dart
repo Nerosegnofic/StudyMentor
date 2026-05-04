@@ -1,9 +1,11 @@
 // lib/src/bloc/auth/auth_bloc.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../services/installed_apps_service.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
@@ -27,6 +29,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoadAppRulesRequested>(_onLoadAppRules);
     on<SaveAppRulesRequested>(_onSaveAppRules);
     on<LoadStudentAppConfigRequested>(_onLoadStudentAppConfig);
+    // Installed-app inventory
+    on<SyncInstalledAppsRequested>(_onSyncInstalledApps);
+    on<LoadInstalledAppsForStudentRequested>(_onLoadInstalledAppsForStudent);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -307,6 +312,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AppRulesLoaded(studentUid: event.studentUid, rules: rules));
     } catch (e) {
       emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  // ── Installed-App Inventory Handlers ─────────────────────────────────────
+
+  /// Student device: fetch PackageManager apps, upload to DataConnect, clear flag.
+  Future<void> _onSyncInstalledApps(
+    SyncInstalledAppsRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(InstalledAppsSyncing());
+    try {
+      final apps = await InstalledAppsService.instance.getFromDevice();
+      await repository.syncInstalledAppsForStudent(
+        studentUid: event.studentUid,
+        apps: apps,
+      );
+      await InstalledAppsService.instance.markInventoryClean();
+      emit(InstalledAppsSynced());
+    } catch (e) {
+      // Sync failure is non-fatal — enforcement continues with the last rules.
+      // Log but do not surface an error to the student's UI.
+      debugPrint('[InstalledApps] sync error: $e');
+    }
+  }
+
+  /// Parent side: load a student's inventory from DataConnect for the picker.
+  Future<void> _onLoadInstalledAppsForStudent(
+    LoadInstalledAppsForStudentRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final apps =
+          await repository.getInstalledAppsForStudent(event.studentUid);
+      emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: apps));
+    } catch (e) {
+      // Surface as an empty list — picker shows "Student hasn't synced yet."
+      emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: const []));
     }
   }
 

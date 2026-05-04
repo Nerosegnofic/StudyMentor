@@ -3,6 +3,7 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/models/student_model.dart';
 import '../../domain/models/app_config_model.dart';
+import '../../domain/models/installed_app_model.dart';
 
 abstract class AuthEvent extends Equatable {
   @override
@@ -154,6 +155,28 @@ class SaveAppRulesRequested extends AuthEvent {
 class LoadStudentAppConfigRequested extends AuthEvent {
   final String studentUid;
   LoadStudentAppConfigRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+// ── Installed-App Inventory Events ───────────────────────────────────────────
+
+/// Fired by the student device on login and on every app resume when the
+/// dirty flag is set. Fetches apps from PackageManager via
+/// [InstalledAppsService] and syncs the result to DataConnect, then clears
+/// the dirty flag.
+class SyncInstalledAppsRequested extends AuthEvent {
+  final String studentUid;
+  SyncInstalledAppsRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Fired by the parent's [StudentConfigScreen] when it opens, to load the
+/// student's installed-app inventory for the picker.
+class LoadInstalledAppsForStudentRequested extends AuthEvent {
+  final String studentUid;
+  LoadInstalledAppsForStudentRequested({required this.studentUid});
   @override
   List<Object?> get props => [studentUid];
 }

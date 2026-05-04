@@ -120,8 +120,10 @@ class DataConnectProvider {
               'id': r.id,
               'package_name': r.packageName,
               'app_label': r.appLabel,
-              'usage_duration_minutes': r.usageDurationMinutes,
-              'cooldown_duration_minutes': r.cooldownDurationMinutes,
+              'usage_hours': r.usageHours,
+              'usage_minutes': r.usageMinutes,
+              'cooldown_hours': r.cooldownHours,
+              'cooldown_minutes': r.cooldownMinutes,
             })
         .toList();
   }
@@ -133,21 +135,74 @@ class DataConnectProvider {
         .execute();
   }
 
+  // ── Installed-App Inventory ───────────────────────────────────────────────
+  //
+  // NOTE: These methods call generated connector methods that are created when
+  // you run:
+  //   firebase deploy --only dataconnect
+  //   (then re-run the DataConnect SDK generator / flutterfire configure)
+  // Until then, the calls below will produce "method not found" compile errors.
+
+  /// Returns all installed-app rows for [studentUid].
+  Future<List<Map<String, dynamic>>> getInstalledAppsForStudent(
+      String studentUid) async {
+    final result = await _connector
+        .getInstalledAppsForStudent(studentUid: studentUid)
+        .execute();
+    return result.data.installedApps
+        .map((a) => {
+              'package_name': a.packageName,
+              'app_label': a.appLabel,
+              'is_system_app': a.isSystemApp,
+              'icon_base64': a.iconBase64,
+            })
+        .toList();
+  }
+
+  /// Deletes all installed-app rows for [studentUid].
+  Future<void> deleteAllInstalledAppsForStudent(String studentUid) async {
+    await _connector
+        .deleteAllInstalledAppsForStudent(studentUid: studentUid)
+        .execute();
+  }
+
+
+
+  /// Inserts a single installed-app row.
+  Future<void> insertInstalledApp({
+    required String studentUid,
+    required String packageName,
+    required String appLabel,
+    required bool isSystemApp,
+    String? iconBase64,
+  }) async {
+    await _connector.insertInstalledApp(
+      studentUid: studentUid,
+      packageName: packageName,
+      appLabel: appLabel,
+      isSystemApp: isSystemApp,
+    ).iconBase64(iconBase64).execute();
+  }
+
   /// Inserts a single AppRule row.
   Future<void> insertAppRule({
     required String studentUid,
     required String packageName,
     required String appLabel,
-    required int usageDurationMinutes,
-    required int cooldownDurationMinutes,
+    required int usageHours,
+    required int usageMinutes,
+    required int cooldownHours,
+    required int cooldownMinutes,
   }) async {
     await _connector
         .insertAppRule(
           studentUid: studentUid,
           packageName: packageName,
           appLabel: appLabel,
-          usageDurationMinutes: usageDurationMinutes,
-          cooldownDurationMinutes: cooldownDurationMinutes,
+          usageHours: usageHours,
+          usageMinutes: usageMinutes,
+          cooldownHours: cooldownHours,
+          cooldownMinutes: cooldownMinutes,
         )
         .execute();
   }

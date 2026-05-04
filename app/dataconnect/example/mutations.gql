@@ -73,16 +73,20 @@ mutation InsertAppRule(
   $studentUid: String!
   $packageName: String!
   $appLabel: String!
-  $usageDurationMinutes: Int!
-  $cooldownDurationMinutes: Int!
+  $usageHours: Int!
+  $usageMinutes: Int!
+  $cooldownHours: Int!
+  $cooldownMinutes: Int!
 ) @auth(level: USER) {
   appRule_insert(
     data: {
       studentUid: $studentUid
       packageName: $packageName
       appLabel: $appLabel
-      usageDurationMinutes: $usageDurationMinutes
-      cooldownDurationMinutes: $cooldownDurationMinutes
+      usageHours: $usageHours
+      usageMinutes: $usageMinutes
+      cooldownHours: $cooldownHours
+      cooldownMinutes: $cooldownMinutes
     }
   )
 }

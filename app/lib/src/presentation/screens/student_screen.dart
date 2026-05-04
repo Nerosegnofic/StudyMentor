@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
@@ -5,6 +7,7 @@ import '../../bloc/auth/auth_event.dart';
 import '../../bloc/auth/auth_state.dart';
 import '../widgets/parent_verification_dialog.dart';
 import '../../services/overlay/mascot_overlay_service.dart';
+import '../../services/installed_apps_service.dart';
 import '../../domain/models/app_config_model.dart';
 
 class StudentScreen extends StatefulWidget {
@@ -16,30 +19,56 @@ class StudentScreen extends StatefulWidget {
   State<StudentScreen> createState() => _StudentScreenState();
 }
 
-class _StudentScreenState extends State<StudentScreen> {
+class _StudentScreenState extends State<StudentScreen>
+    with WidgetsBindingObserver {
   String? _parentFullName;
   List<AppRuleModel> _appRules = [];
   bool _rulesLoading = true;
+  // packageName → Base64 icon (null = not found / not yet loaded)
+  final Map<String, String?> _iconCache = {};
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     context.read<AuthBloc>().add(
       LoadParentNameRequested(studentUid: widget.uid),
     );
     context.read<AuthBloc>().add(
       LoadStudentAppConfigRequested(studentUid: widget.uid),
     );
+
+    // Sync inventory on login — captures the full app list for the parent's
+    // picker without requiring physical access to this device.
+    context.read<AuthBloc>().add(
+      SyncInstalledAppsRequested(studentUid: widget.uid),
+    );
+
+    // Start enforcement with an empty monitored list. The list is populated
+    // (via updateMonitoredApps) once AppRulesLoaded arrives below.
     MascotOverlayService.instance
-        .init(
-          monitoredApps: MascotOverlayService.dummyMonitoredApps,
-          usageThresholdSeconds: 20,
-        )
+        .init()
         .then((_) => MascotOverlayService.instance.start());
+  }
+
+  /// On every resume check whether a package was installed/removed while
+  /// StudyMentor was closed. If so, trigger a re-sync to DataConnect.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    InstalledAppsService.instance.isInventoryDirty().then((dirty) {
+      if (dirty && mounted) {
+        context.read<AuthBloc>().add(
+          SyncInstalledAppsRequested(studentUid: widget.uid),
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     MascotOverlayService.instance.stop();
     super.dispose();
   }
@@ -104,6 +133,8 @@ class _StudentScreenState extends State<StudentScreen> {
               _appRules = state.rules;
               _rulesLoading = false;
             });
+            MascotOverlayService.instance.updateMonitoredApps(state.rules);
+            _loadIcons(state.rules);
           }
           if (state is AppConfigError) {
             setState(() => _rulesLoading = false);
@@ -142,6 +173,26 @@ class _StudentScreenState extends State<StudentScreen> {
         ),
       ),
     );
+  }
+
+  // ── icon loading ───────────────────────────────────────────────────────────
+
+  Future<void> _loadIcons(List<AppRuleModel> rules) async {
+    final missing = rules
+        .map((r) => r.packageName)
+        .where((pkg) => !_iconCache.containsKey(pkg))
+        .toList();
+    if (missing.isEmpty) return;
+
+    final results = await Future.wait(
+      missing.map((pkg) => InstalledAppsService.instance.getAppIcon(pkg)),
+    );
+    if (!mounted) return;
+    setState(() {
+      for (var i = 0; i < missing.length; i++) {
+        _iconCache[missing[i]] = results[i];
+      }
+    });
   }
 
   // ── parent info section ────────────────────────────────────────────────────
@@ -267,18 +318,10 @@ class _StudentScreenState extends State<StudentScreen> {
       ),
       child: Row(
         children: [
-          // App avatar
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: const Color(0xFFE8EDFF),
-            child: Text(
-              rule.appLabel[0].toUpperCase(),
-              style: const TextStyle(
-                color: Color(0xFF4A6CF7),
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
+          // App icon
+          _AppIcon(
+            iconBase64: _iconCache[rule.packageName],
+            label: rule.appLabel,
           ),
           const SizedBox(width: 12),
           // App label + package
@@ -303,14 +346,14 @@ class _StudentScreenState extends State<StudentScreen> {
             children: [
               _buildPill(
                 icon: Icons.timer_outlined,
-                label: '${rule.usageDurationMinutes}m',
+                label: _formatDuration(rule.usageHours, rule.usageMinutes),
                 color: const Color(0xFF34A853),
                 bg: const Color(0xFFE6F4EA),
               ),
               const SizedBox(height: 4),
               _buildPill(
                 icon: Icons.hourglass_bottom_outlined,
-                label: '${rule.cooldownDurationMinutes}m',
+                label: _formatDuration(rule.cooldownHours, rule.cooldownMinutes),
                 color: const Color(0xFFFF9800),
                 bg: const Color(0xFFFFF8E1),
               ),
@@ -319,6 +362,13 @@ class _StudentScreenState extends State<StudentScreen> {
         ],
       ),
     );
+  }
+
+  String _formatDuration(int hours, int minutes) {
+    if (hours == 0 && minutes == 0) return '0m';
+    if (hours == 0) return '${minutes}m';
+    if (minutes == 0) return '${hours}h';
+    return '${hours}h ${minutes}m';
   }
 
   Widget _buildPill({
@@ -342,6 +392,39 @@ class _StudentScreenState extends State<StudentScreen> {
               style: TextStyle(
                   fontSize: 11, fontWeight: FontWeight.w600, color: color)),
         ],
+      ),
+    );
+  }
+}
+
+// ── App icon widget ─────────────────────────────────────────────────────────
+
+class _AppIcon extends StatelessWidget {
+  final String? iconBase64;
+  final String label;
+  const _AppIcon({required this.iconBase64, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    if (iconBase64 != null && iconBase64!.isNotEmpty) {
+      try {
+        return CircleAvatar(
+          backgroundImage: MemoryImage(base64Decode(iconBase64!)),
+          backgroundColor: const Color(0xFFE8EDFF),
+          radius: 20,
+        );
+      } catch (_) {}
+    }
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: const Color(0xFFE8EDFF),
+      child: Text(
+        label[0].toUpperCase(),
+        style: const TextStyle(
+          color: Color(0xFF4A6CF7),
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
       ),
     );
   }

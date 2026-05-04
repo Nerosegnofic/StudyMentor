@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'mascot_state.dart';
+import '../../domain/models/app_config_model.dart';
 
 class MascotOverlayService {
   MascotOverlayService._();
@@ -26,37 +27,25 @@ class MascotOverlayService {
 
   // ── Polling ────────────────────────────────────────────────────────────────
   Timer? _pollTimer;
-  int    _monitoredUsageCount = 0;
+  Map<String, int> _usageCounts = {};
 
   // ── Config ─────────────────────────────────────────────────────────────────
-  List<String> _monitoredApps         = dummyMonitoredApps;
-  int          _usageThresholdSeconds = 20;
-  int          _blockDurationSeconds  = 30;
-
-  static const List<String> dummyMonitoredApps = [
-    'com.google.android.youtube',
-    'com.zhiliaoapp.musically',
-    'com.instagram.android',
-    'com.facebook.katana',
-    'com.snapchat.android',
-  ];
+  Map<String, AppRuleModel> _monitoredRules = {};
+  String? _currentMonitoredPackage;
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
   Future<void> init({
-    List<String> monitoredApps       = dummyMonitoredApps,
-    int usageThresholdSeconds        = 20,
-    int blockDurationSeconds         = 30,
+    List<AppRuleModel> rules = const [],
   }) async {
-    _monitoredApps         = monitoredApps;
-    _usageThresholdSeconds = usageThresholdSeconds;
-    _blockDurationSeconds  = blockDurationSeconds;
+    _monitoredRules = {for (var r in rules) r.packageName: r};
+    _currentMonitoredPackage = null;
 
     _overlayChannel.setMethodCallHandler(_handleNativeCallback);
 
     await _accessibilityChannel.invokeMethod(
       'setMonitoredApps',
-      {'apps': _monitoredApps},
+      {'apps': _monitoredRules.keys.toList()},
     );
 
     await _requestOverlayPermission();
@@ -67,7 +56,7 @@ class MascotOverlayService {
   void start() {
     if (_running) return;
     _running  = true;
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _poll());
+    _pollTimer = Timer.periodic(const Duration(seconds: 1), (_) => _poll());
     debugPrint('[MascotOverlayService] Started.');
   }
 
@@ -80,8 +69,23 @@ class MascotOverlayService {
     _isBlocked           = false;
     _overlayVisible      = false;
     _remainingSeconds    = 0;
-    _monitoredUsageCount = 0;
+    _usageCounts.clear();
     debugPrint('[MascotOverlayService] Stopped.');
+  }
+
+  /// Updates the monitored-app list at runtime without restarting the service.
+  /// Called by [StudentScreen] whenever a fresh [AppRulesLoaded] state arrives.
+  Future<void> updateMonitoredApps(List<AppRuleModel> rules) async {
+    _monitoredRules = {for (var r in rules) r.packageName: r};
+    try {
+      await _accessibilityChannel.invokeMethod(
+        'setMonitoredApps',
+        {'apps': _monitoredRules.keys.toList()},
+      );
+    } on PlatformException catch (e) {
+      debugPrint('[MascotOverlayService] updateMonitoredApps error: ${e.message}');
+    }
+    debugPrint('[MascotOverlayService] Monitored apps updated: ${_monitoredRules.keys.toList()}');
   }
 
   // ── Getters ────────────────────────────────────────────────────────────────
@@ -119,12 +123,18 @@ class MascotOverlayService {
   // ── Warning phase ───────────────────────────────────────────────────────────
 
   Future<void> _startWarning() async {
-    _isBlocked        = true;
-    _remainingSeconds = _blockDurationSeconds;
-    _mascotState      = MascotState.idle;
+    final rule = _monitoredRules[_currentMonitoredPackage];
+    if (rule == null) {
+      await _unblock();
+      return;
+    }
+
+    _isBlocked = true;
+    _remainingSeconds = (rule.cooldownHours * 3600) + (rule.cooldownMinutes * 60);
+    _mascotState = MascotState.idle;
     debugPrint(
       '[MascotOverlayService] Warning overlay — '
-      '$_blockDurationSeconds s countdown.',
+      '$_remainingSeconds s countdown.',
     );
 
     await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
@@ -153,9 +163,10 @@ class MascotOverlayService {
 
   Future<void> _unblock() async {
     _countdownTimer?.cancel();
-    _isBlocked           = false;
-    _remainingSeconds    = 0;
-    _monitoredUsageCount = 0;
+    _isBlocked = false;
+    _remainingSeconds = 0;
+    _usageCounts.clear();
+    _currentMonitoredPackage = null;
     _mascotState         = MascotState.idle;
 
     await _hideOverlayNative();
@@ -198,7 +209,7 @@ class MascotOverlayService {
       if (_isBlocked) {
         // Fallback: if poll still sees a monitored app while overlay is hidden,
         // re-show it (primary path is via AccessibilityService).
-        if (_monitoredApps.contains(foreground) && !_overlayVisible) {
+        if (_monitoredRules.containsKey(foreground) && !_overlayVisible) {
           debugPrint(
             '[MascotOverlayService] Poll fallback: monitored app in foreground '
             '— re-showing overlay.',
@@ -208,20 +219,26 @@ class MascotOverlayService {
         return;
       }
 
-      if (!_monitoredApps.contains(foreground)) {
-        _monitoredUsageCount = 0;
+      if (!_monitoredRules.containsKey(foreground)) {
+        // Not a monitored app — just stop here, but keep previous counts.
+        _currentMonitoredPackage = null;
         return;
       }
 
-      _monitoredUsageCount++;
-      final accumulatedSeconds = _monitoredUsageCount * 5;
+      final rule = _monitoredRules[foreground]!;
+      _currentMonitoredPackage = foreground;
+      // Increment count for this specific app (now 1s per increment)
+      _usageCounts[foreground] = (_usageCounts[foreground] ?? 0) + 1;
+      
+      final accumulatedSeconds = _usageCounts[foreground]!;
+      final thresholdSeconds = (rule.usageHours * 3600) + (rule.usageMinutes * 60);
+      
       debugPrint(
-        '[MascotOverlayService] ${foreground.split('.').last} '
-        'usage: ${accumulatedSeconds}s / ${_usageThresholdSeconds}s',
+        '[MascotOverlayService] ${rule.appLabel} '
+        'cumulative usage: ${accumulatedSeconds}s / ${thresholdSeconds}s',
       );
 
-      if (accumulatedSeconds >= _usageThresholdSeconds) {
-        _monitoredUsageCount = 0;
+      if (accumulatedSeconds >= thresholdSeconds) {
         await _startWarning();
       }
     } on PlatformException catch (e) {
