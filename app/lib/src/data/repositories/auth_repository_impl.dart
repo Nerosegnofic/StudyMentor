@@ -3,6 +3,7 @@
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
 import '../../domain/models/app_config_model.dart';
+import '../../domain/models/installed_app_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../providers/firebase_auth_provider.dart';
 import '../providers/dataconnect_provider.dart';
@@ -227,6 +228,36 @@ class AuthRepositoryImpl implements AuthRepository {
     return UserModel.fromJson(updated);
   }
 
+  // ── Installed-App Inventory ───────────────────────────────────────────────
+
+  @override
+  Future<List<InstalledAppModel>> getInstalledAppsForStudent(
+      String studentUid) async {
+    final rows = await dataConnect.getInstalledAppsForStudent(studentUid);
+    return rows.map(InstalledAppModel.fromJson).toList();
+  }
+
+  @override
+  Future<void> syncInstalledAppsForStudent({
+    required String studentUid,
+    required List<InstalledAppModel> apps,
+  }) async {
+    // Wipe the previous inventory, then re-insert. Same delete-all + re-insert
+    // pattern used by AppRule saves — keeps it simple and always consistent.
+    await dataConnect.deleteAllInstalledAppsForStudent(studentUid);
+    await Future.wait(
+      apps.map(
+        (app) => dataConnect.insertInstalledApp(
+          studentUid: studentUid,
+          packageName: app.packageName,
+          appLabel: app.appLabel,
+          isSystemApp: app.isSystemApp,
+          iconBase64: app.iconBase64,
+        ),
+      ),
+    );
+  }
+
   // ── App Rules ─────────────────────────────────────────────────────────────
 
   @override
@@ -249,8 +280,10 @@ class AuthRepositoryImpl implements AuthRepository {
         studentUid: studentUid,
         packageName: rule.packageName,
         appLabel: rule.appLabel,
-        usageDurationMinutes: rule.usageDurationMinutes,
-        cooldownDurationMinutes: rule.cooldownDurationMinutes,
+        usageHours: rule.usageHours,
+        usageMinutes: rule.usageMinutes,
+        cooldownHours: rule.cooldownHours,
+        cooldownMinutes: rule.cooldownMinutes,
       );
     }
   }

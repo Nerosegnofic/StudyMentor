@@ -3,6 +3,7 @@
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
 import '../../domain/models/app_config_model.dart';
+import '../../domain/models/installed_app_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AuthState extends Equatable {
@@ -125,4 +126,26 @@ class AppConfigError extends AuthState {
   AppConfigError(this.message);
   @override
   List<Object?> get props => [message];
+}
+
+// ── Installed-App Inventory States ───────────────────────────────────────────
+
+/// Emitted while the student device is syncing its installed-app inventory
+/// to DataConnect. Does not affect root navigation.
+class InstalledAppsSyncing extends AuthState {}
+
+/// Emitted when the inventory sync completes successfully.
+class InstalledAppsSynced extends AuthState {}
+
+/// Emitted when the parent's app-picker has finished loading a student's
+/// installed-app inventory from DataConnect.
+/// [studentUid] lets [StudentConfigScreen] verify the data is for its student.
+class InstalledAppsLoaded extends AuthState {
+  final String studentUid;
+  final List<InstalledAppModel> apps;
+
+  InstalledAppsLoaded({required this.studentUid, required this.apps});
+
+  @override
+  List<Object?> get props => [studentUid, apps];
 }

@@ -3,6 +3,7 @@
 import '../models/user_model.dart';
 import '../models/student_model.dart';
 import '../models/app_config_model.dart';
+import '../models/installed_app_model.dart';
 
 abstract class AuthRepository {
   Future<UserModel> signUp({
@@ -45,6 +46,19 @@ abstract class AuthRepository {
     String? newFullName,
     String? currentPassword,
     String? newPassword,
+  });
+
+  // ── Installed-App Inventory ───────────────────────────────────────────────
+
+  /// Returns the installed-app inventory for [studentUid] from DataConnect.
+  /// Called by the parent's app-picker.
+  Future<List<InstalledAppModel>> getInstalledAppsForStudent(String studentUid);
+
+  /// Replaces the student's entire inventory in DataConnect with [apps].
+  /// Called by the student device on login and on dirty-flag resume.
+  Future<void> syncInstalledAppsForStudent({
+    required String studentUid,
+    required List<InstalledAppModel> apps,
   });
 
   // ── App Configuration ─────────────────────────────────────────────────────
