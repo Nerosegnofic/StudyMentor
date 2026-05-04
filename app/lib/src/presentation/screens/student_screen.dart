@@ -33,7 +33,7 @@ class _StudentScreenState extends State<StudentScreen> {
     MascotOverlayService.instance
         .init(
           monitoredApps: MascotOverlayService.dummyMonitoredApps,
-          usageThresholdMinutes: 1,
+          usageThresholdSeconds: 20,
         )
         .then((_) => MascotOverlayService.instance.start());
   }

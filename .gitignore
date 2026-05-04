@@ -29,7 +29,6 @@ __pycache__/
 .env.*
 !.env.example
 
-
 # Logs
 *.log
 .buildlog/
@@ -43,10 +42,6 @@ migrate_working_dir/
 .svn/
 
 # IntelliJ related
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -76,7 +71,6 @@ repo_paths.txt
 /android/app/profile
 /android/app/release
 
-
 frontend/build/
 **/build/
 .dart_tool/
@@ -101,3 +95,7 @@ frontend/windows/flutter/ephemeral/generated_config.cmake
 *.pdb
 *.exp
 *.lib
+
+# Environment files
+.env
+.env.*
