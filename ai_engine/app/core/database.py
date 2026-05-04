@@ -3,6 +3,19 @@ from langchain_postgres import PGVector
 from app.core.embeddings import RateLimitedCohereEmbeddings
 from app.core.config import settings
 
+from sqlalchemy.orm import sessionmaker
+from app.models.domain import Base
+
+engine = create_engine(settings.POSTGRES_CONNECTION)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 def get_vector_store() -> PGVector:
     """
     Initializes and returns the PGVector store connected to the Postgres vector database.
@@ -25,10 +38,12 @@ def init_db():
     """
     Ensures that all necessary relational tables exist in the database.
     """
-    engine = create_engine(settings.POSTGRES_CONNECTION)
+    
+    # Create tables using SQLAlchemy ORM
+    Base.metadata.create_all(bind=engine)
     
     with engine.begin() as conn:
-        # Create mastery_points table
+        # Create legacy mastery_points table
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS mastery_points (
                 id UUID PRIMARY KEY,

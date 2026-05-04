@@ -6,26 +6,14 @@ class DocumentUploadResponse(BaseModel):
     status: str
     document_id: UUID
 
-class TopicQuizConfig(BaseModel):
-    topic: str = Field(..., description="Topic name in Arabic")
-    difficulty: int = Field(..., ge=1, le=5, description="Target difficulty for this topic")
-    question_count: int = Field(..., ge=1, le=10, description="Number of questions for this topic")
-
-class QuizPayloadItem(BaseModel):
-    """A single skill-block inside the adaptive quiz payload produced by the
-    BKT → Quiz-Generator bridge."""
-    skill: str = Field(..., description="Skill name from the student's mastery profile")
-    difficulty: int = Field(..., ge=1, le=5, description="Target difficulty derived from mastery via ZPD mapping")
-    count: int = Field(..., ge=1, description="Number of questions allocated to this skill")
-
 class GenerateQuizRequest(BaseModel):
-    topic_configs: List[TopicQuizConfig] = Field(..., description="Per-topic quiz specifications")
-    student_id: Optional[str] = None
+    total_questions: int = Field(default=10, ge=1, le=50, description="Total number of questions to generate")
 
 import uuid
 
 class QuestionSchema(BaseModel):
     question_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Backend-generated unique ID. Ignore this field.")
+    topic: str = Field(..., description="The name of the topic or skill this question belongs to")
     question_text: str
     options: List[str]
     correct_answer: str
@@ -43,15 +31,11 @@ class GenerateQuizResponse(BaseModel):
 class StudentAnswer(BaseModel):
     question_id: str
     selected_option: str
-    is_correct: bool
-    topic: Optional[str] = None 
-    difficulty: int = Field(default=3, description="Difficulty of the question (1-5)")
-    response_time: float = Field(default=10.0, description="Time taken to answer in seconds")
+    time_taken_ms: int = Field(default=10000, description="Time taken to answer in ms")
     hints_used: int = Field(default=0, description="Number of hints used")
 
 class QuizSubmissionRequest(BaseModel):
-    student_id: str
-    quiz_title: str
+    quiz_session_id: str = Field(..., description="The ID of the generated quiz session")
     answers: List[StudentAnswer]
 
 class QuizSubmissionResponse(BaseModel):
@@ -59,17 +43,8 @@ class QuizSubmissionResponse(BaseModel):
     total_questions: int
     feedback: str
 
-class StudentSkillState(BaseModel):
-    mastery: float = 0.30
-    learn_rate: float = 0.10
-    attempts: int = 0
-    last_seen_step: int = 0
-
-class StudentProfile(BaseModel):
-    student_id: str
-    skills: Dict[str, StudentSkillState] = Field(default_factory=dict)
-    current_step: int = 0
-    consecutive_spam_clicks: int = 0
+# SQLAlchemy Domain Models are now used for student profiles and skill states.
+# DTOs can be added here if needed for API responses.
 
 # ---------------------------------------------------------------------------
 # LLM-Refined Mastery Points (Structured Output for Gemini)

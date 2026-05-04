@@ -101,3 +101,5 @@ frontend/windows/flutter/ephemeral/generated_config.cmake
 *.pdb
 *.exp
 *.lib
+
+DevDocs/

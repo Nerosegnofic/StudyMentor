@@ -1,6 +1,6 @@
 import math
 from typing import Tuple
-from app.models.schemas import StudentProfile, StudentSkillState
+from app.models.domain import StudentBKTProfile, StudentSkillState
 from app.services.evaluation.config import BKTConfig
 
 class BKTEngine:
@@ -48,18 +48,22 @@ class BKTEngine:
         new_mastery = knew_prob + (1 - knew_prob) * learn_rate
         return self._clamp(new_mastery)
 
-    def update_mastery(self, profile: StudentProfile, skill: str, difficulty: int, correct: bool, response_time: float = 10.0, hints_used: int = 0) -> bool:
+    def update_mastery(
+        self, 
+        profile: StudentBKTProfile, 
+        skill_state: StudentSkillState, 
+        skill_name: str, 
+        difficulty: int, 
+        correct: bool, 
+        response_time: float = 10.0, 
+        hints_used: int = 0
+    ) -> bool:
         """
         Main entry point for updating a student's cognitive state after an answer.
         """
         profile.current_step += 1
         
-        if skill not in profile.skills:
-            profile.skills[skill] = StudentSkillState()
-            
-        data = profile.skills[skill]
-
-        old_mastery = data.mastery
+        old_mastery = skill_state.mastery_probability
         guess, slip = self._adjust_parameters(difficulty, response_time)
         effective_quality = max(0.1, 1.0 - (hints_used * 0.3))
         
@@ -76,11 +80,18 @@ class BKTEngine:
         else:
             profile.consecutive_spam_clicks = 0
 
-        updated = self._bayesian_update(old_mastery, correct, guess, slip, data.learn_rate)
+        # Assuming skill relationship is loaded, fallback to default 0.10 if not
+        learn_rate = skill_state.skill.default_learn_rate if skill_state.skill else 0.10
+
+        updated = self._bayesian_update(old_mastery, correct, guess, slip, learn_rate)
         new_mastery = old_mastery + effective_quality * (updated - old_mastery)
         
-        data.mastery = self._clamp(new_mastery)
-        data.attempts += 1
-        data.last_seen_step = profile.current_step
+        skill_state.mastery_probability = self._clamp(new_mastery)
+        if skill_state.mastery_probability >= 0.95:
+            skill_state.is_mastered = True
+            
+        skill_state.attempts += 1
+        # Reusing attempts as last_seen_step for simplicity since last_seen_step is no longer explicitly on state, 
+        # or we don't need it. The profile has current_step.
 
         return trigger_punishment
