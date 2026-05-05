@@ -95,6 +95,58 @@ mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
 
 # Upserts the global usage and cooldown time limits for a student.
 # These limits apply to ALL restricted apps configured for the student.
+# ── Friend Code ──────────────────────────────────────────────────────────────
+
+# Sets (or updates) the friend code on the currently-authenticated student.
+mutation UpdateStudentFriendCode($friendCode: String!) @auth(level: USER) {
+  student_update(
+    key: { uid_expr: "auth.uid" }
+    data: { friendCode: $friendCode }
+  )
+}
+
+# ── Student Settings ──────────────────────────────────────────────────────────
+
+# Upserts the per-student app preferences.
+mutation UpsertStudentSettings(
+  $studentUid: String!
+  $notificationsEnabled: Boolean!
+  $soundEffectsEnabled: Boolean!
+  $backgroundMusicEnabled: Boolean!
+) @auth(level: USER, insecureReason: "Students are authorized to update their own settings.") {
+  studentSettings_upsert(
+    data: {
+      studentUid: $studentUid
+      notificationsEnabled: $notificationsEnabled
+      soundEffectsEnabled: $soundEffectsEnabled
+      backgroundMusicEnabled: $backgroundMusicEnabled
+    }
+  )
+}
+
+# ── Support Tickets ───────────────────────────────────────────────────────────
+
+# Inserts a support ticket from the Help Center.
+mutation InsertSupportTicket(
+  $userId: String!
+  $userName: String!
+  $issueType: String!
+  $message: String!
+) @auth(level: USER, insecureReason: "Any authenticated student may submit a support ticket.") {
+  supportTicket_insert(
+    data: {
+      userId: $userId
+      userName: $userName
+      issueType: $issueType
+      message: $message
+    }
+  )
+}
+
+# ── Student Config Mutations ──────────────────────────────────────────────────
+
+# Upserts the global usage and cooldown time limits for a student.
+# These limits apply to ALL restricted apps configured for the student.
 mutation UpsertStudentConfig(
   $studentUid: String!
   $usageHours: Int!

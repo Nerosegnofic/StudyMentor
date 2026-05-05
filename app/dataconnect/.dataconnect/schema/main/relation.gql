@@ -283,6 +283,10 @@ extend type Student {
   """
   studentConfig_on_student: StudentConfig @fdc_generated(from: "StudentConfig.student", purpose: QUERY_SINGLE_ONE_TO_ONE)
   """
+  ✨ List `StudentSettings` objects in a one-to-one relationship (where `StudentSettings`.`student` is this object).
+  """
+  studentSettings_on_student: StudentSettings @fdc_generated(from: "StudentSettings.student", purpose: QUERY_SINGLE_ONE_TO_ONE)
+  """
   Implicit metadata field that cannot be written. It provides extra information about query results.
   """
   _metadata: _Metadata @fdc_generated(from: "Student", purpose: METADATA_FIELD)
@@ -598,6 +602,141 @@ extend type StudentConfig {
   A generated field that is used for caching results in SDKs.
   """
   _id: ID! @fdc_generated(from: "StudentConfig.studentUid", purpose: ENTITY_ID)
+}
+extend type StudentSettings {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "StudentSettings", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `StudentSettings` table.
+  """
+  _count: Int! @fdc_generated(from: "StudentSettings.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentSettings` table where the `backgroundMusicEnabled` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  backgroundMusicEnabled_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentSettings.backgroundMusicEnabled", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentSettings` table where the `notificationsEnabled` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  notificationsEnabled_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentSettings.notificationsEnabled", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentSettings` table where the `soundEffectsEnabled` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  soundEffectsEnabled_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentSettings.soundEffectsEnabled", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentSettings` table where the `studentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  studentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentSettings.studentUid", purpose: QUERY_COUNT)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "StudentSettings.studentUid", purpose: ENTITY_ID)
+}
+extend type SupportTicket {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "SupportTicket", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `SupportTicket` table.
+  """
+  _count: Int! @fdc_generated(from: "SupportTicket.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `SupportTicket` table where the `createdAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  createdAt_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket.createdAt", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `SupportTicket` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  id_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket.id", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `SupportTicket` table where the `issueType` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  issueType_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket.issueType", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `SupportTicket` table where the `message` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  message_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket.message", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `SupportTicket` table where the `status` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  status_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket.status", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `SupportTicket` table where the `userId` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  userId_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket.userId", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `SupportTicket` table where the `userName` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  userName_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket.userName", purpose: QUERY_COUNT)
+  """
+  ✨ Minimum of the `createdAt` field in the `SupportTicket` table.
+  """
+  createdAt_min: Timestamp @fdc_generated(from: "SupportTicket.createdAt", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `createdAt` field in the `SupportTicket` table.
+  """
+  createdAt_max: Timestamp @fdc_generated(from: "SupportTicket.createdAt", purpose: QUERY_MAX)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "SupportTicket.id", purpose: ENTITY_ID)
 }
 extend type User {
   """

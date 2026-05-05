@@ -45,6 +45,24 @@ extend type Mutation {
     data: StudentConfig_Data!
   ): StudentConfig_KeyOutput! @fdc_generated(from: "StudentConfig", purpose: INSERT_SINGLE)
   """
+  ✨ Insert a single `StudentSettings` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentSettings_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: StudentSettings_Data!
+  ): StudentSettings_KeyOutput! @fdc_generated(from: "StudentSettings", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `SupportTicket` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  supportTicket_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: SupportTicket_Data!
+  ): SupportTicket_KeyOutput! @fdc_generated(from: "SupportTicket", purpose: INSERT_SINGLE)
+  """
   ✨ Insert a single `User` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
   user_insert(
@@ -98,6 +116,24 @@ extend type Mutation {
     """
     data: [StudentConfig_Data!]!
   ): [StudentConfig_KeyOutput!]! @fdc_generated(from: "StudentConfig", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `StudentSettings` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentSettings_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [StudentSettings_Data!]!
+  ): [StudentSettings_KeyOutput!]! @fdc_generated(from: "StudentSettings", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `SupportTicket` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  supportTicket_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [SupportTicket_Data!]!
+  ): [SupportTicket_KeyOutput!]! @fdc_generated(from: "SupportTicket", purpose: INSERT_MULTIPLE)
   """
   ✨ Insert `User` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
@@ -153,6 +189,24 @@ extend type Mutation {
     data: StudentConfig_Data!
   ): StudentConfig_KeyOutput! @fdc_generated(from: "StudentConfig", purpose: UPSERT_SINGLE)
   """
+  ✨ Insert or update a single `StudentSettings` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentSettings`.
+  """
+  studentSettings_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: StudentSettings_Data!
+  ): StudentSettings_KeyOutput! @fdc_generated(from: "StudentSettings", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `SupportTicket` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `SupportTicket`.
+  """
+  supportTicket_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: SupportTicket_Data!
+  ): SupportTicket_KeyOutput! @fdc_generated(from: "SupportTicket", purpose: UPSERT_SINGLE)
+  """
   ✨ Insert or update a single `User` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `User`.
   """
   user_upsert(
@@ -206,6 +260,24 @@ extend type Mutation {
     """
     data: [StudentConfig_Data!]!
   ): [StudentConfig_KeyOutput!]! @fdc_generated(from: "StudentConfig", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `StudentSettings` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentSettings`.
+  """
+  studentSettings_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [StudentSettings_Data!]!
+  ): [StudentSettings_KeyOutput!]! @fdc_generated(from: "StudentSettings", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `SupportTicket` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `SupportTicket`.
+  """
+  supportTicket_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [SupportTicket_Data!]!
+  ): [SupportTicket_KeyOutput!]! @fdc_generated(from: "SupportTicket", purpose: UPSERT_MULTIPLE)
   """
   ✨ Insert or update `User` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `User`.
   """
@@ -321,6 +393,49 @@ extend type Mutation {
     data: StudentConfig_Data!
   ): StudentConfig_KeyOutput @fdc_generated(from: "StudentConfig", purpose: UPDATE_SINGLE)
   """
+  ✨ Update a single `StudentSettings` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `StudentSettings` or `null` if not found.
+  """
+  studentSettings_update(
+    """
+    The key used to identify the object.
+    """
+    key: StudentSettings_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentSettings_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: StudentSettings_Data!
+  ): StudentSettings_KeyOutput @fdc_generated(from: "StudentSettings", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `SupportTicket` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `SupportTicket` or `null` if not found.
+  """
+  supportTicket_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: SupportTicket_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: SupportTicket_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: SupportTicket_Data!
+  ): SupportTicket_KeyOutput @fdc_generated(from: "SupportTicket", purpose: UPDATE_SINGLE)
+  """
   ✨ Update a single `User` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `User` or `null` if not found.
   """
   user_update(
@@ -435,6 +550,44 @@ extend type Mutation {
     data: StudentConfig_Data!
   ): Int! @fdc_generated(from: "StudentConfig", purpose: UPDATE_MULTIPLE)
   """
+  ✨ Update `StudentSettings` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  studentSettings_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: StudentSettings_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: StudentSettings_Data!
+  ): Int! @fdc_generated(from: "StudentSettings", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `SupportTicket` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  supportTicket_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: SupportTicket_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: SupportTicket_Data!
+  ): Int! @fdc_generated(from: "SupportTicket", purpose: UPDATE_MULTIPLE)
+  """
   ✨ Update `User` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
   user_updateMany(
@@ -534,6 +687,39 @@ extend type Mutation {
     first: StudentConfig_FirstRow
   ): StudentConfig_KeyOutput @fdc_generated(from: "StudentConfig", purpose: DELETE_SINGLE)
   """
+  ✨ Delete a single `StudentSettings` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  studentSettings_delete(
+    """
+    The key used to identify the object.
+    """
+    key: StudentSettings_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentSettings_FirstRow
+  ): StudentSettings_KeyOutput @fdc_generated(from: "StudentSettings", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `SupportTicket` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  supportTicket_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: SupportTicket_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: SupportTicket_FirstRow
+  ): SupportTicket_KeyOutput @fdc_generated(from: "SupportTicket", purpose: DELETE_SINGLE)
+  """
   ✨ Delete a single `User` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
   user_delete(
@@ -617,6 +803,34 @@ extend type Mutation {
     """
     all: Boolean = false
   ): Int! @fdc_generated(from: "StudentConfig", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `StudentSettings` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  studentSettings_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: StudentSettings_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "StudentSettings", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `SupportTicket` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  supportTicket_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: SupportTicket_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket", purpose: DELETE_MULTIPLE)
   """
   ✨ Delete `User` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """

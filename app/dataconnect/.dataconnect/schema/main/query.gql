@@ -80,6 +80,39 @@ extend type Query {
     first: StudentConfig_FirstRow
   ): StudentConfig @fdc_generated(from: "StudentConfig", purpose: QUERY_SINGLE)
   """
+  ✨ Look up a single `StudentSettings` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
+  """
+  studentSettings(
+    """
+    The key used to identify the object.
+    """
+    key: StudentSettings_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentSettings_FirstRow
+  ): StudentSettings @fdc_generated(from: "StudentSettings", purpose: QUERY_SINGLE)
+  """
+  ✨ Look up a single `SupportTicket` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
+  """
+  supportTicket(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: SupportTicket_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: SupportTicket_FirstRow
+  ): SupportTicket @fdc_generated(from: "SupportTicket", purpose: QUERY_SINGLE)
+  """
   ✨ Look up a single `User` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
   """
   user(
@@ -263,6 +296,74 @@ extend type Query {
     """
     having: StudentConfig_Having
   ): [StudentConfig!]! @fdc_generated(from: "StudentConfig", purpose: QUERY_MULTIPLE)
+  """
+  ✨ List `StudentSettings` objects in the table and return selected fields, optionally filtered by `where` conditions
+  """
+  studentSettingss(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: StudentSettings_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [StudentSettings_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: StudentSettings_Having
+  ): [StudentSettings!]! @fdc_generated(from: "StudentSettings", purpose: QUERY_MULTIPLE)
+  """
+  ✨ List `SupportTicket` objects in the table and return selected fields, optionally filtered by `where` conditions
+  """
+  supportTickets(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: SupportTicket_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [SupportTicket_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: SupportTicket_Having
+  ): [SupportTicket!]! @fdc_generated(from: "SupportTicket", purpose: QUERY_MULTIPLE)
   """
   ✨ List `User` objects in the table and return selected fields, optionally filtered by `where` conditions
   """
