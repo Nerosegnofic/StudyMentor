@@ -1,14 +1,4 @@
 // lib/src/presentation/screens/parent/student_config_screen.dart
-//
-// Opened when a parent taps a verified student card.
-// Flow:
-//   1. Screen loads — fetches saved rules AND the student's installed-app
-//      inventory from DataConnect in parallel.
-//   2. If no rules exist yet, a prominent "Add Configuration" button is shown.
-//   3. Parent taps "Add App" → bottom sheet shows the student's real installed
-//      apps (populated from their device, not a mock list).
-//   4. Parent selects app(s), configures usage + cooldown, taps Save.
-//   5. Rules are saved to DataConnect; screen shows a success snackbar.
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -31,10 +21,8 @@ class StudentConfigScreen extends StatefulWidget {
 }
 
 class _StudentConfigScreenState extends State<StudentConfigScreen> {
-  // Rules currently shown in the UI (loaded from DB or newly added).
   final List<PendingAppRule> _rules = [];
 
-  // Installed apps for the picker — loaded from DataConnect.
   List<InstalledAppModel> _installedApps = [];
   bool _appsLoading = true;
 
@@ -42,19 +30,21 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   bool _isSaving = false;
   bool _isDirty = false;
 
-  // Packages already in _rules, used to filter the app-picker.
+  /// True while a parent-triggered refresh is in flight.
+  bool _isRefreshing = false;
+
   Set<String> get _configuredPackages =>
       _rules.map((r) => r.packageName).toSet();
 
   @override
   void initState() {
     super.initState();
-    context
-        .read<AuthBloc>()
-        .add(LoadAppRulesRequested(studentUid: widget.student.uid));
-    context
-        .read<AuthBloc>()
-        .add(LoadInstalledAppsForStudentRequested(studentUid: widget.student.uid));
+    context.read<AuthBloc>().add(
+      LoadAppRulesRequested(studentUid: widget.student.uid),
+    );
+    context.read<AuthBloc>().add(
+      LoadInstalledAppsForStudentRequested(studentUid: widget.student.uid),
+    );
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -62,21 +52,22 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   void _loadRulesFromSaved(List<AppRuleModel> saved) {
     _rules.clear();
     for (final r in saved) {
-      // Try to find the icon from the already-loaded installed apps list.
       final icon = _installedApps
           .where((a) => a.packageName == r.packageName)
           .firstOrNull
           ?.iconBase64;
 
-      _rules.add(PendingAppRule(
-        packageName: r.packageName,
-        appLabel: r.appLabel,
-        iconBase64: icon,
-        usageHours: r.usageHours,
-        usageMinutes: r.usageMinutes,
-        cooldownHours: r.cooldownHours,
-        cooldownMinutes: r.cooldownMinutes,
-      ));
+      _rules.add(
+        PendingAppRule(
+          packageName: r.packageName,
+          appLabel: r.appLabel,
+          iconBase64: icon,
+          usageHours: r.usageHours,
+          usageMinutes: r.usageMinutes,
+          cooldownHours: r.cooldownHours,
+          cooldownMinutes: r.cooldownMinutes,
+        ),
+      );
     }
   }
 
@@ -86,11 +77,48 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
 
   void _save() {
     context.read<AuthBloc>().add(
-          SaveAppRulesRequested(
-            studentUid: widget.student.uid,
-            rules: List.of(_rules),
+      SaveAppRulesRequested(
+        studentUid: widget.student.uid,
+        rules: List.of(_rules),
+      ),
+    );
+  }
+
+  /// Triggered by the refresh button.
+  /// If the parent has unsaved changes, shows a confirmation dialog first
+  /// so they don't accidentally lose their edits.
+  Future<void> _refresh() async {
+    if (_isRefreshing || _isSaving) return;
+
+    if (_isDirty) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Unsaved Changes'),
+          content: const Text(
+            'Refreshing will discard your unsaved changes. Continue?',
           ),
-        );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+              ),
+              child: const Text('Discard & Refresh'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
+
+    context.read<AuthBloc>().add(
+      RefreshStudentDataRequested(studentUid: widget.student.uid),
+    );
   }
 
   // ── app picker sheet ───────────────────────────────────────────────────────
@@ -103,13 +131,13 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       return;
     }
 
-    // Deduplicate by package name — the DB can have multiple rows for the
-    // same package if two syncs ran concurrently.
     final seen = <String>{};
     final available = _installedApps
-        .where((a) =>
-            !_configuredPackages.contains(a.packageName) &&
-            seen.add(a.packageName))
+        .where(
+          (a) =>
+              !_configuredPackages.contains(a.packageName) &&
+              seen.add(a.packageName),
+        )
         .toList();
 
     if (_installedApps.isEmpty) {
@@ -127,7 +155,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     if (available.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('All installed apps have already been configured.')),
+          content: Text('All installed apps have already been configured.'),
+        ),
       );
       return;
     }
@@ -143,16 +172,16 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         availableApps: available,
         onAppsSelected: (selected) {
           setState(() {
-            // Use a growing set to catch both DB duplicates and rapid
-            // double-taps — only the first occurrence of each package is added.
             final alreadyConfigured = _configuredPackages;
             for (final app in selected) {
               if (alreadyConfigured.add(app.packageName)) {
-                _rules.add(PendingAppRule(
-                  packageName: app.packageName,
-                  appLabel: app.appLabel,
-                  iconBase64: app.iconBase64,
-                ));
+                _rules.add(
+                  PendingAppRule(
+                    packageName: app.packageName,
+                    appLabel: app.appLabel,
+                    iconBase64: app.iconBase64,
+                  ),
+                );
               }
             }
           });
@@ -175,21 +204,30 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is AppRulesLoaded &&
-            state.studentUid == widget.student.uid) {
+        // ── Refresh started ──────────────────────────────────────────────────
+        if (state is StudentDataRefreshing) {
+          setState(() => _isRefreshing = true);
+        }
+
+        // ── Rules loaded (initial load OR after refresh) ──────────────────
+        if (state is AppRulesLoaded && state.studentUid == widget.student.uid) {
           setState(() {
             _loadRulesFromSaved(state.rules);
             _isLoading = false;
             _isDirty = false;
+            // Only clear the refreshing flag once both payloads have arrived.
+            // InstalledAppsLoaded also clears it; whichever comes last wins.
+            _isRefreshing = false;
           });
         }
 
+        // ── Installed apps loaded (initial load OR after refresh) ─────────
         if (state is InstalledAppsLoaded &&
             state.studentUid == widget.student.uid) {
           setState(() {
             _installedApps = state.apps;
             _appsLoading = false;
-            // If rules were already loaded, re-map them to get icons.
+            _isRefreshing = false;
             if (!_isLoading) {
               for (var i = 0; i < _rules.length; i++) {
                 final r = _rules[i];
@@ -236,6 +274,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           setState(() {
             _isLoading = false;
             _isSaving = false;
+            _isRefreshing = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -277,8 +316,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('App Configuration',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          const Text(
+            'App Configuration',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
           Text(
             widget.student.fullName,
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
@@ -286,6 +327,37 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         ],
       ),
       actions: [
+        // ── Refresh button ─────────────────────────────────────────────────
+        Tooltip(
+          message: 'Refresh apps & rules',
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: _isRefreshing
+                // While refreshing: a small inline spinner replaces the icon.
+                ? const Padding(
+                    key: ValueKey('spinner'),
+                    padding: EdgeInsets.symmetric(horizontal: 14),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF4A6CF7),
+                      ),
+                    ),
+                  )
+                // Idle: tappable refresh icon, dimmed while saving.
+                : IconButton(
+                    key: const ValueKey('refresh'),
+                    icon: const Icon(Icons.refresh_rounded),
+                    color: _isSaving
+                        ? Colors.grey.shade400
+                        : const Color(0xFF4A6CF7),
+                    onPressed: _isSaving ? null : _refresh,
+                  ),
+          ),
+        ),
+        // ── Save button ────────────────────────────────────────────────────
         AnimatedOpacity(
           opacity: (_isDirty && !_isSaving) ? 1.0 : 0.3,
           duration: const Duration(milliseconds: 200),
@@ -296,12 +368,18 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Color(0xFF4A6CF7)),
+                      strokeWidth: 2,
+                      color: Color(0xFF4A6CF7),
+                    ),
                   )
                 : const Icon(Icons.save_outlined, color: Color(0xFF4A6CF7)),
-            label: const Text('Save',
-                style: TextStyle(
-                    color: Color(0xFF4A6CF7), fontWeight: FontWeight.w700)),
+            label: const Text(
+              'Save',
+              style: TextStyle(
+                color: Color(0xFF4A6CF7),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ),
       ],
@@ -327,8 +405,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             Container(
               width: 80,
               height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8EDFF),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8EDFF),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -348,7 +426,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Add app rules to control how long ${widget.student.fullName.split(' ').first} can use each app and how long they must wait before using it again.',
+              'Add app rules to control how long '
+              '${widget.student.fullName.split(' ').first} can use each app '
+              'and how long they must wait before using it again.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
@@ -360,7 +440,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.add),
               label: const Text(
@@ -369,10 +451,13 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF4A6CF7),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ],
@@ -403,16 +488,20 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           builder: (ctx) => AlertDialog(
             title: const Text('Unsaved Changes'),
             content: const Text(
-                'You have unsaved changes. Leave without saving?'),
+              'You have unsaved changes. Leave without saving?',
+            ),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text('Stay')),
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Stay'),
+              ),
               FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  style: FilledButton.styleFrom(
-                      backgroundColor: Colors.red.shade600),
-                  child: const Text('Leave')),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                ),
+                child: const Text('Leave'),
+              ),
             ],
           ),
         ) ??
@@ -420,7 +509,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 }
 
-// ── _AppPickerSheet ────────────────────────────────────────────────────────
+// ── _AppPickerSheet ───────────────────────────────────────────────────────────
 
 class _AppPickerSheet extends StatefulWidget {
   final List<InstalledAppModel> availableApps;
@@ -439,7 +528,22 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   final Set<String> _selectedPackages = {};
   final TextEditingController _searchCtl = TextEditingController();
   String _query = '';
-  bool _submitted = false; // prevents double-tap on "Add"
+  bool _submitted = false;
+
+  /// false = "Installed Apps" (user-installed only)
+  /// true  = "All Apps"       (user-installed + system)
+  bool _showSystemApps = false;
+
+  // ── Shared dimensions so both header buttons are visually identical ────────
+  static const double _buttonHeight = 32;
+  static const EdgeInsets _buttonPadding = EdgeInsets.symmetric(horizontal: 10);
+  static const BorderRadius _buttonRadius = BorderRadius.all(
+    Radius.circular(8),
+  );
+  static const TextStyle _buttonTextStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+  );
 
   @override
   void dispose() {
@@ -447,15 +551,203 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
     super.dispose();
   }
 
+  // ── filtered list ──────────────────────────────────────────────────────────
+  // System-app filter is applied first, then the search query on top.
+
   List<InstalledAppModel> get _filtered {
-    if (_query.isEmpty) return widget.availableApps;
+    // Step 1 — apply system-app filter.
+    final afterFilter = _showSystemApps
+        ? widget.availableApps
+        : widget.availableApps.where((a) => !a.isSystemApp).toList();
+
+    // Step 2 — apply search query on top of the filtered list.
+    if (_query.isEmpty) return afterFilter;
     final q = _query.toLowerCase();
-    return widget.availableApps
-        .where((a) =>
-            a.appLabel.toLowerCase().contains(q) ||
-            a.packageName.toLowerCase().contains(q))
+    return afterFilter
+        .where(
+          (a) =>
+              a.appLabel.toLowerCase().contains(q) ||
+              a.packageName.toLowerCase().contains(q),
+        )
         .toList();
   }
+
+  // ── filter dropdown button ─────────────────────────────────────────────────
+
+  Widget _buildFilterButton() {
+    return GestureDetector(
+      onTapDown: (details) async {
+        final origin = details.globalPosition;
+        final selected = await showMenu<bool>(
+          context: context,
+          position: RelativeRect.fromLTRB(
+            origin.dx,
+            origin.dy,
+            origin.dx + 1,
+            origin.dy + 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          items: [
+            _filterMenuItem(
+              value: false,
+              icon: Icons.apps_rounded,
+              label: 'Installed Apps',
+              subtitle: 'Apps downloaded by the student',
+              isSelected: !_showSystemApps,
+            ),
+            _filterMenuItem(
+              value: true,
+              icon: Icons.phone_android_rounded,
+              label: 'All Apps',
+              subtitle: 'Includes system & pre-installed apps',
+              isSelected: _showSystemApps,
+            ),
+          ],
+        );
+        if (selected != null && selected != _showSystemApps) {
+          setState(() {
+            _showSystemApps = selected;
+            _selectedPackages.removeWhere(
+              (pkg) => !_filtered.any((a) => a.packageName == pkg),
+            );
+          });
+        }
+      },
+      child: Container(
+        height: _buttonHeight,
+        // Let the container fill whatever width Expanded gives it.
+        width: double.infinity,
+        padding: _buttonPadding,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8EDFF),
+          borderRadius: _buttonRadius,
+          border: Border.all(color: const Color.fromRGBO(74, 108, 247, 0.3)),
+        ),
+        child: Row(
+          // Center content inside the now-wider button.
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _showSystemApps
+                  ? Icons.phone_android_rounded
+                  : Icons.apps_rounded,
+              size: 14,
+              color: const Color(0xFF4A6CF7),
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                _showSystemApps ? 'All Apps' : 'Installed Apps',
+                overflow: TextOverflow.ellipsis,
+                style: _buttonTextStyle.copyWith(
+                  color: const Color(0xFF4A6CF7),
+                ),
+              ),
+            ),
+            const SizedBox(width: 3),
+            const Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 16,
+              color: Color(0xFF4A6CF7),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── add button ─────────────────────────────────────────────────────────────
+
+  Widget _buildAddButton() {
+    return FilledButton(
+      onPressed: _submitted
+          ? null
+          : () {
+              if (_submitted) return;
+              setState(() => _submitted = true);
+              final selected = widget.availableApps
+                  .where((a) => _selectedPackages.contains(a.packageName))
+                  .toList();
+              Navigator.of(context).pop();
+              widget.onAppsSelected(selected);
+            },
+      style: FilledButton.styleFrom(
+        backgroundColor: const Color(0xFF4A6CF7),
+        foregroundColor: Colors.white,
+        fixedSize: const Size.fromHeight(_buttonHeight),
+        minimumSize: const Size(0, _buttonHeight),
+        padding: _buttonPadding,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        shape: const RoundedRectangleBorder(borderRadius: _buttonRadius),
+      ),
+      child: Text(
+        'Add (${_selectedPackages.length})',
+        style: _buttonTextStyle,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  PopupMenuItem<bool> _filterMenuItem({
+    required bool value,
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required bool isSelected,
+  }) {
+    return PopupMenuItem<bool>(
+      value: value,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xFF4A6CF7)
+                  : const Color(0xFFE8EDFF),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : const Color(0xFF4A6CF7),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected
+                        ? const Color(0xFF4A6CF7)
+                        : const Color(0xFF1A1A2E),
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          ),
+          if (isSelected)
+            const Icon(Icons.check_rounded, size: 16, color: Color(0xFF4A6CF7)),
+        ],
+      ),
+    );
+  }
+
+  // ── build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -478,43 +770,34 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               ),
             ),
           ),
-          // Header
+          // Header row: title | [filter button] [add button]
+          // Both buttons share the remaining space evenly via Expanded.
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                const Text('Select Apps',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w700)),
-                const Spacer(),
-                if (_selectedPackages.isNotEmpty)
-                  FilledButton(
-                    onPressed: _submitted
-                        ? null
-                        : () {
-                            if (_submitted) return;
-                            setState(() => _submitted = true);
-                            final selected = widget.availableApps
-                                .where((a) =>
-                                    _selectedPackages.contains(a.packageName))
-                                .toList();
-                            Navigator.of(context).pop();
-                            widget.onAppsSelected(selected);
-                          },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A6CF7),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text('Add (${_selectedPackages.length})'),
+                const Text(
+                  'Select Apps',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 10),
+                // ── Remaining space split evenly between the two buttons ───
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildFilterButton()),
+                      if (_selectedPackages.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Expanded(child: _buildAddButton()),
+                      ],
+                    ],
                   ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          // Search
+          // Search bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
@@ -525,63 +808,125 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                 prefixIcon: const Icon(Icons.search, size: 20),
                 isDense: true,
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade300)),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
+                  horizontal: 12,
+                  vertical: 10,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 8),
-          // List
+          // App list
           Expanded(
-            child: ListView.builder(
-              controller: scrollCtl,
-              itemCount: _filtered.length,
-              itemBuilder: (ctx, i) {
-                final app = _filtered[i];
-                final selected = _selectedPackages.contains(app.packageName);
-                return ListTile(
-                  leading: _AppIcon(iconBase64: app.iconBase64, label: app.appLabel),
-                  title: Text(app.appLabel,
-                      style:
-                          const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text(app.packageName,
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade500)),
-                  trailing: Checkbox(
-                    value: selected,
-                    activeColor: const Color(0xFF4A6CF7),
-                    onChanged: (_) => setState(() {
-                      if (selected) {
-                        _selectedPackages.remove(app.packageName);
-                      } else {
-                        _selectedPackages.add(app.packageName);
-                      }
-                    }),
+            child: _filtered.isEmpty
+                ? _buildEmptyFilterState()
+                : ListView.builder(
+                    controller: scrollCtl,
+                    itemCount: _filtered.length,
+                    itemBuilder: (ctx, i) {
+                      final app = _filtered[i];
+                      final selected = _selectedPackages.contains(
+                        app.packageName,
+                      );
+                      return ListTile(
+                        leading: _AppIcon(
+                          iconBase64: app.iconBase64,
+                          label: app.appLabel,
+                        ),
+                        title: Text(
+                          app.appLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          app.packageName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        trailing: Checkbox(
+                          value: selected,
+                          activeColor: const Color(0xFF4A6CF7),
+                          onChanged: (_) => setState(() {
+                            if (selected) {
+                              _selectedPackages.remove(app.packageName);
+                            } else {
+                              _selectedPackages.add(app.packageName);
+                            }
+                          }),
+                        ),
+                        onTap: () => setState(() {
+                          if (selected) {
+                            _selectedPackages.remove(app.packageName);
+                          } else {
+                            _selectedPackages.add(app.packageName);
+                          }
+                        }),
+                      );
+                    },
                   ),
-                  onTap: () => setState(() {
-                    if (selected) {
-                      _selectedPackages.remove(app.packageName);
-                    } else {
-                      _selectedPackages.add(app.packageName);
-                    }
-                  }),
-                );
-              },
-            ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── empty state for when the active filter returns no results ──────────────
+
+  Widget _buildEmptyFilterState() {
+    final isSearchActive = _query.isNotEmpty;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSearchActive ? Icons.search_off_rounded : Icons.apps_outlined,
+              size: 48,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              isSearchActive
+                  ? 'No apps match "$_query"'
+                  : 'No user-installed apps found',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            if (!isSearchActive)
+              GestureDetector(
+                onTap: () => setState(() => _showSystemApps = true),
+                child: const Text(
+                  'Switch to All Apps to see system apps',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF4A6CF7),
+                    decoration: TextDecoration.underline,
+                    decorationColor: Color(0xFF4A6CF7),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ── _AppIcon ──────────────────────────────────────────────────────────────────
-// Shows the real launcher icon if iconBase64 is available, otherwise falls
-// back to a letter-avatar. Keeps the picker fast — no network calls needed.
 
 class _AppIcon extends StatelessWidget {
   final String? iconBase64;
@@ -597,9 +942,7 @@ class _AppIcon extends StatelessWidget {
           backgroundColor: const Color(0xFFE8EDFF),
           radius: 20,
         );
-      } catch (_) {
-        // Fall through to letter avatar if decoding fails.
-      }
+      } catch (_) {}
     }
     return CircleAvatar(
       backgroundColor: const Color(0xFFE8EDFF),
@@ -615,7 +958,7 @@ class _AppIcon extends StatelessWidget {
   }
 }
 
-// ── _AppRuleCard ─────────────────────────────────────────────────────────────
+// ── _AppRuleCard ──────────────────────────────────────────────────────────────
 
 class _AppRuleCard extends StatefulWidget {
   final PendingAppRule rule;
@@ -641,10 +984,18 @@ class _AppRuleCardState extends State<_AppRuleCard> {
   @override
   void initState() {
     super.initState();
-    _usageHoursCtl = TextEditingController(text: widget.rule.usageHours.toString());
-    _usageMinutesCtl = TextEditingController(text: widget.rule.usageMinutes.toString());
-    _cooldownHoursCtl = TextEditingController(text: widget.rule.cooldownHours.toString());
-    _cooldownMinutesCtl = TextEditingController(text: widget.rule.cooldownMinutes.toString());
+    _usageHoursCtl = TextEditingController(
+      text: widget.rule.usageHours.toString(),
+    );
+    _usageMinutesCtl = TextEditingController(
+      text: widget.rule.usageMinutes.toString(),
+    );
+    _cooldownHoursCtl = TextEditingController(
+      text: widget.rule.cooldownHours.toString(),
+    );
+    _cooldownMinutesCtl = TextEditingController(
+      text: widget.rule.cooldownMinutes.toString(),
+    );
   }
 
   @override
@@ -702,30 +1053,41 @@ class _AppRuleCardState extends State<_AppRuleCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // App name row
             Row(
               children: [
                 _AppIcon(
-                    iconBase64: widget.rule.iconBase64,
-                    label: widget.rule.appLabel),
+                  iconBase64: widget.rule.iconBase64,
+                  label: widget.rule.appLabel,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.rule.appLabel,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 15)),
-                      Text(widget.rule.packageName,
-                          style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500),
-                          overflow: TextOverflow.ellipsis),
+                      Text(
+                        widget.rule.appLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        widget.rule.packageName,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.delete_outline,
-                      color: Colors.red.shade400, size: 20),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: Colors.red.shade400,
+                    size: 20,
+                  ),
                   tooltip: 'Remove',
                   onPressed: widget.onRemove,
                 ),
@@ -734,20 +1096,31 @@ class _AppRuleCardState extends State<_AppRuleCard> {
             const SizedBox(height: 14),
             const Divider(height: 1),
             const SizedBox(height: 14),
-            // Usage allowance
             Row(
               children: [
-                const Icon(Icons.timer_outlined, size: 14, color: Color(0xFF34A853)),
+                const Icon(
+                  Icons.timer_outlined,
+                  size: 14,
+                  color: Color(0xFF34A853),
+                ),
                 const SizedBox(width: 6),
-                Text('Usage Allowance',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700)),
+                Text(
+                  'Usage Allowance',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Tooltip(
-                  message: 'Total time the student can use this app cumulatively before being locked out.',
-                  child: Icon(Icons.help_outline, size: 13, color: Colors.grey.shade400),
+                  message:
+                      'Total time the student can use this app cumulatively before being locked out.',
+                  child: Icon(
+                    Icons.help_outline,
+                    size: 13,
+                    color: Colors.grey.shade400,
+                  ),
                 ),
               ],
             ),
@@ -772,20 +1145,31 @@ class _AppRuleCardState extends State<_AppRuleCard> {
               ],
             ),
             const SizedBox(height: 18),
-            // Cooldown period
             Row(
               children: [
-                const Icon(Icons.hourglass_bottom_outlined, size: 14, color: Color(0xFFFF9800)),
+                const Icon(
+                  Icons.hourglass_bottom_outlined,
+                  size: 14,
+                  color: Color(0xFFFF9800),
+                ),
                 const SizedBox(width: 6),
-                Text('Cooldown Period',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700)),
+                Text(
+                  'Cooldown Period',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Tooltip(
-                  message: 'How long the student must wait before using the app again after reaching the limit.',
-                  child: Icon(Icons.help_outline, size: 13, color: Colors.grey.shade400),
+                  message:
+                      'How long the student must wait before using the app again after reaching the limit.',
+                  child: Icon(
+                    Icons.help_outline,
+                    size: 13,
+                    color: Colors.grey.shade400,
+                  ),
                 ),
               ],
             ),
@@ -816,7 +1200,7 @@ class _AppRuleCardState extends State<_AppRuleCard> {
   }
 }
 
-// ── _TimeInput ───────────────────────────────────────────────────────────────
+// ── _TimeInput ────────────────────────────────────────────────────────────────
 
 class _TimeInput extends StatelessWidget {
   final TextEditingController controller;
@@ -841,12 +1225,17 @@ class _TimeInput extends StatelessWidget {
         isDense: true,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade300)),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFF4A6CF7), width: 1.5)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF4A6CF7), width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 10,
+        ),
         suffixText: suffix,
         suffixStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
       ),

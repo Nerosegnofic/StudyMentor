@@ -50,6 +50,7 @@ dependencies:
   firebase_data_connect: ^0.2.3
   http: ^1.6.0
   firebase_app_check: ^0.4.3
+  workmanager: ^0.9.0+3
 
 dev_dependencies:
   flutter_test:

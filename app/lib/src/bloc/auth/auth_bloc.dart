@@ -6,6 +6,8 @@ import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../services/installed_apps_service.dart';
+import '../../domain/models/installed_app_model.dart';
+import '../../domain/models/app_config_model.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
@@ -32,6 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // Installed-app inventory
     on<SyncInstalledAppsRequested>(_onSyncInstalledApps);
     on<LoadInstalledAppsForStudentRequested>(_onLoadInstalledAppsForStudent);
+    on<RefreshStudentDataRequested>(_onRefreshStudentData);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -344,12 +347,46 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     try {
-      final apps =
-          await repository.getInstalledAppsForStudent(event.studentUid);
+      final apps = await repository.getInstalledAppsForStudent(
+        event.studentUid,
+      );
       emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: apps));
     } catch (e) {
       // Surface as an empty list — picker shows "Student hasn't synced yet."
       emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: const []));
+    }
+  }
+
+  /// Parent taps refresh — re-fetches both installed apps and rules in parallel.
+  /// Emits [StudentDataRefreshing] first so the UI can show a spinner, then
+  /// lets the existing [InstalledAppsLoaded] / [AppRulesLoaded] handlers
+  /// update the screen as each future completes.
+  Future<void> _onRefreshStudentData(
+    RefreshStudentDataRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentDataRefreshing());
+    try {
+      final results = await Future.wait([
+        repository.getInstalledAppsForStudent(event.studentUid),
+        repository.getAppRulesForStudent(event.studentUid),
+      ]);
+
+      // Index 0 → installed apps, index 1 → app rules.
+      emit(
+        InstalledAppsLoaded(
+          studentUid: event.studentUid,
+          apps: results[0] as List<InstalledAppModel>,
+        ),
+      );
+      emit(
+        AppRulesLoaded(
+          studentUid: event.studentUid,
+          rules: results[1] as List<AppRuleModel>,
+        ),
+      );
+    } catch (e) {
+      emit(AppConfigError(_mapException(e)));
     }
   }
 

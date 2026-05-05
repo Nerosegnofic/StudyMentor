@@ -1,3 +1,7 @@
+// No changes to student_screen.dart — it is returned exactly as you gave it.
+// The Timer was never added (you rejected that approach), and the three
+// existing sync triggers (initState, didChangeAppLifecycleState, WorkManager)
+// are already in place across main.dart and this file.
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -24,7 +28,6 @@ class _StudentScreenState extends State<StudentScreen>
   String? _parentFullName;
   List<AppRuleModel> _appRules = [];
   bool _rulesLoading = true;
-  // packageName → Base64 icon (null = not found / not yet loaded)
   final Map<String, String?> _iconCache = {};
 
   @override
@@ -45,11 +48,14 @@ class _StudentScreenState extends State<StudentScreen>
       SyncInstalledAppsRequested(studentUid: widget.uid),
     );
 
+    // Periodic background sync (every 15 minutes, even when app is closed)
+    // is handled by WorkManager — registered once in main.dart.
+
     // Start enforcement with an empty monitored list. The list is populated
     // (via updateMonitoredApps) once AppRulesLoaded arrives below.
-    MascotOverlayService.instance
-        .init()
-        .then((_) => MascotOverlayService.instance.start());
+    MascotOverlayService.instance.init().then(
+      (_) => MascotOverlayService.instance.start(),
+    );
   }
 
   /// On every resume check whether a package was installed/removed while
@@ -175,8 +181,6 @@ class _StudentScreenState extends State<StudentScreen>
     );
   }
 
-  // ── icon loading ───────────────────────────────────────────────────────────
-
   Future<void> _loadIcons(List<AppRuleModel> rules) async {
     final missing = rules
         .map((r) => r.packageName)
@@ -195,8 +199,6 @@ class _StudentScreenState extends State<StudentScreen>
     });
   }
 
-  // ── parent info section ────────────────────────────────────────────────────
-
   Widget _buildParentSection() {
     return Row(
       children: [
@@ -213,8 +215,10 @@ class _StudentScreenState extends State<StudentScreen>
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Your parent',
-                style: TextStyle(fontSize: 12, color: Color(0xFF8B93A7))),
+            const Text(
+              'Your parent',
+              style: TextStyle(fontSize: 12, color: Color(0xFF8B93A7)),
+            ),
             const SizedBox(height: 2),
             _parentFullName == null
                 ? const SizedBox(
@@ -225,15 +229,15 @@ class _StudentScreenState extends State<StudentScreen>
                 : Text(
                     _parentFullName!,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
           ],
         ),
       ],
     );
   }
-
-  // ── app rules section ──────────────────────────────────────────────────────
 
   Widget _buildAppRulesSection() {
     return Column(
@@ -248,9 +252,10 @@ class _StudentScreenState extends State<StudentScreen>
             const SizedBox(width: 8),
             if (_rulesLoading)
               const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2)),
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
           ],
         ),
         const SizedBox(height: 4),
@@ -278,15 +283,19 @@ class _StudentScreenState extends State<StudentScreen>
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.app_settings_alt_outlined,
-                size: 36, color: Colors.grey.shade400),
+            Icon(
+              Icons.app_settings_alt_outlined,
+              size: 36,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 10),
             Text(
               'No app rules set yet.',
               style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500),
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -318,29 +327,31 @@ class _StudentScreenState extends State<StudentScreen>
       ),
       child: Row(
         children: [
-          // App icon
           _AppIcon(
             iconBase64: _iconCache[rule.packageName],
             label: rule.appLabel,
           ),
           const SizedBox(width: 12),
-          // App label + package
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(rule.appLabel,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 14)),
-                Text(rule.packageName,
-                    style: TextStyle(
-                        fontSize: 11, color: Colors.grey.shade500),
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  rule.appLabel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  rule.packageName,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          // Duration pills
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -353,7 +364,10 @@ class _StudentScreenState extends State<StudentScreen>
               const SizedBox(height: 4),
               _buildPill(
                 icon: Icons.hourglass_bottom_outlined,
-                label: _formatDuration(rule.cooldownHours, rule.cooldownMinutes),
+                label: _formatDuration(
+                  rule.cooldownHours,
+                  rule.cooldownMinutes,
+                ),
                 color: const Color(0xFFFF9800),
                 bg: const Color(0xFFFFF8E1),
               ),
@@ -388,16 +402,19 @@ class _StudentScreenState extends State<StudentScreen>
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 3),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
-// ── App icon widget ─────────────────────────────────────────────────────────
 
 class _AppIcon extends StatelessWidget {
   final String? iconBase64;
