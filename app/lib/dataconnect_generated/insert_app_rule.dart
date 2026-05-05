@@ -4,13 +4,14 @@ class InsertAppRuleVariablesBuilder {
   String studentUid;
   String packageName;
   String appLabel;
-  int usageHours;
-  int usageMinutes;
-  int cooldownHours;
-  int cooldownMinutes;
+  Optional<String> _iconBase64 = Optional.optional(nativeFromJson, nativeToJson);
 
-  final FirebaseDataConnect _dataConnect;
-  InsertAppRuleVariablesBuilder(this._dataConnect, {required  this.studentUid,required  this.packageName,required  this.appLabel,required  this.usageHours,required  this.usageMinutes,required  this.cooldownHours,required  this.cooldownMinutes,});
+  final FirebaseDataConnect _dataConnect;  InsertAppRuleVariablesBuilder iconBase64(String? t) {
+   _iconBase64.value = t;
+   return this;
+  }
+
+  InsertAppRuleVariablesBuilder(this._dataConnect, {required  this.studentUid,required  this.packageName,required  this.appLabel,});
   Deserializer<InsertAppRuleData> dataDeserializer = (dynamic json)  => InsertAppRuleData.fromJson(jsonDecode(json));
   Serializer<InsertAppRuleVariables> varsSerializer = (InsertAppRuleVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<InsertAppRuleData, InsertAppRuleVariables>> execute() {
@@ -18,7 +19,7 @@ class InsertAppRuleVariablesBuilder {
   }
 
   MutationRef<InsertAppRuleData, InsertAppRuleVariables> ref() {
-    InsertAppRuleVariables vars= InsertAppRuleVariables(studentUid: studentUid,packageName: packageName,appLabel: appLabel,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,);
+    InsertAppRuleVariables vars= InsertAppRuleVariables(studentUid: studentUid,packageName: packageName,appLabel: appLabel,iconBase64: _iconBase64,);
     return _dataConnect.mutation("InsertAppRule", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -96,20 +97,22 @@ class InsertAppRuleVariables {
   final String studentUid;
   final String packageName;
   final String appLabel;
-  final int usageHours;
-  final int usageMinutes;
-  final int cooldownHours;
-  final int cooldownMinutes;
+  late final Optional<String>iconBase64;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   InsertAppRuleVariables.fromJson(Map<String, dynamic> json):
   
   studentUid = nativeFromJson<String>(json['studentUid']),
   packageName = nativeFromJson<String>(json['packageName']),
-  appLabel = nativeFromJson<String>(json['appLabel']),
-  usageHours = nativeFromJson<int>(json['usageHours']),
-  usageMinutes = nativeFromJson<int>(json['usageMinutes']),
-  cooldownHours = nativeFromJson<int>(json['cooldownHours']),
-  cooldownMinutes = nativeFromJson<int>(json['cooldownMinutes']);
+  appLabel = nativeFromJson<String>(json['appLabel']) {
+  
+  
+  
+  
+  
+    iconBase64 = Optional.optional(nativeFromJson, nativeToJson);
+    iconBase64.value = json['iconBase64'] == null ? null : nativeFromJson<String>(json['iconBase64']);
+  
+  }
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -123,14 +126,11 @@ class InsertAppRuleVariables {
     return studentUid == otherTyped.studentUid && 
     packageName == otherTyped.packageName && 
     appLabel == otherTyped.appLabel && 
-    usageHours == otherTyped.usageHours && 
-    usageMinutes == otherTyped.usageMinutes && 
-    cooldownHours == otherTyped.cooldownHours && 
-    cooldownMinutes == otherTyped.cooldownMinutes;
+    iconBase64 == otherTyped.iconBase64;
     
   }
   @override
-  int get hashCode => Object.hashAll([studentUid.hashCode, packageName.hashCode, appLabel.hashCode, usageHours.hashCode, usageMinutes.hashCode, cooldownHours.hashCode, cooldownMinutes.hashCode]);
+  int get hashCode => Object.hashAll([studentUid.hashCode, packageName.hashCode, appLabel.hashCode, iconBase64.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -138,10 +138,9 @@ class InsertAppRuleVariables {
     json['studentUid'] = nativeToJson<String>(studentUid);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
-    json['usageHours'] = nativeToJson<int>(usageHours);
-    json['usageMinutes'] = nativeToJson<int>(usageMinutes);
-    json['cooldownHours'] = nativeToJson<int>(cooldownHours);
-    json['cooldownMinutes'] = nativeToJson<int>(cooldownMinutes);
+    if(iconBase64.state == OptionalState.set) {
+      json['iconBase64'] = iconBase64.toJson();
+    }
     return json;
   }
 
@@ -149,10 +148,7 @@ class InsertAppRuleVariables {
     required this.studentUid,
     required this.packageName,
     required this.appLabel,
-    required this.usageHours,
-    required this.usageMinutes,
-    required this.cooldownHours,
-    required this.cooldownMinutes,
+    required this.iconBase64,
   });
 }
 

@@ -4,6 +4,20 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
+part 'get_user_by_uid.dart';
+
+part 'get_students_by_parent.dart';
+
+part 'get_student_with_parent.dart';
+
+part 'get_installed_apps_for_student.dart';
+
+part 'insert_installed_app.dart';
+
+part 'delete_all_installed_apps_for_student.dart';
+
+part 'get_app_config_for_student.dart';
+
 part 'insert_user.dart';
 
 part 'upsert_current_user.dart';
@@ -22,19 +36,7 @@ part 'insert_app_rule.dart';
 
 part 'delete_all_app_rules_for_student.dart';
 
-part 'get_user_by_uid.dart';
-
-part 'get_students_by_parent.dart';
-
-part 'get_student_with_parent.dart';
-
-part 'get_installed_apps_for_student.dart';
-
-part 'insert_installed_app.dart';
-
-part 'delete_all_installed_apps_for_student.dart';
-
-part 'get_app_config_for_student.dart';
+part 'upsert_student_config.dart';
 
 
 
@@ -118,6 +120,41 @@ class Unknown extends EnumValue<Never> {
 class ExampleConnector {
   
   
+  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
+    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetStudentsByParentVariablesBuilder getStudentsByParent ({required String parentUid, }) {
+    return GetStudentsByParentVariablesBuilder(dataConnect, parentUid: parentUid,);
+  }
+  
+  
+  GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
+    return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetInstalledAppsForStudentVariablesBuilder getInstalledAppsForStudent ({required String studentUid, }) {
+    return GetInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  InsertInstalledAppVariablesBuilder insertInstalledApp ({required String studentUid, required String packageName, required String appLabel, required bool isSystemApp, }) {
+    return InsertInstalledAppVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,isSystemApp: isSystemApp,);
+  }
+  
+  
+  DeleteAllInstalledAppsForStudentVariablesBuilder deleteAllInstalledAppsForStudent ({required String studentUid, }) {
+    return DeleteAllInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
+    return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
   InsertUserVariablesBuilder insertUser ({required String email, required String fullName, required Role role, }) {
     return InsertUserVariablesBuilder(dataConnect, email: email,fullName: fullName,role: role,);
   }
@@ -153,8 +190,8 @@ class ExampleConnector {
   }
   
   
-  InsertAppRuleVariablesBuilder insertAppRule ({required String studentUid, required String packageName, required String appLabel, required int usageHours, required int usageMinutes, required int cooldownHours, required int cooldownMinutes, }) {
-    return InsertAppRuleVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,);
+  InsertAppRuleVariablesBuilder insertAppRule ({required String studentUid, required String packageName, required String appLabel, }) {
+    return InsertAppRuleVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,);
   }
   
   
@@ -163,38 +200,8 @@ class ExampleConnector {
   }
   
   
-  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
-    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetStudentsByParentVariablesBuilder getStudentsByParent ({required String parentUid, }) {
-    return GetStudentsByParentVariablesBuilder(dataConnect, parentUid: parentUid,);
-  }
-  
-  
-  GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
-    return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetInstalledAppsForStudentVariablesBuilder getInstalledAppsForStudent ({required String studentUid, }) {
-    return GetInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  InsertInstalledAppVariablesBuilder insertInstalledApp ({required String studentUid, required String packageName, required String appLabel, required bool isSystemApp, }) {
-    return InsertInstalledAppVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,isSystemApp: isSystemApp,);
-  }
-  
-  
-  DeleteAllInstalledAppsForStudentVariablesBuilder deleteAllInstalledAppsForStudent ({required String studentUid, }) {
-    return DeleteAllInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
-    return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  UpsertStudentConfigVariablesBuilder upsertStudentConfig ({required String studentUid, required int usageHours, required int usageMinutes, required int cooldownHours, required int cooldownMinutes, }) {
+    return UpsertStudentConfigVariablesBuilder(dataConnect, studentUid: studentUid,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,);
   }
   
 

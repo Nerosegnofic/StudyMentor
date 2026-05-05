@@ -1,6 +1,7 @@
 // lib/src/data/providers/dataconnect_provider.dart
 
 import '../../../dataconnect_generated/generated.dart';
+import '../../domain/models/app_config_model.dart';
 
 class DataConnectProvider {
   final _connector = ExampleConnector.instance;
@@ -109,23 +110,37 @@ class DataConnectProvider {
 
   // ── App Rules ─────────────────────────────────────────────────────────────
 
-  /// Returns all app rules for [studentUid] as raw maps.
-  Future<List<Map<String, dynamic>>> getAppRulesForStudent(
-      String studentUid) async {
+  /// Returns the global student config and all app rules for [studentUid].
+  /// The config is null if the parent hasn't saved one yet — callers should
+  /// fall back to [StudentConfigModel] defaults in that case.
+  Future<({StudentConfigModel? config, List<Map<String, dynamic>> rules})>
+  getAppConfigForStudent(String studentUid) async {
     final result = await _connector
         .getAppConfigForStudent(studentUid: studentUid)
         .execute();
-    return result.data.appRules
-        .map((r) => {
-              'id': r.id,
-              'package_name': r.packageName,
-              'app_label': r.appLabel,
-              'usage_hours': r.usageHours,
-              'usage_minutes': r.usageMinutes,
-              'cooldown_hours': r.cooldownHours,
-              'cooldown_minutes': r.cooldownMinutes,
-            })
+
+    final raw = result.data.studentConfig;
+    final config = raw == null
+        ? null
+        : StudentConfigModel(
+            usageHours: raw.usageHours,
+            usageMinutes: raw.usageMinutes,
+            cooldownHours: raw.cooldownHours,
+            cooldownMinutes: raw.cooldownMinutes,
+          );
+
+    final rules = result.data.appRules
+        .map(
+          (r) => {
+            'id': r.id,
+            'package_name': r.packageName,
+            'app_label': r.appLabel,
+            'icon_base64': r.iconBase64,
+          },
+        )
         .toList();
+
+    return (config: config, rules: rules);
   }
 
   /// Deletes all existing AppRule rows for [studentUid].
@@ -135,27 +150,57 @@ class DataConnectProvider {
         .execute();
   }
 
+  /// Inserts a single AppRule row (no time fields).
+  Future<void> insertAppRule({
+    required String studentUid,
+    required String packageName,
+    required String appLabel,
+    String? iconBase64,
+  }) async {
+    await _connector
+        .insertAppRule(
+          studentUid: studentUid,
+          packageName: packageName,
+          appLabel: appLabel,
+        )
+        .iconBase64(iconBase64)
+        .execute();
+  }
+
+  /// Upserts the global usage/cooldown config for [studentUid].
+  Future<void> upsertStudentConfig({
+    required String studentUid,
+    required StudentConfigModel config,
+  }) async {
+    await _connector
+        .upsertStudentConfig(
+          studentUid: studentUid,
+          usageHours: config.usageHours,
+          usageMinutes: config.usageMinutes,
+          cooldownHours: config.cooldownHours,
+          cooldownMinutes: config.cooldownMinutes,
+        )
+        .execute();
+  }
+
   // ── Installed-App Inventory ───────────────────────────────────────────────
-  //
-  // NOTE: These methods call generated connector methods that are created when
-  // you run:
-  //   firebase deploy --only dataconnect
-  //   (then re-run the DataConnect SDK generator / flutterfire configure)
-  // Until then, the calls below will produce "method not found" compile errors.
 
   /// Returns all installed-app rows for [studentUid].
   Future<List<Map<String, dynamic>>> getInstalledAppsForStudent(
-      String studentUid) async {
+    String studentUid,
+  ) async {
     final result = await _connector
         .getInstalledAppsForStudent(studentUid: studentUid)
         .execute();
     return result.data.installedApps
-        .map((a) => {
-              'package_name': a.packageName,
-              'app_label': a.appLabel,
-              'is_system_app': a.isSystemApp,
-              'icon_base64': a.iconBase64,
-            })
+        .map(
+          (a) => {
+            'package_name': a.packageName,
+            'app_label': a.appLabel,
+            'is_system_app': a.isSystemApp,
+            'icon_base64': a.iconBase64,
+          },
+        )
         .toList();
   }
 
@@ -166,8 +211,6 @@ class DataConnectProvider {
         .execute();
   }
 
-
-
   /// Inserts a single installed-app row.
   Future<void> insertInstalledApp({
     required String studentUid,
@@ -176,34 +219,14 @@ class DataConnectProvider {
     required bool isSystemApp,
     String? iconBase64,
   }) async {
-    await _connector.insertInstalledApp(
-      studentUid: studentUid,
-      packageName: packageName,
-      appLabel: appLabel,
-      isSystemApp: isSystemApp,
-    ).iconBase64(iconBase64).execute();
-  }
-
-  /// Inserts a single AppRule row.
-  Future<void> insertAppRule({
-    required String studentUid,
-    required String packageName,
-    required String appLabel,
-    required int usageHours,
-    required int usageMinutes,
-    required int cooldownHours,
-    required int cooldownMinutes,
-  }) async {
     await _connector
-        .insertAppRule(
+        .insertInstalledApp(
           studentUid: studentUid,
           packageName: packageName,
           appLabel: appLabel,
-          usageHours: usageHours,
-          usageMinutes: usageMinutes,
-          cooldownHours: cooldownHours,
-          cooldownMinutes: cooldownMinutes,
+          isSystemApp: isSystemApp,
         )
+        .iconBase64(iconBase64)
         .execute();
   }
 }

@@ -1,7 +1,3 @@
-// No changes to student_screen.dart — it is returned exactly as you gave it.
-// The Timer was never added (you rejected that approach), and the three
-// existing sync triggers (initState, didChangeAppLifecycleState, WorkManager)
-// are already in place across main.dart and this file.
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -27,6 +23,7 @@ class _StudentScreenState extends State<StudentScreen>
     with WidgetsBindingObserver {
   String? _parentFullName;
   List<AppRuleModel> _appRules = [];
+  StudentConfigModel _config = const StudentConfigModel();
   bool _rulesLoading = true;
   final Map<String, String?> _iconCache = {};
 
@@ -47,9 +44,6 @@ class _StudentScreenState extends State<StudentScreen>
     context.read<AuthBloc>().add(
       SyncInstalledAppsRequested(studentUid: widget.uid),
     );
-
-    // Periodic background sync (every 15 minutes, even when app is closed)
-    // is handled by WorkManager — registered once in main.dart.
 
     // Start enforcement with an empty monitored list. The list is populated
     // (via updateMonitoredApps) once AppRulesLoaded arrives below.
@@ -137,9 +131,13 @@ class _StudentScreenState extends State<StudentScreen>
           if (state is AppRulesLoaded && state.studentUid == widget.uid) {
             setState(() {
               _appRules = state.rules;
+              _config = state.config;
               _rulesLoading = false;
             });
-            MascotOverlayService.instance.updateMonitoredApps(state.rules);
+            MascotOverlayService.instance.updateMonitoredApps(
+              state.rules,
+              config: state.config,
+            );
             _loadIcons(state.rules);
           }
           if (state is AppConfigError) {
@@ -266,9 +264,62 @@ class _StudentScreenState extends State<StudentScreen>
         const SizedBox(height: 14),
         if (!_rulesLoading && _appRules.isEmpty)
           _buildNoRulesPlaceholder()
-        else
+        else if (!_rulesLoading) ...[
+          // ── Global time limits banner ─────────────────────────────────────
+          _buildTimingBanner(),
+          const SizedBox(height: 12),
           ..._appRules.map(_buildRuleRow),
+        ],
       ],
+    );
+  }
+
+  /// A read-only banner showing the global usage + cooldown limits.
+  Widget _buildTimingBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF1FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF4A6CF7).withOpacity(0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF4A6CF7)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'All restricted apps share the same limits:',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildPill(
+            icon: Icons.timer_outlined,
+            label: _formatDuration(
+              _config.usageHours,
+              _config.usageMinutes,
+            ),
+            color: const Color(0xFF34A853),
+            bg: const Color(0xFFE6F4EA),
+          ),
+          const SizedBox(width: 6),
+          _buildPill(
+            icon: Icons.hourglass_bottom_outlined,
+            label: _formatDuration(
+              _config.cooldownHours,
+              _config.cooldownMinutes,
+            ),
+            color: const Color(0xFFFF9800),
+            bg: const Color(0xFFFFF8E1),
+          ),
+        ],
+      ),
     );
   }
 
@@ -350,28 +401,6 @@ class _StudentScreenState extends State<StudentScreen>
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _buildPill(
-                icon: Icons.timer_outlined,
-                label: _formatDuration(rule.usageHours, rule.usageMinutes),
-                color: const Color(0xFF34A853),
-                bg: const Color(0xFFE6F4EA),
-              ),
-              const SizedBox(height: 4),
-              _buildPill(
-                icon: Icons.hourglass_bottom_outlined,
-                label: _formatDuration(
-                  rule.cooldownHours,
-                  rule.cooldownMinutes,
-                ),
-                color: const Color(0xFFFF9800),
-                bg: const Color(0xFFFFF8E1),
-              ),
-            ],
           ),
         ],
       ),

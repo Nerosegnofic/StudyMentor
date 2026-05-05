@@ -18,23 +18,66 @@ class GetAppConfigForStudentVariablesBuilder {
 }
 
 @immutable
+class GetAppConfigForStudentStudentConfig {
+  final int usageHours;
+  final int usageMinutes;
+  final int cooldownHours;
+  final int cooldownMinutes;
+  GetAppConfigForStudentStudentConfig.fromJson(dynamic json):
+  
+  usageHours = nativeFromJson<int>(json['usageHours']),
+  usageMinutes = nativeFromJson<int>(json['usageMinutes']),
+  cooldownHours = nativeFromJson<int>(json['cooldownHours']),
+  cooldownMinutes = nativeFromJson<int>(json['cooldownMinutes']);
+  @override
+  bool operator ==(Object other) {
+    if(identical(this, other)) {
+      return true;
+    }
+    if(other.runtimeType != runtimeType) {
+      return false;
+    }
+
+    final GetAppConfigForStudentStudentConfig otherTyped = other as GetAppConfigForStudentStudentConfig;
+    return usageHours == otherTyped.usageHours && 
+    usageMinutes == otherTyped.usageMinutes && 
+    cooldownHours == otherTyped.cooldownHours && 
+    cooldownMinutes == otherTyped.cooldownMinutes;
+    
+  }
+  @override
+  int get hashCode => Object.hashAll([usageHours.hashCode, usageMinutes.hashCode, cooldownHours.hashCode, cooldownMinutes.hashCode]);
+  
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> json = {};
+    json['usageHours'] = nativeToJson<int>(usageHours);
+    json['usageMinutes'] = nativeToJson<int>(usageMinutes);
+    json['cooldownHours'] = nativeToJson<int>(cooldownHours);
+    json['cooldownMinutes'] = nativeToJson<int>(cooldownMinutes);
+    return json;
+  }
+
+  GetAppConfigForStudentStudentConfig({
+    required this.usageHours,
+    required this.usageMinutes,
+    required this.cooldownHours,
+    required this.cooldownMinutes,
+  });
+}
+
+@immutable
 class GetAppConfigForStudentAppRules {
   final String id;
   final String packageName;
   final String appLabel;
-  final int? usageHours;
-  final int? usageMinutes;
-  final int? cooldownHours;
-  final int? cooldownMinutes;
+  final String? iconBase64;
   GetAppConfigForStudentAppRules.fromJson(dynamic json):
   
   id = nativeFromJson<String>(json['id']),
   packageName = nativeFromJson<String>(json['packageName']),
   appLabel = nativeFromJson<String>(json['appLabel']),
-  usageHours = json['usageHours'] == null ? null : nativeFromJson<int>(json['usageHours']),
-  usageMinutes = json['usageMinutes'] == null ? null : nativeFromJson<int>(json['usageMinutes']),
-  cooldownHours = json['cooldownHours'] == null ? null : nativeFromJson<int>(json['cooldownHours']),
-  cooldownMinutes = json['cooldownMinutes'] == null ? null : nativeFromJson<int>(json['cooldownMinutes']);
+  iconBase64 = json['iconBase64'] == null ? null : nativeFromJson<String>(json['iconBase64']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -48,14 +91,11 @@ class GetAppConfigForStudentAppRules {
     return id == otherTyped.id && 
     packageName == otherTyped.packageName && 
     appLabel == otherTyped.appLabel && 
-    usageHours == otherTyped.usageHours && 
-    usageMinutes == otherTyped.usageMinutes && 
-    cooldownHours == otherTyped.cooldownHours && 
-    cooldownMinutes == otherTyped.cooldownMinutes;
+    iconBase64 == otherTyped.iconBase64;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, usageHours.hashCode, usageMinutes.hashCode, cooldownHours.hashCode, cooldownMinutes.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, iconBase64.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -63,17 +103,8 @@ class GetAppConfigForStudentAppRules {
     json['id'] = nativeToJson<String>(id);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
-    if (usageHours != null) {
-      json['usageHours'] = nativeToJson<int?>(usageHours);
-    }
-    if (usageMinutes != null) {
-      json['usageMinutes'] = nativeToJson<int?>(usageMinutes);
-    }
-    if (cooldownHours != null) {
-      json['cooldownHours'] = nativeToJson<int?>(cooldownHours);
-    }
-    if (cooldownMinutes != null) {
-      json['cooldownMinutes'] = nativeToJson<int?>(cooldownMinutes);
+    if (iconBase64 != null) {
+      json['iconBase64'] = nativeToJson<String?>(iconBase64);
     }
     return json;
   }
@@ -82,18 +113,17 @@ class GetAppConfigForStudentAppRules {
     required this.id,
     required this.packageName,
     required this.appLabel,
-    this.usageHours,
-    this.usageMinutes,
-    this.cooldownHours,
-    this.cooldownMinutes,
+    this.iconBase64,
   });
 }
 
 @immutable
 class GetAppConfigForStudentData {
+  final GetAppConfigForStudentStudentConfig? studentConfig;
   final List<GetAppConfigForStudentAppRules> appRules;
   GetAppConfigForStudentData.fromJson(dynamic json):
   
+  studentConfig = json['studentConfig'] == null ? null : GetAppConfigForStudentStudentConfig.fromJson(json['studentConfig']),
   appRules = (json['appRules'] as List<dynamic>)
         .map((e) => GetAppConfigForStudentAppRules.fromJson(e))
         .toList();
@@ -107,20 +137,25 @@ class GetAppConfigForStudentData {
     }
 
     final GetAppConfigForStudentData otherTyped = other as GetAppConfigForStudentData;
-    return appRules == otherTyped.appRules;
+    return studentConfig == otherTyped.studentConfig && 
+    appRules == otherTyped.appRules;
     
   }
   @override
-  int get hashCode => appRules.hashCode;
+  int get hashCode => Object.hashAll([studentConfig.hashCode, appRules.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
+    if (studentConfig != null) {
+      json['studentConfig'] = studentConfig!.toJson();
+    }
     json['appRules'] = appRules.map((e) => e.toJson()).toList();
     return json;
   }
 
   GetAppConfigForStudentData({
+    this.studentConfig,
     required this.appRules,
   });
 }

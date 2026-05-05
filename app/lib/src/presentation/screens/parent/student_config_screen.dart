@@ -22,6 +22,7 @@ class StudentConfigScreen extends StatefulWidget {
 
 class _StudentConfigScreenState extends State<StudentConfigScreen> {
   final List<PendingAppRule> _rules = [];
+  StudentConfigModel _config = const StudentConfigModel();
 
   List<InstalledAppModel> _installedApps = [];
   bool _appsLoading = true;
@@ -61,11 +62,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         PendingAppRule(
           packageName: r.packageName,
           appLabel: r.appLabel,
-          iconBase64: icon,
-          usageHours: r.usageHours,
-          usageMinutes: r.usageMinutes,
-          cooldownHours: r.cooldownHours,
-          cooldownMinutes: r.cooldownMinutes,
+          iconBase64: icon ?? r.iconBase64,
         ),
       );
     }
@@ -80,6 +77,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       SaveAppRulesRequested(
         studentUid: widget.student.uid,
         rules: List.of(_rules),
+        config: _config,
       ),
     );
   }
@@ -204,30 +202,30 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // ── Refresh started ──────────────────────────────────────────────────
+        // ── Refresh started ────────────────────────────────────────────────
         if (state is StudentDataRefreshing) {
           setState(() => _isRefreshing = true);
         }
 
-        // ── Rules loaded (initial load OR after refresh) ──────────────────
+        // ── Rules + config loaded (initial load OR after refresh) ──────────
         if (state is AppRulesLoaded && state.studentUid == widget.student.uid) {
           setState(() {
+            _config = state.config;
             _loadRulesFromSaved(state.rules);
             _isLoading = false;
             _isDirty = false;
-            // Only clear the refreshing flag once both payloads have arrived.
-            // InstalledAppsLoaded also clears it; whichever comes last wins.
             _isRefreshing = false;
           });
         }
 
-        // ── Installed apps loaded (initial load OR after refresh) ─────────
+        // ── Installed apps loaded (initial load OR after refresh) ──────────
         if (state is InstalledAppsLoaded &&
             state.studentUid == widget.student.uid) {
           setState(() {
             _installedApps = state.apps;
             _appsLoading = false;
             _isRefreshing = false;
+            // Backfill icons for any rules already in memory.
             if (!_isLoading) {
               for (var i = 0; i < _rules.length; i++) {
                 final r = _rules[i];
@@ -241,10 +239,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                       packageName: r.packageName,
                       appLabel: r.appLabel,
                       iconBase64: icon,
-                      usageHours: r.usageHours,
-                      usageMinutes: r.usageMinutes,
-                      cooldownHours: r.cooldownHours,
-                      cooldownMinutes: r.cooldownMinutes,
                     );
                   }
                 }
@@ -333,7 +327,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: _isRefreshing
-                // While refreshing: a small inline spinner replaces the icon.
                 ? const Padding(
                     key: ValueKey('spinner'),
                     padding: EdgeInsets.symmetric(horizontal: 14),
@@ -346,7 +339,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                       ),
                     ),
                   )
-                // Idle: tappable refresh icon, dimmed while saving.
                 : IconButton(
                     key: const ValueKey('refresh'),
                     icon: const Icon(Icons.refresh_rounded),
@@ -387,80 +379,95 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   Widget _buildBody() {
-    if (_rules.isEmpty) {
-      return _buildEmptyState();
-    }
-    return _buildRulesList();
+    return Column(
+      children: [
+        // ── Global timing card — always visible when not loading ───────────
+        _GlobalTimingCard(
+          config: _config,
+          onChanged: (updated) {
+            setState(() => _config = updated);
+            _markDirty();
+          },
+        ),
+        // ── App rules list or empty state ──────────────────────────────────
+        Expanded(
+          child: _rules.isEmpty ? _buildEmptyState() : _buildRulesList(),
+        ),
+      ],
+    );
   }
 
   // ── empty state ────────────────────────────────────────────────────────────
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE8EDFF),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.app_settings_alt_outlined,
-                size: 40,
-                color: Color(0xFF4A6CF7),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'No App Rules Yet',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A2E),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add app rules to control how long '
-              '${widget.student.fullName.split(' ').first} can use each app '
-              'and how long they must wait before using it again.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: _showAppPicker,
-              icon: _appsLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.add),
-              label: const Text(
-                'Add Configuration',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF4A6CF7),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 16,
+    return SingleChildScrollView(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8EDFF),
+                  shape: BoxShape.circle,
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                child: const Icon(
+                  Icons.app_settings_alt_outlined,
+                  size: 40,
+                  color: Color(0xFF4A6CF7),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              const Text(
+                'No App Rules Yet',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1A2E),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add apps below to restrict which apps '
+                '${widget.student.fullName.split(' ').first} can use. '
+                'The time limits above apply to all restricted apps.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 32),
+              FilledButton.icon(
+                onPressed: _showAppPicker,
+                icon: _appsLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.add),
+                label: const Text(
+                  'Add Apps',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF4A6CF7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -470,13 +477,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
 
   Widget _buildRulesList() {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       itemCount: _rules.length,
-      itemBuilder: (ctx, i) => _AppRuleCard(
-        rule: _rules[i],
-        onRemove: () => _removeRule(i),
-        onChanged: () => _markDirty(),
-      ),
+      itemBuilder: (ctx, i) =>
+          _AppRuleCard(rule: _rules[i], onRemove: () => _removeRule(i)),
     );
   }
 
@@ -509,6 +513,225 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 }
 
+// ── _GlobalTimingCard ─────────────────────────────────────────────────────────
+
+class _GlobalTimingCard extends StatefulWidget {
+  final StudentConfigModel config;
+  final void Function(StudentConfigModel updated) onChanged;
+
+  const _GlobalTimingCard({required this.config, required this.onChanged});
+
+  @override
+  State<_GlobalTimingCard> createState() => _GlobalTimingCardState();
+}
+
+class _GlobalTimingCardState extends State<_GlobalTimingCard> {
+  late TextEditingController _usageHoursCtl;
+  late TextEditingController _usageMinutesCtl;
+  late TextEditingController _cooldownHoursCtl;
+  late TextEditingController _cooldownMinutesCtl;
+
+  @override
+  void initState() {
+    super.initState();
+    _usageHoursCtl = TextEditingController(
+      text: widget.config.usageHours.toString(),
+    );
+    _usageMinutesCtl = TextEditingController(
+      text: widget.config.usageMinutes.toString(),
+    );
+    _cooldownHoursCtl = TextEditingController(
+      text: widget.config.cooldownHours.toString(),
+    );
+    _cooldownMinutesCtl = TextEditingController(
+      text: widget.config.cooldownMinutes.toString(),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_GlobalTimingCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync controllers when config is replaced externally (e.g. after refresh).
+    if (oldWidget.config != widget.config) {
+      _usageHoursCtl.text = widget.config.usageHours.toString();
+      _usageMinutesCtl.text = widget.config.usageMinutes.toString();
+      _cooldownHoursCtl.text = widget.config.cooldownHours.toString();
+      _cooldownMinutesCtl.text = widget.config.cooldownMinutes.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _usageHoursCtl.dispose();
+    _usageMinutesCtl.dispose();
+    _cooldownHoursCtl.dispose();
+    _cooldownMinutesCtl.dispose();
+    super.dispose();
+  }
+
+  void _onUsageHoursChanged(String v) {
+    final parsed = int.tryParse(v);
+    if (parsed != null && parsed >= 0) {
+      widget.onChanged(widget.config.copyWith(usageHours: parsed));
+    }
+  }
+
+  void _onUsageMinutesChanged(String v) {
+    final parsed = int.tryParse(v);
+    if (parsed != null && parsed >= 0) {
+      widget.onChanged(widget.config.copyWith(usageMinutes: parsed));
+    }
+  }
+
+  void _onCooldownHoursChanged(String v) {
+    final parsed = int.tryParse(v);
+    if (parsed != null && parsed >= 0) {
+      widget.onChanged(widget.config.copyWith(cooldownHours: parsed));
+    }
+  }
+
+  void _onCooldownMinutesChanged(String v) {
+    final parsed = int.tryParse(v);
+    if (parsed != null && parsed >= 0) {
+      widget.onChanged(widget.config.copyWith(cooldownMinutes: parsed));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: const Color(0xFF4A6CF7).withOpacity(0.25)),
+      ),
+      color: const Color(0xFFEEF1FF),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──────────────────────────────────────────────────────
+            Row(
+              children: [
+                const Icon(
+                  Icons.tune_rounded,
+                  size: 16,
+                  color: Color(0xFF4A6CF7),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'Global Time Limits',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF4A6CF7),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message:
+                      'These limits apply to all restricted apps. '
+                      'When a student reaches the usage limit on any restricted app, '
+                      'they must wait the cooldown period before using it again.',
+                  child: Icon(
+                    Icons.help_outline,
+                    size: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+            // ── Usage Allowance ──────────────────────────────────────────────
+            Row(
+              children: [
+                const Icon(
+                  Icons.timer_outlined,
+                  size: 14,
+                  color: Color(0xFF34A853),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Usage Allowance',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _TimeInput(
+                    controller: _usageHoursCtl,
+                    suffix: 'hrs',
+                    onChanged: _onUsageHoursChanged,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _TimeInput(
+                    controller: _usageMinutesCtl,
+                    suffix: 'min',
+                    onChanged: _onUsageMinutesChanged,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            // ── Cooldown Period ──────────────────────────────────────────────
+            Row(
+              children: [
+                const Icon(
+                  Icons.hourglass_bottom_outlined,
+                  size: 14,
+                  color: Color(0xFFFF9800),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Cooldown Period',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _TimeInput(
+                    controller: _cooldownHoursCtl,
+                    suffix: 'hrs',
+                    onChanged: _onCooldownHoursChanged,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _TimeInput(
+                    controller: _cooldownMinutesCtl,
+                    suffix: 'min',
+                    onChanged: _onCooldownMinutesChanged,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── _AppPickerSheet ───────────────────────────────────────────────────────────
 
 class _AppPickerSheet extends StatefulWidget {
@@ -534,7 +757,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   /// true  = "All Apps"       (user-installed + system)
   bool _showSystemApps = false;
 
-  // ── Shared dimensions so both header buttons are visually identical ────────
   static const double _buttonHeight = 32;
   static const EdgeInsets _buttonPadding = EdgeInsets.symmetric(horizontal: 10);
   static const BorderRadius _buttonRadius = BorderRadius.all(
@@ -551,16 +773,11 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
     super.dispose();
   }
 
-  // ── filtered list ──────────────────────────────────────────────────────────
-  // System-app filter is applied first, then the search query on top.
-
   List<InstalledAppModel> get _filtered {
-    // Step 1 — apply system-app filter.
     final afterFilter = _showSystemApps
         ? widget.availableApps
         : widget.availableApps.where((a) => !a.isSystemApp).toList();
 
-    // Step 2 — apply search query on top of the filtered list.
     if (_query.isEmpty) return afterFilter;
     final q = _query.toLowerCase();
     return afterFilter
@@ -571,8 +788,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
         )
         .toList();
   }
-
-  // ── filter dropdown button ─────────────────────────────────────────────────
 
   Widget _buildFilterButton() {
     return GestureDetector(
@@ -617,7 +832,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
       },
       child: Container(
         height: _buttonHeight,
-        // Let the container fill whatever width Expanded gives it.
         width: double.infinity,
         padding: _buttonPadding,
         decoration: BoxDecoration(
@@ -626,7 +840,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
           border: Border.all(color: const Color.fromRGBO(74, 108, 247, 0.3)),
         ),
         child: Row(
-          // Center content inside the now-wider button.
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
@@ -657,8 +870,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
       ),
     );
   }
-
-  // ── add button ─────────────────────────────────────────────────────────────
 
   Widget _buildAddButton() {
     return FilledButton(
@@ -747,8 +958,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
     );
   }
 
-  // ── build ──────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
@@ -758,7 +967,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
       minChildSize: 0.4,
       builder: (ctx, scrollCtl) => Column(
         children: [
-          // Handle
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -770,8 +978,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               ),
             ),
           ),
-          // Header row: title | [filter button] [add button]
-          // Both buttons share the remaining space evenly via Expanded.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -781,7 +987,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(width: 10),
-                // ── Remaining space split evenly between the two buttons ───
                 Expanded(
                   child: Row(
                     children: [
@@ -797,7 +1002,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          // Search bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
@@ -822,7 +1026,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          // App list
           Expanded(
             child: _filtered.isEmpty
                 ? _buildEmptyFilterState()
@@ -876,8 +1079,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
       ),
     );
   }
-
-  // ── empty state for when the active filter returns no results ──────────────
 
   Widget _buildEmptyFilterState() {
     final isSearchActive = _query.isNotEmpty;
@@ -960,84 +1161,11 @@ class _AppIcon extends StatelessWidget {
 
 // ── _AppRuleCard ──────────────────────────────────────────────────────────────
 
-class _AppRuleCard extends StatefulWidget {
+class _AppRuleCard extends StatelessWidget {
   final PendingAppRule rule;
   final VoidCallback onRemove;
-  final VoidCallback onChanged;
 
-  const _AppRuleCard({
-    required this.rule,
-    required this.onRemove,
-    required this.onChanged,
-  });
-
-  @override
-  State<_AppRuleCard> createState() => _AppRuleCardState();
-}
-
-class _AppRuleCardState extends State<_AppRuleCard> {
-  late TextEditingController _usageHoursCtl;
-  late TextEditingController _usageMinutesCtl;
-  late TextEditingController _cooldownHoursCtl;
-  late TextEditingController _cooldownMinutesCtl;
-
-  @override
-  void initState() {
-    super.initState();
-    _usageHoursCtl = TextEditingController(
-      text: widget.rule.usageHours.toString(),
-    );
-    _usageMinutesCtl = TextEditingController(
-      text: widget.rule.usageMinutes.toString(),
-    );
-    _cooldownHoursCtl = TextEditingController(
-      text: widget.rule.cooldownHours.toString(),
-    );
-    _cooldownMinutesCtl = TextEditingController(
-      text: widget.rule.cooldownMinutes.toString(),
-    );
-  }
-
-  @override
-  void dispose() {
-    _usageHoursCtl.dispose();
-    _usageMinutesCtl.dispose();
-    _cooldownHoursCtl.dispose();
-    _cooldownMinutesCtl.dispose();
-    super.dispose();
-  }
-
-  void _onUsageHoursChanged(String v) {
-    final parsed = int.tryParse(v);
-    if (parsed != null && parsed >= 0) {
-      widget.rule.usageHours = parsed;
-      widget.onChanged();
-    }
-  }
-
-  void _onUsageMinutesChanged(String v) {
-    final parsed = int.tryParse(v);
-    if (parsed != null && parsed >= 0) {
-      widget.rule.usageMinutes = parsed;
-      widget.onChanged();
-    }
-  }
-
-  void _onCooldownHoursChanged(String v) {
-    final parsed = int.tryParse(v);
-    if (parsed != null && parsed >= 0) {
-      widget.rule.cooldownHours = parsed;
-      widget.onChanged();
-    }
-  }
-
-  void _onCooldownMinutesChanged(String v) {
-    final parsed = int.tryParse(v);
-    if (parsed != null && parsed >= 0) {
-      widget.rule.cooldownMinutes = parsed;
-      widget.onChanged();
-    }
-  }
+  const _AppRuleCard({required this.rule, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -1050,148 +1178,37 @@ class _AppRuleCardState extends State<_AppRuleCard> {
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                _AppIcon(
-                  iconBase64: widget.rule.iconBase64,
-                  label: widget.rule.appLabel,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.rule.appLabel,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      Text(
-                        widget.rule.packageName,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+            _AppIcon(iconBase64: rule.iconBase64, label: rule.appLabel),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    rule.appLabel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: Colors.red.shade400,
-                    size: 20,
+                  Text(
+                    rule.packageName,
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  tooltip: 'Remove',
-                  onPressed: widget.onRemove,
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 14),
-            const Divider(height: 1),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                const Icon(
-                  Icons.timer_outlined,
-                  size: 14,
-                  color: Color(0xFF34A853),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Usage Allowance',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Tooltip(
-                  message:
-                      'Total time the student can use this app cumulatively before being locked out.',
-                  child: Icon(
-                    Icons.help_outline,
-                    size: 13,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _TimeInput(
-                    controller: _usageHoursCtl,
-                    suffix: 'hrs',
-                    onChanged: _onUsageHoursChanged,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _TimeInput(
-                    controller: _usageMinutesCtl,
-                    suffix: 'min',
-                    onChanged: _onUsageMinutesChanged,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                const Icon(
-                  Icons.hourglass_bottom_outlined,
-                  size: 14,
-                  color: Color(0xFFFF9800),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Cooldown Period',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Tooltip(
-                  message:
-                      'How long the student must wait before using the app again after reaching the limit.',
-                  child: Icon(
-                    Icons.help_outline,
-                    size: 13,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _TimeInput(
-                    controller: _cooldownHoursCtl,
-                    suffix: 'hrs',
-                    onChanged: _onCooldownHoursChanged,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _TimeInput(
-                    controller: _cooldownMinutesCtl,
-                    suffix: 'min',
-                    onChanged: _onCooldownMinutesChanged,
-                  ),
-                ),
-              ],
+            IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                color: Colors.red.shade400,
+                size: 20,
+              ),
+              tooltip: 'Remove',
+              onPressed: onRemove,
             ),
           ],
         ),
