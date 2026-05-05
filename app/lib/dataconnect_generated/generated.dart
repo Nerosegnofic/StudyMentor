@@ -28,6 +28,12 @@ part 'get_students_by_parent.dart';
 
 part 'get_student_with_parent.dart';
 
+part 'get_installed_apps_for_student.dart';
+
+part 'insert_installed_app.dart';
+
+part 'delete_all_installed_apps_for_student.dart';
+
 part 'get_app_config_for_student.dart';
 
 
@@ -147,8 +153,8 @@ class ExampleConnector {
   }
   
   
-  InsertAppRuleVariablesBuilder insertAppRule ({required String studentUid, required String packageName, required String appLabel, required int usageDurationMinutes, required int cooldownDurationMinutes, }) {
-    return InsertAppRuleVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,usageDurationMinutes: usageDurationMinutes,cooldownDurationMinutes: cooldownDurationMinutes,);
+  InsertAppRuleVariablesBuilder insertAppRule ({required String studentUid, required String packageName, required String appLabel, required int usageHours, required int usageMinutes, required int cooldownHours, required int cooldownMinutes, }) {
+    return InsertAppRuleVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,);
   }
   
   
@@ -169,6 +175,21 @@ class ExampleConnector {
   
   GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
     return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetInstalledAppsForStudentVariablesBuilder getInstalledAppsForStudent ({required String studentUid, }) {
+    return GetInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  InsertInstalledAppVariablesBuilder insertInstalledApp ({required String studentUid, required String packageName, required String appLabel, required bool isSystemApp, }) {
+    return InsertInstalledAppVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,isSystemApp: isSystemApp,);
+  }
+  
+  
+  DeleteAllInstalledAppsForStudentVariablesBuilder deleteAllInstalledAppsForStudent ({required String studentUid, }) {
+    return DeleteAllInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
   }
   
   

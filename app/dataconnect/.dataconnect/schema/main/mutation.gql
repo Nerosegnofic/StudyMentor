@@ -9,6 +9,15 @@ extend type Mutation {
     data: AppRule_Data!
   ): AppRule_KeyOutput! @fdc_generated(from: "AppRule", purpose: INSERT_SINGLE)
   """
+  ✨ Insert a single `InstalledApp` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  installedApp_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: InstalledApp_Data!
+  ): InstalledApp_KeyOutput! @fdc_generated(from: "InstalledApp", purpose: INSERT_SINGLE)
+  """
   ✨ Insert a single `Parent` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
   parent_insert(
@@ -44,6 +53,15 @@ extend type Mutation {
     """
     data: [AppRule_Data!]!
   ): [AppRule_KeyOutput!]! @fdc_generated(from: "AppRule", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `InstalledApp` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  installedApp_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [InstalledApp_Data!]!
+  ): [InstalledApp_KeyOutput!]! @fdc_generated(from: "InstalledApp", purpose: INSERT_MULTIPLE)
   """
   ✨ Insert `Parent` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
@@ -81,6 +99,15 @@ extend type Mutation {
     data: AppRule_Data!
   ): AppRule_KeyOutput! @fdc_generated(from: "AppRule", purpose: UPSERT_SINGLE)
   """
+  ✨ Insert or update a single `InstalledApp` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `InstalledApp`.
+  """
+  installedApp_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: InstalledApp_Data!
+  ): InstalledApp_KeyOutput! @fdc_generated(from: "InstalledApp", purpose: UPSERT_SINGLE)
+  """
   ✨ Insert or update a single `Parent` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Parent`.
   """
   parent_upsert(
@@ -116,6 +143,15 @@ extend type Mutation {
     """
     data: [AppRule_Data!]!
   ): [AppRule_KeyOutput!]! @fdc_generated(from: "AppRule", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `InstalledApp` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `InstalledApp`.
+  """
+  installedApp_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [InstalledApp_Data!]!
+  ): [InstalledApp_KeyOutput!]! @fdc_generated(from: "InstalledApp", purpose: UPSERT_MULTIPLE)
   """
   ✨ Insert or update `Parent` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Parent`.
   """
@@ -167,6 +203,30 @@ extend type Mutation {
     """
     data: AppRule_Data!
   ): AppRule_KeyOutput @fdc_generated(from: "AppRule", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `InstalledApp` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `InstalledApp` or `null` if not found.
+  """
+  installedApp_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: InstalledApp_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: InstalledApp_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: InstalledApp_Data!
+  ): InstalledApp_KeyOutput @fdc_generated(from: "InstalledApp", purpose: UPDATE_SINGLE)
   """
   ✨ Update a single `Parent` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `Parent` or `null` if not found.
   """
@@ -244,6 +304,25 @@ extend type Mutation {
     data: AppRule_Data!
   ): Int! @fdc_generated(from: "AppRule", purpose: UPDATE_MULTIPLE)
   """
+  ✨ Update `InstalledApp` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  installedApp_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: InstalledApp_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: InstalledApp_Data!
+  ): Int! @fdc_generated(from: "InstalledApp", purpose: UPDATE_MULTIPLE)
+  """
   ✨ Update `Parent` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
   parent_updateMany(
@@ -320,6 +399,25 @@ extend type Mutation {
     first: AppRule_FirstRow
   ): AppRule_KeyOutput @fdc_generated(from: "AppRule", purpose: DELETE_SINGLE)
   """
+  ✨ Delete a single `InstalledApp` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  installedApp_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: InstalledApp_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: InstalledApp_FirstRow
+  ): InstalledApp_KeyOutput @fdc_generated(from: "InstalledApp", purpose: DELETE_SINGLE)
+  """
   ✨ Delete a single `Parent` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
   parent_delete(
@@ -375,6 +473,20 @@ extend type Mutation {
     """
     all: Boolean = false
   ): Int! @fdc_generated(from: "AppRule", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `InstalledApp` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  installedApp_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: InstalledApp_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "InstalledApp", purpose: DELETE_MULTIPLE)
   """
   ✨ Delete `Parent` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """

@@ -22,15 +22,19 @@ class GetAppConfigForStudentAppRules {
   final String id;
   final String packageName;
   final String appLabel;
-  final int usageDurationMinutes;
-  final int cooldownDurationMinutes;
+  final int? usageHours;
+  final int? usageMinutes;
+  final int? cooldownHours;
+  final int? cooldownMinutes;
   GetAppConfigForStudentAppRules.fromJson(dynamic json):
   
   id = nativeFromJson<String>(json['id']),
   packageName = nativeFromJson<String>(json['packageName']),
   appLabel = nativeFromJson<String>(json['appLabel']),
-  usageDurationMinutes = nativeFromJson<int>(json['usageDurationMinutes']),
-  cooldownDurationMinutes = nativeFromJson<int>(json['cooldownDurationMinutes']);
+  usageHours = json['usageHours'] == null ? null : nativeFromJson<int>(json['usageHours']),
+  usageMinutes = json['usageMinutes'] == null ? null : nativeFromJson<int>(json['usageMinutes']),
+  cooldownHours = json['cooldownHours'] == null ? null : nativeFromJson<int>(json['cooldownHours']),
+  cooldownMinutes = json['cooldownMinutes'] == null ? null : nativeFromJson<int>(json['cooldownMinutes']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -44,12 +48,14 @@ class GetAppConfigForStudentAppRules {
     return id == otherTyped.id && 
     packageName == otherTyped.packageName && 
     appLabel == otherTyped.appLabel && 
-    usageDurationMinutes == otherTyped.usageDurationMinutes && 
-    cooldownDurationMinutes == otherTyped.cooldownDurationMinutes;
+    usageHours == otherTyped.usageHours && 
+    usageMinutes == otherTyped.usageMinutes && 
+    cooldownHours == otherTyped.cooldownHours && 
+    cooldownMinutes == otherTyped.cooldownMinutes;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, usageDurationMinutes.hashCode, cooldownDurationMinutes.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, usageHours.hashCode, usageMinutes.hashCode, cooldownHours.hashCode, cooldownMinutes.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -57,8 +63,18 @@ class GetAppConfigForStudentAppRules {
     json['id'] = nativeToJson<String>(id);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
-    json['usageDurationMinutes'] = nativeToJson<int>(usageDurationMinutes);
-    json['cooldownDurationMinutes'] = nativeToJson<int>(cooldownDurationMinutes);
+    if (usageHours != null) {
+      json['usageHours'] = nativeToJson<int?>(usageHours);
+    }
+    if (usageMinutes != null) {
+      json['usageMinutes'] = nativeToJson<int?>(usageMinutes);
+    }
+    if (cooldownHours != null) {
+      json['cooldownHours'] = nativeToJson<int?>(cooldownHours);
+    }
+    if (cooldownMinutes != null) {
+      json['cooldownMinutes'] = nativeToJson<int?>(cooldownMinutes);
+    }
     return json;
   }
 
@@ -66,8 +82,10 @@ class GetAppConfigForStudentAppRules {
     required this.id,
     required this.packageName,
     required this.appLabel,
-    required this.usageDurationMinutes,
-    required this.cooldownDurationMinutes,
+    this.usageHours,
+    this.usageMinutes,
+    this.cooldownHours,
+    this.cooldownMinutes,
   });
 }
 

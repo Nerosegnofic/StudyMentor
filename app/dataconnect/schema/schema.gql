@@ -30,6 +30,20 @@ type Student @table(name: "students", key: ["uid"]) {
   totalCoins: Int @default(expr: "0")
 }
 
+# One row per app installed on a student's device.
+# Populated by the student device on login and whenever a package is installed
+# or removed (via PackageChangedReceiver → dirty-flag → next resume sync).
+# The parent's app-picker reads this table instead of a hardcoded mock list.
+type InstalledApp @table(name: "installed_apps", key: ["id"], singular: "installedApp", plural: "installedApps") {
+  id: UUID! @default(expr: "uuidV4()")
+  student: Student!
+  studentUid: String!
+  packageName: String! @col(dataType: "varchar(255)")
+  appLabel: String! @col(dataType: "varchar(255)")
+  isSystemApp: Boolean! @default(expr: "false")
+  iconBase64: String @col(dataType: "text")
+}
+
 # One row per configured app per student.
 # packageName is the Android package identifier (e.g. "com.google.android.youtube").
 # usageDurationMinutes: how many minutes the student may use the app per session.
@@ -40,6 +54,9 @@ type AppRule @table(name: "app_rules", key: ["id"]) {
   studentUid: String!
   packageName: String! @col(dataType: "varchar(255)")
   appLabel: String! @col(dataType: "varchar(255)")
-  usageDurationMinutes: Int!
-  cooldownDurationMinutes: Int!
+  usageHours: Int @default(expr: "0")
+  usageMinutes: Int @default(expr: "0")
+  cooldownHours: Int @default(expr: "0")
+  cooldownMinutes: Int @default(expr: "0")
+  iconBase64: String @col(dataType: "text")
 }

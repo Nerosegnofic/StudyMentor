@@ -17,14 +17,32 @@ extend type AppRule {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "AppRule.appLabel", purpose: QUERY_COUNT)
   """
-  ✨ Count the number of rows in the `AppRule` table where the `cooldownDurationMinutes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  ✨ Count the number of rows in the `AppRule` table where the `cooldownHours` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
-  cooldownDurationMinutes_count(
+  cooldownHours_count(
     """
     Set to true to count the number of distinct values.
     """
     distinct: Boolean = false
-  ): Int! @fdc_generated(from: "AppRule.cooldownDurationMinutes", purpose: QUERY_COUNT)
+  ): Int! @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `AppRule` table where the `cooldownMinutes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  cooldownMinutes_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `AppRule` table where the `iconBase64` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  iconBase64_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "AppRule.iconBase64", purpose: QUERY_COUNT)
   """
   ✨ Count the number of rows in the `AppRule` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
@@ -53,70 +71,199 @@ extend type AppRule {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "AppRule.studentUid", purpose: QUERY_COUNT)
   """
-  ✨ Count the number of rows in the `AppRule` table where the `usageDurationMinutes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  ✨ Count the number of rows in the `AppRule` table where the `usageHours` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
-  usageDurationMinutes_count(
+  usageHours_count(
     """
     Set to true to count the number of distinct values.
     """
     distinct: Boolean = false
-  ): Int! @fdc_generated(from: "AppRule.usageDurationMinutes", purpose: QUERY_COUNT)
+  ): Int! @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_COUNT)
   """
-  ✨ Sum the `cooldownDurationMinutes` field in the `AppRule` table.
+  ✨ Count the number of rows in the `AppRule` table where the `usageMinutes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
-  cooldownDurationMinutes_sum(
+  usageMinutes_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_COUNT)
+  """
+  ✨ Sum the `cooldownHours` field in the `AppRule` table.
+  """
+  cooldownHours_sum(
     """
     Set to true to sum the distinct values.
     """
     distinct: Boolean = false
-  ): Int @fdc_generated(from: "AppRule.cooldownDurationMinutes", purpose: QUERY_SUM)
+  ): Int @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_SUM)
   """
-  ✨ Sum the `usageDurationMinutes` field in the `AppRule` table.
+  ✨ Sum the `cooldownMinutes` field in the `AppRule` table.
   """
-  usageDurationMinutes_sum(
+  cooldownMinutes_sum(
     """
     Set to true to sum the distinct values.
     """
     distinct: Boolean = false
-  ): Int @fdc_generated(from: "AppRule.usageDurationMinutes", purpose: QUERY_SUM)
+  ): Int @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_SUM)
   """
-  ✨ Average the `cooldownDurationMinutes` field in the `AppRule` table.
+  ✨ Sum the `usageHours` field in the `AppRule` table.
   """
-  cooldownDurationMinutes_avg(
+  usageHours_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_SUM)
+  """
+  ✨ Sum the `usageMinutes` field in the `AppRule` table.
+  """
+  usageMinutes_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_SUM)
+  """
+  ✨ Average the `cooldownHours` field in the `AppRule` table.
+  """
+  cooldownHours_avg(
     """
     Set to true to average the distinct values.
     """
     distinct: Boolean = false
-  ): Float @fdc_generated(from: "AppRule.cooldownDurationMinutes", purpose: QUERY_AVG)
+  ): Float @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_AVG)
   """
-  ✨ Average the `usageDurationMinutes` field in the `AppRule` table.
+  ✨ Average the `cooldownMinutes` field in the `AppRule` table.
   """
-  usageDurationMinutes_avg(
+  cooldownMinutes_avg(
     """
     Set to true to average the distinct values.
     """
     distinct: Boolean = false
-  ): Float @fdc_generated(from: "AppRule.usageDurationMinutes", purpose: QUERY_AVG)
+  ): Float @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_AVG)
   """
-  ✨ Minimum of the `cooldownDurationMinutes` field in the `AppRule` table.
+  ✨ Average the `usageHours` field in the `AppRule` table.
   """
-  cooldownDurationMinutes_min: Int @fdc_generated(from: "AppRule.cooldownDurationMinutes", purpose: QUERY_MIN)
+  usageHours_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_AVG)
   """
-  ✨ Minimum of the `usageDurationMinutes` field in the `AppRule` table.
+  ✨ Average the `usageMinutes` field in the `AppRule` table.
   """
-  usageDurationMinutes_min: Int @fdc_generated(from: "AppRule.usageDurationMinutes", purpose: QUERY_MIN)
+  usageMinutes_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_AVG)
   """
-  ✨ Maximum of the `cooldownDurationMinutes` field in the `AppRule` table.
+  ✨ Minimum of the `cooldownHours` field in the `AppRule` table.
   """
-  cooldownDurationMinutes_max: Int @fdc_generated(from: "AppRule.cooldownDurationMinutes", purpose: QUERY_MAX)
+  cooldownHours_min: Int @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_MIN)
   """
-  ✨ Maximum of the `usageDurationMinutes` field in the `AppRule` table.
+  ✨ Minimum of the `cooldownMinutes` field in the `AppRule` table.
   """
-  usageDurationMinutes_max: Int @fdc_generated(from: "AppRule.usageDurationMinutes", purpose: QUERY_MAX)
+  cooldownMinutes_min: Int @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_MIN)
+  """
+  ✨ Minimum of the `usageHours` field in the `AppRule` table.
+  """
+  usageHours_min: Int @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_MIN)
+  """
+  ✨ Minimum of the `usageMinutes` field in the `AppRule` table.
+  """
+  usageMinutes_min: Int @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `cooldownHours` field in the `AppRule` table.
+  """
+  cooldownHours_max: Int @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `cooldownMinutes` field in the `AppRule` table.
+  """
+  cooldownMinutes_max: Int @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `usageHours` field in the `AppRule` table.
+  """
+  usageHours_max: Int @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `usageMinutes` field in the `AppRule` table.
+  """
+  usageMinutes_max: Int @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_MAX)
   """
   A generated field that is used for caching results in SDKs.
   """
   _id: ID! @fdc_generated(from: "AppRule.id", purpose: ENTITY_ID)
+}
+extend type InstalledApp {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "InstalledApp", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `InstalledApp` table.
+  """
+  _count: Int! @fdc_generated(from: "InstalledApp.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `InstalledApp` table where the `appLabel` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  appLabel_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "InstalledApp.appLabel", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `InstalledApp` table where the `iconBase64` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  iconBase64_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "InstalledApp.iconBase64", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `InstalledApp` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  id_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "InstalledApp.id", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `InstalledApp` table where the `isSystemApp` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  isSystemApp_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "InstalledApp.isSystemApp", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `InstalledApp` table where the `packageName` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  packageName_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "InstalledApp.packageName", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `InstalledApp` table where the `studentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  studentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "InstalledApp.studentUid", purpose: QUERY_COUNT)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "InstalledApp.id", purpose: ENTITY_ID)
 }
 extend type Parent {
   """
@@ -237,6 +384,40 @@ extend type Student {
     """
     having: AppRule_Having
   ): [AppRule!]! @fdc_generated(from: "AppRule.student", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
+  """
+  ✨ List `InstalledApp` objects in a one-to-many relationship (where `InstalledApp`.`student` is this object).
+  """
+  installedApps_on_student(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: InstalledApp_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [InstalledApp_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: InstalledApp_Having
+  ): [InstalledApp!]! @fdc_generated(from: "InstalledApp.student", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
   """
   Implicit metadata field that cannot be written. It provides extra information about query results.
   """
