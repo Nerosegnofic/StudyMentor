@@ -205,11 +205,12 @@ class _ParentStudentsState extends State<ParentStudents> {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Tap a student card to configure their app usage rules.',
+              'Tap on a student card to monitor their activity, manage app usage rules, and review their academic status.',
               style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF4A6CF7),
-                  fontWeight: FontWeight.w500),
+                fontSize: 12,
+                color: Color(0xFF4A6CF7),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

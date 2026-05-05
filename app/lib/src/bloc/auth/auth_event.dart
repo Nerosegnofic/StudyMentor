@@ -142,10 +142,7 @@ class SaveAppRulesRequested extends AuthEvent {
   final String studentUid;
   final List<PendingAppRule> rules;
 
-  SaveAppRulesRequested({
-    required this.studentUid,
-    required this.rules,
-  });
+  SaveAppRulesRequested({required this.studentUid, required this.rules});
 
   @override
   List<Object?> get props => [studentUid];
@@ -177,6 +174,16 @@ class SyncInstalledAppsRequested extends AuthEvent {
 class LoadInstalledAppsForStudentRequested extends AuthEvent {
   final String studentUid;
   LoadInstalledAppsForStudentRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Fired when the parent taps the refresh button on [StudentConfigScreen].
+/// Re-fetches both the installed-app inventory and the saved app rules
+/// from DataConnect in parallel.
+class RefreshStudentDataRequested extends AuthEvent {
+  final String studentUid;
+  RefreshStudentDataRequested({required this.studentUid});
   @override
   List<Object?> get props => [studentUid];
 }

@@ -149,3 +149,8 @@ class InstalledAppsLoaded extends AuthState {
   @override
   List<Object?> get props => [studentUid, apps];
 }
+
+/// Emitted when a parent-triggered refresh is in flight.
+/// Distinct from [AppConfigLoading] — does not wipe the existing rules
+/// from the screen while the new data loads.
+class StudentDataRefreshing extends AuthState {}

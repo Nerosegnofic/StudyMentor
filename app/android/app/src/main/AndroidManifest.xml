@@ -9,6 +9,8 @@
     <!-- Required to enumerate installed apps on Android 11+ -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+    <!-- Required to reschedule WorkManager tasks after device reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:label="studymentor"
