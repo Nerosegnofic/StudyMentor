@@ -36,6 +36,15 @@ extend type Mutation {
     data: Student_Data!
   ): Student_KeyOutput! @fdc_generated(from: "Student", purpose: INSERT_SINGLE)
   """
+  ✨ Insert a single `StudentConfig` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentConfig_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: StudentConfig_Data!
+  ): StudentConfig_KeyOutput! @fdc_generated(from: "StudentConfig", purpose: INSERT_SINGLE)
+  """
   ✨ Insert a single `User` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
   user_insert(
@@ -80,6 +89,15 @@ extend type Mutation {
     """
     data: [Student_Data!]!
   ): [Student_KeyOutput!]! @fdc_generated(from: "Student", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `StudentConfig` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentConfig_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [StudentConfig_Data!]!
+  ): [StudentConfig_KeyOutput!]! @fdc_generated(from: "StudentConfig", purpose: INSERT_MULTIPLE)
   """
   ✨ Insert `User` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
@@ -126,6 +144,15 @@ extend type Mutation {
     data: Student_Data!
   ): Student_KeyOutput! @fdc_generated(from: "Student", purpose: UPSERT_SINGLE)
   """
+  ✨ Insert or update a single `StudentConfig` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentConfig`.
+  """
+  studentConfig_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: StudentConfig_Data!
+  ): StudentConfig_KeyOutput! @fdc_generated(from: "StudentConfig", purpose: UPSERT_SINGLE)
+  """
   ✨ Insert or update a single `User` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `User`.
   """
   user_upsert(
@@ -170,6 +197,15 @@ extend type Mutation {
     """
     data: [Student_Data!]!
   ): [Student_KeyOutput!]! @fdc_generated(from: "Student", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `StudentConfig` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentConfig`.
+  """
+  studentConfig_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [StudentConfig_Data!]!
+  ): [StudentConfig_KeyOutput!]! @fdc_generated(from: "StudentConfig", purpose: UPSERT_MULTIPLE)
   """
   ✨ Insert or update `User` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `User`.
   """
@@ -266,6 +302,25 @@ extend type Mutation {
     data: Student_Data!
   ): Student_KeyOutput @fdc_generated(from: "Student", purpose: UPDATE_SINGLE)
   """
+  ✨ Update a single `StudentConfig` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `StudentConfig` or `null` if not found.
+  """
+  studentConfig_update(
+    """
+    The key used to identify the object.
+    """
+    key: StudentConfig_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentConfig_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: StudentConfig_Data!
+  ): StudentConfig_KeyOutput @fdc_generated(from: "StudentConfig", purpose: UPDATE_SINGLE)
+  """
   ✨ Update a single `User` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `User` or `null` if not found.
   """
   user_update(
@@ -361,6 +416,25 @@ extend type Mutation {
     data: Student_Data!
   ): Int! @fdc_generated(from: "Student", purpose: UPDATE_MULTIPLE)
   """
+  ✨ Update `StudentConfig` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  studentConfig_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: StudentConfig_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: StudentConfig_Data!
+  ): Int! @fdc_generated(from: "StudentConfig", purpose: UPDATE_MULTIPLE)
+  """
   ✨ Update `User` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
   user_updateMany(
@@ -446,6 +520,20 @@ extend type Mutation {
     first: Student_FirstRow
   ): Student_KeyOutput @fdc_generated(from: "Student", purpose: DELETE_SINGLE)
   """
+  ✨ Delete a single `StudentConfig` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  studentConfig_delete(
+    """
+    The key used to identify the object.
+    """
+    key: StudentConfig_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentConfig_FirstRow
+  ): StudentConfig_KeyOutput @fdc_generated(from: "StudentConfig", purpose: DELETE_SINGLE)
+  """
   ✨ Delete a single `User` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
   user_delete(
@@ -515,6 +603,20 @@ extend type Mutation {
     """
     all: Boolean = false
   ): Int! @fdc_generated(from: "Student", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `StudentConfig` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  studentConfig_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: StudentConfig_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "StudentConfig", purpose: DELETE_MULTIPLE)
   """
   ✨ Delete `User` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """

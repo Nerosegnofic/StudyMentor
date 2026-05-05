@@ -38,7 +38,7 @@ query GetStudentWithParent($uid: String!) @auth(level: USER) {
   }
 }
 
-# ── Installed-app inventory ──────────────────────────────────────────────────
+# ── Installed-app inventory ───────────────────────────────────────────────────
 
 # Returns the full installed-app inventory for a student.
 # Called by the parent's app-picker and by the parent's StudentConfigScreen.
@@ -74,18 +74,21 @@ mutation DeleteAllInstalledAppsForStudent($studentUid: String!) @auth(level: USE
   installedApp_deleteMany(where: { studentUid: { eq: $studentUid } })
 }
 
-# ── App rules ────────────────────────────────────────────────────────────────
+# ── App rules ─────────────────────────────────────────────────────────────────
 
-# Fetches the app configuration and all app rules for a given student.
+# Fetches the global student config and all app rules for a given student.
 # Used by the parent config screen and by the student device to sync rules.
 query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
-  appRules(where: { studentUid: { eq: $studentUid } }) {
-    id
-    packageName
-    appLabel
+  studentConfig(key: { studentUid: $studentUid }) {
     usageHours
     usageMinutes
     cooldownHours
     cooldownMinutes
+  }
+  appRules(where: { studentUid: { eq: $studentUid } }) {
+    id
+    packageName
+    appLabel
+    iconBase64
   }
 }

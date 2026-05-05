@@ -8,45 +8,54 @@ class MascotOverlayService {
   MascotOverlayService._();
   static final MascotOverlayService instance = MascotOverlayService._();
 
-  static const _overlayChannel =
-      MethodChannel('com.example.studymentor/overlay');
-  static const _usageChannel =
-      MethodChannel('com.example.studymentor/usage_stats');
-  static const _accessibilityChannel =
-      MethodChannel('com.example.studymentor/accessibility');
+  static const _overlayChannel = MethodChannel(
+    'com.example.studymentor/overlay',
+  );
+  static const _usageChannel = MethodChannel(
+    'com.example.studymentor/usage_stats',
+  );
+  static const _accessibilityChannel = MethodChannel(
+    'com.example.studymentor/accessibility',
+  );
 
   // ── State ──────────────────────────────────────────────────────────────────
-  bool _running        = false;
-  bool _isBlocked      = false;
+  bool _running = false;
+  bool _isBlocked = false;
   bool _overlayVisible = false;
   MascotState _mascotState = MascotState.idle;
 
   // ── Countdown ──────────────────────────────────────────────────────────────
   Timer? _countdownTimer;
-  int    _remainingSeconds = 0;
+  int _remainingSeconds = 0;
 
   // ── Polling ────────────────────────────────────────────────────────────────
   Timer? _pollTimer;
-  Map<String, int> _usageCounts = {};
+
+  // ── Shared usage counter ───────────────────────────────────────────────────
+  // Accumulates seconds spent across ALL restricted apps combined.
+  // Resets to zero only when the cooldown ends.
+  int _totalUsageSeconds = 0;
 
   // ── Config ─────────────────────────────────────────────────────────────────
-  Map<String, AppRuleModel> _monitoredRules = {};
+  Set<String> _monitoredPackages = {};
+  StudentConfigModel _config = const StudentConfigModel();
   String? _currentMonitoredPackage;
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
   Future<void> init({
     List<AppRuleModel> rules = const [],
+    StudentConfigModel config = const StudentConfigModel(),
   }) async {
-    _monitoredRules = {for (var r in rules) r.packageName: r};
+    _monitoredPackages = {for (var r in rules) r.packageName};
+    _config = config;
     _currentMonitoredPackage = null;
 
     _overlayChannel.setMethodCallHandler(_handleNativeCallback);
 
-    await _accessibilityChannel.invokeMethod(
-      'setMonitoredApps',
-      {'apps': _monitoredRules.keys.toList()},
-    );
+    await _accessibilityChannel.invokeMethod('setMonitoredApps', {
+      'apps': _monitoredPackages.toList(),
+    });
 
     await _requestOverlayPermission();
     await _requestUsageStatsPermission();
@@ -55,7 +64,7 @@ class MascotOverlayService {
 
   void start() {
     if (_running) return;
-    _running  = true;
+    _running = true;
     _pollTimer = Timer.periodic(const Duration(seconds: 1), (_) => _poll());
     debugPrint('[MascotOverlayService] Started.');
   }
@@ -66,40 +75,50 @@ class MascotOverlayService {
     _countdownTimer?.cancel();
     await _hideOverlayNative();
     await _resetAccessibilityState();
-    _isBlocked           = false;
-    _overlayVisible      = false;
-    _remainingSeconds    = 0;
-    _usageCounts.clear();
+    _isBlocked = false;
+    _overlayVisible = false;
+    _remainingSeconds = 0;
+    _totalUsageSeconds = 0;
     debugPrint('[MascotOverlayService] Stopped.');
   }
 
-  /// Updates the monitored-app list at runtime without restarting the service.
+  /// Updates the monitored-app list and global config at runtime without
+  /// restarting the service.
   /// Called by [StudentScreen] whenever a fresh [AppRulesLoaded] state arrives.
-  Future<void> updateMonitoredApps(List<AppRuleModel> rules) async {
-    _monitoredRules = {for (var r in rules) r.packageName: r};
+  Future<void> updateMonitoredApps(
+    List<AppRuleModel> rules, {
+    StudentConfigModel config = const StudentConfigModel(),
+  }) async {
+    _monitoredPackages = {for (var r in rules) r.packageName};
+    _config = config;
     try {
-      await _accessibilityChannel.invokeMethod(
-        'setMonitoredApps',
-        {'apps': _monitoredRules.keys.toList()},
-      );
+      await _accessibilityChannel.invokeMethod('setMonitoredApps', {
+        'apps': _monitoredPackages.toList(),
+      });
     } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] updateMonitoredApps error: ${e.message}');
+      debugPrint(
+        '[MascotOverlayService] updateMonitoredApps error: ${e.message}',
+      );
     }
-    debugPrint('[MascotOverlayService] Monitored apps updated: ${_monitoredRules.keys.toList()}');
+    debugPrint(
+      '[MascotOverlayService] Monitored apps updated: '
+      '${_monitoredPackages.toList()}',
+    );
   }
 
   // ── Getters ────────────────────────────────────────────────────────────────
-  bool        get isRunning       => _running;
-  bool        get isBlocked       => _isBlocked;
-  bool        get isOverlayVisible => _overlayVisible;
-  int         get remainingSeconds => _remainingSeconds;
-  MascotState get currentState     => _mascotState;
+  bool get isRunning => _running;
+  bool get isBlocked => _isBlocked;
+  bool get isOverlayVisible => _overlayVisible;
+  int get remainingSeconds => _remainingSeconds;
+  int get totalUsageSeconds => _totalUsageSeconds;
+  MascotState get currentState => _mascotState;
+  StudentConfigModel get config => _config;
 
-  // ── Native → Dart callback handler ─────────────────────────────────────────
+  // ── Native → Dart callback handler ────────────────────────────────────────
 
   Future<dynamic> _handleNativeCallback(MethodCall call) async {
     switch (call.method) {
-
       case 'onOverlayDismissed':
         // Student pressed back or home — overlay hides but countdown keeps running.
         if (_isBlocked) {
@@ -111,30 +130,29 @@ class MascotOverlayService {
         }
 
       case 'onMonitoredAppIntercepted':
-        // Accessibility service blocked a monitored app during the warning period.
+        // Accessibility service blocked a monitored app during the cooldown.
         // Re-show the overlay with the remaining countdown time.
         if (_isBlocked && !_overlayVisible) {
-          debugPrint('[MascotOverlayService] Monitored app intercepted — re-showing overlay.');
+          debugPrint(
+            '[MascotOverlayService] Monitored app intercepted — '
+            're-showing overlay.',
+          );
           await _showOverlayNative(remainingSeconds: _remainingSeconds);
         }
     }
   }
 
-  // ── Warning phase ───────────────────────────────────────────────────────────
+  // ── Warning phase ──────────────────────────────────────────────────────────
 
   Future<void> _startWarning() async {
-    final rule = _monitoredRules[_currentMonitoredPackage];
-    if (rule == null) {
-      await _unblock();
-      return;
-    }
-
     _isBlocked = true;
-    _remainingSeconds = (rule.cooldownHours * 3600) + (rule.cooldownMinutes * 60);
+    _remainingSeconds =
+        (_config.cooldownHours * 3600) + (_config.cooldownMinutes * 60);
     _mascotState = MascotState.idle;
     debugPrint(
-      '[MascotOverlayService] Warning overlay — '
-      '$_remainingSeconds s countdown.',
+      '[MascotOverlayService] Limit reached — '
+      'total usage: ${_totalUsageSeconds}s. '
+      'Starting cooldown: $_remainingSeconds s.',
     );
 
     await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
@@ -147,10 +165,9 @@ class MascotOverlayService {
 
       if (_overlayVisible) {
         try {
-          await _overlayChannel.invokeMethod(
-            'updateCountdown',
-            {'remainingSeconds': _remainingSeconds},
-          );
+          await _overlayChannel.invokeMethod('updateCountdown', {
+            'remainingSeconds': _remainingSeconds,
+          });
         } catch (_) {}
       }
 
@@ -165,16 +182,16 @@ class MascotOverlayService {
     _countdownTimer?.cancel();
     _isBlocked = false;
     _remainingSeconds = 0;
-    _usageCounts.clear();
+    _totalUsageSeconds = 0; // reset the shared counter after cooldown
     _currentMonitoredPackage = null;
-    _mascotState         = MascotState.idle;
+    _mascotState = MascotState.idle;
 
     await _hideOverlayNative();
     await _resetAccessibilityState();
-    debugPrint('[MascotOverlayService] Unblocked — student is free.');
+    debugPrint('[MascotOverlayService] Cooldown ended — student is free.');
   }
 
-  // ── Native overlay helpers ──────────────────────────────────────────────────
+  // ── Native overlay helpers ─────────────────────────────────────────────────
 
   Future<void> _showOverlayNative({required int remainingSeconds}) async {
     _overlayVisible = true;
@@ -197,19 +214,20 @@ class MascotOverlayService {
     }
   }
 
-  // ── Polling ─────────────────────────────────────────────────────────────────
+  // ── Polling ────────────────────────────────────────────────────────────────
 
   Future<void> _poll() async {
     if (!_running) return;
     try {
-      final foreground =
-          await _usageChannel.invokeMethod<String>('getForegroundApp');
+      final foreground = await _usageChannel.invokeMethod<String>(
+        'getForegroundApp',
+      );
       if (foreground == null) return;
 
       if (_isBlocked) {
         // Fallback: if poll still sees a monitored app while overlay is hidden,
         // re-show it (primary path is via AccessibilityService).
-        if (_monitoredRules.containsKey(foreground) && !_overlayVisible) {
+        if (_monitoredPackages.contains(foreground) && !_overlayVisible) {
           debugPrint(
             '[MascotOverlayService] Poll fallback: monitored app in foreground '
             '— re-showing overlay.',
@@ -219,26 +237,26 @@ class MascotOverlayService {
         return;
       }
 
-      if (!_monitoredRules.containsKey(foreground)) {
-        // Not a monitored app — just stop here, but keep previous counts.
+      if (!_monitoredPackages.contains(foreground)) {
+        // Not a restricted app — stop tracking but keep the shared counter.
         _currentMonitoredPackage = null;
         return;
       }
 
-      final rule = _monitoredRules[foreground]!;
+      // ── Accumulate into the shared counter ─────────────────────────────
+      // Every second spent in ANY restricted app adds to the same total.
       _currentMonitoredPackage = foreground;
-      // Increment count for this specific app (now 1s per increment)
-      _usageCounts[foreground] = (_usageCounts[foreground] ?? 0) + 1;
-      
-      final accumulatedSeconds = _usageCounts[foreground]!;
-      final thresholdSeconds = (rule.usageHours * 3600) + (rule.usageMinutes * 60);
-      
+      _totalUsageSeconds++;
+
+      final thresholdSeconds =
+          (_config.usageHours * 3600) + (_config.usageMinutes * 60);
+
       debugPrint(
-        '[MascotOverlayService] ${rule.appLabel} '
-        'cumulative usage: ${accumulatedSeconds}s / ${thresholdSeconds}s',
+        '[MascotOverlayService] Restricted app in foreground: $foreground — '
+        'shared usage: ${_totalUsageSeconds}s / ${thresholdSeconds}s',
       );
 
-      if (accumulatedSeconds >= thresholdSeconds) {
+      if (_totalUsageSeconds >= thresholdSeconds) {
         await _startWarning();
       }
     } on PlatformException catch (e) {
@@ -246,23 +264,29 @@ class MascotOverlayService {
     }
   }
 
-  // ── Accessibility helpers ───────────────────────────────────────────────────
+  // ── Accessibility helpers ──────────────────────────────────────────────────
 
   Future<void> _resetAccessibilityState() async {
     try {
-      await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': false});
+      await _accessibilityChannel.invokeMethod('setBlocked', {
+        'blocked': false,
+      });
     } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] resetAccessibilityState error: ${e.message}');
+      debugPrint(
+        '[MascotOverlayService] resetAccessibilityState error: ${e.message}',
+      );
     }
   }
 
-  // ── Permissions ─────────────────────────────────────────────────────────────
+  // ── Permissions ────────────────────────────────────────────────────────────
 
   Future<void> _requestOverlayPermission() async {
     try {
       await _overlayChannel.invokeMethod('requestOverlayPermission');
     } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] overlay permission error: ${e.message}');
+      debugPrint(
+        '[MascotOverlayService] overlay permission error: ${e.message}',
+      );
     }
   }
 
@@ -270,21 +294,28 @@ class MascotOverlayService {
     try {
       await _usageChannel.invokeMethod('requestUsageStatsPermission');
     } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] usage stats permission error: ${e.message}');
+      debugPrint(
+        '[MascotOverlayService] usage stats permission error: ${e.message}',
+      );
     }
   }
 
   Future<void> _requestAccessibilityPermissionIfNeeded() async {
     try {
-      final isEnabled =
-          await _accessibilityChannel.invokeMethod<bool>('isAccessibilityEnabled');
+      final isEnabled = await _accessibilityChannel.invokeMethod<bool>(
+        'isAccessibilityEnabled',
+      );
       if (isEnabled != true) {
-        await _accessibilityChannel.invokeMethod('requestAccessibilityPermission');
+        await _accessibilityChannel.invokeMethod(
+          'requestAccessibilityPermission',
+        );
       } else {
         debugPrint('[MascotOverlayService] Accessibility already enabled.');
       }
     } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] accessibility permission error: ${e.message}');
+      debugPrint(
+        '[MascotOverlayService] accessibility permission error: ${e.message}',
+      );
     }
   }
 }

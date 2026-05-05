@@ -101,17 +101,24 @@ class ProfileUpdateError extends AuthState {
 /// Distinct from [AuthLoading] — does not affect the root navigation.
 class AppConfigLoading extends AuthState {}
 
-/// Emitted when app rules have been successfully loaded.
+/// Emitted when app rules and global config have been successfully loaded.
 /// [studentUid] is included so the config screen knows which student
 /// these rules belong to (safe for multi-student households).
+/// [config] falls back to [StudentConfigModel] defaults if the parent
+/// hasn't saved a config yet.
 class AppRulesLoaded extends AuthState {
   final String studentUid;
   final List<AppRuleModel> rules;
+  final StudentConfigModel config;
 
-  AppRulesLoaded({required this.studentUid, required this.rules});
+  AppRulesLoaded({
+    required this.studentUid,
+    required this.rules,
+    required this.config,
+  });
 
   @override
-  List<Object?> get props => [studentUid, rules];
+  List<Object?> get props => [studentUid, rules, config];
 }
 
 /// Emitted while the save operation is in flight.
@@ -128,7 +135,7 @@ class AppConfigError extends AuthState {
   List<Object?> get props => [message];
 }
 
-// ── Installed-App Inventory States ───────────────────────────────────────────
+// ── Installed-App Inventory States ────────────────────────────────────────────
 
 /// Emitted while the student device is syncing its installed-app inventory
 /// to DataConnect. Does not affect root navigation.

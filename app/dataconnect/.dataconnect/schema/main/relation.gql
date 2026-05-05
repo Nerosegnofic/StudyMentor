@@ -17,24 +17,6 @@ extend type AppRule {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "AppRule.appLabel", purpose: QUERY_COUNT)
   """
-  ✨ Count the number of rows in the `AppRule` table where the `cooldownHours` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  cooldownHours_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `AppRule` table where the `cooldownMinutes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  cooldownMinutes_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_COUNT)
-  """
   ✨ Count the number of rows in the `AppRule` table where the `iconBase64` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   iconBase64_count(
@@ -70,128 +52,6 @@ extend type AppRule {
     """
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "AppRule.studentUid", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `AppRule` table where the `usageHours` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  usageHours_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `AppRule` table where the `usageMinutes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  usageMinutes_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_COUNT)
-  """
-  ✨ Sum the `cooldownHours` field in the `AppRule` table.
-  """
-  cooldownHours_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_SUM)
-  """
-  ✨ Sum the `cooldownMinutes` field in the `AppRule` table.
-  """
-  cooldownMinutes_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_SUM)
-  """
-  ✨ Sum the `usageHours` field in the `AppRule` table.
-  """
-  usageHours_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_SUM)
-  """
-  ✨ Sum the `usageMinutes` field in the `AppRule` table.
-  """
-  usageMinutes_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_SUM)
-  """
-  ✨ Average the `cooldownHours` field in the `AppRule` table.
-  """
-  cooldownHours_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_AVG)
-  """
-  ✨ Average the `cooldownMinutes` field in the `AppRule` table.
-  """
-  cooldownMinutes_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_AVG)
-  """
-  ✨ Average the `usageHours` field in the `AppRule` table.
-  """
-  usageHours_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_AVG)
-  """
-  ✨ Average the `usageMinutes` field in the `AppRule` table.
-  """
-  usageMinutes_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_AVG)
-  """
-  ✨ Minimum of the `cooldownHours` field in the `AppRule` table.
-  """
-  cooldownHours_min: Int @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_MIN)
-  """
-  ✨ Minimum of the `cooldownMinutes` field in the `AppRule` table.
-  """
-  cooldownMinutes_min: Int @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_MIN)
-  """
-  ✨ Minimum of the `usageHours` field in the `AppRule` table.
-  """
-  usageHours_min: Int @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_MIN)
-  """
-  ✨ Minimum of the `usageMinutes` field in the `AppRule` table.
-  """
-  usageMinutes_min: Int @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_MIN)
-  """
-  ✨ Maximum of the `cooldownHours` field in the `AppRule` table.
-  """
-  cooldownHours_max: Int @fdc_generated(from: "AppRule.cooldownHours", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `cooldownMinutes` field in the `AppRule` table.
-  """
-  cooldownMinutes_max: Int @fdc_generated(from: "AppRule.cooldownMinutes", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `usageHours` field in the `AppRule` table.
-  """
-  usageHours_max: Int @fdc_generated(from: "AppRule.usageHours", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `usageMinutes` field in the `AppRule` table.
-  """
-  usageMinutes_max: Int @fdc_generated(from: "AppRule.usageMinutes", purpose: QUERY_MAX)
   """
   A generated field that is used for caching results in SDKs.
   """
@@ -419,6 +279,10 @@ extend type Student {
     having: InstalledApp_Having
   ): [InstalledApp!]! @fdc_generated(from: "InstalledApp.student", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
   """
+  ✨ List `StudentConfig` objects in a one-to-one relationship (where `StudentConfig`.`student` is this object).
+  """
+  studentConfig_on_student: StudentConfig @fdc_generated(from: "StudentConfig.student", purpose: QUERY_SINGLE_ONE_TO_ONE)
+  """
   Implicit metadata field that cannot be written. It provides extra information about query results.
   """
   _metadata: _Metadata @fdc_generated(from: "Student", purpose: METADATA_FIELD)
@@ -571,6 +435,169 @@ extend type Student {
   A generated field that is used for caching results in SDKs.
   """
   _id: ID! @fdc_generated(from: "Student.uid", purpose: ENTITY_ID)
+}
+extend type StudentConfig {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "StudentConfig", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `StudentConfig` table.
+  """
+  _count: Int! @fdc_generated(from: "StudentConfig.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentConfig` table where the `cooldownHours` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  cooldownHours_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentConfig.cooldownHours", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentConfig` table where the `cooldownMinutes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  cooldownMinutes_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentConfig.cooldownMinutes", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentConfig` table where the `studentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  studentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentConfig.studentUid", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentConfig` table where the `usageHours` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  usageHours_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentConfig.usageHours", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentConfig` table where the `usageMinutes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  usageMinutes_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentConfig.usageMinutes", purpose: QUERY_COUNT)
+  """
+  ✨ Sum the `cooldownHours` field in the `StudentConfig` table.
+  """
+  cooldownHours_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "StudentConfig.cooldownHours", purpose: QUERY_SUM)
+  """
+  ✨ Sum the `cooldownMinutes` field in the `StudentConfig` table.
+  """
+  cooldownMinutes_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "StudentConfig.cooldownMinutes", purpose: QUERY_SUM)
+  """
+  ✨ Sum the `usageHours` field in the `StudentConfig` table.
+  """
+  usageHours_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "StudentConfig.usageHours", purpose: QUERY_SUM)
+  """
+  ✨ Sum the `usageMinutes` field in the `StudentConfig` table.
+  """
+  usageMinutes_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "StudentConfig.usageMinutes", purpose: QUERY_SUM)
+  """
+  ✨ Average the `cooldownHours` field in the `StudentConfig` table.
+  """
+  cooldownHours_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "StudentConfig.cooldownHours", purpose: QUERY_AVG)
+  """
+  ✨ Average the `cooldownMinutes` field in the `StudentConfig` table.
+  """
+  cooldownMinutes_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "StudentConfig.cooldownMinutes", purpose: QUERY_AVG)
+  """
+  ✨ Average the `usageHours` field in the `StudentConfig` table.
+  """
+  usageHours_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "StudentConfig.usageHours", purpose: QUERY_AVG)
+  """
+  ✨ Average the `usageMinutes` field in the `StudentConfig` table.
+  """
+  usageMinutes_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "StudentConfig.usageMinutes", purpose: QUERY_AVG)
+  """
+  ✨ Minimum of the `cooldownHours` field in the `StudentConfig` table.
+  """
+  cooldownHours_min: Int @fdc_generated(from: "StudentConfig.cooldownHours", purpose: QUERY_MIN)
+  """
+  ✨ Minimum of the `cooldownMinutes` field in the `StudentConfig` table.
+  """
+  cooldownMinutes_min: Int @fdc_generated(from: "StudentConfig.cooldownMinutes", purpose: QUERY_MIN)
+  """
+  ✨ Minimum of the `usageHours` field in the `StudentConfig` table.
+  """
+  usageHours_min: Int @fdc_generated(from: "StudentConfig.usageHours", purpose: QUERY_MIN)
+  """
+  ✨ Minimum of the `usageMinutes` field in the `StudentConfig` table.
+  """
+  usageMinutes_min: Int @fdc_generated(from: "StudentConfig.usageMinutes", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `cooldownHours` field in the `StudentConfig` table.
+  """
+  cooldownHours_max: Int @fdc_generated(from: "StudentConfig.cooldownHours", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `cooldownMinutes` field in the `StudentConfig` table.
+  """
+  cooldownMinutes_max: Int @fdc_generated(from: "StudentConfig.cooldownMinutes", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `usageHours` field in the `StudentConfig` table.
+  """
+  usageHours_max: Int @fdc_generated(from: "StudentConfig.usageHours", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `usageMinutes` field in the `StudentConfig` table.
+  """
+  usageMinutes_max: Int @fdc_generated(from: "StudentConfig.usageMinutes", purpose: QUERY_MAX)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "StudentConfig.studentUid", purpose: ENTITY_ID)
 }
 extend type User {
   """

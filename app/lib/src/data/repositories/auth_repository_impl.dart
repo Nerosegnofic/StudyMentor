@@ -189,7 +189,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await dataConnect.markEmailVerified();
   }
 
-  // ── profile update ──────────────────────────────────────────────────────────
+  // ── Profile update ────────────────────────────────────────────────────────
 
   @override
   Future<UserModel> updateProfile({
@@ -232,7 +232,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<List<InstalledAppModel>> getInstalledAppsForStudent(
-      String studentUid) async {
+    String studentUid,
+  ) async {
     final rows = await dataConnect.getInstalledAppsForStudent(studentUid);
     return rows.map(InstalledAppModel.fromJson).toList();
   }
@@ -242,8 +243,6 @@ class AuthRepositoryImpl implements AuthRepository {
     required String studentUid,
     required List<InstalledAppModel> apps,
   }) async {
-    // Wipe the previous inventory, then re-insert. Same delete-all + re-insert
-    // pattern used by AppRule saves — keeps it simple and always consistent.
     await dataConnect.deleteAllInstalledAppsForStudent(studentUid);
     await Future.wait(
       apps.map(
@@ -258,32 +257,40 @@ class AuthRepositoryImpl implements AuthRepository {
     );
   }
 
-  // ── App Rules ─────────────────────────────────────────────────────────────
+  // ── App Configuration ─────────────────────────────────────────────────────
 
   @override
-  Future<List<AppRuleModel>> getAppRulesForStudent(String studentUid) async {
-    final rows = await dataConnect.getAppRulesForStudent(studentUid);
-    return rows.map(AppRuleModel.fromJson).toList();
+  Future<({StudentConfigModel? config, List<AppRuleModel> rules})>
+  getAppConfigForStudent(String studentUid) async {
+    final result = await dataConnect.getAppConfigForStudent(studentUid);
+    return (
+      config: result.config,
+      rules: result.rules.map(AppRuleModel.fromJson).toList(),
+    );
   }
 
   @override
-  Future<void> saveAppRulesForStudent({
+  Future<void> saveAppConfigForStudent({
     required String studentUid,
     required List<PendingAppRule> rules,
+    required StudentConfigModel config,
   }) async {
-    // 1. Wipe all existing rules for a clean save.
+    // 1. Upsert the global config row.
+    await dataConnect.upsertStudentConfig(
+      studentUid: studentUid,
+      config: config,
+    );
+
+    // 2. Wipe all existing rules for a clean save.
     await dataConnect.deleteAllAppRulesForStudent(studentUid);
 
-    // 2. Insert each rule sequentially.
+    // 3. Insert each rule sequentially.
     for (final rule in rules) {
       await dataConnect.insertAppRule(
         studentUid: studentUid,
         packageName: rule.packageName,
         appLabel: rule.appLabel,
-        usageHours: rule.usageHours,
-        usageMinutes: rule.usageMinutes,
-        cooldownHours: rule.cooldownHours,
-        cooldownMinutes: rule.cooldownMinutes,
+        iconBase64: rule.iconBase64,
       );
     }
   }

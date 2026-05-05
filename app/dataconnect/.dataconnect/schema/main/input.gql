@@ -29,6 +29,12 @@ It has the same format as `Student_Key`, but is only used as mutation return val
 """
 scalar Student_KeyOutput
 """
+✨ `StudentConfig_KeyOutput` returns the primary key fields of table type `StudentConfig`.
+
+It has the same format as `StudentConfig_Key`, but is only used as mutation return value.
+"""
+scalar StudentConfig_KeyOutput
+"""
 ✨ `User_KeyOutput` returns the primary key fields of table type `User`.
 
 It has the same format as `User_Key`, but is only used as mutation return value.
@@ -67,30 +73,6 @@ input AppRule_Data {
   """
   appLabel_expr: String_Expr @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `AppRule`.`cooldownHours` of type `Int`
-  """
-  cooldownHours: Int
-  """
-  ✨ `_expr` server value variant of `cooldownHours` (✨ Generated from Field `AppRule`.`cooldownHours` of type `Int`)
-  """
-  cooldownHours_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `cooldownHours` (✨ Generated from Field `AppRule`.`cooldownHours` of type `Int`)
-  """
-  cooldownHours_update: [Int_Update!] @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes` of type `Int`
-  """
-  cooldownMinutes: Int
-  """
-  ✨ `_expr` server value variant of `cooldownMinutes` (✨ Generated from Field `AppRule`.`cooldownMinutes` of type `Int`)
-  """
-  cooldownMinutes_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `cooldownMinutes` (✨ Generated from Field `AppRule`.`cooldownMinutes` of type `Int`)
-  """
-  cooldownMinutes_update: [Int_Update!] @fdc_forbiddenInVariables
-  """
   ✨ Generated from Field `AppRule`.`iconBase64` of type `String`
   """
   iconBase64: String
@@ -106,30 +88,6 @@ input AppRule_Data {
   ✨ `_expr` server value variant of `packageName` (✨ Generated from Field `AppRule`.`packageName` of type `String!`)
   """
   packageName_expr: String_Expr @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `AppRule`.`usageHours` of type `Int`
-  """
-  usageHours: Int
-  """
-  ✨ `_expr` server value variant of `usageHours` (✨ Generated from Field `AppRule`.`usageHours` of type `Int`)
-  """
-  usageHours_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `usageHours` (✨ Generated from Field `AppRule`.`usageHours` of type `Int`)
-  """
-  usageHours_update: [Int_Update!] @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes` of type `Int`
-  """
-  usageMinutes: Int
-  """
-  ✨ `_expr` server value variant of `usageMinutes` (✨ Generated from Field `AppRule`.`usageMinutes` of type `Int`)
-  """
-  usageMinutes_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `usageMinutes` (✨ Generated from Field `AppRule`.`usageMinutes` of type `Int`)
-  """
-  usageMinutes_update: [Int_Update!] @fdc_forbiddenInVariables
 }
 """
 ✨ Generated filter input type for table 'AppRule'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
@@ -164,14 +122,6 @@ input AppRule_Filter {
   """
   appLabel: String_Filter
   """
-  ✨ Generated from Field `AppRule`.`cooldownHours` of type `Int`
-  """
-  cooldownHours: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes` of type `Int`
-  """
-  cooldownMinutes: Int_Filter
-  """
   ✨ Generated from Field `AppRule`.`iconBase64` of type `String`
   """
   iconBase64: String_Filter
@@ -179,14 +129,6 @@ input AppRule_Filter {
   ✨ Generated from Field `AppRule`.`packageName` of type `String!`
   """
   packageName: String_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageHours` of type `Int`
-  """
-  usageHours: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes` of type `Int`
-  """
-  usageMinutes: Int_Filter
 }
 """
 ✨ Generated first-row input type for table 'AppRule'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
@@ -230,14 +172,6 @@ input AppRule_Having {
   """
   appLabel_count: Int_Filter
   """
-  ✨ Generated from Field `AppRule`.`cooldownHours_count` of type `Int!`
-  """
-  cooldownHours_count: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_count` of type `Int!`
-  """
-  cooldownMinutes_count: Int_Filter
-  """
   ✨ Generated from Field `AppRule`.`iconBase64_count` of type `Int!`
   """
   iconBase64_count: Int_Filter
@@ -253,78 +187,6 @@ input AppRule_Having {
   ✨ Generated from Field `AppRule`.`studentUid_count` of type `Int!`
   """
   studentUid_count: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_count` of type `Int!`
-  """
-  usageHours_count: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_count` of type `Int!`
-  """
-  usageMinutes_count: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_sum` of type `Int`
-  """
-  cooldownHours_sum: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_sum` of type `Int`
-  """
-  cooldownMinutes_sum: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_sum` of type `Int`
-  """
-  usageHours_sum: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_sum` of type `Int`
-  """
-  usageMinutes_sum: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_avg` of type `Float`
-  """
-  cooldownHours_avg: Float_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_avg` of type `Float`
-  """
-  cooldownMinutes_avg: Float_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_avg` of type `Float`
-  """
-  usageHours_avg: Float_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_avg` of type `Float`
-  """
-  usageMinutes_avg: Float_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_min` of type `Int`
-  """
-  cooldownHours_min: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_min` of type `Int`
-  """
-  cooldownMinutes_min: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_min` of type `Int`
-  """
-  usageHours_min: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_min` of type `Int`
-  """
-  usageMinutes_min: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_max` of type `Int`
-  """
-  cooldownHours_max: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_max` of type `Int`
-  """
-  cooldownMinutes_max: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_max` of type `Int`
-  """
-  usageHours_max: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_max` of type `Int`
-  """
-  usageMinutes_max: Int_Filter
 }
 """
 ✨ Generated key input type for table 'AppRule'. It represents the primary key fields used to uniquely identify a row in the table.
@@ -373,14 +235,6 @@ input AppRule_Order {
   """
   appLabel: OrderDirection
   """
-  ✨ Generated from Field `AppRule`.`cooldownHours` of type `Int`
-  """
-  cooldownHours: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes` of type `Int`
-  """
-  cooldownMinutes: OrderDirection
-  """
   ✨ Generated from Field `AppRule`.`iconBase64` of type `String`
   """
   iconBase64: OrderDirection
@@ -389,14 +243,6 @@ input AppRule_Order {
   """
   packageName: OrderDirection
   """
-  ✨ Generated from Field `AppRule`.`usageHours` of type `Int`
-  """
-  usageHours: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes` of type `Int`
-  """
-  usageMinutes: OrderDirection
-  """
   ✨ Generated from Field `AppRule`.`_count` of type `Int!`
   """
   _count: OrderDirection
@@ -404,14 +250,6 @@ input AppRule_Order {
   ✨ Generated from Field `AppRule`.`appLabel_count` of type `Int!`
   """
   appLabel_count: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_count` of type `Int!`
-  """
-  cooldownHours_count: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_count` of type `Int!`
-  """
-  cooldownMinutes_count: OrderDirection
   """
   ✨ Generated from Field `AppRule`.`iconBase64_count` of type `Int!`
   """
@@ -428,78 +266,6 @@ input AppRule_Order {
   ✨ Generated from Field `AppRule`.`studentUid_count` of type `Int!`
   """
   studentUid_count: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_count` of type `Int!`
-  """
-  usageHours_count: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_count` of type `Int!`
-  """
-  usageMinutes_count: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_sum` of type `Int`
-  """
-  cooldownHours_sum: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_sum` of type `Int`
-  """
-  cooldownMinutes_sum: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_sum` of type `Int`
-  """
-  usageHours_sum: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_sum` of type `Int`
-  """
-  usageMinutes_sum: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_avg` of type `Float`
-  """
-  cooldownHours_avg: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_avg` of type `Float`
-  """
-  cooldownMinutes_avg: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_avg` of type `Float`
-  """
-  usageHours_avg: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_avg` of type `Float`
-  """
-  usageMinutes_avg: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_min` of type `Int`
-  """
-  cooldownHours_min: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_min` of type `Int`
-  """
-  cooldownMinutes_min: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_min` of type `Int`
-  """
-  usageHours_min: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_min` of type `Int`
-  """
-  usageMinutes_min: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownHours_max` of type `Int`
-  """
-  cooldownHours_max: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`cooldownMinutes_max` of type `Int`
-  """
-  cooldownMinutes_max: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageHours_max` of type `Int`
-  """
-  usageHours_max: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`usageMinutes_max` of type `Int`
-  """
-  usageMinutes_max: OrderDirection
 }
 """
 ✨ Generated data input type for table 'InstalledApp'. It includes all necessary fields for creating or upserting rows into table.
@@ -1202,6 +968,10 @@ input Student_Filter {
   ✨ Generated from Field `Student`.`installedApps_on_student` of type `[InstalledApp!]!`
   """
   installedApps_on_student: InstalledApp_ListFilter
+  """
+  ✨ Generated from Field `Student`.`studentConfig_on_student` of type `StudentConfig`
+  """
+  studentConfig_on_student: StudentConfig_Filter
 }
 """
 ✨ Generated first-row input type for table 'Student'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
@@ -1463,6 +1233,377 @@ input Student_Order {
   ✨ Generated from Field `Student`.`totalXp_max` of type `Int`
   """
   totalXp_max: OrderDirection
+}
+"""
+✨ Generated data input type for table 'StudentConfig'. It includes all necessary fields for creating or upserting rows into table.
+"""
+input StudentConfig_Data {
+  """
+  ✨ Generated from Field `StudentConfig`.`studentUid` of type `String!`
+  """
+  studentUid: String
+  """
+  ✨ `_expr` server value variant of `studentUid` (✨ Generated from Field `StudentConfig`.`studentUid` of type `String!`)
+  """
+  studentUid_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `StudentConfig`.`student` of type `Student!`
+  """
+  student: Student_Key @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours` of type `Int!`
+  """
+  cooldownHours: Int
+  """
+  ✨ `_expr` server value variant of `cooldownHours` (✨ Generated from Field `StudentConfig`.`cooldownHours` of type `Int!`)
+  """
+  cooldownHours_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `cooldownHours` (✨ Generated from Field `StudentConfig`.`cooldownHours` of type `Int!`)
+  """
+  cooldownHours_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes` of type `Int!`
+  """
+  cooldownMinutes: Int
+  """
+  ✨ `_expr` server value variant of `cooldownMinutes` (✨ Generated from Field `StudentConfig`.`cooldownMinutes` of type `Int!`)
+  """
+  cooldownMinutes_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `cooldownMinutes` (✨ Generated from Field `StudentConfig`.`cooldownMinutes` of type `Int!`)
+  """
+  cooldownMinutes_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours` of type `Int!`
+  """
+  usageHours: Int
+  """
+  ✨ `_expr` server value variant of `usageHours` (✨ Generated from Field `StudentConfig`.`usageHours` of type `Int!`)
+  """
+  usageHours_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `usageHours` (✨ Generated from Field `StudentConfig`.`usageHours` of type `Int!`)
+  """
+  usageHours_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes` of type `Int!`
+  """
+  usageMinutes: Int
+  """
+  ✨ `_expr` server value variant of `usageMinutes` (✨ Generated from Field `StudentConfig`.`usageMinutes` of type `Int!`)
+  """
+  usageMinutes_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `usageMinutes` (✨ Generated from Field `StudentConfig`.`usageMinutes` of type `Int!`)
+  """
+  usageMinutes_update: [Int_Update!] @fdc_forbiddenInVariables
+}
+"""
+✨ Generated filter input type for table 'StudentConfig'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input StudentConfig_Filter {
+  """
+  Apply multiple filter conditions using `AND` logic.
+  """
+  _and: [StudentConfig_Filter!]
+  """
+  Negate the result of the provided filter condition.
+  """
+  _not: StudentConfig_Filter
+  """
+  Apply multiple filter conditions using `OR` logic.
+  """
+  _or: [StudentConfig_Filter!]
+  """
+  ✨ Generated from Field `StudentConfig`.`studentUid` of type `String!`
+  """
+  studentUid: String_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`student` of type `Student!`
+  """
+  student: Student_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours` of type `Int!`
+  """
+  cooldownHours: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes` of type `Int!`
+  """
+  cooldownMinutes: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours` of type `Int!`
+  """
+  usageHours: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes` of type `Int!`
+  """
+  usageMinutes: Int_Filter
+}
+"""
+✨ Generated first-row input type for table 'StudentConfig'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
+"""
+input StudentConfig_FirstRow {
+  """
+  Order the result by the specified fields.
+  """
+  orderBy: [StudentConfig_Order!]
+  """
+  Filters rows based on the specified conditions.
+  """
+  where: StudentConfig_Filter
+}
+"""
+✨ Generated having input type for table 'StudentConfig'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input StudentConfig_Having {
+  """
+  Apply multiple Having conditions using `AND` logic.
+  """
+  _and: [StudentConfig_Having!]
+  """
+  Whether to apply DISTINCT to the aggregate function.
+  """
+  _distinct: Boolean
+  """
+  Negate the result of the provided Having condition.
+  """
+  _not: StudentConfig_Having
+  """
+  Apply multiple Having conditions using `OR` logic.
+  """
+  _or: [StudentConfig_Having!]
+  """
+  ✨ Generated from Field `StudentConfig`.`_count` of type `Int!`
+  """
+  _count: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_count` of type `Int!`
+  """
+  cooldownHours_count: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_count` of type `Int!`
+  """
+  cooldownMinutes_count: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`studentUid_count` of type `Int!`
+  """
+  studentUid_count: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_count` of type `Int!`
+  """
+  usageHours_count: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_count` of type `Int!`
+  """
+  usageMinutes_count: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_sum` of type `Int`
+  """
+  cooldownHours_sum: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_sum` of type `Int`
+  """
+  cooldownMinutes_sum: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_sum` of type `Int`
+  """
+  usageHours_sum: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_sum` of type `Int`
+  """
+  usageMinutes_sum: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_avg` of type `Float`
+  """
+  cooldownHours_avg: Float_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_avg` of type `Float`
+  """
+  cooldownMinutes_avg: Float_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_avg` of type `Float`
+  """
+  usageHours_avg: Float_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_avg` of type `Float`
+  """
+  usageMinutes_avg: Float_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_min` of type `Int`
+  """
+  cooldownHours_min: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_min` of type `Int`
+  """
+  cooldownMinutes_min: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_min` of type `Int`
+  """
+  usageHours_min: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_min` of type `Int`
+  """
+  usageMinutes_min: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_max` of type `Int`
+  """
+  cooldownHours_max: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_max` of type `Int`
+  """
+  cooldownMinutes_max: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_max` of type `Int`
+  """
+  usageHours_max: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_max` of type `Int`
+  """
+  usageMinutes_max: Int_Filter
+}
+"""
+✨ Generated key input type for table 'StudentConfig'. It represents the primary key fields used to uniquely identify a row in the table.
+"""
+input StudentConfig_Key {
+  """
+  ✨ Generated from Field `StudentConfig`.`studentUid` of type `String!`
+  """
+  studentUid: String
+  """
+  ✨ `_expr` server value variant of `studentUid` (✨ Generated from Field `StudentConfig`.`studentUid` of type `String!`)
+  """
+  studentUid_expr: String_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'StudentConfig'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input StudentConfig_ListFilter {
+  """
+  The desired number of objects that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: StudentConfig_Filter
+}
+"""
+✨ Generated order input type for table 'StudentConfig'. This input defines the sorting order of rows in query results based on one or more fields.
+"""
+input StudentConfig_Order {
+  """
+  ✨ Generated from Field `StudentConfig`.`studentUid` of type `String!`
+  """
+  studentUid: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`student` of type `Student!`
+  """
+  student: Student_Order
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours` of type `Int!`
+  """
+  cooldownHours: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes` of type `Int!`
+  """
+  cooldownMinutes: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours` of type `Int!`
+  """
+  usageHours: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes` of type `Int!`
+  """
+  usageMinutes: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`_count` of type `Int!`
+  """
+  _count: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_count` of type `Int!`
+  """
+  cooldownHours_count: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_count` of type `Int!`
+  """
+  cooldownMinutes_count: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`studentUid_count` of type `Int!`
+  """
+  studentUid_count: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_count` of type `Int!`
+  """
+  usageHours_count: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_count` of type `Int!`
+  """
+  usageMinutes_count: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_sum` of type `Int`
+  """
+  cooldownHours_sum: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_sum` of type `Int`
+  """
+  cooldownMinutes_sum: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_sum` of type `Int`
+  """
+  usageHours_sum: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_sum` of type `Int`
+  """
+  usageMinutes_sum: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_avg` of type `Float`
+  """
+  cooldownHours_avg: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_avg` of type `Float`
+  """
+  cooldownMinutes_avg: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_avg` of type `Float`
+  """
+  usageHours_avg: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_avg` of type `Float`
+  """
+  usageMinutes_avg: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_min` of type `Int`
+  """
+  cooldownHours_min: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_min` of type `Int`
+  """
+  cooldownMinutes_min: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_min` of type `Int`
+  """
+  usageHours_min: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_min` of type `Int`
+  """
+  usageMinutes_min: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownHours_max` of type `Int`
+  """
+  cooldownHours_max: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`cooldownMinutes_max` of type `Int`
+  """
+  cooldownMinutes_max: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageHours_max` of type `Int`
+  """
+  usageHours_max: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`usageMinutes_max` of type `Int`
+  """
+  usageMinutes_max: OrderDirection
 }
 """
 ✨ Generated data input type for table 'User'. It includes all necessary fields for creating or upserting rows into table.

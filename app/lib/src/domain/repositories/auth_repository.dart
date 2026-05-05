@@ -63,19 +63,23 @@ abstract class AuthRepository {
 
   // ── App Configuration ─────────────────────────────────────────────────────
 
-  /// Fetches all saved app rules for a given student.
+  /// Fetches the global student config and all app rules for [studentUid].
+  /// Returns a record with a nullable [StudentConfigModel] (null if the parent
+  /// hasn't saved one yet — callers should fall back to defaults) and the
+  /// list of [AppRuleModel]s.
   /// Called by both the parent config screen and the student device.
-  Future<List<AppRuleModel>> getAppRulesForStudent(String studentUid);
+  Future<({StudentConfigModel? config, List<AppRuleModel> rules})>
+  getAppConfigForStudent(String studentUid);
 
-  /// Saves (replaces) all app rules for a student.
+  /// Saves (replaces) all app rules and upserts the global config for a student.
   ///
-  /// The strategy is delete-all + re-insert so the parent always gets a
-  /// clean save regardless of what changed. Steps:
-  ///  1. Upsert the AppConfig record (creates it if it does not exist).
+  /// Strategy:
+  ///  1. Upsert the StudentConfig row (creates it if it does not exist).
   ///  2. Delete all existing AppRule rows for this student.
   ///  3. Insert each rule in [rules] one by one.
-  Future<void> saveAppRulesForStudent({
+  Future<void> saveAppConfigForStudent({
     required String studentUid,
     required List<PendingAppRule> rules,
+    required StudentConfigModel config,
   });
 }

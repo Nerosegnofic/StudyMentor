@@ -46,17 +46,25 @@ type InstalledApp @table(name: "installed_apps", key: ["id"], singular: "install
 
 # One row per configured app per student.
 # packageName is the Android package identifier (e.g. "com.google.android.youtube").
-# usageDurationMinutes: how many minutes the student may use the app per session.
-# cooldownDurationMinutes: how many minutes the student must wait after the session ends.
+# Time limits are applied globally via StudentConfig — not per app.
 type AppRule @table(name: "app_rules", key: ["id"]) {
   id: UUID! @default(expr: "uuidV4()")
   student: Student!
   studentUid: String!
   packageName: String! @col(dataType: "varchar(255)")
   appLabel: String! @col(dataType: "varchar(255)")
-  usageHours: Int @default(expr: "0")
-  usageMinutes: Int @default(expr: "0")
-  cooldownHours: Int @default(expr: "0")
-  cooldownMinutes: Int @default(expr: "0")
   iconBase64: String @col(dataType: "text")
+}
+
+# One row per student holding the global usage and cooldown time limits.
+# These limits apply to ALL restricted apps configured for the student.
+# usageHours / usageMinutes: total time the student may use any restricted app per session.
+# cooldownHours / cooldownMinutes: time the student must wait after the session ends.
+type StudentConfig @table(name: "student_configs", key: ["studentUid"]) {
+  studentUid: String!
+  student: Student!
+  usageHours: Int! @default(expr: "0")
+  usageMinutes: Int! @default(expr: "30")
+  cooldownHours: Int! @default(expr: "0")
+  cooldownMinutes: Int! @default(expr: "10")
 }

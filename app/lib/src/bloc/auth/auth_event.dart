@@ -125,10 +125,10 @@ class UpdateProfileRequested extends AuthEvent {
   List<Object?> get props => [newFullName, newPassword];
 }
 
-// ── App Configuration Events ─────────────────────────────────────────────────
+// ── App Configuration Events ──────────────────────────────────────────────────
 
 /// Fired when the parent opens the configuration screen for a student.
-/// Loads existing saved rules from the database.
+/// Loads existing saved rules and global config from the database.
 class LoadAppRulesRequested extends AuthEvent {
   final String studentUid;
   LoadAppRulesRequested({required this.studentUid});
@@ -137,12 +137,17 @@ class LoadAppRulesRequested extends AuthEvent {
 }
 
 /// Fired when the parent taps "Save" on the configuration screen.
-/// Replaces all existing rules with [rules] in the database.
+/// Replaces all existing rules and upserts the global config in the database.
 class SaveAppRulesRequested extends AuthEvent {
   final String studentUid;
   final List<PendingAppRule> rules;
+  final StudentConfigModel config;
 
-  SaveAppRulesRequested({required this.studentUid, required this.rules});
+  SaveAppRulesRequested({
+    required this.studentUid,
+    required this.rules,
+    required this.config,
+  });
 
   @override
   List<Object?> get props => [studentUid];
@@ -156,7 +161,7 @@ class LoadStudentAppConfigRequested extends AuthEvent {
   List<Object?> get props => [studentUid];
 }
 
-// ── Installed-App Inventory Events ───────────────────────────────────────────
+// ── Installed-App Inventory Events ────────────────────────────────────────────
 
 /// Fired by the student device on login and on every app resume when the
 /// dirty flag is set. Fetches apps from PackageManager via

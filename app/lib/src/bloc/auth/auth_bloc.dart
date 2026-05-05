@@ -273,30 +273,39 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   // ── App Configuration Handlers ────────────────────────────────────────────
 
-  /// Parent opens the config screen — load whatever rules are already saved.
+  /// Parent opens the config screen — load saved rules and global config.
   Future<void> _onLoadAppRules(
     LoadAppRulesRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(AppConfigLoading());
     try {
-      final rules = await repository.getAppRulesForStudent(event.studentUid);
-      emit(AppRulesLoaded(studentUid: event.studentUid, rules: rules));
+      final (:config, :rules) = await repository.getAppConfigForStudent(
+        event.studentUid,
+      );
+      emit(
+        AppRulesLoaded(
+          studentUid: event.studentUid,
+          rules: rules,
+          config: config ?? const StudentConfigModel(),
+        ),
+      );
     } catch (e) {
       emit(AppConfigError(_mapException(e)));
     }
   }
 
-  /// Parent taps Save — replace all rules in the database.
+  /// Parent taps Save — replace all rules and upsert global config.
   Future<void> _onSaveAppRules(
     SaveAppRulesRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(AppConfigSaving());
     try {
-      await repository.saveAppRulesForStudent(
+      await repository.saveAppConfigForStudent(
         studentUid: event.studentUid,
         rules: event.rules,
+        config: event.config,
       );
       emit(AppConfigSaved());
     } catch (e) {
@@ -311,8 +320,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AppConfigLoading());
     try {
-      final rules = await repository.getAppRulesForStudent(event.studentUid);
-      emit(AppRulesLoaded(studentUid: event.studentUid, rules: rules));
+      final (:config, :rules) = await repository.getAppConfigForStudent(
+        event.studentUid,
+      );
+      emit(
+        AppRulesLoaded(
+          studentUid: event.studentUid,
+          rules: rules,
+          config: config ?? const StudentConfigModel(),
+        ),
+      );
     } catch (e) {
       emit(AppConfigError(_mapException(e)));
     }
@@ -336,7 +353,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(InstalledAppsSynced());
     } catch (e) {
       // Sync failure is non-fatal — enforcement continues with the last rules.
-      // Log but do not surface an error to the student's UI.
       debugPrint('[InstalledApps] sync error: $e');
     }
   }
@@ -352,15 +368,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: apps));
     } catch (e) {
-      // Surface as an empty list — picker shows "Student hasn't synced yet."
       emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: const []));
     }
   }
 
   /// Parent taps refresh — re-fetches both installed apps and rules in parallel.
-  /// Emits [StudentDataRefreshing] first so the UI can show a spinner, then
-  /// lets the existing [InstalledAppsLoaded] / [AppRulesLoaded] handlers
-  /// update the screen as each future completes.
   Future<void> _onRefreshStudentData(
     RefreshStudentDataRequested event,
     Emitter<AuthState> emit,
@@ -369,20 +381,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final results = await Future.wait([
         repository.getInstalledAppsForStudent(event.studentUid),
-        repository.getAppRulesForStudent(event.studentUid),
+        repository.getAppConfigForStudent(event.studentUid),
       ]);
 
-      // Index 0 → installed apps, index 1 → app rules.
       emit(
         InstalledAppsLoaded(
           studentUid: event.studentUid,
           apps: results[0] as List<InstalledAppModel>,
         ),
       );
+
+      final (:config, :rules) =
+          results[1]
+              as ({StudentConfigModel? config, List<AppRuleModel> rules});
       emit(
         AppRulesLoaded(
           studentUid: event.studentUid,
-          rules: results[1] as List<AppRuleModel>,
+          rules: rules,
+          config: config ?? const StudentConfigModel(),
         ),
       );
     } catch (e) {
@@ -390,7 +406,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ── error mappers ───────────────────────────────────────────────────────────
+  // ── Error mappers ─────────────────────────────────────────────────────────
 
   String _mapException(dynamic e) {
     final msg = e.toString();

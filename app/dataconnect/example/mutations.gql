@@ -69,24 +69,19 @@ mutation MarkEmailVerified @auth(level: USER) {
 # ── App Rule Mutations ────────────────────────────────────────────────────────
 
 # Inserts a single app rule for a student.
+# Time limits are not stored per-app — they are stored globally in StudentConfig.
 mutation InsertAppRule(
   $studentUid: String!
   $packageName: String!
   $appLabel: String!
-  $usageHours: Int!
-  $usageMinutes: Int!
-  $cooldownHours: Int!
-  $cooldownMinutes: Int!
+  $iconBase64: String
 ) @auth(level: USER) {
   appRule_insert(
     data: {
       studentUid: $studentUid
       packageName: $packageName
       appLabel: $appLabel
-      usageHours: $usageHours
-      usageMinutes: $usageMinutes
-      cooldownHours: $cooldownHours
-      cooldownMinutes: $cooldownMinutes
+      iconBase64: $iconBase64
     }
   )
 }
@@ -94,4 +89,26 @@ mutation InsertAppRule(
 # Deletes ALL app rules for a student — used before re-saving the full list.
 mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
   appRule_deleteMany(where: { studentUid: { eq: $studentUid } })
+}
+
+# ── Student Config Mutations ──────────────────────────────────────────────────
+
+# Upserts the global usage and cooldown time limits for a student.
+# These limits apply to ALL restricted apps configured for the student.
+mutation UpsertStudentConfig(
+  $studentUid: String!
+  $usageHours: Int!
+  $usageMinutes: Int!
+  $cooldownHours: Int!
+  $cooldownMinutes: Int!
+) @auth(level: USER) {
+  studentConfig_upsert(
+    data: {
+      studentUid: $studentUid
+      usageHours: $usageHours
+      usageMinutes: $usageMinutes
+      cooldownHours: $cooldownHours
+      cooldownMinutes: $cooldownMinutes
+    }
+  )
 }
