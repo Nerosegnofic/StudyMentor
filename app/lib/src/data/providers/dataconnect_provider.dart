@@ -229,4 +229,78 @@ class DataConnectProvider {
         .iconBase64(iconBase64)
         .execute();
   }
+
+  // ── Student Profile ───────────────────────────────────────────────────────
+
+  /// Returns profile data for [uid]: friendCode, totalXp, totalCoins, gradeLevel.
+  Future<Map<String, dynamic>> getStudentProfile(String uid) async {
+    final result = await _connector.getStudentProfile(uid: uid).execute();
+    final s = result.data.student;
+    if (s == null) throw Exception('Student not found');
+    return {
+      'uid': s.uid,
+      'friend_code': s.friendCode,
+      'total_xp': s.totalXp,
+      'total_coins': s.totalCoins,
+      'grade_level': s.gradeLevel,
+    };
+  }
+
+  /// Sets (or updates) the friend code on the currently-authenticated student.
+  Future<void> updateStudentFriendCode(String friendCode) async {
+    await _connector
+        .updateStudentFriendCode(friendCode: friendCode)
+        .execute();
+  }
+
+  // ── Student Settings ──────────────────────────────────────────────────────
+
+  /// Returns the stored settings for [studentUid], or null if never saved.
+  Future<Map<String, dynamic>?> getStudentSettings(String studentUid) async {
+    final result =
+        await _connector.getStudentSettings(studentUid: studentUid).execute();
+    final s = result.data.studentSettings;
+    if (s == null) return null;
+    return {
+      'notifications_enabled': s.notificationsEnabled,
+      'sound_effects_enabled': s.soundEffectsEnabled,
+      'background_music_enabled': s.backgroundMusicEnabled,
+    };
+  }
+
+  /// Upserts the app preferences for [studentUid].
+  Future<void> upsertStudentSettings({
+    required String studentUid,
+    required bool notificationsEnabled,
+    required bool soundEffectsEnabled,
+    required bool backgroundMusicEnabled,
+  }) async {
+    await _connector
+        .upsertStudentSettings(
+          studentUid: studentUid,
+          notificationsEnabled: notificationsEnabled,
+          soundEffectsEnabled: soundEffectsEnabled,
+          backgroundMusicEnabled: backgroundMusicEnabled,
+        )
+        .execute();
+  }
+
+  // ── Support Tickets ───────────────────────────────────────────────────────
+
+  /// Inserts a support ticket from the Help Center.
+  Future<void> insertSupportTicket({
+    required String userId,
+    required String userName,
+    required String issueType,
+    required String message,
+  }) async {
+    await _connector
+        .insertSupportTicket(
+          userId: userId,
+          userName: userName,
+          issueType: issueType,
+          message: message,
+        )
+        .execute();
+  }
 }

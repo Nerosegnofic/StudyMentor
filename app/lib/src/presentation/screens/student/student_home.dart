@@ -1,0 +1,385 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../bloc/auth/auth_bloc.dart';
+import '../../../bloc/auth/auth_event.dart';
+import '../../../bloc/auth/auth_state.dart';
+import '../../../services/installed_apps_service.dart';
+import '../../../services/overlay/mascot_overlay_service.dart';
+import '../../../domain/models/app_config_model.dart';
+
+class StudentHome extends StatefulWidget {
+  final String fullName;
+  final String uid;
+
+  const StudentHome({super.key, required this.fullName, required this.uid});
+
+  @override
+  State<StudentHome> createState() => _StudentHomeState();
+}
+
+class _StudentHomeState extends State<StudentHome> {
+  String? _parentFullName;
+  List<AppRuleModel> _appRules = [];
+  StudentConfigModel _config = const StudentConfigModel();
+  bool _rulesLoading = true;
+  final Map<String, String?> _iconCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<AuthBloc>().add(
+      LoadParentNameRequested(studentUid: widget.uid),
+    );
+    context.read<AuthBloc>().add(
+      LoadStudentAppConfigRequested(studentUid: widget.uid),
+    );
+    context.read<AuthBloc>().add(
+      SyncInstalledAppsRequested(studentUid: widget.uid),
+    );
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _parentFullName = null;
+      _rulesLoading = true;
+    });
+    context.read<AuthBloc>().add(
+      LoadParentNameRequested(studentUid: widget.uid),
+    );
+    context.read<AuthBloc>().add(
+      LoadStudentAppConfigRequested(studentUid: widget.uid),
+    );
+  }
+
+  Future<void> _loadIcons(List<AppRuleModel> rules) async {
+    final missing = rules
+        .map((r) => r.packageName)
+        .where((pkg) => !_iconCache.containsKey(pkg))
+        .toList();
+    if (missing.isEmpty) return;
+
+    final results = await Future.wait(
+      missing.map((pkg) => InstalledAppsService.instance.getAppIcon(pkg)),
+    );
+    if (!mounted) return;
+    setState(() {
+      for (var i = 0; i < missing.length; i++) {
+        _iconCache[missing[i]] = results[i];
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is ParentNameLoaded) {
+          setState(() => _parentFullName = state.parentFullName);
+        }
+        if (state is AppRulesLoaded && state.studentUid == widget.uid) {
+          setState(() {
+            _appRules = state.rules;
+            _config = state.config;
+            _rulesLoading = false;
+          });
+          MascotOverlayService.instance.updateMonitoredApps(
+            state.rules,
+            config: state.config,
+          );
+          _loadIcons(state.rules);
+        }
+        if (state is AppConfigError) {
+          setState(() => _rulesLoading = false);
+        }
+      },
+      child: RefreshIndicator(
+        onRefresh: _refresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildParentSection(),
+              const SizedBox(height: 28),
+              _buildAppRulesSection(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParentSection() {
+    return Row(
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: const BoxDecoration(
+            color: Color(0xFFE8EDFF),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.school, color: Color(0xFF4A6CF7), size: 26),
+        ),
+        const SizedBox(width: 14),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your parent',
+              style: TextStyle(fontSize: 12, color: Color(0xFF8B93A7)),
+            ),
+            const SizedBox(height: 2),
+            _parentFullName == null
+                ? const SizedBox(
+                    width: 120,
+                    height: 16,
+                    child: LinearProgressIndicator(),
+                  )
+                : Text(
+                    _parentFullName!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAppRulesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'App Rules',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(width: 8),
+            if (_rulesLoading)
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Rules configured by your parent.',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+        ),
+        const SizedBox(height: 14),
+        if (!_rulesLoading && _appRules.isEmpty)
+          _buildNoRulesPlaceholder()
+        else if (!_rulesLoading) ...[
+          _buildTimingBanner(),
+          const SizedBox(height: 12),
+          ..._appRules.map(_buildRuleRow),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTimingBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF1FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF4A6CF7).withOpacity(0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF4A6CF7)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'All restricted apps share the same limits:',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildPill(
+            icon: Icons.timer_outlined,
+            label: _formatDuration(_config.usageHours, _config.usageMinutes),
+            color: const Color(0xFF34A853),
+            bg: const Color(0xFFE6F4EA),
+          ),
+          const SizedBox(width: 6),
+          _buildPill(
+            icon: Icons.hourglass_bottom_outlined,
+            label: _formatDuration(
+              _config.cooldownHours,
+              _config.cooldownMinutes,
+            ),
+            color: const Color(0xFFFF9800),
+            bg: const Color(0xFFFFF8E1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoRulesPlaceholder() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.app_settings_alt_outlined,
+              size: 36,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'No app rules set yet.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Your parent hasn\'t configured any rules for your device yet.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRuleRow(AppRuleModel rule) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _AppIcon(
+            iconBase64: _iconCache[rule.packageName],
+            label: rule.appLabel,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  rule.appLabel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  rule.packageName,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDuration(int hours, int minutes) {
+    if (hours == 0 && minutes == 0) return '0m';
+    if (hours == 0) return '${minutes}m';
+    if (minutes == 0) return '${hours}h';
+    return '${hours}h ${minutes}m';
+  }
+
+  Widget _buildPill({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color bg,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppIcon extends StatelessWidget {
+  final String? iconBase64;
+  final String label;
+
+  const _AppIcon({required this.iconBase64, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    if (iconBase64 != null && iconBase64!.isNotEmpty) {
+      try {
+        return CircleAvatar(
+          backgroundImage: MemoryImage(base64Decode(iconBase64!)),
+          backgroundColor: const Color(0xFFE8EDFF),
+          radius: 20,
+        );
+      } catch (_) {}
+    }
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: const Color(0xFFE8EDFF),
+      child: Text(
+        label[0].toUpperCase(),
+        style: const TextStyle(
+          color: Color(0xFF4A6CF7),
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+}

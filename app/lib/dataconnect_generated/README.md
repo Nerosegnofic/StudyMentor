@@ -217,6 +217,104 @@ ref.subscribe(...);
 ```
 
 
+### GetStudentProfile
+#### Required Arguments
+```dart
+String uid = ...;
+ExampleConnector.instance.getStudentProfile(
+  uid: uid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetStudentProfileData, GetStudentProfileVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getStudentProfile(
+  uid: uid,
+);
+GetStudentProfileData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String uid = ...;
+
+final ref = ExampleConnector.instance.getStudentProfile(
+  uid: uid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
+### GetStudentSettings
+#### Required Arguments
+```dart
+String studentUid = ...;
+ExampleConnector.instance.getStudentSettings(
+  studentUid: studentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetStudentSettingsData, GetStudentSettingsVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getStudentSettings(
+  studentUid: studentUid,
+);
+GetStudentSettingsData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+
+final ref = ExampleConnector.instance.getStudentSettings(
+  studentUid: studentUid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
 ### GetAppConfigForStudent
 #### Required Arguments
 ```dart
@@ -266,126 +364,6 @@ ref.subscribe(...);
 ```
 
 ## Mutations
-
-### InsertInstalledApp
-#### Required Arguments
-```dart
-String studentUid = ...;
-String packageName = ...;
-String appLabel = ...;
-bool isSystemApp = ...;
-ExampleConnector.instance.insertInstalledApp(
-  studentUid: studentUid,
-  packageName: packageName,
-  appLabel: appLabel,
-  isSystemApp: isSystemApp,
-).execute();
-```
-
-#### Optional Arguments
-We return a builder for each query. For InsertInstalledApp, we created `InsertInstalledAppBuilder`. For queries and mutations with optional parameters, we return a builder class.
-The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
-```dart
-class InsertInstalledAppVariablesBuilder {
-  ...
-   InsertInstalledAppVariablesBuilder iconBase64(String? t) {
-   _iconBase64.value = t;
-   return this;
-  }
-
-  ...
-}
-ExampleConnector.instance.insertInstalledApp(
-  studentUid: studentUid,
-  packageName: packageName,
-  appLabel: appLabel,
-  isSystemApp: isSystemApp,
-)
-.iconBase64(iconBase64)
-.execute();
-```
-
-#### Return Type
-`execute()` returns a `OperationResult<InsertInstalledAppData, InsertInstalledAppVariables>`
-```dart
-/// Result of an Operation Request (query/mutation).
-class OperationResult<Data, Variables> {
-  OperationResult(this.dataConnect, this.data, this.ref);
-  Data data;
-  OperationRef<Data, Variables> ref;
-  FirebaseDataConnect dataConnect;
-}
-
-final result = await ExampleConnector.instance.insertInstalledApp(
-  studentUid: studentUid,
-  packageName: packageName,
-  appLabel: appLabel,
-  isSystemApp: isSystemApp,
-);
-InsertInstalledAppData data = result.data;
-final ref = result.ref;
-```
-
-#### Getting the Ref
-Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
-An example of how to use the `Ref` object is shown below:
-```dart
-String studentUid = ...;
-String packageName = ...;
-String appLabel = ...;
-bool isSystemApp = ...;
-
-final ref = ExampleConnector.instance.insertInstalledApp(
-  studentUid: studentUid,
-  packageName: packageName,
-  appLabel: appLabel,
-  isSystemApp: isSystemApp,
-).ref();
-ref.execute();
-```
-
-
-### DeleteAllInstalledAppsForStudent
-#### Required Arguments
-```dart
-String studentUid = ...;
-ExampleConnector.instance.deleteAllInstalledAppsForStudent(
-  studentUid: studentUid,
-).execute();
-```
-
-
-
-#### Return Type
-`execute()` returns a `OperationResult<DeleteAllInstalledAppsForStudentData, DeleteAllInstalledAppsForStudentVariables>`
-```dart
-/// Result of an Operation Request (query/mutation).
-class OperationResult<Data, Variables> {
-  OperationResult(this.dataConnect, this.data, this.ref);
-  Data data;
-  OperationRef<Data, Variables> ref;
-  FirebaseDataConnect dataConnect;
-}
-
-final result = await ExampleConnector.instance.deleteAllInstalledAppsForStudent(
-  studentUid: studentUid,
-);
-DeleteAllInstalledAppsForStudentData data = result.data;
-final ref = result.ref;
-```
-
-#### Getting the Ref
-Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
-An example of how to use the `Ref` object is shown below:
-```dart
-String studentUid = ...;
-
-final ref = ExampleConnector.instance.deleteAllInstalledAppsForStudent(
-  studentUid: studentUid,
-).ref();
-ref.execute();
-```
-
 
 ### InsertUser
 #### Required Arguments
@@ -837,6 +815,162 @@ ref.execute();
 ```
 
 
+### UpdateStudentFriendCode
+#### Required Arguments
+```dart
+String friendCode = ...;
+ExampleConnector.instance.updateStudentFriendCode(
+  friendCode: friendCode,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<UpdateStudentFriendCodeData, UpdateStudentFriendCodeVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.updateStudentFriendCode(
+  friendCode: friendCode,
+);
+UpdateStudentFriendCodeData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String friendCode = ...;
+
+final ref = ExampleConnector.instance.updateStudentFriendCode(
+  friendCode: friendCode,
+).ref();
+ref.execute();
+```
+
+
+### UpsertStudentSettings
+#### Required Arguments
+```dart
+String studentUid = ...;
+bool notificationsEnabled = ...;
+bool soundEffectsEnabled = ...;
+bool backgroundMusicEnabled = ...;
+ExampleConnector.instance.upsertStudentSettings(
+  studentUid: studentUid,
+  notificationsEnabled: notificationsEnabled,
+  soundEffectsEnabled: soundEffectsEnabled,
+  backgroundMusicEnabled: backgroundMusicEnabled,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<UpsertStudentSettingsData, UpsertStudentSettingsVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.upsertStudentSettings(
+  studentUid: studentUid,
+  notificationsEnabled: notificationsEnabled,
+  soundEffectsEnabled: soundEffectsEnabled,
+  backgroundMusicEnabled: backgroundMusicEnabled,
+);
+UpsertStudentSettingsData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+bool notificationsEnabled = ...;
+bool soundEffectsEnabled = ...;
+bool backgroundMusicEnabled = ...;
+
+final ref = ExampleConnector.instance.upsertStudentSettings(
+  studentUid: studentUid,
+  notificationsEnabled: notificationsEnabled,
+  soundEffectsEnabled: soundEffectsEnabled,
+  backgroundMusicEnabled: backgroundMusicEnabled,
+).ref();
+ref.execute();
+```
+
+
+### InsertSupportTicket
+#### Required Arguments
+```dart
+String userId = ...;
+String userName = ...;
+String issueType = ...;
+String message = ...;
+ExampleConnector.instance.insertSupportTicket(
+  userId: userId,
+  userName: userName,
+  issueType: issueType,
+  message: message,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<InsertSupportTicketData, InsertSupportTicketVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.insertSupportTicket(
+  userId: userId,
+  userName: userName,
+  issueType: issueType,
+  message: message,
+);
+InsertSupportTicketData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String userId = ...;
+String userName = ...;
+String issueType = ...;
+String message = ...;
+
+final ref = ExampleConnector.instance.insertSupportTicket(
+  userId: userId,
+  userName: userName,
+  issueType: issueType,
+  message: message,
+).ref();
+ref.execute();
+```
+
+
 ### UpsertStudentConfig
 #### Required Arguments
 ```dart
@@ -894,6 +1028,126 @@ final ref = ExampleConnector.instance.upsertStudentConfig(
   usageMinutes: usageMinutes,
   cooldownHours: cooldownHours,
   cooldownMinutes: cooldownMinutes,
+).ref();
+ref.execute();
+```
+
+
+### InsertInstalledApp
+#### Required Arguments
+```dart
+String studentUid = ...;
+String packageName = ...;
+String appLabel = ...;
+bool isSystemApp = ...;
+ExampleConnector.instance.insertInstalledApp(
+  studentUid: studentUid,
+  packageName: packageName,
+  appLabel: appLabel,
+  isSystemApp: isSystemApp,
+).execute();
+```
+
+#### Optional Arguments
+We return a builder for each query. For InsertInstalledApp, we created `InsertInstalledAppBuilder`. For queries and mutations with optional parameters, we return a builder class.
+The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
+```dart
+class InsertInstalledAppVariablesBuilder {
+  ...
+   InsertInstalledAppVariablesBuilder iconBase64(String? t) {
+   _iconBase64.value = t;
+   return this;
+  }
+
+  ...
+}
+ExampleConnector.instance.insertInstalledApp(
+  studentUid: studentUid,
+  packageName: packageName,
+  appLabel: appLabel,
+  isSystemApp: isSystemApp,
+)
+.iconBase64(iconBase64)
+.execute();
+```
+
+#### Return Type
+`execute()` returns a `OperationResult<InsertInstalledAppData, InsertInstalledAppVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.insertInstalledApp(
+  studentUid: studentUid,
+  packageName: packageName,
+  appLabel: appLabel,
+  isSystemApp: isSystemApp,
+);
+InsertInstalledAppData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+String packageName = ...;
+String appLabel = ...;
+bool isSystemApp = ...;
+
+final ref = ExampleConnector.instance.insertInstalledApp(
+  studentUid: studentUid,
+  packageName: packageName,
+  appLabel: appLabel,
+  isSystemApp: isSystemApp,
+).ref();
+ref.execute();
+```
+
+
+### DeleteAllInstalledAppsForStudent
+#### Required Arguments
+```dart
+String studentUid = ...;
+ExampleConnector.instance.deleteAllInstalledAppsForStudent(
+  studentUid: studentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<DeleteAllInstalledAppsForStudentData, DeleteAllInstalledAppsForStudentVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.deleteAllInstalledAppsForStudent(
+  studentUid: studentUid,
+);
+DeleteAllInstalledAppsForStudentData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+
+final ref = ExampleConnector.instance.deleteAllInstalledAppsForStudent(
+  studentUid: studentUid,
 ).ref();
 ref.execute();
 ```

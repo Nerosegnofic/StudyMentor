@@ -78,6 +78,34 @@ mutation DeleteAllInstalledAppsForStudent($studentUid: String!) @auth(level: USE
 
 # Fetches the global student config and all app rules for a given student.
 # Used by the parent config screen and by the student device to sync rules.
+# ── Student Profile ───────────────────────────────────────────────────────────
+
+# Returns profile data for a student, including the friend code and stats.
+query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Students are authorized to read their own profile data.") {
+  student(key: { uid: $uid }) {
+    uid
+    friendCode
+    totalXp
+    totalCoins
+    gradeLevel
+  }
+}
+
+# ── Student Settings ──────────────────────────────────────────────────────────
+
+# Returns the app preferences for a student. Null if never saved.
+query GetStudentSettings($studentUid: String!) @auth(level: USER, insecureReason: "Students are authorized to read their own settings.") {
+  studentSettings(key: { studentUid: $studentUid }) {
+    notificationsEnabled
+    soundEffectsEnabled
+    backgroundMusicEnabled
+  }
+}
+
+# ── App rules ─────────────────────────────────────────────────────────────────
+
+# Fetches the global student config and all app rules for a given student.
+# Used by the parent config screen and by the student device to sync rules.
 query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
   studentConfig(key: { studentUid: $studentUid }) {
     usageHours
