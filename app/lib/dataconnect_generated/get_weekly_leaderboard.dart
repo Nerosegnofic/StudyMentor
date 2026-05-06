@@ -19,17 +19,17 @@ class GetWeeklyLeaderboardVariablesBuilder {
 @immutable
 class GetWeeklyLeaderboardStudents {
   final String uid;
+  final String username;
   final int? weeklyXp;
   final int? totalXp;
   final Timestamp? lastActiveAt;
-  final GetWeeklyLeaderboardStudentsUser user;
   GetWeeklyLeaderboardStudents.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
+  username = nativeFromJson<String>(json['username']),
   weeklyXp = json['weeklyXp'] == null ? null : nativeFromJson<int>(json['weeklyXp']),
   totalXp = json['totalXp'] == null ? null : nativeFromJson<int>(json['totalXp']),
-  lastActiveAt = json['lastActiveAt'] == null ? null : Timestamp.fromJson(json['lastActiveAt']),
-  user = GetWeeklyLeaderboardStudentsUser.fromJson(json['user']);
+  lastActiveAt = json['lastActiveAt'] == null ? null : Timestamp.fromJson(json['lastActiveAt']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -41,19 +41,20 @@ class GetWeeklyLeaderboardStudents {
 
     final GetWeeklyLeaderboardStudents otherTyped = other as GetWeeklyLeaderboardStudents;
     return uid == otherTyped.uid && 
+    username == otherTyped.username && 
     weeklyXp == otherTyped.weeklyXp && 
     totalXp == otherTyped.totalXp && 
-    lastActiveAt == otherTyped.lastActiveAt && 
-    user == otherTyped.user;
+    lastActiveAt == otherTyped.lastActiveAt;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, weeklyXp.hashCode, totalXp.hashCode, lastActiveAt.hashCode, user.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, weeklyXp.hashCode, totalXp.hashCode, lastActiveAt.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['uid'] = nativeToJson<String>(uid);
+    json['username'] = nativeToJson<String>(username);
     if (weeklyXp != null) {
       json['weeklyXp'] = nativeToJson<int?>(weeklyXp);
     }
@@ -63,50 +64,15 @@ class GetWeeklyLeaderboardStudents {
     if (lastActiveAt != null) {
       json['lastActiveAt'] = lastActiveAt!.toJson();
     }
-    json['user'] = user.toJson();
     return json;
   }
 
   GetWeeklyLeaderboardStudents({
     required this.uid,
+    required this.username,
     this.weeklyXp,
     this.totalXp,
     this.lastActiveAt,
-    required this.user,
-  });
-}
-
-@immutable
-class GetWeeklyLeaderboardStudentsUser {
-  final String fullName;
-  GetWeeklyLeaderboardStudentsUser.fromJson(dynamic json):
-  
-  fullName = nativeFromJson<String>(json['fullName']);
-  @override
-  bool operator ==(Object other) {
-    if(identical(this, other)) {
-      return true;
-    }
-    if(other.runtimeType != runtimeType) {
-      return false;
-    }
-
-    final GetWeeklyLeaderboardStudentsUser otherTyped = other as GetWeeklyLeaderboardStudentsUser;
-    return fullName == otherTyped.fullName;
-    
-  }
-  @override
-  int get hashCode => fullName.hashCode;
-  
-
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> json = {};
-    json['fullName'] = nativeToJson<String>(fullName);
-    return json;
-  }
-
-  GetWeeklyLeaderboardStudentsUser({
-    required this.fullName,
   });
 }
 

@@ -20,11 +20,13 @@ class GetStudentByFriendCodeVariablesBuilder {
 @immutable
 class GetStudentByFriendCodeStudents {
   final String uid;
+  final String username;
   final String? friendCode;
   final GetStudentByFriendCodeStudentsUser user;
   GetStudentByFriendCodeStudents.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
+  username = nativeFromJson<String>(json['username']),
   friendCode = json['friendCode'] == null ? null : nativeFromJson<String>(json['friendCode']),
   user = GetStudentByFriendCodeStudentsUser.fromJson(json['user']);
   @override
@@ -38,17 +40,19 @@ class GetStudentByFriendCodeStudents {
 
     final GetStudentByFriendCodeStudents otherTyped = other as GetStudentByFriendCodeStudents;
     return uid == otherTyped.uid && 
+    username == otherTyped.username && 
     friendCode == otherTyped.friendCode && 
     user == otherTyped.user;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, friendCode.hashCode, user.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, friendCode.hashCode, user.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['uid'] = nativeToJson<String>(uid);
+    json['username'] = nativeToJson<String>(username);
     if (friendCode != null) {
       json['friendCode'] = nativeToJson<String?>(friendCode);
     }
@@ -58,6 +62,7 @@ class GetStudentByFriendCodeStudents {
 
   GetStudentByFriendCodeStudents({
     required this.uid,
+    required this.username,
     this.friendCode,
     required this.user,
   });

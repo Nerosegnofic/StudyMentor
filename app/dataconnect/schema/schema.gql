@@ -24,6 +24,8 @@ type Student @table(name: "students", key: ["uid"]) {
   uid: String! @default(expr: "auth.uid")
   user: User!
   parent: Parent!
+  # ── ADDED: unique username chosen by parent at registration ──────────────
+  username: String! @col(dataType: "varchar(50)") @unique
   friendCode: String @col(dataType: "varchar(20)")
   gradeLevel: Int
   totalXp: Int @default(expr: "0")

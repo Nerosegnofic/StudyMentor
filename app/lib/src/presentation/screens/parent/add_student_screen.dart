@@ -15,6 +15,7 @@ class AddStudentScreen extends StatefulWidget {
 class _AddStudentScreenState extends State<AddStudentScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameCtl = TextEditingController();
+  final _usernameCtl = TextEditingController();
   final _emailCtl = TextEditingController();
   final _passCtl = TextEditingController();
   final _confirmCtl = TextEditingController();
@@ -35,6 +36,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   @override
   void dispose() {
     _fullNameCtl.dispose();
+    _usernameCtl.dispose();
     _emailCtl.dispose();
     _passCtl.dispose();
     _confirmCtl.dispose();
@@ -93,8 +95,29 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               children: [
                 TextFormField(
                   controller: _fullNameCtl,
-                  decoration: const InputDecoration(labelText: 'Full Name'),
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                  ), // ── CHANGED
                   validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _usernameCtl,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    hintText: 'Shown on leaderboard (e.g. coolkid42)',
+                  ),
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Required';
+                    if (v.trim().length < 3) return 'At least 3 characters';
+                    if (v.trim().length > 50) return 'Max 50 characters';
+                    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v.trim())) {
+                      return 'Only letters, numbers and underscores';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
@@ -163,6 +186,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                             context.read<AuthBloc>().add(
                               CreateStudentRequested(
                                 fullName: _fullNameCtl.text.trim(),
+                                username: _usernameCtl.text.trim(),
                                 email: _emailCtl.text.trim(),
                                 password: _passCtl.text.trim(),
                                 parentUid: widget.parentUid,

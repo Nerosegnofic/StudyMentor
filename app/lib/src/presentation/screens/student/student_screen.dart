@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../bloc/auth/auth_bloc.dart';
-import '../../bloc/auth/auth_event.dart';
-import '../../bloc/auth/auth_state.dart';
-import '../../bloc/shop/shop_bloc.dart';
-import '../widgets/parent_verification_dialog.dart';
-import '../widgets/student_navigation_bar.dart';
-import '../../services/overlay/mascot_overlay_service.dart';
-import '../../services/installed_apps_service.dart';
-import '../../data/providers/dataconnect_provider.dart';
-import 'student/student_home.dart';
-import 'student/student_shop.dart';
-import 'student/student_leaderboard.dart';
-import 'student/student_profile.dart';
+import '../../../bloc/auth/auth_bloc.dart';
+import '../../../bloc/auth/auth_event.dart';
+import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/shop/shop_bloc.dart';
+import '../../widgets/parent_verification_dialog.dart';
+import '../../widgets/student_navigation_bar.dart';
+import '../../../services/overlay/mascot_overlay_service.dart';
+import '../../../services/installed_apps_service.dart';
+import '../../../data/providers/dataconnect_provider.dart';
+import 'student_home.dart';
+import 'student_shop.dart';
+import 'student_leaderboard.dart';
+import 'student_friends.dart';
+import 'student_profile.dart';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -30,7 +31,13 @@ class _StudentScreenState extends State<StudentScreen>
   int _coins = 0;
   int _level = 1;
 
-  static const List<String> _titles = ['Home', 'Shop', 'Leaderboard', 'Profile'];
+  static const List<String> _titles = [
+    'Home',
+    'Shop',
+    'Leaderboard',
+    'Friends',
+    'Profile',
+  ];
 
   @override
   void initState() {
@@ -46,8 +53,7 @@ class _StudentScreenState extends State<StudentScreen>
 
   Future<void> _loadCoinsAndLevel() async {
     try {
-      final profile =
-          await DataConnectProvider().getStudentProfile(widget.uid);
+      final profile = await DataConnectProvider().getStudentProfile(widget.uid);
       if (mounted) {
         setState(() {
           _coins = (profile['total_coins'] as int?) ?? 0;
@@ -137,18 +143,18 @@ class _StudentScreenState extends State<StudentScreen>
                     child: Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF8E1),
                           borderRadius: BorderRadius.circular(14),
-                          border:
-                              Border.all(color: const Color(0xFFFFCA28)),
+                          border: Border.all(color: const Color(0xFFFFCA28)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('🪙',
-                                style: TextStyle(fontSize: 14)),
+                            const Text('🪙', style: TextStyle(fontSize: 14)),
                             const SizedBox(width: 4),
                             Text(
                               '$_coins',
@@ -168,7 +174,8 @@ class _StudentScreenState extends State<StudentScreen>
                   onPressed: () {
                     context.read<AuthBloc>().add(
                       StudentLogoutVerificationRequested(
-                          studentUid: widget.uid),
+                        studentUid: widget.uid,
+                      ),
                     );
                   },
                 ),
@@ -178,15 +185,10 @@ class _StudentScreenState extends State<StudentScreen>
               index: _selectedIndex,
               children: [
                 StudentHome(fullName: widget.fullName, uid: widget.uid),
-                StudentShop(
-                  uid: widget.uid,
-                  coins: _coins,
-                  level: _level,
-                ),
-                StudentLeaderboard(
-                    uid: widget.uid, fullName: widget.fullName),
-                StudentProfile(
-                    fullName: widget.fullName, uid: widget.uid),
+                StudentShop(uid: widget.uid, coins: _coins, level: _level),
+                StudentLeaderboard(uid: widget.uid, fullName: widget.fullName),
+                StudentFriends(uid: widget.uid, fullName: widget.fullName),
+                StudentProfile(fullName: widget.fullName, uid: widget.uid),
               ],
             ),
             bottomNavigationBar: StudentNavigationBar(

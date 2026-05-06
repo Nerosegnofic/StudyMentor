@@ -24,12 +24,14 @@ class DataConnectProvider {
     await _connector.insertParent().execute();
   }
 
+  // ── CHANGED: added username parameter ─────────────────────────────────────
   Future<void> createStudentProfile({
     required String parentUid,
+    required String username,
     required int gradeLevel,
   }) async {
     await _connector
-        .insertStudent(parentUid: parentUid)
+        .insertStudent(parentUid: parentUid, username: username)
         .gradeLevel(gradeLevel)
         .execute();
   }
@@ -61,6 +63,7 @@ class DataConnectProvider {
         .map(
           (s) => {
             'uid': s.uid,
+            'username': s.username, // ── ADDED ────────────────────────────────
             'full_name': s.user.fullName,
             'email': s.user.email,
             'grade_level': s.gradeLevel,
@@ -110,9 +113,6 @@ class DataConnectProvider {
 
   // ── App Rules ─────────────────────────────────────────────────────────────
 
-  /// Returns the global student config and all app rules for [studentUid].
-  /// The config is null if the parent hasn't saved one yet — callers should
-  /// fall back to [StudentConfigModel] defaults in that case.
   Future<({StudentConfigModel? config, List<Map<String, dynamic>> rules})>
   getAppConfigForStudent(String studentUid) async {
     final result = await _connector
@@ -143,14 +143,12 @@ class DataConnectProvider {
     return (config: config, rules: rules);
   }
 
-  /// Deletes all existing AppRule rows for [studentUid].
   Future<void> deleteAllAppRulesForStudent(String studentUid) async {
     await _connector
         .deleteAllAppRulesForStudent(studentUid: studentUid)
         .execute();
   }
 
-  /// Inserts a single AppRule row (no time fields).
   Future<void> insertAppRule({
     required String studentUid,
     required String packageName,
@@ -167,7 +165,6 @@ class DataConnectProvider {
         .execute();
   }
 
-  /// Upserts the global usage/cooldown config for [studentUid].
   Future<void> upsertStudentConfig({
     required String studentUid,
     required StudentConfigModel config,
@@ -185,7 +182,6 @@ class DataConnectProvider {
 
   // ── Installed-App Inventory ───────────────────────────────────────────────
 
-  /// Returns all installed-app rows for [studentUid].
   Future<List<Map<String, dynamic>>> getInstalledAppsForStudent(
     String studentUid,
   ) async {
@@ -204,14 +200,12 @@ class DataConnectProvider {
         .toList();
   }
 
-  /// Deletes all installed-app rows for [studentUid].
   Future<void> deleteAllInstalledAppsForStudent(String studentUid) async {
     await _connector
         .deleteAllInstalledAppsForStudent(studentUid: studentUid)
         .execute();
   }
 
-  /// Inserts a single installed-app row.
   Future<void> insertInstalledApp({
     required String studentUid,
     required String packageName,
@@ -232,14 +226,14 @@ class DataConnectProvider {
 
   // ── Student Profile ───────────────────────────────────────────────────────
 
-  /// Returns profile data for [uid]: friendCode, totalXp, totalCoins, gradeLevel,
-  /// totalQuestionsAnswered, currentStreak.
+  // ── CHANGED: added username to returned map ───────────────────────────────
   Future<Map<String, dynamic>> getStudentProfile(String uid) async {
     final result = await _connector.getStudentProfile(uid: uid).execute();
     final s = result.data.student;
     if (s == null) throw Exception('Student not found');
     return {
       'uid': s.uid,
+      'username': s.username, // ── ADDED ──────────────────────────────────────
       'friend_code': s.friendCode,
       'total_xp': s.totalXp,
       'total_coins': s.totalCoins,
@@ -249,19 +243,16 @@ class DataConnectProvider {
     };
   }
 
-  /// Sets (or updates) the friend code on the currently-authenticated student.
   Future<void> updateStudentFriendCode(String friendCode) async {
-    await _connector
-        .updateStudentFriendCode(friendCode: friendCode)
-        .execute();
+    await _connector.updateStudentFriendCode(friendCode: friendCode).execute();
   }
 
   // ── Student Settings ──────────────────────────────────────────────────────
 
-  /// Returns the stored settings for [studentUid], or null if never saved.
   Future<Map<String, dynamic>?> getStudentSettings(String studentUid) async {
-    final result =
-        await _connector.getStudentSettings(studentUid: studentUid).execute();
+    final result = await _connector
+        .getStudentSettings(studentUid: studentUid)
+        .execute();
     final s = result.data.studentSettings;
     if (s == null) return null;
     return {
@@ -271,7 +262,6 @@ class DataConnectProvider {
     };
   }
 
-  /// Upserts the app preferences for [studentUid].
   Future<void> upsertStudentSettings({
     required String studentUid,
     required bool notificationsEnabled,
@@ -290,16 +280,19 @@ class DataConnectProvider {
 
   // ── Leaderboard ───────────────────────────────────────────────────────────
 
-  /// Returns all students sorted by weeklyXp DESC for the global leaderboard.
+  // ── CHANGED: s.user.fullName → s.username (user block removed from query) ─
   Future<List<Map<String, dynamic>>> getWeeklyLeaderboard() async {
     final result = await _connector.getWeeklyLeaderboard().execute();
     return result.data.students.map((s) {
       final lastActive = s.lastActiveAt != null
-          ? DateTime.fromMillisecondsSinceEpoch(s.lastActiveAt!.seconds * 1000, isUtc: true)
+          ? DateTime.fromMillisecondsSinceEpoch(
+              s.lastActiveAt!.seconds * 1000,
+              isUtc: true,
+            )
           : null;
       return {
         'uid': s.uid,
-        'full_name': s.user.fullName,
+        'username': s.username, // ── CHANGED: was s.user.fullName ─────────────
         'weekly_xp': s.weeklyXp ?? 0,
         'total_xp': s.totalXp ?? 0,
         'last_active_at': lastActive,
@@ -307,23 +300,30 @@ class DataConnectProvider {
     }).toList();
   }
 
-  /// Stamps the current student's lastActiveAt to now (heartbeat).
   Future<void> updateLastActiveAt() async {
     await _connector.updateLastActiveAt().execute();
   }
 
   // ── Friends ───────────────────────────────────────────────────────────────
 
-  /// Returns all accepted friends for [studentUid] with profile info.
-  Future<List<Map<String, dynamic>>> getFriendsForStudent(String studentUid) async {
-    final result = await _connector.getFriendsForStudent(studentUid: studentUid).execute();
+  // ── CHANGED: added username to returned map ───────────────────────────────
+  Future<List<Map<String, dynamic>>> getFriendsForStudent(
+    String studentUid,
+  ) async {
+    final result = await _connector
+        .getFriendsForStudent(studentUid: studentUid)
+        .execute();
     return result.data.friendships.map((f) {
       final lastActive = f.friend.lastActiveAt != null
-          ? DateTime.fromMillisecondsSinceEpoch(f.friend.lastActiveAt!.seconds * 1000, isUtc: true)
+          ? DateTime.fromMillisecondsSinceEpoch(
+              f.friend.lastActiveAt!.seconds * 1000,
+              isUtc: true,
+            )
           : null;
       return {
         'friendship_id': f.id,
         'friend_uid': f.friendUid,
+        'username': f.friend.username, // ── ADDED ────────────────────────────
         'full_name': f.friend.user.fullName,
         'total_xp': f.friend.totalXp ?? 0,
         'weekly_xp': f.friend.weeklyXp ?? 0,
@@ -332,23 +332,34 @@ class DataConnectProvider {
     }).toList();
   }
 
-  /// Looks up a student by their friend code. Returns null if not found.
-  Future<Map<String, dynamic>?> getStudentByFriendCode(String friendCode) async {
-    final result = await _connector.getStudentByFriendCode(friendCode: friendCode).execute();
+  // ── CHANGED: added username to returned map ───────────────────────────────
+  Future<Map<String, dynamic>?> getStudentByFriendCode(
+    String friendCode,
+  ) async {
+    final result = await _connector
+        .getStudentByFriendCode(friendCode: friendCode)
+        .execute();
     if (result.data.students.isEmpty) return null;
     final s = result.data.students.first;
     return {
       'uid': s.uid,
+      'username': s.username, // ── ADDED ──────────────────────────────────────
       'full_name': s.user.fullName,
       'friend_code': s.friendCode,
     };
   }
 
-  /// Returns all pending friend requests sent by [fromStudentUid].
-  Future<List<Map<String, dynamic>>> getSentFriendRequests(String fromStudentUid) async {
-    final result = await _connector.getSentFriendRequests(fromStudentUid: fromStudentUid).execute();
+  Future<List<Map<String, dynamic>>> getSentFriendRequests(
+    String fromStudentUid,
+  ) async {
+    final result = await _connector
+        .getSentFriendRequests(fromStudentUid: fromStudentUid)
+        .execute();
     return result.data.friendRequests.map((r) {
-      final createdAt = DateTime.fromMillisecondsSinceEpoch(r.createdAt.seconds * 1000, isUtc: true);
+      final createdAt = DateTime.fromMillisecondsSinceEpoch(
+        r.createdAt.seconds * 1000,
+        isUtc: true,
+      );
       return {
         'id': r.id,
         'to_friend_code': r.toFriendCode,
@@ -359,37 +370,37 @@ class DataConnectProvider {
     }).toList();
   }
 
-  /// Sends a friend request.
   Future<void> sendFriendRequest({
     required String fromStudentUid,
     required String toFriendCode,
     required String toStudentUid,
     required String toStudentName,
   }) async {
-    await _connector.sendFriendRequest(
-      fromStudentUid: fromStudentUid,
-      toFriendCode: toFriendCode,
-      toStudentUid: toStudentUid,
-      toStudentName: toStudentName,
-    ).execute();
+    await _connector
+        .sendFriendRequest(
+          fromStudentUid: fromStudentUid,
+          toFriendCode: toFriendCode,
+          toStudentUid: toStudentUid,
+          toStudentName: toStudentName,
+        )
+        .execute();
   }
 
-  /// Creates one directional friendship row. Call twice for mutual friendship.
   Future<void> createFriendship({
     required String studentUid,
     required String friendUid,
   }) async {
-    await _connector.createFriendship(studentUid: studentUid, friendUid: friendUid).execute();
+    await _connector
+        .createFriendship(studentUid: studentUid, friendUid: friendUid)
+        .execute();
   }
 
-  /// Removes a friendship by its ID.
   Future<void> removeFriend(String id) async {
     await _connector.removeFriend(id: id).execute();
   }
 
   // ── Parent: Friend Request Approval ───────────────────────────────────────
 
-  /// Returns all pending friend requests for all students belonging to [parentUid].
   Future<List<Map<String, dynamic>>> getPendingFriendRequestsForParent(
     String parentUid,
   ) async {
@@ -413,7 +424,6 @@ class DataConnectProvider {
     }).toList();
   }
 
-  /// Updates the status of a friend request (e.g., 'accepted' or 'rejected').
   Future<void> updateFriendRequestStatus({
     required String id,
     required String status,
@@ -425,7 +435,6 @@ class DataConnectProvider {
 
   // ── Avatar Shop ───────────────────────────────────────────────────────────
 
-  /// Returns the set of item IDs owned by [studentUid].
   Future<Set<String>> getStudentOwnedItems(String studentUid) async {
     final result = await _connector
         .getStudentOwnedItems(studentUid: studentUid)
@@ -433,7 +442,6 @@ class DataConnectProvider {
     return result.data.studentOwnedItems.map((e) => e.itemId).toSet();
   }
 
-  /// Returns the avatar config for [studentUid], or null if never saved.
   Future<Map<String, dynamic>?> getStudentAvatar(String studentUid) async {
     final result = await _connector
         .getStudentAvatar(studentUid: studentUid)
@@ -453,7 +461,6 @@ class DataConnectProvider {
     };
   }
 
-  /// Records a purchased item. Returns the new item's id.
   Future<void> insertStudentOwnedItem({
     required String studentUid,
     required String itemId,
@@ -463,7 +470,6 @@ class DataConnectProvider {
         .execute();
   }
 
-  /// Persists the student's avatar configuration.
   Future<void> upsertStudentAvatar({
     required String studentUid,
     required String gender,
@@ -492,12 +498,10 @@ class DataConnectProvider {
         .execute();
   }
 
-  /// Sets the student's coin balance (used after a purchase).
   Future<void> updateStudentCoins(int totalCoins) async {
     await _connector.updateStudentCoins(totalCoins: totalCoins).execute();
   }
 
-  /// Awards XP and coins after a quiz. Pass the new absolute totals.
   Future<void> updateStudentXpAndCoins({
     required int totalXp,
     required int weeklyXp,
@@ -518,7 +522,6 @@ class DataConnectProvider {
 
   // ── Support Tickets ───────────────────────────────────────────────────────
 
-  /// Inserts a support ticket from the Help Center.
   Future<void> insertSupportTicket({
     required String userId,
     required String userName,
