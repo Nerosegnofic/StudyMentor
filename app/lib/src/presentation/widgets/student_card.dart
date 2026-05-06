@@ -152,9 +152,9 @@ class StudentCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 3),
-        // ── Show "Touch to view" for verified students; email for unverified ──
+        // ── Show "Tap to view" for verified students; email for unverified ──
         Text(
-          verified ? 'Touch to view' : student.email,
+          verified ? 'Tap to view' : student.email,
           style: TextStyle(fontSize: 12, color: subtitleColor),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
