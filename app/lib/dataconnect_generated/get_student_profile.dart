@@ -24,13 +24,17 @@ class GetStudentProfileStudent {
   final int? totalXp;
   final int? totalCoins;
   final int? gradeLevel;
+  final int? totalQuestionsAnswered;
+  final int? currentStreak;
   GetStudentProfileStudent.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
   friendCode = json['friendCode'] == null ? null : nativeFromJson<String>(json['friendCode']),
   totalXp = json['totalXp'] == null ? null : nativeFromJson<int>(json['totalXp']),
   totalCoins = json['totalCoins'] == null ? null : nativeFromJson<int>(json['totalCoins']),
-  gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']);
+  gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']),
+  totalQuestionsAnswered = json['totalQuestionsAnswered'] == null ? null : nativeFromJson<int>(json['totalQuestionsAnswered']),
+  currentStreak = json['currentStreak'] == null ? null : nativeFromJson<int>(json['currentStreak']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -45,11 +49,13 @@ class GetStudentProfileStudent {
     friendCode == otherTyped.friendCode && 
     totalXp == otherTyped.totalXp && 
     totalCoins == otherTyped.totalCoins && 
-    gradeLevel == otherTyped.gradeLevel;
+    gradeLevel == otherTyped.gradeLevel && 
+    totalQuestionsAnswered == otherTyped.totalQuestionsAnswered && 
+    currentStreak == otherTyped.currentStreak;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, friendCode.hashCode, totalXp.hashCode, totalCoins.hashCode, gradeLevel.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, friendCode.hashCode, totalXp.hashCode, totalCoins.hashCode, gradeLevel.hashCode, totalQuestionsAnswered.hashCode, currentStreak.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -67,6 +73,12 @@ class GetStudentProfileStudent {
     if (gradeLevel != null) {
       json['gradeLevel'] = nativeToJson<int?>(gradeLevel);
     }
+    if (totalQuestionsAnswered != null) {
+      json['totalQuestionsAnswered'] = nativeToJson<int?>(totalQuestionsAnswered);
+    }
+    if (currentStreak != null) {
+      json['currentStreak'] = nativeToJson<int?>(currentStreak);
+    }
     return json;
   }
 
@@ -76,6 +88,8 @@ class GetStudentProfileStudent {
     this.totalXp,
     this.totalCoins,
     this.gradeLevel,
+    this.totalQuestionsAnswered,
+    this.currentStreak,
   });
 }
 

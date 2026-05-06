@@ -266,6 +266,243 @@ ref.subscribe(...);
 ```
 
 
+### GetWeeklyLeaderboard
+#### Required Arguments
+```dart
+// No required arguments
+ExampleConnector.instance.getWeeklyLeaderboard().execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetWeeklyLeaderboardData, void>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getWeeklyLeaderboard();
+GetWeeklyLeaderboardData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+final ref = ExampleConnector.instance.getWeeklyLeaderboard().ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
+### GetStudentByFriendCode
+#### Required Arguments
+```dart
+String friendCode = ...;
+ExampleConnector.instance.getStudentByFriendCode(
+  friendCode: friendCode,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetStudentByFriendCodeData, GetStudentByFriendCodeVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getStudentByFriendCode(
+  friendCode: friendCode,
+);
+GetStudentByFriendCodeData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String friendCode = ...;
+
+final ref = ExampleConnector.instance.getStudentByFriendCode(
+  friendCode: friendCode,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
+### GetSentFriendRequests
+#### Required Arguments
+```dart
+String fromStudentUid = ...;
+ExampleConnector.instance.getSentFriendRequests(
+  fromStudentUid: fromStudentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetSentFriendRequestsData, GetSentFriendRequestsVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getSentFriendRequests(
+  fromStudentUid: fromStudentUid,
+);
+GetSentFriendRequestsData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String fromStudentUid = ...;
+
+final ref = ExampleConnector.instance.getSentFriendRequests(
+  fromStudentUid: fromStudentUid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
+### GetFriendsForStudent
+#### Required Arguments
+```dart
+String studentUid = ...;
+ExampleConnector.instance.getFriendsForStudent(
+  studentUid: studentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetFriendsForStudentData, GetFriendsForStudentVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getFriendsForStudent(
+  studentUid: studentUid,
+);
+GetFriendsForStudentData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+
+final ref = ExampleConnector.instance.getFriendsForStudent(
+  studentUid: studentUid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
+### GetPendingFriendRequestsForParent
+#### Required Arguments
+```dart
+String parentUid = ...;
+ExampleConnector.instance.getPendingFriendRequestsForParent(
+  parentUid: parentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetPendingFriendRequestsForParentData, GetPendingFriendRequestsForParentVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getPendingFriendRequestsForParent(
+  parentUid: parentUid,
+);
+GetPendingFriendRequestsForParentData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String parentUid = ...;
+
+final ref = ExampleConnector.instance.getPendingFriendRequestsForParent(
+  parentUid: parentUid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
 ### GetStudentSettings
 #### Required Arguments
 ```dart
@@ -852,6 +1089,233 @@ String friendCode = ...;
 
 final ref = ExampleConnector.instance.updateStudentFriendCode(
   friendCode: friendCode,
+).ref();
+ref.execute();
+```
+
+
+### UpdateLastActiveAt
+#### Required Arguments
+```dart
+// No required arguments
+ExampleConnector.instance.updateLastActiveAt().execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<UpdateLastActiveAtData, void>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.updateLastActiveAt();
+UpdateLastActiveAtData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+final ref = ExampleConnector.instance.updateLastActiveAt().ref();
+ref.execute();
+```
+
+
+### SendFriendRequest
+#### Required Arguments
+```dart
+String fromStudentUid = ...;
+String toFriendCode = ...;
+String toStudentUid = ...;
+String toStudentName = ...;
+ExampleConnector.instance.sendFriendRequest(
+  fromStudentUid: fromStudentUid,
+  toFriendCode: toFriendCode,
+  toStudentUid: toStudentUid,
+  toStudentName: toStudentName,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<SendFriendRequestData, SendFriendRequestVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.sendFriendRequest(
+  fromStudentUid: fromStudentUid,
+  toFriendCode: toFriendCode,
+  toStudentUid: toStudentUid,
+  toStudentName: toStudentName,
+);
+SendFriendRequestData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String fromStudentUid = ...;
+String toFriendCode = ...;
+String toStudentUid = ...;
+String toStudentName = ...;
+
+final ref = ExampleConnector.instance.sendFriendRequest(
+  fromStudentUid: fromStudentUid,
+  toFriendCode: toFriendCode,
+  toStudentUid: toStudentUid,
+  toStudentName: toStudentName,
+).ref();
+ref.execute();
+```
+
+
+### CreateFriendship
+#### Required Arguments
+```dart
+String studentUid = ...;
+String friendUid = ...;
+ExampleConnector.instance.createFriendship(
+  studentUid: studentUid,
+  friendUid: friendUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<CreateFriendshipData, CreateFriendshipVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.createFriendship(
+  studentUid: studentUid,
+  friendUid: friendUid,
+);
+CreateFriendshipData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+String friendUid = ...;
+
+final ref = ExampleConnector.instance.createFriendship(
+  studentUid: studentUid,
+  friendUid: friendUid,
+).ref();
+ref.execute();
+```
+
+
+### RemoveFriend
+#### Required Arguments
+```dart
+String id = ...;
+ExampleConnector.instance.removeFriend(
+  id: id,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<RemoveFriendData, RemoveFriendVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.removeFriend(
+  id: id,
+);
+RemoveFriendData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String id = ...;
+
+final ref = ExampleConnector.instance.removeFriend(
+  id: id,
+).ref();
+ref.execute();
+```
+
+
+### UpdateFriendRequestStatus
+#### Required Arguments
+```dart
+String id = ...;
+String status = ...;
+ExampleConnector.instance.updateFriendRequestStatus(
+  id: id,
+  status: status,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<UpdateFriendRequestStatusData, UpdateFriendRequestStatusVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.updateFriendRequestStatus(
+  id: id,
+  status: status,
+);
+UpdateFriendRequestStatusData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String id = ...;
+String status = ...;
+
+final ref = ExampleConnector.instance.updateFriendRequestStatus(
+  id: id,
+  status: status,
 ).ref();
 ref.execute();
 ```

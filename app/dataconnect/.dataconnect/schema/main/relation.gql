@@ -57,6 +57,149 @@ extend type AppRule {
   """
   _id: ID! @fdc_generated(from: "AppRule.id", purpose: ENTITY_ID)
 }
+extend type FriendRequest {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "FriendRequest", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `FriendRequest` table.
+  """
+  _count: Int! @fdc_generated(from: "FriendRequest.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `FriendRequest` table where the `createdAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  createdAt_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest.createdAt", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `FriendRequest` table where the `fromStudentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  fromStudentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest.fromStudentUid", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `FriendRequest` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  id_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest.id", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `FriendRequest` table where the `status` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  status_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest.status", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `FriendRequest` table where the `toFriendCode` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  toFriendCode_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest.toFriendCode", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `FriendRequest` table where the `toStudentName` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  toStudentName_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest.toStudentName", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `FriendRequest` table where the `toStudentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  toStudentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest.toStudentUid", purpose: QUERY_COUNT)
+  """
+  ✨ Minimum of the `createdAt` field in the `FriendRequest` table.
+  """
+  createdAt_min: Timestamp @fdc_generated(from: "FriendRequest.createdAt", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `createdAt` field in the `FriendRequest` table.
+  """
+  createdAt_max: Timestamp @fdc_generated(from: "FriendRequest.createdAt", purpose: QUERY_MAX)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "FriendRequest.id", purpose: ENTITY_ID)
+}
+extend type Friendship {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "Friendship", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `Friendship` table.
+  """
+  _count: Int! @fdc_generated(from: "Friendship.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `Friendship` table where the `createdAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  createdAt_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Friendship.createdAt", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `Friendship` table where the `friendUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  friendUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Friendship.friendUid", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `Friendship` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  id_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Friendship.id", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `Friendship` table where the `studentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  studentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Friendship.studentUid", purpose: QUERY_COUNT)
+  """
+  ✨ Minimum of the `createdAt` field in the `Friendship` table.
+  """
+  createdAt_min: Timestamp @fdc_generated(from: "Friendship.createdAt", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `createdAt` field in the `Friendship` table.
+  """
+  createdAt_max: Timestamp @fdc_generated(from: "Friendship.createdAt", purpose: QUERY_MAX)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "Friendship.id", purpose: ENTITY_ID)
+}
 extend type InstalledApp {
   """
   Implicit metadata field that cannot be written. It provides extra information about query results.
@@ -245,6 +388,108 @@ extend type Student {
     having: AppRule_Having
   ): [AppRule!]! @fdc_generated(from: "AppRule.student", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
   """
+  ✨ List `FriendRequest` objects in a one-to-many relationship (where `FriendRequest`.`fromStudent` is this object).
+  """
+  friendRequests_on_fromStudent(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: FriendRequest_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [FriendRequest_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: FriendRequest_Having
+  ): [FriendRequest!]! @fdc_generated(from: "FriendRequest.fromStudent", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
+  """
+  ✨ List `Friendship` objects in a one-to-many relationship (where `Friendship`.`friend` is this object).
+  """
+  friendships_on_friend(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: Friendship_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [Friendship_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: Friendship_Having
+  ): [Friendship!]! @fdc_generated(from: "Friendship.friend", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
+  """
+  ✨ List `Friendship` objects in a one-to-many relationship (where `Friendship`.`student` is this object).
+  """
+  friendships_on_student(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: Friendship_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [Friendship_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: Friendship_Having
+  ): [Friendship!]! @fdc_generated(from: "Friendship.student", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
+  """
   ✨ List `InstalledApp` objects in a one-to-many relationship (where `InstalledApp`.`student` is this object).
   """
   installedApps_on_student(
@@ -295,6 +540,15 @@ extend type Student {
   """
   _count: Int! @fdc_generated(from: "Student.", purpose: QUERY_COUNT)
   """
+  ✨ Count the number of rows in the `Student` table where the `currentStreak` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  currentStreak_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Student.currentStreak", purpose: QUERY_COUNT)
+  """
   ✨ Count the number of rows in the `Student` table where the `friendCode` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   friendCode_count(
@@ -313,6 +567,15 @@ extend type Student {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_COUNT)
   """
+  ✨ Count the number of rows in the `Student` table where the `lastActiveAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  lastActiveAt_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_COUNT)
+  """
   ✨ Count the number of rows in the `Student` table where the `parentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   parentUid_count(
@@ -330,6 +593,15 @@ extend type Student {
     """
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.totalCoins", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `Student` table where the `totalQuestionsAnswered` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  totalQuestionsAnswered_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_COUNT)
   """
   ✨ Count the number of rows in the `Student` table where the `totalXp` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
@@ -358,6 +630,24 @@ extend type Student {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.userUid", purpose: QUERY_COUNT)
   """
+  ✨ Count the number of rows in the `Student` table where the `weeklyXp` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  weeklyXp_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_COUNT)
+  """
+  ✨ Sum the `currentStreak` field in the `Student` table.
+  """
+  currentStreak_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "Student.currentStreak", purpose: QUERY_SUM)
+  """
   ✨ Sum the `gradeLevel` field in the `Student` table.
   """
   gradeLevel_sum(
@@ -376,6 +666,15 @@ extend type Student {
     distinct: Boolean = false
   ): Int @fdc_generated(from: "Student.totalCoins", purpose: QUERY_SUM)
   """
+  ✨ Sum the `totalQuestionsAnswered` field in the `Student` table.
+  """
+  totalQuestionsAnswered_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_SUM)
+  """
   ✨ Sum the `totalXp` field in the `Student` table.
   """
   totalXp_sum(
@@ -384,6 +683,24 @@ extend type Student {
     """
     distinct: Boolean = false
   ): Int @fdc_generated(from: "Student.totalXp", purpose: QUERY_SUM)
+  """
+  ✨ Sum the `weeklyXp` field in the `Student` table.
+  """
+  weeklyXp_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_SUM)
+  """
+  ✨ Average the `currentStreak` field in the `Student` table.
+  """
+  currentStreak_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "Student.currentStreak", purpose: QUERY_AVG)
   """
   ✨ Average the `gradeLevel` field in the `Student` table.
   """
@@ -403,6 +720,15 @@ extend type Student {
     distinct: Boolean = false
   ): Float @fdc_generated(from: "Student.totalCoins", purpose: QUERY_AVG)
   """
+  ✨ Average the `totalQuestionsAnswered` field in the `Student` table.
+  """
+  totalQuestionsAnswered_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_AVG)
+  """
   ✨ Average the `totalXp` field in the `Student` table.
   """
   totalXp_avg(
@@ -412,29 +738,70 @@ extend type Student {
     distinct: Boolean = false
   ): Float @fdc_generated(from: "Student.totalXp", purpose: QUERY_AVG)
   """
+  ✨ Average the `weeklyXp` field in the `Student` table.
+  """
+  weeklyXp_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_AVG)
+  """
+  ✨ Minimum of the `currentStreak` field in the `Student` table.
+  """
+  currentStreak_min: Int @fdc_generated(from: "Student.currentStreak", purpose: QUERY_MIN)
+  """
   ✨ Minimum of the `gradeLevel` field in the `Student` table.
   """
   gradeLevel_min: Int @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_MIN)
+  """
+  ✨ Minimum of the `lastActiveAt` field in the `Student` table.
+  """
+  lastActiveAt_min: Timestamp @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_MIN)
   """
   ✨ Minimum of the `totalCoins` field in the `Student` table.
   """
   totalCoins_min: Int @fdc_generated(from: "Student.totalCoins", purpose: QUERY_MIN)
   """
+  ✨ Minimum of the `totalQuestionsAnswered` field in the `Student` table.
+  """
+  totalQuestionsAnswered_min: Int @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_MIN)
+  """
   ✨ Minimum of the `totalXp` field in the `Student` table.
   """
   totalXp_min: Int @fdc_generated(from: "Student.totalXp", purpose: QUERY_MIN)
+  """
+  ✨ Minimum of the `weeklyXp` field in the `Student` table.
+  """
+  weeklyXp_min: Int @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `currentStreak` field in the `Student` table.
+  """
+  currentStreak_max: Int @fdc_generated(from: "Student.currentStreak", purpose: QUERY_MAX)
   """
   ✨ Maximum of the `gradeLevel` field in the `Student` table.
   """
   gradeLevel_max: Int @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_MAX)
   """
+  ✨ Maximum of the `lastActiveAt` field in the `Student` table.
+  """
+  lastActiveAt_max: Timestamp @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_MAX)
+  """
   ✨ Maximum of the `totalCoins` field in the `Student` table.
   """
   totalCoins_max: Int @fdc_generated(from: "Student.totalCoins", purpose: QUERY_MAX)
   """
+  ✨ Maximum of the `totalQuestionsAnswered` field in the `Student` table.
+  """
+  totalQuestionsAnswered_max: Int @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_MAX)
+  """
   ✨ Maximum of the `totalXp` field in the `Student` table.
   """
   totalXp_max: Int @fdc_generated(from: "Student.totalXp", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `weeklyXp` field in the `Student` table.
+  """
+  weeklyXp_max: Int @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_MAX)
   """
   A generated field that is used for caching results in SDKs.
   """

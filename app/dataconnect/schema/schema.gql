@@ -28,6 +28,10 @@ type Student @table(name: "students", key: ["uid"]) {
   gradeLevel: Int
   totalXp: Int @default(expr: "0")
   totalCoins: Int @default(expr: "0")
+  totalQuestionsAnswered: Int @default(expr: "0")
+  currentStreak: Int @default(expr: "0")
+  weeklyXp: Int @default(expr: "0")
+  lastActiveAt: Timestamp
 }
 
 # One row per app installed on a student's device.
@@ -76,6 +80,29 @@ type StudentSettings @table(name: "student_settings", key: ["studentUid"]) {
   notificationsEnabled: Boolean! @default(expr: "true")
   soundEffectsEnabled: Boolean! @default(expr: "true")
   backgroundMusicEnabled: Boolean! @default(expr: "false")
+}
+
+# A pending or accepted friend request sent from one student to another.
+# Status: 'pending_parent_approval' → 'accepted' | 'rejected'
+type FriendRequest @table(name: "friend_requests", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  fromStudent: Student!
+  fromStudentUid: String!
+  toFriendCode: String! @col(dataType: "varchar(20)")
+  toStudentUid: String!
+  toStudentName: String! @col(dataType: "varchar(255)")
+  status: String! @col(dataType: "varchar(30)") @default(expr: "'pending_parent_approval'")
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# A bidirectional friendship row. One row per direction: A→B and B→A both exist.
+type Friendship @table(name: "friendships", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  student: Student!
+  studentUid: String!
+  friend: Student!
+  friendUid: String!
+  createdAt: Timestamp! @default(expr: "request.time")
 }
 
 # Support tickets submitted from the Help Center.
