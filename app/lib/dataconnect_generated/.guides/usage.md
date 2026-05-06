@@ -8,9 +8,9 @@ ExampleConnector.instance.InsertParent(insertParentVariables).execute();
 ExampleConnector.instance.InsertStudent(insertStudentVariables).execute();
 ExampleConnector.instance.SetUserInactive().execute();
 ExampleConnector.instance.MarkEmailVerified().execute();
-ExampleConnector.instance.GetUserByUid(getUserByUidVariables).execute();
-ExampleConnector.instance.GetStudentsByParent(getStudentsByParentVariables).execute();
-ExampleConnector.instance.GetStudentWithParent(getStudentWithParentVariables).execute();
+ExampleConnector.instance.InsertAppRule(insertAppRuleVariables).execute();
+ExampleConnector.instance.DeleteAllAppRulesForStudent(deleteAllAppRulesForStudentVariables).execute();
+ExampleConnector.instance.UpdateStudentFriendCode(updateStudentFriendCodeVariables).execute();
 
 ```
 
@@ -23,8 +23,8 @@ Optional fields can be discovered based on classes that have `Optional` object t
 This is an example of a mutation with an optional field:
 
 ```dart
-await ExampleConnector.instance.InsertStudent({ ... })
-.gradeLevel(...)
+await ExampleConnector.instance.InsertInstalledApp({ ... })
+.iconBase64(...)
 .execute();
 ```
 

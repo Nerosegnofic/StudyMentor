@@ -2,6 +2,8 @@
 
 import 'package:equatable/equatable.dart';
 import '../../domain/models/student_model.dart';
+import '../../domain/models/app_config_model.dart';
+import '../../domain/models/installed_app_model.dart';
 
 abstract class AuthEvent extends Equatable {
   @override
@@ -108,19 +110,9 @@ class VerifyParentAndLogoutRequested extends AuthEvent {
   List<Object?> get props => [studentUid, parentEmail];
 }
 
-/// Fired when the parent taps "Save" on the Settings screen.
-///
-/// At least one of [newFullName] or [newPassword] must be non-null.
-/// [currentPassword] is required whenever [newPassword] is provided —
-/// Firebase needs it to reauthenticate before a password change.
 class UpdateProfileRequested extends AuthEvent {
-  /// New display name, or null if the name was not changed.
   final String? newFullName;
-
-  /// The user's current password. Required when [newPassword] is set.
   final String? currentPassword;
-
-  /// The desired new password, or null if not changing the password.
   final String? newPassword;
 
   UpdateProfileRequested({
@@ -131,4 +123,72 @@ class UpdateProfileRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [newFullName, newPassword];
+}
+
+// ── App Configuration Events ──────────────────────────────────────────────────
+
+/// Fired when the parent opens the configuration screen for a student.
+/// Loads existing saved rules and global config from the database.
+class LoadAppRulesRequested extends AuthEvent {
+  final String studentUid;
+  LoadAppRulesRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Fired when the parent taps "Save" on the configuration screen.
+/// Replaces all existing rules and upserts the global config in the database.
+class SaveAppRulesRequested extends AuthEvent {
+  final String studentUid;
+  final List<PendingAppRule> rules;
+  final StudentConfigModel config;
+
+  SaveAppRulesRequested({
+    required this.studentUid,
+    required this.rules,
+    required this.config,
+  });
+
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Fired by the student screen to load their own saved configs.
+class LoadStudentAppConfigRequested extends AuthEvent {
+  final String studentUid;
+  LoadStudentAppConfigRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+// ── Installed-App Inventory Events ────────────────────────────────────────────
+
+/// Fired by the student device on login and on every app resume when the
+/// dirty flag is set. Fetches apps from PackageManager via
+/// [InstalledAppsService] and syncs the result to DataConnect, then clears
+/// the dirty flag.
+class SyncInstalledAppsRequested extends AuthEvent {
+  final String studentUid;
+  SyncInstalledAppsRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Fired by the parent's [StudentConfigScreen] when it opens, to load the
+/// student's installed-app inventory for the picker.
+class LoadInstalledAppsForStudentRequested extends AuthEvent {
+  final String studentUid;
+  LoadInstalledAppsForStudentRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+/// Fired when the parent taps the refresh button on [StudentConfigScreen].
+/// Re-fetches both the installed-app inventory and the saved app rules
+/// from DataConnect in parallel.
+class RefreshStudentDataRequested extends AuthEvent {
+  final String studentUid;
+  RefreshStudentDataRequested({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
 }

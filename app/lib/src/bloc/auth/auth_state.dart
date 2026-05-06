@@ -2,6 +2,8 @@
 
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
+import '../../domain/models/app_config_model.dart';
+import '../../domain/models/installed_app_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AuthState extends Equatable {
@@ -77,14 +79,8 @@ class ParentVerificationFailed extends AuthState {
   List<Object?> get props => [message, studentUid];
 }
 
-/// Emitted while the profile update network calls are in flight.
-/// Distinct from [AuthLoading] so the Settings screen can show its own
-/// in-place loading indicator without triggering the global root redirect.
 class ProfileUpdateLoading extends AuthState {}
 
-/// Emitted when the profile update completes successfully.
-/// Contains the refreshed [UserModel] so the UI can update the name field
-/// and the parent AppBar without a full re-login.
 class ProfileUpdateSuccess extends AuthState {
   final UserModel updatedUser;
   ProfileUpdateSuccess(this.updatedUser);
@@ -92,12 +88,76 @@ class ProfileUpdateSuccess extends AuthState {
   List<Object?> get props => [updatedUser];
 }
 
-/// Emitted when the profile update fails (e.g. wrong current password,
-/// network error). Distinct from [AuthError] so it doesn't cause
-/// [RootPage] to redirect to the login screen.
 class ProfileUpdateError extends AuthState {
   final String message;
   ProfileUpdateError(this.message);
   @override
   List<Object?> get props => [message];
 }
+
+// ── App Configuration States ──────────────────────────────────────────────────
+
+/// Emitted while app rules are being loaded from the database.
+/// Distinct from [AuthLoading] — does not affect the root navigation.
+class AppConfigLoading extends AuthState {}
+
+/// Emitted when app rules and global config have been successfully loaded.
+/// [studentUid] is included so the config screen knows which student
+/// these rules belong to (safe for multi-student households).
+/// [config] falls back to [StudentConfigModel] defaults if the parent
+/// hasn't saved a config yet.
+class AppRulesLoaded extends AuthState {
+  final String studentUid;
+  final List<AppRuleModel> rules;
+  final StudentConfigModel config;
+
+  AppRulesLoaded({
+    required this.studentUid,
+    required this.rules,
+    required this.config,
+  });
+
+  @override
+  List<Object?> get props => [studentUid, rules, config];
+}
+
+/// Emitted while the save operation is in flight.
+class AppConfigSaving extends AuthState {}
+
+/// Emitted when the save completes successfully.
+class AppConfigSaved extends AuthState {}
+
+/// Emitted when any app config operation fails.
+class AppConfigError extends AuthState {
+  final String message;
+  AppConfigError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── Installed-App Inventory States ────────────────────────────────────────────
+
+/// Emitted while the student device is syncing its installed-app inventory
+/// to DataConnect. Does not affect root navigation.
+class InstalledAppsSyncing extends AuthState {}
+
+/// Emitted when the inventory sync completes successfully.
+class InstalledAppsSynced extends AuthState {}
+
+/// Emitted when the parent's app-picker has finished loading a student's
+/// installed-app inventory from DataConnect.
+/// [studentUid] lets [StudentConfigScreen] verify the data is for its student.
+class InstalledAppsLoaded extends AuthState {
+  final String studentUid;
+  final List<InstalledAppModel> apps;
+
+  InstalledAppsLoaded({required this.studentUid, required this.apps});
+
+  @override
+  List<Object?> get props => [studentUid, apps];
+}
+
+/// Emitted when a parent-triggered refresh is in flight.
+/// Distinct from [AppConfigLoading] — does not wipe the existing rules
+/// from the screen while the new data loads.
+class StudentDataRefreshing extends AuthState {}

@@ -73,7 +73,7 @@ class _ParentScreenState extends State<ParentScreen> {
           body: IndexedStack(
             index: _selectedIndex,
             children: [
-              const ParentDashboard(),
+              ParentDashboard(parentUid: widget.uid),
               ParentStudents(parentUid: widget.uid),
               const ParentSettings(),
             ],

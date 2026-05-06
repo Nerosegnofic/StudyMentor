@@ -2,6 +2,8 @@
 
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
+import '../../domain/models/app_config_model.dart';
+import '../../domain/models/installed_app_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../providers/firebase_auth_provider.dart';
 import '../providers/dataconnect_provider.dart';
@@ -187,7 +189,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await dataConnect.markEmailVerified();
   }
 
-  // ── profile update ──────────────────────────────────────────────────────────
+  // ── Profile update ────────────────────────────────────────────────────────
 
   @override
   Future<UserModel> updateProfile({
@@ -203,19 +205,14 @@ class AuthRepositoryImpl implements AuthRepository {
         newPassword.isNotEmpty &&
         currentPassword != null;
 
-    // Step 1: Reauthenticate if a password change is requested.
-    // Firebase requires a recent login before sensitive operations.
     if (isChangingPassword) {
       await firebase.reauthenticate(currentPassword);
     }
 
-    // Step 2: Update password in Firebase Auth.
     if (isChangingPassword) {
       await firebase.updatePassword(newPassword);
     }
 
-    // Step 3: Update full name in DataConnect via UpsertCurrentUser.
-    // We only call this if the name has actually changed.
     if (newFullName != null && newFullName.isNotEmpty) {
       final profile = await dataConnect.getUserProfile(user.uid);
       final roleStr = profile['role'] as String;
@@ -227,8 +224,74 @@ class AuthRepositoryImpl implements AuthRepository {
           .execute();
     }
 
-    // Step 4: Return the freshly fetched profile so AuthAuthenticated is up to date.
     final updated = await dataConnect.getUserProfile(user.uid);
     return UserModel.fromJson(updated);
+  }
+
+  // ── Installed-App Inventory ───────────────────────────────────────────────
+
+  @override
+  Future<List<InstalledAppModel>> getInstalledAppsForStudent(
+    String studentUid,
+  ) async {
+    final rows = await dataConnect.getInstalledAppsForStudent(studentUid);
+    return rows.map(InstalledAppModel.fromJson).toList();
+  }
+
+  @override
+  Future<void> syncInstalledAppsForStudent({
+    required String studentUid,
+    required List<InstalledAppModel> apps,
+  }) async {
+    await dataConnect.deleteAllInstalledAppsForStudent(studentUid);
+    await Future.wait(
+      apps.map(
+        (app) => dataConnect.insertInstalledApp(
+          studentUid: studentUid,
+          packageName: app.packageName,
+          appLabel: app.appLabel,
+          isSystemApp: app.isSystemApp,
+          iconBase64: app.iconBase64,
+        ),
+      ),
+    );
+  }
+
+  // ── App Configuration ─────────────────────────────────────────────────────
+
+  @override
+  Future<({StudentConfigModel? config, List<AppRuleModel> rules})>
+  getAppConfigForStudent(String studentUid) async {
+    final result = await dataConnect.getAppConfigForStudent(studentUid);
+    return (
+      config: result.config,
+      rules: result.rules.map(AppRuleModel.fromJson).toList(),
+    );
+  }
+
+  @override
+  Future<void> saveAppConfigForStudent({
+    required String studentUid,
+    required List<PendingAppRule> rules,
+    required StudentConfigModel config,
+  }) async {
+    // 1. Upsert the global config row.
+    await dataConnect.upsertStudentConfig(
+      studentUid: studentUid,
+      config: config,
+    );
+
+    // 2. Wipe all existing rules for a clean save.
+    await dataConnect.deleteAllAppRulesForStudent(studentUid);
+
+    // 3. Insert each rule sequentially.
+    for (final rule in rules) {
+      await dataConnect.insertAppRule(
+        studentUid: studentUid,
+        packageName: rule.packageName,
+        appLabel: rule.appLabel,
+        iconBase64: rule.iconBase64,
+      );
+    }
   }
 }

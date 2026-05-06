@@ -1,5 +1,41 @@
 extend type Mutation {
   """
+  ✨ Insert a single `AppRule` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  appRule_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: AppRule_Data!
+  ): AppRule_KeyOutput! @fdc_generated(from: "AppRule", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `FriendRequest` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  friendRequest_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: FriendRequest_Data!
+  ): FriendRequest_KeyOutput! @fdc_generated(from: "FriendRequest", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `Friendship` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  friendship_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: Friendship_Data!
+  ): Friendship_KeyOutput! @fdc_generated(from: "Friendship", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `InstalledApp` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  installedApp_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: InstalledApp_Data!
+  ): InstalledApp_KeyOutput! @fdc_generated(from: "InstalledApp", purpose: INSERT_SINGLE)
+  """
   ✨ Insert a single `Parent` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
   parent_insert(
@@ -18,6 +54,51 @@ extend type Mutation {
     data: Student_Data!
   ): Student_KeyOutput! @fdc_generated(from: "Student", purpose: INSERT_SINGLE)
   """
+  ✨ Insert a single `StudentAvatar` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentAvatar_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: StudentAvatar_Data!
+  ): StudentAvatar_KeyOutput! @fdc_generated(from: "StudentAvatar", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `StudentConfig` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentConfig_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: StudentConfig_Data!
+  ): StudentConfig_KeyOutput! @fdc_generated(from: "StudentConfig", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `StudentOwnedItem` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentOwnedItem_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: StudentOwnedItem_Data!
+  ): StudentOwnedItem_KeyOutput! @fdc_generated(from: "StudentOwnedItem", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `StudentSettings` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentSettings_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: StudentSettings_Data!
+  ): StudentSettings_KeyOutput! @fdc_generated(from: "StudentSettings", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `SupportTicket` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  supportTicket_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: SupportTicket_Data!
+  ): SupportTicket_KeyOutput! @fdc_generated(from: "SupportTicket", purpose: INSERT_SINGLE)
+  """
   ✨ Insert a single `User` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
   user_insert(
@@ -26,6 +107,42 @@ extend type Mutation {
     """
     data: User_Data!
   ): User_KeyOutput! @fdc_generated(from: "User", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert `AppRule` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  appRule_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [AppRule_Data!]!
+  ): [AppRule_KeyOutput!]! @fdc_generated(from: "AppRule", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `FriendRequest` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  friendRequest_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [FriendRequest_Data!]!
+  ): [FriendRequest_KeyOutput!]! @fdc_generated(from: "FriendRequest", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `Friendship` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  friendship_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [Friendship_Data!]!
+  ): [Friendship_KeyOutput!]! @fdc_generated(from: "Friendship", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `InstalledApp` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  installedApp_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [InstalledApp_Data!]!
+  ): [InstalledApp_KeyOutput!]! @fdc_generated(from: "InstalledApp", purpose: INSERT_MULTIPLE)
   """
   ✨ Insert `Parent` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
@@ -45,6 +162,51 @@ extend type Mutation {
     data: [Student_Data!]!
   ): [Student_KeyOutput!]! @fdc_generated(from: "Student", purpose: INSERT_MULTIPLE)
   """
+  ✨ Insert `StudentAvatar` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentAvatar_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [StudentAvatar_Data!]!
+  ): [StudentAvatar_KeyOutput!]! @fdc_generated(from: "StudentAvatar", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `StudentConfig` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentConfig_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [StudentConfig_Data!]!
+  ): [StudentConfig_KeyOutput!]! @fdc_generated(from: "StudentConfig", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `StudentOwnedItem` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentOwnedItem_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [StudentOwnedItem_Data!]!
+  ): [StudentOwnedItem_KeyOutput!]! @fdc_generated(from: "StudentOwnedItem", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `StudentSettings` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  studentSettings_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [StudentSettings_Data!]!
+  ): [StudentSettings_KeyOutput!]! @fdc_generated(from: "StudentSettings", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `SupportTicket` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  supportTicket_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [SupportTicket_Data!]!
+  ): [SupportTicket_KeyOutput!]! @fdc_generated(from: "SupportTicket", purpose: INSERT_MULTIPLE)
+  """
   ✨ Insert `User` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
   user_insertMany(
@@ -53,6 +215,42 @@ extend type Mutation {
     """
     data: [User_Data!]!
   ): [User_KeyOutput!]! @fdc_generated(from: "User", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert or update a single `AppRule` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `AppRule`.
+  """
+  appRule_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: AppRule_Data!
+  ): AppRule_KeyOutput! @fdc_generated(from: "AppRule", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `FriendRequest` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `FriendRequest`.
+  """
+  friendRequest_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: FriendRequest_Data!
+  ): FriendRequest_KeyOutput! @fdc_generated(from: "FriendRequest", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `Friendship` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Friendship`.
+  """
+  friendship_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: Friendship_Data!
+  ): Friendship_KeyOutput! @fdc_generated(from: "Friendship", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `InstalledApp` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `InstalledApp`.
+  """
+  installedApp_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: InstalledApp_Data!
+  ): InstalledApp_KeyOutput! @fdc_generated(from: "InstalledApp", purpose: UPSERT_SINGLE)
   """
   ✨ Insert or update a single `Parent` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Parent`.
   """
@@ -72,6 +270,51 @@ extend type Mutation {
     data: Student_Data!
   ): Student_KeyOutput! @fdc_generated(from: "Student", purpose: UPSERT_SINGLE)
   """
+  ✨ Insert or update a single `StudentAvatar` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentAvatar`.
+  """
+  studentAvatar_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: StudentAvatar_Data!
+  ): StudentAvatar_KeyOutput! @fdc_generated(from: "StudentAvatar", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `StudentConfig` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentConfig`.
+  """
+  studentConfig_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: StudentConfig_Data!
+  ): StudentConfig_KeyOutput! @fdc_generated(from: "StudentConfig", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `StudentOwnedItem` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentOwnedItem`.
+  """
+  studentOwnedItem_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: StudentOwnedItem_Data!
+  ): StudentOwnedItem_KeyOutput! @fdc_generated(from: "StudentOwnedItem", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `StudentSettings` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentSettings`.
+  """
+  studentSettings_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: StudentSettings_Data!
+  ): StudentSettings_KeyOutput! @fdc_generated(from: "StudentSettings", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `SupportTicket` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `SupportTicket`.
+  """
+  supportTicket_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: SupportTicket_Data!
+  ): SupportTicket_KeyOutput! @fdc_generated(from: "SupportTicket", purpose: UPSERT_SINGLE)
+  """
   ✨ Insert or update a single `User` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `User`.
   """
   user_upsert(
@@ -80,6 +323,42 @@ extend type Mutation {
     """
     data: User_Data!
   ): User_KeyOutput! @fdc_generated(from: "User", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update `AppRule` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `AppRule`.
+  """
+  appRule_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [AppRule_Data!]!
+  ): [AppRule_KeyOutput!]! @fdc_generated(from: "AppRule", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `FriendRequest` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `FriendRequest`.
+  """
+  friendRequest_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [FriendRequest_Data!]!
+  ): [FriendRequest_KeyOutput!]! @fdc_generated(from: "FriendRequest", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `Friendship` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Friendship`.
+  """
+  friendship_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [Friendship_Data!]!
+  ): [Friendship_KeyOutput!]! @fdc_generated(from: "Friendship", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `InstalledApp` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `InstalledApp`.
+  """
+  installedApp_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [InstalledApp_Data!]!
+  ): [InstalledApp_KeyOutput!]! @fdc_generated(from: "InstalledApp", purpose: UPSERT_MULTIPLE)
   """
   ✨ Insert or update `Parent` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Parent`.
   """
@@ -99,6 +378,51 @@ extend type Mutation {
     data: [Student_Data!]!
   ): [Student_KeyOutput!]! @fdc_generated(from: "Student", purpose: UPSERT_MULTIPLE)
   """
+  ✨ Insert or update `StudentAvatar` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentAvatar`.
+  """
+  studentAvatar_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [StudentAvatar_Data!]!
+  ): [StudentAvatar_KeyOutput!]! @fdc_generated(from: "StudentAvatar", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `StudentConfig` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentConfig`.
+  """
+  studentConfig_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [StudentConfig_Data!]!
+  ): [StudentConfig_KeyOutput!]! @fdc_generated(from: "StudentConfig", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `StudentOwnedItem` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentOwnedItem`.
+  """
+  studentOwnedItem_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [StudentOwnedItem_Data!]!
+  ): [StudentOwnedItem_KeyOutput!]! @fdc_generated(from: "StudentOwnedItem", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `StudentSettings` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `StudentSettings`.
+  """
+  studentSettings_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [StudentSettings_Data!]!
+  ): [StudentSettings_KeyOutput!]! @fdc_generated(from: "StudentSettings", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `SupportTicket` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `SupportTicket`.
+  """
+  supportTicket_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [SupportTicket_Data!]!
+  ): [SupportTicket_KeyOutput!]! @fdc_generated(from: "SupportTicket", purpose: UPSERT_MULTIPLE)
+  """
   ✨ Insert or update `User` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `User`.
   """
   user_upsertMany(
@@ -107,6 +431,102 @@ extend type Mutation {
     """
     data: [User_Data!]!
   ): [User_KeyOutput!]! @fdc_generated(from: "User", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Update a single `AppRule` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `AppRule` or `null` if not found.
+  """
+  appRule_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: AppRule_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: AppRule_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: AppRule_Data!
+  ): AppRule_KeyOutput @fdc_generated(from: "AppRule", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `FriendRequest` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `FriendRequest` or `null` if not found.
+  """
+  friendRequest_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: FriendRequest_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: FriendRequest_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: FriendRequest_Data!
+  ): FriendRequest_KeyOutput @fdc_generated(from: "FriendRequest", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `Friendship` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `Friendship` or `null` if not found.
+  """
+  friendship_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: Friendship_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: Friendship_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: Friendship_Data!
+  ): Friendship_KeyOutput @fdc_generated(from: "Friendship", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `InstalledApp` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `InstalledApp` or `null` if not found.
+  """
+  installedApp_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: InstalledApp_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: InstalledApp_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: InstalledApp_Data!
+  ): InstalledApp_KeyOutput @fdc_generated(from: "InstalledApp", purpose: UPDATE_SINGLE)
   """
   ✨ Update a single `Parent` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `Parent` or `null` if not found.
   """
@@ -146,6 +566,111 @@ extend type Mutation {
     data: Student_Data!
   ): Student_KeyOutput @fdc_generated(from: "Student", purpose: UPDATE_SINGLE)
   """
+  ✨ Update a single `StudentAvatar` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `StudentAvatar` or `null` if not found.
+  """
+  studentAvatar_update(
+    """
+    The key used to identify the object.
+    """
+    key: StudentAvatar_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentAvatar_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: StudentAvatar_Data!
+  ): StudentAvatar_KeyOutput @fdc_generated(from: "StudentAvatar", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `StudentConfig` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `StudentConfig` or `null` if not found.
+  """
+  studentConfig_update(
+    """
+    The key used to identify the object.
+    """
+    key: StudentConfig_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentConfig_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: StudentConfig_Data!
+  ): StudentConfig_KeyOutput @fdc_generated(from: "StudentConfig", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `StudentOwnedItem` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `StudentOwnedItem` or `null` if not found.
+  """
+  studentOwnedItem_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: StudentOwnedItem_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentOwnedItem_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: StudentOwnedItem_Data!
+  ): StudentOwnedItem_KeyOutput @fdc_generated(from: "StudentOwnedItem", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `StudentSettings` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `StudentSettings` or `null` if not found.
+  """
+  studentSettings_update(
+    """
+    The key used to identify the object.
+    """
+    key: StudentSettings_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentSettings_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: StudentSettings_Data!
+  ): StudentSettings_KeyOutput @fdc_generated(from: "StudentSettings", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `SupportTicket` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `SupportTicket` or `null` if not found.
+  """
+  supportTicket_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: SupportTicket_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: SupportTicket_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: SupportTicket_Data!
+  ): SupportTicket_KeyOutput @fdc_generated(from: "SupportTicket", purpose: UPDATE_SINGLE)
+  """
   ✨ Update a single `User` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `User` or `null` if not found.
   """
   user_update(
@@ -164,6 +689,82 @@ extend type Mutation {
     """
     data: User_Data!
   ): User_KeyOutput @fdc_generated(from: "User", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update `AppRule` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  appRule_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: AppRule_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: AppRule_Data!
+  ): Int! @fdc_generated(from: "AppRule", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `FriendRequest` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  friendRequest_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: FriendRequest_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: FriendRequest_Data!
+  ): Int! @fdc_generated(from: "FriendRequest", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `Friendship` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  friendship_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: Friendship_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: Friendship_Data!
+  ): Int! @fdc_generated(from: "Friendship", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `InstalledApp` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  installedApp_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: InstalledApp_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: InstalledApp_Data!
+  ): Int! @fdc_generated(from: "InstalledApp", purpose: UPDATE_MULTIPLE)
   """
   ✨ Update `Parent` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
@@ -203,6 +804,101 @@ extend type Mutation {
     data: Student_Data!
   ): Int! @fdc_generated(from: "Student", purpose: UPDATE_MULTIPLE)
   """
+  ✨ Update `StudentAvatar` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  studentAvatar_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: StudentAvatar_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: StudentAvatar_Data!
+  ): Int! @fdc_generated(from: "StudentAvatar", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `StudentConfig` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  studentConfig_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: StudentConfig_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: StudentConfig_Data!
+  ): Int! @fdc_generated(from: "StudentConfig", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `StudentOwnedItem` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  studentOwnedItem_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: StudentOwnedItem_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: StudentOwnedItem_Data!
+  ): Int! @fdc_generated(from: "StudentOwnedItem", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `StudentSettings` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  studentSettings_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: StudentSettings_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: StudentSettings_Data!
+  ): Int! @fdc_generated(from: "StudentSettings", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `SupportTicket` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  supportTicket_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: SupportTicket_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: SupportTicket_Data!
+  ): Int! @fdc_generated(from: "SupportTicket", purpose: UPDATE_MULTIPLE)
+  """
   ✨ Update `User` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
   user_updateMany(
@@ -221,6 +917,82 @@ extend type Mutation {
     """
     data: User_Data!
   ): Int! @fdc_generated(from: "User", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Delete a single `AppRule` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  appRule_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: AppRule_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: AppRule_FirstRow
+  ): AppRule_KeyOutput @fdc_generated(from: "AppRule", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `FriendRequest` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  friendRequest_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: FriendRequest_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: FriendRequest_FirstRow
+  ): FriendRequest_KeyOutput @fdc_generated(from: "FriendRequest", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `Friendship` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  friendship_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: Friendship_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: Friendship_FirstRow
+  ): Friendship_KeyOutput @fdc_generated(from: "Friendship", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `InstalledApp` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  installedApp_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: InstalledApp_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: InstalledApp_FirstRow
+  ): InstalledApp_KeyOutput @fdc_generated(from: "InstalledApp", purpose: DELETE_SINGLE)
   """
   ✨ Delete a single `Parent` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
@@ -250,6 +1022,86 @@ extend type Mutation {
     first: Student_FirstRow
   ): Student_KeyOutput @fdc_generated(from: "Student", purpose: DELETE_SINGLE)
   """
+  ✨ Delete a single `StudentAvatar` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  studentAvatar_delete(
+    """
+    The key used to identify the object.
+    """
+    key: StudentAvatar_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentAvatar_FirstRow
+  ): StudentAvatar_KeyOutput @fdc_generated(from: "StudentAvatar", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `StudentConfig` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  studentConfig_delete(
+    """
+    The key used to identify the object.
+    """
+    key: StudentConfig_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentConfig_FirstRow
+  ): StudentConfig_KeyOutput @fdc_generated(from: "StudentConfig", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `StudentOwnedItem` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  studentOwnedItem_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: StudentOwnedItem_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentOwnedItem_FirstRow
+  ): StudentOwnedItem_KeyOutput @fdc_generated(from: "StudentOwnedItem", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `StudentSettings` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  studentSettings_delete(
+    """
+    The key used to identify the object.
+    """
+    key: StudentSettings_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentSettings_FirstRow
+  ): StudentSettings_KeyOutput @fdc_generated(from: "StudentSettings", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `SupportTicket` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  supportTicket_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: SupportTicket_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: SupportTicket_FirstRow
+  ): SupportTicket_KeyOutput @fdc_generated(from: "SupportTicket", purpose: DELETE_SINGLE)
+  """
   ✨ Delete a single `User` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
   user_delete(
@@ -263,6 +1115,62 @@ extend type Mutation {
     """
     first: User_FirstRow
   ): User_KeyOutput @fdc_generated(from: "User", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete `AppRule` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  appRule_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: AppRule_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "AppRule", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `FriendRequest` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  friendRequest_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: FriendRequest_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `Friendship` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  friendship_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: Friendship_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "Friendship", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `InstalledApp` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  installedApp_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: InstalledApp_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "InstalledApp", purpose: DELETE_MULTIPLE)
   """
   ✨ Delete `Parent` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """
@@ -291,6 +1199,76 @@ extend type Mutation {
     """
     all: Boolean = false
   ): Int! @fdc_generated(from: "Student", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `StudentAvatar` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  studentAvatar_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: StudentAvatar_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `StudentConfig` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  studentConfig_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: StudentConfig_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "StudentConfig", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `StudentOwnedItem` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  studentOwnedItem_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: StudentOwnedItem_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "StudentOwnedItem", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `StudentSettings` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  studentSettings_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: StudentSettings_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "StudentSettings", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `SupportTicket` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  supportTicket_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: SupportTicket_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "SupportTicket", purpose: DELETE_MULTIPLE)
   """
   ✨ Delete `User` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """

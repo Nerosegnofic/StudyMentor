@@ -28,4 +28,116 @@ type Student @table(name: "students", key: ["uid"]) {
   gradeLevel: Int
   totalXp: Int @default(expr: "0")
   totalCoins: Int @default(expr: "0")
+  totalQuestionsAnswered: Int @default(expr: "0")
+  currentStreak: Int @default(expr: "0")
+  weeklyXp: Int @default(expr: "0")
+  lastActiveAt: Timestamp
+}
+
+# One row per app installed on a student's device.
+# Populated by the student device on login and whenever a package is installed
+# or removed (via PackageChangedReceiver → dirty-flag → next resume sync).
+# The parent's app-picker reads this table instead of a hardcoded mock list.
+type InstalledApp @table(name: "installed_apps", key: ["id"], singular: "installedApp", plural: "installedApps") {
+  id: UUID! @default(expr: "uuidV4()")
+  student: Student!
+  studentUid: String!
+  packageName: String! @col(dataType: "varchar(255)")
+  appLabel: String! @col(dataType: "varchar(255)")
+  isSystemApp: Boolean! @default(expr: "false")
+  iconBase64: String @col(dataType: "text")
+}
+
+# One row per configured app per student.
+# packageName is the Android package identifier (e.g. "com.google.android.youtube").
+# Time limits are applied globally via StudentConfig — not per app.
+type AppRule @table(name: "app_rules", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  student: Student!
+  studentUid: String!
+  packageName: String! @col(dataType: "varchar(255)")
+  appLabel: String! @col(dataType: "varchar(255)")
+  iconBase64: String @col(dataType: "text")
+}
+
+# One row per student holding the global usage and cooldown time limits.
+# These limits apply to ALL restricted apps configured for the student.
+# usageHours / usageMinutes: total time the student may use any restricted app per session.
+# cooldownHours / cooldownMinutes: time the student must wait after the session ends.
+type StudentConfig @table(name: "student_configs", key: ["studentUid"]) {
+  studentUid: String!
+  student: Student!
+  usageHours: Int! @default(expr: "0")
+  usageMinutes: Int! @default(expr: "30")
+  cooldownHours: Int! @default(expr: "0")
+  cooldownMinutes: Int! @default(expr: "10")
+}
+
+# Per-student app preferences (notifications, sounds, music).
+type StudentSettings @table(name: "student_settings", key: ["studentUid"]) {
+  studentUid: String!
+  student: Student!
+  notificationsEnabled: Boolean! @default(expr: "true")
+  soundEffectsEnabled: Boolean! @default(expr: "true")
+  backgroundMusicEnabled: Boolean! @default(expr: "false")
+}
+
+# A pending or accepted friend request sent from one student to another.
+# Status: 'pending_parent_approval' → 'accepted' | 'rejected'
+type FriendRequest @table(name: "friend_requests", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  fromStudent: Student!
+  fromStudentUid: String!
+  toFriendCode: String! @col(dataType: "varchar(20)")
+  toStudentUid: String!
+  toStudentName: String! @col(dataType: "varchar(255)")
+  status: String! @col(dataType: "varchar(30)") @default(expr: "'pending_parent_approval'")
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# A bidirectional friendship row. One row per direction: A→B and B→A both exist.
+type Friendship @table(name: "friendships", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  student: Student!
+  studentUid: String!
+  friend: Student!
+  friendUid: String!
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# Support tickets submitted from the Help Center.
+type SupportTicket @table(name: "support_tickets", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  userId: String! @col(dataType: "varchar(128)")
+  userName: String! @col(dataType: "varchar(255)")
+  issueType: String! @col(dataType: "varchar(100)")
+  message: String! @col(dataType: "text")
+  status: String! @col(dataType: "varchar(20)") @default(expr: "'open'")
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# Records a shop item purchased by a student.
+# itemId references the local catalog (no DB catalog table — catalog is hardcoded client-side).
+type StudentOwnedItem @table(name: "student_owned_items", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  student: Student!
+  studentUid: String!
+  itemId: String! @col(dataType: "varchar(50)")
+  purchasedAt: Timestamp! @default(expr: "request.time")
+}
+
+# Stores the student's current avatar configuration (equipped item IDs per slot).
+# Uses upsert — one row per student.
+type StudentAvatar @table(name: "student_avatars", key: ["studentUid"]) {
+  studentUid: String!
+  student: Student!
+  gender: String! @col(dataType: "varchar(10)") @default(expr: "'male'")
+  skinTone: String! @col(dataType: "varchar(20)") @default(expr: "'medium'")
+  equippedHair: String @col(dataType: "varchar(50)")
+  equippedOutfit: String @col(dataType: "varchar(50)")
+  equippedBottom: String @col(dataType: "varchar(50)")
+  equippedShoes: String @col(dataType: "varchar(50)")
+  equippedAccessory: String @col(dataType: "varchar(50)")
+  equippedBackground: String @col(dataType: "varchar(50)")
+  equippedSpecial: String @col(dataType: "varchar(50)")
 }

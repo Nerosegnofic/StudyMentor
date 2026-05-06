@@ -1,9 +1,13 @@
 // lib/src/bloc/auth/auth_bloc.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../services/installed_apps_service.dart';
+import '../../domain/models/installed_app_model.dart';
+import '../../domain/models/app_config_model.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
@@ -23,6 +27,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<StudentLogoutVerificationRequested>(_onStudentLogoutVerification);
     on<VerifyParentAndLogoutRequested>(_onVerifyParentAndLogout);
     on<UpdateProfileRequested>(_onUpdateProfile);
+    // App configuration
+    on<LoadAppRulesRequested>(_onLoadAppRules);
+    on<SaveAppRulesRequested>(_onSaveAppRules);
+    on<LoadStudentAppConfigRequested>(_onLoadStudentAppConfig);
+    // Installed-app inventory
+    on<SyncInstalledAppsRequested>(_onSyncInstalledApps);
+    on<LoadInstalledAppsForStudentRequested>(_onLoadInstalledAppsForStudent);
+    on<RefreshStudentDataRequested>(_onRefreshStudentData);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -241,14 +253,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ── profile update ──────────────────────────────────────────────────────────
-
   Future<void> _onUpdateProfile(
     UpdateProfileRequested event,
     Emitter<AuthState> emit,
   ) async {
-    // Use a dedicated loading state so RootPage doesn't interpret this as
-    // a global auth loading event and redirect to the loading spinner.
     emit(ProfileUpdateLoading());
     try {
       final updatedUser = await repository.updateProfile(
@@ -256,10 +264,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         currentPassword: event.currentPassword,
         newPassword: event.newPassword,
       );
-
-      // Emit success first so the Settings screen can react (show snackbar,
-      // reset form dirty state, etc.), then immediately re-emit
-      // AuthAuthenticated with the fresh user so the AppBar name updates.
       emit(ProfileUpdateSuccess(updatedUser));
       emit(AuthAuthenticated(updatedUser));
     } catch (e) {
@@ -267,7 +271,142 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ── error mappers ───────────────────────────────────────────────────────────
+  // ── App Configuration Handlers ────────────────────────────────────────────
+
+  /// Parent opens the config screen — load saved rules and global config.
+  Future<void> _onLoadAppRules(
+    LoadAppRulesRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AppConfigLoading());
+    try {
+      final (:config, :rules) = await repository.getAppConfigForStudent(
+        event.studentUid,
+      );
+      emit(
+        AppRulesLoaded(
+          studentUid: event.studentUid,
+          rules: rules,
+          config: config ?? const StudentConfigModel(),
+        ),
+      );
+    } catch (e) {
+      emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  /// Parent taps Save — replace all rules and upsert global config.
+  Future<void> _onSaveAppRules(
+    SaveAppRulesRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AppConfigSaving());
+    try {
+      await repository.saveAppConfigForStudent(
+        studentUid: event.studentUid,
+        rules: event.rules,
+        config: event.config,
+      );
+      emit(AppConfigSaved());
+    } catch (e) {
+      emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  /// Student device loads its own saved config.
+  Future<void> _onLoadStudentAppConfig(
+    LoadStudentAppConfigRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AppConfigLoading());
+    try {
+      final (:config, :rules) = await repository.getAppConfigForStudent(
+        event.studentUid,
+      );
+      emit(
+        AppRulesLoaded(
+          studentUid: event.studentUid,
+          rules: rules,
+          config: config ?? const StudentConfigModel(),
+        ),
+      );
+    } catch (e) {
+      emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  // ── Installed-App Inventory Handlers ─────────────────────────────────────
+
+  /// Student device: fetch PackageManager apps, upload to DataConnect, clear flag.
+  Future<void> _onSyncInstalledApps(
+    SyncInstalledAppsRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(InstalledAppsSyncing());
+    try {
+      final apps = await InstalledAppsService.instance.getFromDevice();
+      await repository.syncInstalledAppsForStudent(
+        studentUid: event.studentUid,
+        apps: apps,
+      );
+      await InstalledAppsService.instance.markInventoryClean();
+      emit(InstalledAppsSynced());
+    } catch (e) {
+      // Sync failure is non-fatal — enforcement continues with the last rules.
+      debugPrint('[InstalledApps] sync error: $e');
+    }
+  }
+
+  /// Parent side: load a student's inventory from DataConnect for the picker.
+  Future<void> _onLoadInstalledAppsForStudent(
+    LoadInstalledAppsForStudentRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final apps = await repository.getInstalledAppsForStudent(
+        event.studentUid,
+      );
+      emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: apps));
+    } catch (e) {
+      emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: const []));
+    }
+  }
+
+  /// Parent taps refresh — re-fetches both installed apps and rules in parallel.
+  Future<void> _onRefreshStudentData(
+    RefreshStudentDataRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentDataRefreshing());
+    try {
+      final results = await Future.wait([
+        repository.getInstalledAppsForStudent(event.studentUid),
+        repository.getAppConfigForStudent(event.studentUid),
+      ]);
+
+      emit(
+        InstalledAppsLoaded(
+          studentUid: event.studentUid,
+          apps: results[0] as List<InstalledAppModel>,
+        ),
+      );
+
+      final (:config, :rules) =
+          results[1]
+              as ({StudentConfigModel? config, List<AppRuleModel> rules});
+      emit(
+        AppRulesLoaded(
+          studentUid: event.studentUid,
+          rules: rules,
+          config: config ?? const StudentConfigModel(),
+        ),
+      );
+    } catch (e) {
+      emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  // ── Error mappers ─────────────────────────────────────────────────────────
 
   String _mapException(dynamic e) {
     final msg = e.toString();

@@ -11,13 +11,6 @@ mutation InsertUser($email: String!, $fullName: String!, $role: Role!) @auth(lev
   )
 }
 
-# UpsertCurrentUser is only called from _markUserActive(), which is only
-# called when firebase.currentUser.emailVerified == true.  So it is safe
-# (and necessary) to hard-code isEmailVerified: true here.  This fixes the
-# "Path B" bug where a student who clicks the verification link and then
-# logs in fresh bypasses ConfirmEmailScreen entirely, meaning
-# markEmailVerifiedInDatabase() was never called and the DataConnect field
-# stayed false forever.
 mutation UpsertCurrentUser($email: String!, $fullName: String, $role: Role!) @auth(level: USER) {
   user_upsert(
     data: {
@@ -70,5 +63,233 @@ mutation MarkEmailVerified @auth(level: USER) {
   user_update(
     key: { uid_expr: "auth.uid" }
     data: { isEmailVerified: true }
+  )
+}
+
+# ── App Rule Mutations ────────────────────────────────────────────────────────
+
+# Inserts a single app rule for a student.
+# Time limits are not stored per-app — they are stored globally in StudentConfig.
+mutation InsertAppRule(
+  $studentUid: String!
+  $packageName: String!
+  $appLabel: String!
+  $iconBase64: String
+) @auth(level: USER) {
+  appRule_insert(
+    data: {
+      studentUid: $studentUid
+      packageName: $packageName
+      appLabel: $appLabel
+      iconBase64: $iconBase64
+    }
+  )
+}
+
+# Deletes ALL app rules for a student — used before re-saving the full list.
+mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
+  appRule_deleteMany(where: { studentUid: { eq: $studentUid } })
+}
+
+# ── Student Config Mutations ──────────────────────────────────────────────────
+
+# Upserts the global usage and cooldown time limits for a student.
+# These limits apply to ALL restricted apps configured for the student.
+# ── Friend Code ──────────────────────────────────────────────────────────────
+
+# Sets (or updates) the friend code on the currently-authenticated student.
+mutation UpdateStudentFriendCode($friendCode: String!) @auth(level: USER) {
+  student_update(
+    key: { uid_expr: "auth.uid" }
+    data: { friendCode: $friendCode }
+  )
+}
+
+# ── Leaderboard / Social ─────────────────────────────────────────────────────
+
+# Heartbeat: stamps the current student's lastActiveAt to now.
+mutation UpdateLastActiveAt @auth(level: USER) {
+  student_update(
+    key: { uid_expr: "auth.uid" }
+    data: { lastActiveAt_expr: "request.time" }
+  )
+}
+
+# Sends a friend request. Stores target name denormalized for display.
+mutation SendFriendRequest(
+  $fromStudentUid: String!
+  $toFriendCode: String!
+  $toStudentUid: String!
+  $toStudentName: String!
+) @auth(level: USER, insecureReason: "Authenticated students may send friend requests.") {
+  friendRequest_insert(
+    data: {
+      fromStudentUid: $fromStudentUid
+      toFriendCode: $toFriendCode
+      toStudentUid: $toStudentUid
+      toStudentName: $toStudentName
+    }
+  )
+}
+
+# Creates one directional friendship row. Call twice (A→B, B→A) to make it mutual.
+mutation CreateFriendship(
+  $studentUid: String!
+  $friendUid: String!
+) @auth(level: USER, insecureReason: "Friendship creation is gated by parent approval.") {
+  friendship_insert(
+    data: {
+      studentUid: $studentUid
+      friendUid: $friendUid
+    }
+  )
+}
+
+# Removes a single directional friendship row by its ID.
+mutation RemoveFriend($id: UUID!) @auth(level: USER, insecureReason: "Students can remove their own friendships.") {
+  friendship_delete(key: { id: $id })
+}
+
+# Updates the status of a friend request (e.g., 'accepted' or 'rejected').
+# Called by the parent when approving or rejecting a child's friend request.
+mutation UpdateFriendRequestStatus(
+  $id: UUID!
+  $status: String!
+) @auth(level: USER, insecureReason: "Parents are authorized to approve or reject their children's friend requests.") {
+  friendRequest_update(
+    key: { id: $id }
+    data: { status: $status }
+  )
+}
+
+# ── Student Settings ──────────────────────────────────────────────────────────
+
+# Upserts the per-student app preferences.
+mutation UpsertStudentSettings(
+  $studentUid: String!
+  $notificationsEnabled: Boolean!
+  $soundEffectsEnabled: Boolean!
+  $backgroundMusicEnabled: Boolean!
+) @auth(level: USER, insecureReason: "Students are authorized to update their own settings.") {
+  studentSettings_upsert(
+    data: {
+      studentUid: $studentUid
+      notificationsEnabled: $notificationsEnabled
+      soundEffectsEnabled: $soundEffectsEnabled
+      backgroundMusicEnabled: $backgroundMusicEnabled
+    }
+  )
+}
+
+# ── Support Tickets ───────────────────────────────────────────────────────────
+
+# Inserts a support ticket from the Help Center.
+mutation InsertSupportTicket(
+  $userId: String!
+  $userName: String!
+  $issueType: String!
+  $message: String!
+) @auth(level: USER, insecureReason: "Any authenticated student may submit a support ticket.") {
+  supportTicket_insert(
+    data: {
+      userId: $userId
+      userName: $userName
+      issueType: $issueType
+      message: $message
+    }
+  )
+}
+
+# ── Avatar Shop Mutations ─────────────────────────────────────────────────────
+
+# Records a shop item as purchased by the student.
+mutation InsertStudentOwnedItem(
+  $studentUid: String!
+  $itemId: String!
+) @auth(level: USER, insecureReason: "Students purchase items for themselves.") {
+  studentOwnedItem_insert(
+    data: {
+      studentUid: $studentUid
+      itemId: $itemId
+    }
+  )
+}
+
+# Deducts coins from the student after a purchase.
+mutation UpdateStudentCoins($totalCoins: Int!) @auth(level: USER) {
+  student_update(
+    key: { uid_expr: "auth.uid" }
+    data: { totalCoins: $totalCoins }
+  )
+}
+
+# Upserts the student's current avatar configuration (equipped item IDs).
+mutation UpsertStudentAvatar(
+  $studentUid: String!
+  $gender: String!
+  $skinTone: String!
+  $equippedHair: String
+  $equippedOutfit: String
+  $equippedBottom: String
+  $equippedShoes: String
+  $equippedAccessory: String
+  $equippedBackground: String
+  $equippedSpecial: String
+) @auth(level: USER, insecureReason: "Students update their own avatar.") {
+  studentAvatar_upsert(
+    data: {
+      studentUid: $studentUid
+      gender: $gender
+      skinTone: $skinTone
+      equippedHair: $equippedHair
+      equippedOutfit: $equippedOutfit
+      equippedBottom: $equippedBottom
+      equippedShoes: $equippedShoes
+      equippedAccessory: $equippedAccessory
+      equippedBackground: $equippedBackground
+      equippedSpecial: $equippedSpecial
+    }
+  )
+}
+
+# Awards XP and coins after a quiz/exam. Call with computed new totals.
+mutation UpdateStudentXpAndCoins(
+  $totalXp: Int!
+  $weeklyXp: Int!
+  $totalCoins: Int!
+  $totalQuestionsAnswered: Int!
+  $currentStreak: Int!
+) @auth(level: USER) {
+  student_update(
+    key: { uid_expr: "auth.uid" }
+    data: {
+      totalXp: $totalXp
+      weeklyXp: $weeklyXp
+      totalCoins: $totalCoins
+      totalQuestionsAnswered: $totalQuestionsAnswered
+      currentStreak: $currentStreak
+    }
+  )
+}
+
+# ── Student Config Mutations ──────────────────────────────────────────────────
+
+# Upserts the global usage and cooldown time limits for a student.
+# These limits apply to ALL restricted apps configured for the student.
+mutation UpsertStudentConfig(
+  $studentUid: String!
+  $usageHours: Int!
+  $usageMinutes: Int!
+  $cooldownHours: Int!
+  $cooldownMinutes: Int!
+) @auth(level: USER) {
+  studentConfig_upsert(
+    data: {
+      studentUid: $studentUid
+      usageHours: $usageHours
+      usageMinutes: $usageMinutes
+      cooldownHours: $cooldownHours
+      cooldownMinutes: $cooldownMinutes
+    }
   )
 }
