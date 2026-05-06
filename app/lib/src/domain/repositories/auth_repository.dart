@@ -59,4 +59,22 @@ abstract class AuthRepository {
     required List<PendingAppRule> rules,
     required StudentConfigModel config,
   });
+
+  Future<void> deleteStudent(String studentUid);
+  Future<void> updateStudentFullName({
+    required String studentUid,
+    required String fullName,
+  });
+  Future<void> deleteParentAccount({required String currentPassword});
+
+  /// Updates a student's account from the parent side.
+  /// Returns pendingEmail if a verification email was sent, otherwise null.
+  Future<String?> updateStudentProfile({
+    required String studentUid,
+    required String studentEmail,
+    String? newFullName,
+    String? newEmail,
+    String? currentPassword,
+    String? newPassword,
+  });
 }

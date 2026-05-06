@@ -30,6 +30,7 @@ class _StudentScreenState extends State<StudentScreen>
   int _selectedIndex = 0;
   int _coins = 0;
   int _level = 1;
+  String _parentUid = '';
 
   static const List<String> _titles = [
     'Home',
@@ -53,12 +54,18 @@ class _StudentScreenState extends State<StudentScreen>
 
   Future<void> _loadCoinsAndLevel() async {
     try {
-      final profile = await DataConnectProvider().getStudentProfile(widget.uid);
+      final provider = DataConnectProvider();
+      final results = await Future.wait([
+        provider.getStudentProfile(widget.uid),
+        provider.getParentUidForStudent(widget.uid),
+      ]);
       if (mounted) {
+        final profile = results[0] as Map<String, dynamic>;
         setState(() {
           _coins = (profile['total_coins'] as int?) ?? 0;
           final xp = (profile['total_xp'] as int?) ?? 0;
           _level = (xp ~/ 500) + 1;
+          _parentUid = results[1] as String;
         });
       }
     } catch (_) {}
@@ -186,7 +193,11 @@ class _StudentScreenState extends State<StudentScreen>
               children: [
                 StudentHome(fullName: widget.fullName, uid: widget.uid),
                 StudentShop(uid: widget.uid, coins: _coins, level: _level),
-                StudentLeaderboard(uid: widget.uid, fullName: widget.fullName),
+                StudentLeaderboard(
+                  uid: widget.uid,
+                  fullName: widget.fullName,
+                  parentUid: _parentUid,
+                ),
                 StudentFriends(uid: widget.uid, fullName: widget.fullName),
                 StudentProfile(fullName: widget.fullName, uid: widget.uid),
               ],

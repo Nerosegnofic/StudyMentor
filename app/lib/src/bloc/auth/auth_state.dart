@@ -168,3 +168,78 @@ class EmailUpdateVerificationSent extends AuthState {
   @override
   List<Object?> get props => [pendingEmail];
 }
+
+// ── Student Deletion States ───────────────────────────────────────────────────
+
+class StudentDeleteLoading extends AuthState {}
+
+class StudentDeleted extends AuthState {
+  final String studentUid;
+  StudentDeleted({required this.studentUid});
+  @override
+  List<Object?> get props => [studentUid];
+}
+
+class StudentDeleteError extends AuthState {
+  final String message;
+  StudentDeleteError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── Student Full Name Update States ──────────────────────────────────────────
+
+class StudentNameUpdateLoading extends AuthState {}
+
+class StudentNameUpdateSuccess extends AuthState {
+  final String studentUid;
+  final String newFullName;
+  StudentNameUpdateSuccess({required this.studentUid, required this.newFullName});
+  @override
+  List<Object?> get props => [studentUid, newFullName];
+}
+
+class StudentNameUpdateError extends AuthState {
+  final String message;
+  StudentNameUpdateError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── Student Profile Update States (parent-side: name + email + password) ─────
+
+class StudentProfileUpdateLoading extends AuthState {}
+
+class StudentProfileUpdateSuccess extends AuthState {
+  final String studentUid;
+  final String? newFullName;
+  /// Non-null if an email verification was sent to a new address.
+  final String? pendingEmail;
+  StudentProfileUpdateSuccess({
+    required this.studentUid,
+    this.newFullName,
+    this.pendingEmail,
+  });
+  @override
+  List<Object?> get props => [studentUid, newFullName, pendingEmail];
+}
+
+class StudentProfileUpdateError extends AuthState {
+  final String message;
+  StudentProfileUpdateError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── Parent Account Deletion States ───────────────────────────────────────────
+
+class ParentAccountDeleteLoading extends AuthState {}
+
+class ParentAccountDeleted extends AuthState {}
+
+class ParentAccountDeleteError extends AuthState {
+  final String message;
+  ParentAccountDeleteError(this.message);
+  @override
+  List<Object?> get props => [message];
+}

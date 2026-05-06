@@ -33,6 +33,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SyncInstalledAppsRequested>(_onSyncInstalledApps);
     on<LoadInstalledAppsForStudentRequested>(_onLoadInstalledAppsForStudent);
     on<RefreshStudentDataRequested>(_onRefreshStudentData);
+    on<DeleteStudentRequested>(_onDeleteStudent);
+    on<UpdateStudentFullNameRequested>(_onUpdateStudentFullName);
+    on<DeleteParentAccountRequested>(_onDeleteParentAccount);
+    on<UpdateStudentProfileRequested>(_onUpdateStudentProfile);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -404,6 +408,93 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
     } catch (e) {
       emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  // ── Student Deletion ─────────────────────────────────────────────────────
+
+  Future<void> _onDeleteStudent(
+    DeleteStudentRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentDeleteLoading());
+    try {
+      await repository.deleteStudent(event.studentUid);
+      // Reload students list for parent.
+      final students = await repository.getStudentsByParent(event.parentUid);
+      emit(StudentDeleted(studentUid: event.studentUid));
+      emit(StudentsLoaded(students));
+    } catch (e) {
+      emit(StudentDeleteError(_mapException(e)));
+    }
+  }
+
+  // ── Student Full Name Update ──────────────────────────────────────────────
+
+  Future<void> _onUpdateStudentFullName(
+    UpdateStudentFullNameRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentNameUpdateLoading());
+    try {
+      await repository.updateStudentFullName(
+        studentUid: event.studentUid,
+        fullName: event.fullName,
+      );
+      emit(
+        StudentNameUpdateSuccess(
+          studentUid: event.studentUid,
+          newFullName: event.fullName,
+        ),
+      );
+    } catch (e) {
+      emit(StudentNameUpdateError(_mapException(e)));
+    }
+  }
+
+  // ── Parent Account Deletion ───────────────────────────────────────────────
+
+  Future<void> _onDeleteParentAccount(
+    DeleteParentAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(ParentAccountDeleteLoading());
+    try {
+      await repository.deleteParentAccount(
+        currentPassword: event.currentPassword,
+      );
+      emit(ParentAccountDeleted());
+      emit(AuthUnauthenticated());
+    } catch (e) {
+      emit(ParentAccountDeleteError(_mapProfileUpdateException(e)));
+    }
+  }
+
+  // ── Student Profile Update (parent-side) ─────────────────────────────────
+
+  Future<void> _onUpdateStudentProfile(
+    UpdateStudentProfileRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentProfileUpdateLoading());
+    try {
+      final pendingEmail = await repository.updateStudentProfile(
+        studentUid: event.studentUid,
+        studentEmail: event.studentEmail,
+        newFullName: event.newFullName,
+        newEmail: event.newEmail,
+        currentPassword: event.currentPassword,
+        newPassword: event.newPassword,
+      );
+      emit(
+        StudentProfileUpdateSuccess(
+          studentUid: event.studentUid,
+          newFullName: event.newFullName,
+          pendingEmail: pendingEmail,
+        ),
+      );
+    } catch (e) {
+      emit(StudentProfileUpdateError(_mapProfileUpdateException(e)));
     }
   }
 

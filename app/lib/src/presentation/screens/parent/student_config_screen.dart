@@ -10,6 +10,7 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
+import 'parent_student_settings_screen.dart';
 
 class StudentConfigScreen extends StatefulWidget {
   final StudentModel student;
@@ -30,6 +31,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isDirty = false;
+  bool _isDeleting = false;
 
   /// True while a parent-triggered refresh is in flight.
   bool _isRefreshing = false;
@@ -277,6 +279,25 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             ),
           );
         }
+
+        if (state is StudentDeleteLoading) {
+          setState(() => _isDeleting = true);
+        }
+
+        if (state is StudentDeleted) {
+          // Navigate back — the parent students screen refreshes via StudentsLoaded.
+          if (mounted) Navigator.of(context).pop();
+        }
+
+        if (state is StudentDeleteError) {
+          setState(() => _isDeleting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
       },
       child: PopScope(
         canPop: !_isDirty,
@@ -389,11 +410,52 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             _markDirty();
           },
         ),
+        // ── Quick-action row: Settings ────────────────────────────────────
+        _buildQuickActions(),
         // ── App rules list or empty state ──────────────────────────────────
         Expanded(
           child: _rules.isEmpty ? _buildEmptyState() : _buildRulesList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.manage_accounts_outlined,
+              label: 'Edit Profile',
+              color: const Color(0xFF1E88E5),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<AuthBloc>(),
+                    child: ParentStudentSettingsScreen(
+                      student: widget.student,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.delete_outline_rounded,
+              label: 'Delete Account',
+              color: Colors.red.shade600,
+              isDestructive: true,
+              isLoading: _isDeleting,
+              onTap: _isDeleting ? null : _confirmDeleteStudent,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -481,6 +543,48 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       itemCount: _rules.length,
       itemBuilder: (ctx, i) =>
           _AppRuleCard(rule: _rules[i], onRemove: () => _removeRule(i)),
+    );
+  }
+
+  // ── delete student ─────────────────────────────────────────────────────────
+
+  Future<void> _confirmDeleteStudent() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Student Account'),
+        content: Text(
+          'This will permanently delete ${widget.student.fullName}\'s account and all their data — progress, items, friends, and settings. '
+          'This cannot be undone.\n\nAre you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Get parentUid from current auth state.
+    final authState = context.read<AuthBloc>().state;
+    final parentUid =
+        authState is AuthAuthenticated ? authState.user.uid : '';
+
+    context.read<AuthBloc>().add(
+      DeleteStudentRequested(
+        studentUid: widget.student.uid,
+        parentUid: parentUid,
+      ),
     );
   }
 
@@ -1255,6 +1359,69 @@ class _TimeInput extends StatelessWidget {
         ),
         suffixText: suffix,
         suffixStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+      ),
+    );
+  }
+}
+
+// ── _QuickActionButton ────────────────────────────────────────────────────────
+
+class _QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isDestructive;
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.isDestructive = false,
+    this.isLoading = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isDestructive
+        ? Colors.red.shade50
+        : const Color(0xFFE8EDFF);
+
+    return Material(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              isLoading
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: color,
+                      ),
+                    )
+                  : Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

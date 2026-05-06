@@ -311,4 +311,79 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
   }
+
+  // ── Student Deletion ──────────────────────────────────────────────────────
+
+  @override
+  Future<void> deleteStudent(String studentUid) async {
+    await dataConnect.deleteStudentAllData(studentUid);
+  }
+
+  // ── Student Full Name Update (parent-side) ────────────────────────────────
+
+  @override
+  Future<void> updateStudentFullName({
+    required String studentUid,
+    required String fullName,
+  }) async {
+    await dataConnect.updateStudentFullName(uid: studentUid, fullName: fullName);
+  }
+
+  // ── Student Profile Update (parent-side: name + email + password) ─────────
+
+  @override
+  Future<String?> updateStudentProfile({
+    required String studentUid,
+    required String studentEmail,
+    String? newFullName,
+    String? newEmail,
+    String? currentPassword,
+    String? newPassword,
+  }) async {
+    // Update full name in DB if changed.
+    if (newFullName != null && newFullName.isNotEmpty) {
+      await dataConnect.updateStudentFullName(
+        uid: studentUid,
+        fullName: newFullName,
+      );
+    }
+
+    // Email and/or password changes require signing in as the student via
+    // a secondary Firebase app. The parent's main session is never touched.
+    final isChangingEmail =
+        newEmail != null && newEmail.isNotEmpty && newEmail != studentEmail;
+    final isChangingPassword = newPassword != null && newPassword.isNotEmpty;
+
+    if ((isChangingEmail || isChangingPassword) && currentPassword != null) {
+      return await firebase.updateStudentCredentials(
+        studentEmail: studentEmail,
+        currentPassword: currentPassword,
+        newEmail: isChangingEmail ? newEmail : null,
+        newPassword: isChangingPassword ? newPassword : null,
+      );
+    }
+
+    return null;
+  }
+
+  // ── Parent Account Deletion ───────────────────────────────────────────────
+
+  @override
+  Future<void> deleteParentAccount({required String currentPassword}) async {
+    if (firebase.currentUser == null) throw Exception('No authenticated user.');
+
+    // Re-authenticate first (required for account deletion).
+    await firebase.reauthenticate(currentPassword);
+
+    // Delete DB records while still authenticated (DataConnect needs the token).
+    try {
+      await dataConnect.deleteParentRecord();
+    } catch (_) {}
+    try {
+      await ExampleConnector.instance.deleteUser().execute();
+    } catch (_) {}
+
+    // Finally delete the Firebase Auth account (signs out automatically).
+    await firebase.deleteCurrentUser();
+  }
 }

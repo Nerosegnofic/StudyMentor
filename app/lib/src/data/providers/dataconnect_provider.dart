@@ -520,6 +520,77 @@ class DataConnectProvider {
         .execute();
   }
 
+  // ── Sibling Leaderboard ───────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getSiblingLeaderboard(
+    String parentUid,
+  ) async {
+    final result = await _connector
+        .getSiblingLeaderboard(parentUid: parentUid)
+        .execute();
+    return result.data.students.map((s) {
+      final lastActive = s.lastActiveAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              s.lastActiveAt!.seconds * 1000,
+              isUtc: true,
+            )
+          : null;
+      return {
+        'uid': s.uid,
+        'username': s.username,
+        'weekly_xp': s.weeklyXp ?? 0,
+        'total_xp': s.totalXp ?? 0,
+        'last_active_at': lastActive,
+      };
+    }).toList();
+  }
+
+  // ── Student Account Deletion (parent-side) ────────────────────────────────
+
+  Future<void> deleteStudentAllData(String studentUid) async {
+    // Delete in the correct order (dependents before parents).
+    await Future.wait([
+      _connector
+          .deleteAllOwnedItemsForStudent(studentUid: studentUid)
+          .execute(),
+      _connector.deleteStudentAvatar(studentUid: studentUid).execute(),
+      _connector.deleteStudentSettings(studentUid: studentUid).execute(),
+      _connector.deleteStudentConfig(studentUid: studentUid).execute(),
+      _connector
+          .deleteAllAppRulesForStudent(studentUid: studentUid)
+          .execute(),
+      _connector
+          .deleteAllInstalledAppsForStudent(studentUid: studentUid)
+          .execute(),
+      _connector
+          .deleteAllFriendRequestsByStudent(studentUid: studentUid)
+          .execute(),
+      _connector
+          .deleteAllFriendshipsForStudent(studentUid: studentUid)
+          .execute(),
+    ]);
+    // Delete the student and user rows last.
+    await _connector.deleteStudentRecord(uid: studentUid).execute();
+    await _connector.deleteUserRecord(uid: studentUid).execute();
+  }
+
+  // ── Student Name Update (parent-side) ────────────────────────────────────
+
+  Future<void> updateStudentFullName({
+    required String uid,
+    required String fullName,
+  }) async {
+    await _connector
+        .updateStudentFullName(uid: uid, fullName: fullName)
+        .execute();
+  }
+
+  // ── Parent Account Deletion ───────────────────────────────────────────────
+
+  Future<void> deleteParentRecord() async {
+    await _connector.deleteParentRecord().execute();
+  }
+
   // ── Support Tickets ───────────────────────────────────────────────────────
 
   Future<void> insertSupportTicket({

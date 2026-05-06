@@ -217,3 +217,18 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
     iconBase64
   }
 }
+
+# ── Sibling Leaderboard ───────────────────────────────────────────────────────
+
+query GetSiblingLeaderboard($parentUid: String!) @auth(level: USER, insecureReason: "Students can view their siblings' leaderboard.") {
+  students(
+    where: { parent: { uid: { eq: $parentUid } } }
+    orderBy: [{ weeklyXp: DESC }, { totalXp: DESC }]
+  ) {
+    uid
+    username
+    weeklyXp
+    totalXp
+    lastActiveAt
+  }
+}
