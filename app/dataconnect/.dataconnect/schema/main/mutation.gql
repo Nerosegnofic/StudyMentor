@@ -9,6 +9,24 @@ extend type Mutation {
     data: AppRule_Data!
   ): AppRule_KeyOutput! @fdc_generated(from: "AppRule", purpose: INSERT_SINGLE)
   """
+  ✨ Insert a single `FriendRequest` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  friendRequest_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: FriendRequest_Data!
+  ): FriendRequest_KeyOutput! @fdc_generated(from: "FriendRequest", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `Friendship` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  friendship_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: Friendship_Data!
+  ): Friendship_KeyOutput! @fdc_generated(from: "Friendship", purpose: INSERT_SINGLE)
+  """
   ✨ Insert a single `InstalledApp` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
   installedApp_insert(
@@ -80,6 +98,24 @@ extend type Mutation {
     """
     data: [AppRule_Data!]!
   ): [AppRule_KeyOutput!]! @fdc_generated(from: "AppRule", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `FriendRequest` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  friendRequest_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [FriendRequest_Data!]!
+  ): [FriendRequest_KeyOutput!]! @fdc_generated(from: "FriendRequest", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `Friendship` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  friendship_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [Friendship_Data!]!
+  ): [Friendship_KeyOutput!]! @fdc_generated(from: "Friendship", purpose: INSERT_MULTIPLE)
   """
   ✨ Insert `InstalledApp` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
@@ -153,6 +189,24 @@ extend type Mutation {
     data: AppRule_Data!
   ): AppRule_KeyOutput! @fdc_generated(from: "AppRule", purpose: UPSERT_SINGLE)
   """
+  ✨ Insert or update a single `FriendRequest` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `FriendRequest`.
+  """
+  friendRequest_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: FriendRequest_Data!
+  ): FriendRequest_KeyOutput! @fdc_generated(from: "FriendRequest", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `Friendship` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Friendship`.
+  """
+  friendship_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: Friendship_Data!
+  ): Friendship_KeyOutput! @fdc_generated(from: "Friendship", purpose: UPSERT_SINGLE)
+  """
   ✨ Insert or update a single `InstalledApp` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `InstalledApp`.
   """
   installedApp_upsert(
@@ -224,6 +278,24 @@ extend type Mutation {
     """
     data: [AppRule_Data!]!
   ): [AppRule_KeyOutput!]! @fdc_generated(from: "AppRule", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `FriendRequest` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `FriendRequest`.
+  """
+  friendRequest_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [FriendRequest_Data!]!
+  ): [FriendRequest_KeyOutput!]! @fdc_generated(from: "FriendRequest", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `Friendship` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Friendship`.
+  """
+  friendship_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [Friendship_Data!]!
+  ): [Friendship_KeyOutput!]! @fdc_generated(from: "Friendship", purpose: UPSERT_MULTIPLE)
   """
   ✨ Insert or update `InstalledApp` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `InstalledApp`.
   """
@@ -311,6 +383,54 @@ extend type Mutation {
     """
     data: AppRule_Data!
   ): AppRule_KeyOutput @fdc_generated(from: "AppRule", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `FriendRequest` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `FriendRequest` or `null` if not found.
+  """
+  friendRequest_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: FriendRequest_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: FriendRequest_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: FriendRequest_Data!
+  ): FriendRequest_KeyOutput @fdc_generated(from: "FriendRequest", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `Friendship` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `Friendship` or `null` if not found.
+  """
+  friendship_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: Friendship_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: Friendship_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: Friendship_Data!
+  ): Friendship_KeyOutput @fdc_generated(from: "Friendship", purpose: UPDATE_SINGLE)
   """
   ✨ Update a single `InstalledApp` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `InstalledApp` or `null` if not found.
   """
@@ -474,6 +594,44 @@ extend type Mutation {
     data: AppRule_Data!
   ): Int! @fdc_generated(from: "AppRule", purpose: UPDATE_MULTIPLE)
   """
+  ✨ Update `FriendRequest` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  friendRequest_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: FriendRequest_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: FriendRequest_Data!
+  ): Int! @fdc_generated(from: "FriendRequest", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `Friendship` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  friendship_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: Friendship_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: Friendship_Data!
+  ): Int! @fdc_generated(from: "Friendship", purpose: UPDATE_MULTIPLE)
+  """
   ✨ Update `InstalledApp` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
   installedApp_updateMany(
@@ -626,6 +784,44 @@ extend type Mutation {
     first: AppRule_FirstRow
   ): AppRule_KeyOutput @fdc_generated(from: "AppRule", purpose: DELETE_SINGLE)
   """
+  ✨ Delete a single `FriendRequest` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  friendRequest_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: FriendRequest_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: FriendRequest_FirstRow
+  ): FriendRequest_KeyOutput @fdc_generated(from: "FriendRequest", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `Friendship` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  friendship_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: Friendship_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: Friendship_FirstRow
+  ): Friendship_KeyOutput @fdc_generated(from: "Friendship", purpose: DELETE_SINGLE)
+  """
   ✨ Delete a single `InstalledApp` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
   installedApp_delete(
@@ -747,6 +943,34 @@ extend type Mutation {
     """
     all: Boolean = false
   ): Int! @fdc_generated(from: "AppRule", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `FriendRequest` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  friendRequest_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: FriendRequest_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "FriendRequest", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `Friendship` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  friendship_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: Friendship_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "Friendship", purpose: DELETE_MULTIPLE)
   """
   ✨ Delete `InstalledApp` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """

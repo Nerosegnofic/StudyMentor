@@ -7,6 +7,7 @@ import '../widgets/parent_verification_dialog.dart';
 import '../widgets/student_navigation_bar.dart';
 import '../../services/overlay/mascot_overlay_service.dart';
 import '../../services/installed_apps_service.dart';
+import '../../data/providers/dataconnect_provider.dart';
 import 'student/student_home.dart';
 import 'student/student_shop.dart';
 import 'student/student_leaderboard.dart';
@@ -36,11 +37,15 @@ class _StudentScreenState extends State<StudentScreen>
     MascotOverlayService.instance.init().then(
       (_) => MascotOverlayService.instance.start(),
     );
+    // Initial heartbeat
+    DataConnectProvider().updateLastActiveAt().catchError((_) {});
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
+    // Refresh heartbeat whenever app comes to foreground
+    DataConnectProvider().updateLastActiveAt().catchError((_) {});
     InstalledAppsService.instance.isInventoryDirty().then((dirty) {
       if (dirty && mounted) {
         context.read<AuthBloc>().add(
@@ -122,7 +127,7 @@ class _StudentScreenState extends State<StudentScreen>
             children: [
               StudentHome(fullName: widget.fullName, uid: widget.uid),
               const StudentShop(),
-              const StudentLeaderboard(),
+              StudentLeaderboard(uid: widget.uid, fullName: widget.fullName),
               StudentProfile(fullName: widget.fullName, uid: widget.uid),
             ],
           ),

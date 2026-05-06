@@ -5,6 +5,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../services/friend_code_service.dart';
+import '../../../utils/student_rank_utils.dart';
 import 'student_settings.dart';
 import 'student_help_center.dart';
 
@@ -23,37 +24,57 @@ class StudentProfile extends StatefulWidget {
 }
 
 class _StudentProfileState extends State<StudentProfile> {
+  // ── Loaded state ──────────────────────────────────────────────────────────
+  bool _loading = true;
   String? _friendCode;
-  bool _codeLoading = true;
+  int _totalXp = 0;
+  int _currentStreak = 0;
+  int _totalQuestionsAnswered = 0;
 
-  static const int _placeholderXp = 1000;
-  static const int _placeholderStreak = 10;
-  static const int _placeholderQuestions = 200;
-  static const int _placeholderLevel = 2;
-  static const String _placeholderRank = 'Master Gardener';
+  // ── Computed from XP ─────────────────────────────────────────────────────
+  int get _level => StudentRankUtils.levelFromXp(_totalXp);
+  String get _rank => StudentRankUtils.rankFromLevel(_level);
 
   @override
   void initState() {
     super.initState();
-    _loadFriendCode();
+    _loadProfile();
   }
 
-  Future<void> _loadFriendCode() async {
+  Future<void> _loadProfile() async {
     try {
-      final service = FriendCodeService(DataConnectProvider());
-      final code = await service.getOrCreate(widget.uid, widget.fullName);
-      if (mounted) setState(() => _friendCode = code);
+      final provider = DataConnectProvider();
+      final profileFuture = provider.getStudentProfile(widget.uid);
+      final codeFuture = FriendCodeService(provider)
+          .getOrCreate(widget.uid, widget.fullName);
+
+      final results = await Future.wait([profileFuture, codeFuture]);
+      final profile = results[0] as Map<String, dynamic>;
+      final code = results[1] as String;
+
+      if (mounted) {
+        setState(() {
+          _totalXp = (profile['total_xp'] as int?) ?? 0;
+          _currentStreak = (profile['current_streak'] as int?) ?? 0;
+          _totalQuestionsAnswered =
+              (profile['total_questions_answered'] as int?) ?? 0;
+          _friendCode = code;
+          _loading = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _friendCode = _generateFallback());
-    } finally {
-      if (mounted) setState(() => _codeLoading = false);
+      if (mounted) {
+        setState(() {
+          _friendCode = _generateFallback();
+          _loading = false;
+        });
+      }
     }
   }
 
   String _generateFallback() {
     final first = widget.fullName.trim().split(RegExp(r'\s+')).first;
-    final letters =
-        first.toUpperCase().replaceAll(RegExp(r'[^A-Z]'), '');
+    final letters = first.toUpperCase().replaceAll(RegExp(r'[^A-Z]'), '');
     final prefix =
         letters.length >= 4 ? letters.substring(0, 4) : letters.padRight(4, 'X');
     return '$prefix-0000';
@@ -165,21 +186,30 @@ class _StudentProfileState extends State<StudentProfile> {
           right: 0,
           child: Center(
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: const Color(0xFFFF8F00),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white, width: 2),
               ),
-              child: Text(
-                'Level $_placeholderLevel',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
+              child: _loading
+                  ? const SizedBox(
+                      width: 36,
+                      height: 12,
+                      child: LinearProgressIndicator(
+                        backgroundColor: Colors.transparent,
+                        color: Colors.white,
+                        minHeight: 2,
+                      ),
+                    )
+                  : Text(
+                      'Level $_level',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -201,7 +231,7 @@ class _StudentProfileState extends State<StudentProfile> {
           const Icon(Icons.bolt, color: Color(0xFFFF8F00), size: 15),
           const SizedBox(width: 4),
           Text(
-            _placeholderRank,
+            _loading ? '…' : _rank,
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -241,37 +271,47 @@ class _StudentProfileState extends State<StudentProfile> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStat(
-                  icon: Icons.auto_awesome,
-                  iconBg: const Color(0xFFFFF8E1),
-                  iconColor: const Color(0xFFFFB300),
-                  value: _formatNumber(_placeholderXp),
-                  label: 'Total XP',
+          _loading
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF2E7D32),
+                      strokeWidth: 2.5,
+                    ),
+                  ),
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: _buildStat(
+                        icon: Icons.auto_awesome,
+                        iconBg: const Color(0xFFFFF8E1),
+                        iconColor: const Color(0xFFFFB300),
+                        value: _formatNumber(_totalXp),
+                        label: 'Total XP',
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildStat(
+                        icon: Icons.local_fire_department,
+                        iconBg: const Color(0xFFFFEBEE),
+                        iconColor: const Color(0xFFF44336),
+                        value: '$_currentStreak',
+                        label: 'Day Streak',
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildStat(
+                        icon: Icons.check_circle_outline,
+                        iconBg: const Color(0xFFE8F5E9),
+                        iconColor: const Color(0xFF43A047),
+                        value: '$_totalQuestionsAnswered',
+                        label: 'Questions',
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Expanded(
-                child: _buildStat(
-                  icon: Icons.local_fire_department,
-                  iconBg: const Color(0xFFFFEBEE),
-                  iconColor: const Color(0xFFF44336),
-                  value: '$_placeholderStreak',
-                  label: 'Day Streak',
-                ),
-              ),
-              Expanded(
-                child: _buildStat(
-                  icon: Icons.check_circle_outline,
-                  iconBg: const Color(0xFFE8F5E9),
-                  iconColor: const Color(0xFF43A047),
-                  value: '$_placeholderQuestions',
-                  label: 'Questions',
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -371,7 +411,7 @@ class _StudentProfileState extends State<StudentProfile> {
               color: Colors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: _codeLoading
+            child: _loading
                 ? const Center(
                     child: SizedBox(
                       width: 20,

@@ -88,6 +88,92 @@ query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Stude
     totalXp
     totalCoins
     gradeLevel
+    totalQuestionsAnswered
+    currentStreak
+  }
+}
+
+# ── Leaderboard ───────────────────────────────────────────────────────────────
+
+# Returns all students sorted by weeklyXp DESC for the global leaderboard.
+# Tie-break: totalXp DESC (client sorts alphabetically after that).
+query GetWeeklyLeaderboard @auth(level: USER, insecureReason: "Leaderboard is visible to all authenticated students.") {
+  students(orderBy: [{ weeklyXp: DESC }, { totalXp: DESC }], limit: 100) {
+    uid
+    weeklyXp
+    totalXp
+    lastActiveAt
+    user {
+      fullName
+    }
+  }
+}
+
+# Looks up a student by their unique friend code.
+query GetStudentByFriendCode($friendCode: String!) @auth(level: USER, insecureReason: "Friend code lookup requires knowing the exact code.") {
+  students(where: { friendCode: { eq: $friendCode } }, limit: 1) {
+    uid
+    friendCode
+    user {
+      fullName
+    }
+  }
+}
+
+# Returns all pending friend requests sent by a student.
+query GetSentFriendRequests($fromStudentUid: String!) @auth(level: USER, insecureReason: "Students can view their own sent requests.") {
+  friendRequests(
+    where: { fromStudentUid: { eq: $fromStudentUid } }
+    orderBy: [{ createdAt: DESC }]
+  ) {
+    id
+    toFriendCode
+    toStudentName
+    status
+    createdAt
+  }
+}
+
+# Returns all accepted friends for a student with profile info.
+query GetFriendsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Students can view their own friends list.") {
+  friendships(where: { studentUid: { eq: $studentUid } }) {
+    id
+    friendUid
+    friend {
+      uid
+      totalXp
+      weeklyXp
+      lastActiveAt
+      user {
+        fullName
+      }
+    }
+  }
+}
+
+# ── Parent: Friend Request Approval ──────────────────────────────────────────
+
+# Returns all pending friend requests for all students belonging to a parent.
+query GetPendingFriendRequestsForParent($parentUid: String!) @auth(level: USER, insecureReason: "Parents are authorized to view their children's pending friend requests.") {
+  friendRequests(
+    where: {
+      fromStudent: { parent: { uid: { eq: $parentUid } } }
+      status: { eq: "pending_parent_approval" }
+    }
+    orderBy: [{ createdAt: DESC }]
+  ) {
+    id
+    toFriendCode
+    toStudentName
+    toStudentUid
+    createdAt
+    fromStudentUid
+    fromStudent {
+      uid
+      user {
+        fullName
+      }
+    }
   }
 }
 

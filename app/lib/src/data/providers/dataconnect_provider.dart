@@ -232,7 +232,8 @@ class DataConnectProvider {
 
   // ── Student Profile ───────────────────────────────────────────────────────
 
-  /// Returns profile data for [uid]: friendCode, totalXp, totalCoins, gradeLevel.
+  /// Returns profile data for [uid]: friendCode, totalXp, totalCoins, gradeLevel,
+  /// totalQuestionsAnswered, currentStreak.
   Future<Map<String, dynamic>> getStudentProfile(String uid) async {
     final result = await _connector.getStudentProfile(uid: uid).execute();
     final s = result.data.student;
@@ -243,6 +244,8 @@ class DataConnectProvider {
       'total_xp': s.totalXp,
       'total_coins': s.totalCoins,
       'grade_level': s.gradeLevel,
+      'total_questions_answered': s.totalQuestionsAnswered,
+      'current_streak': s.currentStreak,
     };
   }
 
@@ -282,6 +285,141 @@ class DataConnectProvider {
           soundEffectsEnabled: soundEffectsEnabled,
           backgroundMusicEnabled: backgroundMusicEnabled,
         )
+        .execute();
+  }
+
+  // ── Leaderboard ───────────────────────────────────────────────────────────
+
+  /// Returns all students sorted by weeklyXp DESC for the global leaderboard.
+  Future<List<Map<String, dynamic>>> getWeeklyLeaderboard() async {
+    final result = await _connector.getWeeklyLeaderboard().execute();
+    return result.data.students.map((s) {
+      final lastActive = s.lastActiveAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(s.lastActiveAt!.seconds * 1000, isUtc: true)
+          : null;
+      return {
+        'uid': s.uid,
+        'full_name': s.user.fullName,
+        'weekly_xp': s.weeklyXp ?? 0,
+        'total_xp': s.totalXp ?? 0,
+        'last_active_at': lastActive,
+      };
+    }).toList();
+  }
+
+  /// Stamps the current student's lastActiveAt to now (heartbeat).
+  Future<void> updateLastActiveAt() async {
+    await _connector.updateLastActiveAt().execute();
+  }
+
+  // ── Friends ───────────────────────────────────────────────────────────────
+
+  /// Returns all accepted friends for [studentUid] with profile info.
+  Future<List<Map<String, dynamic>>> getFriendsForStudent(String studentUid) async {
+    final result = await _connector.getFriendsForStudent(studentUid: studentUid).execute();
+    return result.data.friendships.map((f) {
+      final lastActive = f.friend.lastActiveAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(f.friend.lastActiveAt!.seconds * 1000, isUtc: true)
+          : null;
+      return {
+        'friendship_id': f.id,
+        'friend_uid': f.friendUid,
+        'full_name': f.friend.user.fullName,
+        'total_xp': f.friend.totalXp ?? 0,
+        'weekly_xp': f.friend.weeklyXp ?? 0,
+        'last_active_at': lastActive,
+      };
+    }).toList();
+  }
+
+  /// Looks up a student by their friend code. Returns null if not found.
+  Future<Map<String, dynamic>?> getStudentByFriendCode(String friendCode) async {
+    final result = await _connector.getStudentByFriendCode(friendCode: friendCode).execute();
+    if (result.data.students.isEmpty) return null;
+    final s = result.data.students.first;
+    return {
+      'uid': s.uid,
+      'full_name': s.user.fullName,
+      'friend_code': s.friendCode,
+    };
+  }
+
+  /// Returns all pending friend requests sent by [fromStudentUid].
+  Future<List<Map<String, dynamic>>> getSentFriendRequests(String fromStudentUid) async {
+    final result = await _connector.getSentFriendRequests(fromStudentUid: fromStudentUid).execute();
+    return result.data.friendRequests.map((r) {
+      final createdAt = DateTime.fromMillisecondsSinceEpoch(r.createdAt.seconds * 1000, isUtc: true);
+      return {
+        'id': r.id,
+        'to_friend_code': r.toFriendCode,
+        'to_student_name': r.toStudentName,
+        'status': r.status,
+        'created_at': createdAt,
+      };
+    }).toList();
+  }
+
+  /// Sends a friend request.
+  Future<void> sendFriendRequest({
+    required String fromStudentUid,
+    required String toFriendCode,
+    required String toStudentUid,
+    required String toStudentName,
+  }) async {
+    await _connector.sendFriendRequest(
+      fromStudentUid: fromStudentUid,
+      toFriendCode: toFriendCode,
+      toStudentUid: toStudentUid,
+      toStudentName: toStudentName,
+    ).execute();
+  }
+
+  /// Creates one directional friendship row. Call twice for mutual friendship.
+  Future<void> createFriendship({
+    required String studentUid,
+    required String friendUid,
+  }) async {
+    await _connector.createFriendship(studentUid: studentUid, friendUid: friendUid).execute();
+  }
+
+  /// Removes a friendship by its ID.
+  Future<void> removeFriend(String id) async {
+    await _connector.removeFriend(id: id).execute();
+  }
+
+  // ── Parent: Friend Request Approval ───────────────────────────────────────
+
+  /// Returns all pending friend requests for all students belonging to [parentUid].
+  Future<List<Map<String, dynamic>>> getPendingFriendRequestsForParent(
+    String parentUid,
+  ) async {
+    final result = await _connector
+        .getPendingFriendRequestsForParent(parentUid: parentUid)
+        .execute();
+    return result.data.friendRequests.map((r) {
+      final createdAt = DateTime.fromMillisecondsSinceEpoch(
+        r.createdAt.seconds * 1000,
+        isUtc: true,
+      );
+      return {
+        'id': r.id,
+        'from_student_uid': r.fromStudentUid,
+        'from_student_name': r.fromStudent.user.fullName,
+        'to_friend_code': r.toFriendCode,
+        'to_student_name': r.toStudentName,
+        'to_student_uid': r.toStudentUid,
+        'created_at': createdAt,
+      };
+    }).toList();
+  }
+
+  /// Updates the status of a friend request (e.g., 'accepted' or 'rejected').
+  Future<void> updateFriendRequestStatus({
+    required String id,
+    required String status,
+  }) async {
+    await _connector
+        .updateFriendRequestStatus(id: id, status: status)
         .execute();
   }
 

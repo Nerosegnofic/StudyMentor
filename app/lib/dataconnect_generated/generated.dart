@@ -24,6 +24,16 @@ part 'delete_all_app_rules_for_student.dart';
 
 part 'update_student_friend_code.dart';
 
+part 'update_last_active_at.dart';
+
+part 'send_friend_request.dart';
+
+part 'create_friendship.dart';
+
+part 'remove_friend.dart';
+
+part 'update_friend_request_status.dart';
+
 part 'upsert_student_settings.dart';
 
 part 'insert_support_ticket.dart';
@@ -43,6 +53,16 @@ part 'insert_installed_app.dart';
 part 'delete_all_installed_apps_for_student.dart';
 
 part 'get_student_profile.dart';
+
+part 'get_weekly_leaderboard.dart';
+
+part 'get_student_by_friend_code.dart';
+
+part 'get_sent_friend_requests.dart';
+
+part 'get_friends_for_student.dart';
+
+part 'get_pending_friend_requests_for_parent.dart';
 
 part 'get_student_settings.dart';
 
@@ -180,6 +200,31 @@ class ExampleConnector {
   }
   
   
+  UpdateLastActiveAtVariablesBuilder updateLastActiveAt () {
+    return UpdateLastActiveAtVariablesBuilder(dataConnect, );
+  }
+  
+  
+  SendFriendRequestVariablesBuilder sendFriendRequest ({required String fromStudentUid, required String toFriendCode, required String toStudentUid, required String toStudentName, }) {
+    return SendFriendRequestVariablesBuilder(dataConnect, fromStudentUid: fromStudentUid,toFriendCode: toFriendCode,toStudentUid: toStudentUid,toStudentName: toStudentName,);
+  }
+  
+  
+  CreateFriendshipVariablesBuilder createFriendship ({required String studentUid, required String friendUid, }) {
+    return CreateFriendshipVariablesBuilder(dataConnect, studentUid: studentUid,friendUid: friendUid,);
+  }
+  
+  
+  RemoveFriendVariablesBuilder removeFriend ({required String id, }) {
+    return RemoveFriendVariablesBuilder(dataConnect, id: id,);
+  }
+  
+  
+  UpdateFriendRequestStatusVariablesBuilder updateFriendRequestStatus ({required String id, required String status, }) {
+    return UpdateFriendRequestStatusVariablesBuilder(dataConnect, id: id,status: status,);
+  }
+  
+  
   UpsertStudentSettingsVariablesBuilder upsertStudentSettings ({required String studentUid, required bool notificationsEnabled, required bool soundEffectsEnabled, required bool backgroundMusicEnabled, }) {
     return UpsertStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,notificationsEnabled: notificationsEnabled,soundEffectsEnabled: soundEffectsEnabled,backgroundMusicEnabled: backgroundMusicEnabled,);
   }
@@ -227,6 +272,31 @@ class ExampleConnector {
   
   GetStudentProfileVariablesBuilder getStudentProfile ({required String uid, }) {
     return GetStudentProfileVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetWeeklyLeaderboardVariablesBuilder getWeeklyLeaderboard () {
+    return GetWeeklyLeaderboardVariablesBuilder(dataConnect, );
+  }
+  
+  
+  GetStudentByFriendCodeVariablesBuilder getStudentByFriendCode ({required String friendCode, }) {
+    return GetStudentByFriendCodeVariablesBuilder(dataConnect, friendCode: friendCode,);
+  }
+  
+  
+  GetSentFriendRequestsVariablesBuilder getSentFriendRequests ({required String fromStudentUid, }) {
+    return GetSentFriendRequestsVariablesBuilder(dataConnect, fromStudentUid: fromStudentUid,);
+  }
+  
+  
+  GetFriendsForStudentVariablesBuilder getFriendsForStudent ({required String studentUid, }) {
+    return GetFriendsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetPendingFriendRequestsForParentVariablesBuilder getPendingFriendRequestsForParent ({required String parentUid, }) {
+    return GetPendingFriendRequestsForParentVariablesBuilder(dataConnect, parentUid: parentUid,);
   }
   
   

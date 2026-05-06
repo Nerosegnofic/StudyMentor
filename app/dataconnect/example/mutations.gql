@@ -105,6 +105,63 @@ mutation UpdateStudentFriendCode($friendCode: String!) @auth(level: USER) {
   )
 }
 
+# ── Leaderboard / Social ─────────────────────────────────────────────────────
+
+# Heartbeat: stamps the current student's lastActiveAt to now.
+mutation UpdateLastActiveAt @auth(level: USER) {
+  student_update(
+    key: { uid_expr: "auth.uid" }
+    data: { lastActiveAt_expr: "request.time" }
+  )
+}
+
+# Sends a friend request. Stores target name denormalized for display.
+mutation SendFriendRequest(
+  $fromStudentUid: String!
+  $toFriendCode: String!
+  $toStudentUid: String!
+  $toStudentName: String!
+) @auth(level: USER, insecureReason: "Authenticated students may send friend requests.") {
+  friendRequest_insert(
+    data: {
+      fromStudentUid: $fromStudentUid
+      toFriendCode: $toFriendCode
+      toStudentUid: $toStudentUid
+      toStudentName: $toStudentName
+    }
+  )
+}
+
+# Creates one directional friendship row. Call twice (A→B, B→A) to make it mutual.
+mutation CreateFriendship(
+  $studentUid: String!
+  $friendUid: String!
+) @auth(level: USER, insecureReason: "Friendship creation is gated by parent approval.") {
+  friendship_insert(
+    data: {
+      studentUid: $studentUid
+      friendUid: $friendUid
+    }
+  )
+}
+
+# Removes a single directional friendship row by its ID.
+mutation RemoveFriend($id: UUID!) @auth(level: USER, insecureReason: "Students can remove their own friendships.") {
+  friendship_delete(key: { id: $id })
+}
+
+# Updates the status of a friend request (e.g., 'accepted' or 'rejected').
+# Called by the parent when approving or rejecting a child's friend request.
+mutation UpdateFriendRequestStatus(
+  $id: UUID!
+  $status: String!
+) @auth(level: USER, insecureReason: "Parents are authorized to approve or reject their children's friend requests.") {
+  friendRequest_update(
+    key: { id: $id }
+    data: { status: $status }
+  )
+}
+
 # ── Student Settings ──────────────────────────────────────────────────────────
 
 # Upserts the per-student app preferences.
