@@ -161,3 +161,10 @@ class InstalledAppsLoaded extends AuthState {
 /// Distinct from [AppConfigLoading] — does not wipe the existing rules
 /// from the screen while the new data loads.
 class StudentDataRefreshing extends AuthState {}
+
+class EmailUpdateVerificationSent extends AuthState {
+  final String pendingEmail;
+  EmailUpdateVerificationSent(this.pendingEmail);
+  @override
+  List<Object?> get props => [pendingEmail];
+}

@@ -39,7 +39,7 @@ class MascotOverlayService {
   // ── Config ─────────────────────────────────────────────────────────────────
   Set<String> _monitoredPackages = {};
   StudentConfigModel _config = const StudentConfigModel();
-  String? _currentMonitoredPackage;
+  String? _currentMonitoredPackage; // for debug/logging purposes only
 
   // ── Public API ─────────────────────────────────────────────────────────────
 

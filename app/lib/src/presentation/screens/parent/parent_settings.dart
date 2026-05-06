@@ -28,27 +28,30 @@ class _ParentSettingsState extends State<ParentSettings> {
   bool _obscureConfirm = true;
 
   bool _isSaving = false;
-
-  // Tracks whether any field has been modified from its original value.
   bool _isDirty = false;
 
-  // The original name loaded from the BLoC — used to detect changes.
+  // Baselines for dirty detection.
   String _originalFullName = '';
+  String _originalEmail = '';
+
+  // Shown after a successful email-change request.
+  String? _pendingEmailNotice;
 
   @override
   void initState() {
     super.initState();
 
-    // Seed the controllers from the current AuthAuthenticated state.
     final authState = context.read<AuthBloc>().state;
     final user = authState is AuthAuthenticated ? authState.user : null;
 
     _originalFullName = user?.fullName ?? '';
-    _fullNameCtl = TextEditingController(text: _originalFullName);
-    _emailCtl = TextEditingController(text: user?.email ?? '');
+    _originalEmail = user?.email ?? '';
 
-    // Listen for any changes to recompute dirty state.
+    _fullNameCtl = TextEditingController(text: _originalFullName);
+    _emailCtl = TextEditingController(text: _originalEmail);
+
     _fullNameCtl.addListener(_onFieldChanged);
+    _emailCtl.addListener(_onFieldChanged);
     _currentPassCtl.addListener(_onFieldChanged);
     _newPassCtl.addListener(_onFieldChanged);
     _confirmPassCtl.addListener(_onFieldChanged);
@@ -68,15 +71,14 @@ class _ParentSettingsState extends State<ParentSettings> {
 
   void _onFieldChanged() {
     final nameChanged = _fullNameCtl.text.trim() != _originalFullName;
+    final emailChanged = _emailCtl.text.trim() != _originalEmail;
     final passwordSectionTouched =
         _currentPassCtl.text.isNotEmpty ||
         _newPassCtl.text.isNotEmpty ||
         _confirmPassCtl.text.isNotEmpty;
 
-    final dirty = nameChanged || passwordSectionTouched;
-    if (dirty != _isDirty) {
-      setState(() => _isDirty = dirty);
-    }
+    final dirty = nameChanged || emailChanged || passwordSectionTouched;
+    if (dirty != _isDirty) setState(() => _isDirty = dirty);
   }
 
   // ── save logic ──────────────────────────────────────────────────────────────
@@ -84,16 +86,22 @@ class _ParentSettingsState extends State<ParentSettings> {
   void _save() {
     if (!_formKey.currentState!.validate()) return;
 
-    final nameChanged =
-        _fullNameCtl.text.trim() != _originalFullName &&
-        _fullNameCtl.text.trim().isNotEmpty;
-
+    final newName = _fullNameCtl.text.trim();
+    final newEmail = _emailCtl.text.trim();
     final isChangingPassword = _newPassCtl.text.isNotEmpty;
+
+    // Email or password changes both require the current password.
+    final emailChanged = newEmail != _originalEmail && newEmail.isNotEmpty;
 
     context.read<AuthBloc>().add(
       UpdateProfileRequested(
-        newFullName: nameChanged ? _fullNameCtl.text.trim() : null,
-        currentPassword: isChangingPassword ? _currentPassCtl.text : null,
+        newFullName: newName != _originalFullName && newName.isNotEmpty
+            ? newName
+            : null,
+        newEmail: emailChanged ? newEmail : null,
+        currentPassword: (isChangingPassword || emailChanged)
+            ? _currentPassCtl.text
+            : null,
         newPassword: isChangingPassword ? _newPassCtl.text : null,
       ),
     );
@@ -102,11 +110,11 @@ class _ParentSettingsState extends State<ParentSettings> {
   // ── after successful save ───────────────────────────────────────────────────
 
   void _onSaveSuccess(UserModel updatedUser) {
-    // Update the baseline so dirty-detection works correctly after saving.
     _originalFullName = updatedUser.fullName;
+    _originalEmail = updatedUser.email;
     _fullNameCtl.text = updatedUser.fullName;
+    // Keep the email field showing what the user typed (the pending address).
 
-    // Clear password fields.
     _currentPassCtl.clear();
     _newPassCtl.clear();
     _confirmPassCtl.clear();
@@ -129,6 +137,10 @@ class _ParentSettingsState extends State<ParentSettings> {
       listener: (context, state) {
         if (state is ProfileUpdateLoading) {
           setState(() => _isSaving = true);
+        } else if (state is EmailUpdateVerificationSent) {
+          // Show the pending-verification banner; keep saving = true
+          // because ProfileUpdateSuccess follows immediately after.
+          setState(() => _pendingEmailNotice = state.pendingEmail);
         } else if (state is ProfileUpdateSuccess) {
           setState(() => _isSaving = false);
           _onSaveSuccess(state.updatedUser);
@@ -143,7 +155,6 @@ class _ParentSettingsState extends State<ParentSettings> {
         }
       },
       child: GestureDetector(
-        // Dismiss keyboard when tapping outside a field.
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -152,6 +163,10 @@ class _ParentSettingsState extends State<ParentSettings> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (_pendingEmailNotice != null) ...[
+                  _buildEmailPendingBanner(_pendingEmailNotice!),
+                  const SizedBox(height: 16),
+                ],
                 _buildSectionHeader('Account Information'),
                 const SizedBox(height: 12),
                 _buildFullNameField(),
@@ -173,6 +188,41 @@ class _ParentSettingsState extends State<ParentSettings> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ── pending-email banner ────────────────────────────────────────────────────
+
+  Widget _buildEmailPendingBanner(String pendingEmail) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFCC02)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.mark_email_unread_outlined,
+            color: Color(0xFFF9A825),
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'A verification link was sent to $pendingEmail. '
+              'Your email address will update after you click it.',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF5D4037)),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _pendingEmailNotice = null),
+            child: const Icon(Icons.close, size: 16, color: Color(0xFF9E9E9E)),
+          ),
+        ],
       ),
     );
   }
@@ -218,27 +268,38 @@ class _ParentSettingsState extends State<ParentSettings> {
     );
   }
 
-  // ── email (read-only) ───────────────────────────────────────────────────────
+  // ── email (now editable) ────────────────────────────────────────────────────
 
   Widget _buildEmailField() {
     return TextFormField(
       controller: _emailCtl,
-      readOnly: true,
+      keyboardType: TextInputType.emailAddress,
       decoration: _inputDecoration(label: 'Email', icon: Icons.email_outlined)
           .copyWith(
-            // Visual cue that the field is not editable.
-            filled: true,
-            fillColor: Colors.grey.shade100,
-            helperText: 'Email cannot be changed.',
-            helperStyle: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+            helperText:
+                'Changing your email will send a verification link to the new address.',
+            helperStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            helperMaxLines: 2,
           ),
-      style: TextStyle(color: Colors.grey.shade600),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return 'Email is required.';
+        final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+        if (!emailRegex.hasMatch(v.trim())) {
+          return 'Enter a valid email address.';
+        }
+        return null;
+      },
     );
   }
 
   // ── current password ────────────────────────────────────────────────────────
 
   Widget _buildCurrentPasswordField() {
+    // Required when changing email OR password.
+    final emailChanged =
+        _emailCtl.text.trim() != _originalEmail &&
+        _emailCtl.text.trim().isNotEmpty;
+
     return TextFormField(
       controller: _currentPassCtl,
       obscureText: _obscureCurrent,
@@ -247,6 +308,10 @@ class _ParentSettingsState extends State<ParentSettings> {
             label: 'Current Password',
             icon: Icons.lock_outline,
           ).copyWith(
+            helperText: emailChanged
+                ? 'Required to change your email address.'
+                : null,
+            helperStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             suffixIcon: _visibilityToggle(
               obscure: _obscureCurrent,
               onToggle: () =>
@@ -254,9 +319,15 @@ class _ParentSettingsState extends State<ParentSettings> {
             ),
           ),
       validator: (v) {
-        // Only required when the user is trying to change their password.
-        if (_newPassCtl.text.isNotEmpty && (v == null || v.isEmpty)) {
-          return 'Enter your current password to set a new one.';
+        final changingPassword = _newPassCtl.text.isNotEmpty;
+        final changingEmail =
+            _emailCtl.text.trim() != _originalEmail &&
+            _emailCtl.text.trim().isNotEmpty;
+
+        if ((changingPassword || changingEmail) && (v == null || v.isEmpty)) {
+          return changingEmail
+              ? 'Enter your current password to change your email.'
+              : 'Enter your current password to set a new one.';
         }
         return null;
       },
@@ -280,7 +351,7 @@ class _ParentSettingsState extends State<ParentSettings> {
             ),
           ),
       validator: (v) {
-        if (v == null || v.isEmpty) return null; // optional
+        if (v == null || v.isEmpty) return null;
         if (v.length < 6) return 'Password must be at least 6 characters.';
         if (_currentPassCtl.text.isEmpty) {
           return 'Enter your current password first.';
@@ -308,7 +379,7 @@ class _ParentSettingsState extends State<ParentSettings> {
             ),
           ),
       validator: (v) {
-        if (_newPassCtl.text.isEmpty) return null; // not changing password
+        if (_newPassCtl.text.isEmpty) return null;
         if (v != _newPassCtl.text) return 'Passwords do not match.';
         return null;
       },

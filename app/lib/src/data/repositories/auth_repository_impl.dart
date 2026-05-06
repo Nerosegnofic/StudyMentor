@@ -41,29 +41,37 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     await firebase.signIn(email, password);
     final uid = firebase.currentUser!.uid;
-
     await firebase.reloadUser();
 
     final isVerified = firebase.currentUser?.emailVerified ?? false;
     if (isVerified) {
-      await _markUserActive(email: email, uid: uid);
+      await _markUserActive(uid: uid);
     }
 
     final profile = await dataConnect.getUserProfile(uid);
     return UserModel.fromJson(profile);
   }
 
-  Future<void> _markUserActive({
-    required String email,
-    required String uid,
-  }) async {
+  /// Marks the user active in the DB and syncs their verified Firebase Auth
+  /// email. This is the point where a verified email change is committed to
+  /// the DB — Firebase Auth's email is the source of truth here.
+  Future<void> _markUserActive({required String uid}) async {
     try {
       final profile = await dataConnect.getUserProfile(uid);
       final roleStr = profile['role'] as String;
       final role = roleStr == 'Parent' ? Role.Parent : Role.Student;
-      await ExampleConnector.instance
-          .upsertCurrentUser(email: email, role: role)
-          .execute();
+
+      // ── Sync the confirmed Firebase Auth email to the DB ─────────────────
+      // If the user previously requested an email change and has now verified
+      // it, firebase.currentUser.email will already reflect the new address.
+      // Passing it here commits it to the DB at the first login after
+      // verification — without ever writing an unverified address.
+      final confirmedEmail = firebase.currentUser?.email;
+      var builder = ExampleConnector.instance.upsertCurrentUser(role: role);
+      if (confirmedEmail != null) {
+        builder = builder.email(confirmedEmail);
+      }
+      await builder.execute();
     } catch (_) {}
 
     try {
@@ -78,6 +86,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String parentUid,
     required int gradeLevel,
+    required String username,
   }) async {
     final parentEmail = firebase.currentUser?.email;
     final parentPassword = firebase.cachedPassword;
@@ -89,7 +98,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     await firebase.signUp(email, password);
-
     await dataConnect.createUserProfile(
       email: email,
       fullName: fullName,
@@ -97,6 +105,7 @@ class AuthRepositoryImpl implements AuthRepository {
     );
     await dataConnect.createStudentProfile(
       parentUid: parentUid,
+      username: username,
       gradeLevel: gradeLevel,
     );
 
@@ -105,7 +114,6 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (_) {}
 
     await firebase.sendEmailVerification();
-
     await firebase.signOut();
     await firebase.signInWithPassword(parentEmail, parentPassword);
 
@@ -125,7 +133,6 @@ class AuthRepositoryImpl implements AuthRepository {
     List<StudentModel> students,
   ) async {
     if (students.isEmpty) return students;
-
     final parentUid = await dataConnect.getParentUidForStudent(
       students.first.uid,
     );
@@ -169,18 +176,12 @@ class AuthRepositoryImpl implements AuthRepository {
     final linkedParentUid = await dataConnect.getParentUidForStudent(
       studentUid,
     );
-
     final authenticatedUid = await firebase.verifyCredentialsAndGetUid(
       parentEmail,
       parentPassword,
     );
-
     if (authenticatedUid == null) return false;
-
-    if (authenticatedUid != linkedParentUid) {
-      throw Exception('parent-mismatch');
-    }
-
+    if (authenticatedUid != linkedParentUid) throw Exception('parent-mismatch');
     return true;
   }
 
@@ -194,36 +195,57 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserModel> updateProfile({
     String? newFullName,
+    String? newEmail,
     String? currentPassword,
     String? newPassword,
   }) async {
     final user = firebase.currentUser;
     if (user == null) throw Exception('No authenticated user.');
 
+    // ── Read role FIRST, before any Firebase Auth mutations ───────────────
+    // verifyBeforeUpdateEmail can invalidate the ID token; reading the DB
+    // before that call guarantees a clean session.
+    final profileSnapshot = await dataConnect.getUserProfile(user.uid);
+    final roleStr = profileSnapshot['role'] as String;
+    final role = roleStr == 'Parent' ? Role.Parent : Role.Student;
+
     final isChangingPassword =
         newPassword != null &&
         newPassword.isNotEmpty &&
         currentPassword != null;
 
-    if (isChangingPassword) {
+    final isChangingEmail =
+        newEmail != null && newEmail.isNotEmpty && newEmail != user.email;
+
+    // Re-auth is required for both email and password changes.
+    if ((isChangingPassword || isChangingEmail) && currentPassword != null) {
       await firebase.reauthenticate(currentPassword);
+    }
+
+    // Send verification to the new address. Firebase applies the change
+    // only after the user clicks the link in the email. We intentionally
+    // do NOT write the new email to the DB here — the DB is updated in
+    // _markUserActive on the next login after verification, at which point
+    // Firebase Auth's email is already the confirmed new address.
+    if (isChangingEmail) {
+      await firebase.verifyBeforeUpdateEmail(newEmail);
     }
 
     if (isChangingPassword) {
       await firebase.updatePassword(newPassword);
     }
 
+    // Only write name changes to the DB. Email is intentionally excluded
+    // to prevent the UI from showing an unverified address.
     if (newFullName != null && newFullName.isNotEmpty) {
-      final profile = await dataConnect.getUserProfile(user.uid);
-      final roleStr = profile['role'] as String;
-      final role = roleStr == 'Parent' ? Role.Parent : Role.Student;
-
-      await ExampleConnector.instance
-          .upsertCurrentUser(email: user.email!, role: role)
-          .fullName(newFullName)
-          .execute();
+      final builder = ExampleConnector.instance
+          .upsertCurrentUser(role: role)
+          .fullName(newFullName);
+      await builder.execute();
     }
 
+    // Reload before the final read to ensure a fresh token.
+    await firebase.reloadUser();
     final updated = await dataConnect.getUserProfile(user.uid);
     return UserModel.fromJson(updated);
   }
@@ -275,16 +297,11 @@ class AuthRepositoryImpl implements AuthRepository {
     required List<PendingAppRule> rules,
     required StudentConfigModel config,
   }) async {
-    // 1. Upsert the global config row.
     await dataConnect.upsertStudentConfig(
       studentUid: studentUid,
       config: config,
     );
-
-    // 2. Wipe all existing rules for a clean save.
     await dataConnect.deleteAllAppRulesForStudent(studentUid);
-
-    // 3. Insert each rule sequentially.
     for (final rule in rules) {
       await dataConnect.insertAppRule(
         studentUid: studentUid,

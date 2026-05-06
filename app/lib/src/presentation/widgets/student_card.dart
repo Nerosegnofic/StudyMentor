@@ -127,13 +127,13 @@ class StudentCard extends StatelessWidget {
     );
   }
 
-  // ── name / email / grade ────────────────────────────────────────────────────
+  // ── name / subtitle / grade ─────────────────────────────────────────────────
 
   Widget _buildInfo(bool verified) {
     final nameColor = verified
         ? const Color(0xFF1A1A2E)
         : _unverifiedTextPrimary;
-    final emailColor = verified
+    final subtitleColor = verified
         ? const Color(0xFF8B93A7)
         : _unverifiedTextSecondary;
 
@@ -152,9 +152,10 @@ class StudentCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 3),
+        // ── Show "Touch to view" for verified students; email for unverified ──
         Text(
-          student.email,
-          style: TextStyle(fontSize: 12, color: emailColor),
+          verified ? 'Touch to view' : student.email,
+          style: TextStyle(fontSize: 12, color: subtitleColor),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

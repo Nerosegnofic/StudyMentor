@@ -1522,6 +1522,14 @@ input Student_Data {
   """
   totalXp_update: [Int_Update!] @fdc_forbiddenInVariables
   """
+  ✨ Generated from Field `Student`.`username` of type `String!`
+  """
+  username: String
+  """
+  ✨ `_expr` server value variant of `username` (✨ Generated from Field `Student`.`username` of type `String!`)
+  """
+  username_expr: String_Expr @fdc_forbiddenInVariables
+  """
   ✨ Generated from Field `Student`.`weeklyXp` of type `Int`
   """
   weeklyXp: Int
@@ -1598,6 +1606,10 @@ input Student_Filter {
   ✨ Generated from Field `Student`.`totalXp` of type `Int`
   """
   totalXp: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`username` of type `String!`
+  """
+  username: String_Filter
   """
   ✨ Generated from Field `Student`.`weeklyXp` of type `Int`
   """
@@ -1716,6 +1728,10 @@ input Student_Having {
   ✨ Generated from Field `Student`.`userUid_count` of type `Int!`
   """
   userUid_count: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`username_count` of type `Int!`
+  """
+  username_count: Int_Filter
   """
   ✨ Generated from Field `Student`.`weeklyXp_count` of type `Int!`
   """
@@ -1904,6 +1920,10 @@ input Student_Order {
   """
   totalXp: OrderDirection
   """
+  ✨ Generated from Field `Student`.`username` of type `String!`
+  """
+  username: OrderDirection
+  """
   ✨ Generated from Field `Student`.`weeklyXp` of type `Int`
   """
   weeklyXp: OrderDirection
@@ -1951,6 +1971,10 @@ input Student_Order {
   ✨ Generated from Field `Student`.`userUid_count` of type `Int!`
   """
   userUid_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`username_count` of type `Int!`
+  """
+  username_count: OrderDirection
   """
   ✨ Generated from Field `Student`.`weeklyXp_count` of type `Int!`
   """

@@ -64,6 +64,7 @@ class GetFriendsForStudentFriendships {
 @immutable
 class GetFriendsForStudentFriendshipsFriend {
   final String uid;
+  final String username;
   final int? totalXp;
   final int? weeklyXp;
   final Timestamp? lastActiveAt;
@@ -71,6 +72,7 @@ class GetFriendsForStudentFriendshipsFriend {
   GetFriendsForStudentFriendshipsFriend.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
+  username = nativeFromJson<String>(json['username']),
   totalXp = json['totalXp'] == null ? null : nativeFromJson<int>(json['totalXp']),
   weeklyXp = json['weeklyXp'] == null ? null : nativeFromJson<int>(json['weeklyXp']),
   lastActiveAt = json['lastActiveAt'] == null ? null : Timestamp.fromJson(json['lastActiveAt']),
@@ -86,6 +88,7 @@ class GetFriendsForStudentFriendshipsFriend {
 
     final GetFriendsForStudentFriendshipsFriend otherTyped = other as GetFriendsForStudentFriendshipsFriend;
     return uid == otherTyped.uid && 
+    username == otherTyped.username && 
     totalXp == otherTyped.totalXp && 
     weeklyXp == otherTyped.weeklyXp && 
     lastActiveAt == otherTyped.lastActiveAt && 
@@ -93,12 +96,13 @@ class GetFriendsForStudentFriendshipsFriend {
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, totalXp.hashCode, weeklyXp.hashCode, lastActiveAt.hashCode, user.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, totalXp.hashCode, weeklyXp.hashCode, lastActiveAt.hashCode, user.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['uid'] = nativeToJson<String>(uid);
+    json['username'] = nativeToJson<String>(username);
     if (totalXp != null) {
       json['totalXp'] = nativeToJson<int?>(totalXp);
     }
@@ -114,6 +118,7 @@ class GetFriendsForStudentFriendshipsFriend {
 
   GetFriendsForStudentFriendshipsFriend({
     required this.uid,
+    required this.username,
     this.totalXp,
     this.weeklyXp,
     this.lastActiveAt,

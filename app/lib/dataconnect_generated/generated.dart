@@ -167,8 +167,8 @@ class ExampleConnector {
   }
   
   
-  UpsertCurrentUserVariablesBuilder upsertCurrentUser ({required String email, required Role role, }) {
-    return UpsertCurrentUserVariablesBuilder(dataConnect, email: email,role: role,);
+  UpsertCurrentUserVariablesBuilder upsertCurrentUser ({required Role role, }) {
+    return UpsertCurrentUserVariablesBuilder(dataConnect, role: role,);
   }
   
   
@@ -182,8 +182,8 @@ class ExampleConnector {
   }
   
   
-  InsertStudentVariablesBuilder insertStudent ({required String parentUid, }) {
-    return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,);
+  InsertStudentVariablesBuilder insertStudent ({required String parentUid, required String username, }) {
+    return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,username: username,);
   }
   
   

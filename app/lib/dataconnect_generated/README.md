@@ -755,10 +755,8 @@ ref.execute();
 ### UpsertCurrentUser
 #### Required Arguments
 ```dart
-String email = ...;
 Role role = ...;
 ExampleConnector.instance.upsertCurrentUser(
-  email: email,
   role: role,
 ).execute();
 ```
@@ -769,7 +767,12 @@ The builder pattern allows Data Connect to distinguish between fields that haven
 ```dart
 class UpsertCurrentUserVariablesBuilder {
   ...
-   UpsertCurrentUserVariablesBuilder fullName(String? t) {
+ 
+  UpsertCurrentUserVariablesBuilder email(String? t) {
+   _email.value = t;
+   return this;
+  }
+  UpsertCurrentUserVariablesBuilder fullName(String? t) {
    _fullName.value = t;
    return this;
   }
@@ -777,9 +780,9 @@ class UpsertCurrentUserVariablesBuilder {
   ...
 }
 ExampleConnector.instance.upsertCurrentUser(
-  email: email,
   role: role,
 )
+.email(email)
 .fullName(fullName)
 .execute();
 ```
@@ -796,7 +799,6 @@ class OperationResult<Data, Variables> {
 }
 
 final result = await ExampleConnector.instance.upsertCurrentUser(
-  email: email,
   role: role,
 );
 UpsertCurrentUserData data = result.data;
@@ -807,11 +809,9 @@ final ref = result.ref;
 Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
 An example of how to use the `Ref` object is shown below:
 ```dart
-String email = ...;
 Role role = ...;
 
 final ref = ExampleConnector.instance.upsertCurrentUser(
-  email: email,
   role: role,
 ).ref();
 ref.execute();
@@ -912,8 +912,10 @@ ref.execute();
 #### Required Arguments
 ```dart
 String parentUid = ...;
+String username = ...;
 ExampleConnector.instance.insertStudent(
   parentUid: parentUid,
+  username: username,
 ).execute();
 ```
 
@@ -932,6 +934,7 @@ class InsertStudentVariablesBuilder {
 }
 ExampleConnector.instance.insertStudent(
   parentUid: parentUid,
+  username: username,
 )
 .gradeLevel(gradeLevel)
 .execute();
@@ -950,6 +953,7 @@ class OperationResult<Data, Variables> {
 
 final result = await ExampleConnector.instance.insertStudent(
   parentUid: parentUid,
+  username: username,
 );
 InsertStudentData data = result.data;
 final ref = result.ref;
@@ -960,9 +964,11 @@ Each builder returns an `execute` function, which is a helper function that crea
 An example of how to use the `Ref` object is shown below:
 ```dart
 String parentUid = ...;
+String username = ...;
 
 final ref = ExampleConnector.instance.insertStudent(
   parentUid: parentUid,
+  username: username,
 ).ref();
 ref.execute();
 ```

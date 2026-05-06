@@ -60,11 +60,6 @@ class FirebaseAuthProvider {
 
   // ── profile update helpers ─────────────────────────────────────────────────
 
-  /// Reauthenticates the current user with their current password.
-  /// Must be called before [updatePassword] to satisfy Firebase's
-  /// recent-login requirement.
-  ///
-  /// Throws [FirebaseAuthException] on wrong password or network error.
   Future<void> reauthenticate(String currentPassword) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('No authenticated user.');
@@ -77,20 +72,24 @@ class FirebaseAuthProvider {
     await user.reauthenticateWithCredential(credential);
   }
 
-  /// Updates the current user's password in Firebase Auth.
-  /// [reauthenticate] must be called first.
   Future<void> updatePassword(String newPassword) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('No authenticated user.');
     await user.updatePassword(newPassword);
-    // Keep the cached password in sync so createStudent still works.
     _cachedPassword = newPassword;
+  }
+
+  /// Sends a verification email to [newEmail].
+  /// Firebase only applies the change after the user clicks the link.
+  /// Re-authentication must be performed before calling this.
+  Future<void> verifyBeforeUpdateEmail(String newEmail) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+    await user.verifyBeforeUpdateEmail(newEmail);
   }
 
   // ── secondary-app helpers ──────────────────────────────────────────────────
 
-  /// Returns the secondary FirebaseAuth instance, creating the secondary
-  /// Firebase app if it does not exist yet.
   Future<FirebaseAuth> _getSecondaryAuth() async {
     final existingApp = Firebase.apps.cast<FirebaseApp?>().firstWhere(
       (app) => app?.name == '_parentVerifier',
@@ -108,9 +107,6 @@ class FirebaseAuthProvider {
     return FirebaseAuth.instanceFor(app: app);
   }
 
-  /// Verifies credentials using the secondary Firebase app so the current
-  /// parent session is not disrupted.
-  /// Returns the authenticated UID on success, null on failure.
   Future<String?> verifyCredentialsAndGetUid(
     String email,
     String password,
@@ -131,11 +127,6 @@ class FirebaseAuthProvider {
     }
   }
 
-  /// Checks whether the Firebase account identified by [email] / [password]
-  /// has verified their email address.
-  ///
-  /// Uses the secondary app so the parent's session is unaffected.
-  /// Returns `null` if the credentials are wrong or any error occurs.
   Future<bool?> checkEmailVerifiedForCredentials(
     String email,
     String password,

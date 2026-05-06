@@ -9,9 +9,11 @@ query GetUserByUid($uid: String!) @auth(level: USER) {
   }
 }
 
+# ── CHANGED: added username ───────────────────────────────────────────────────
 query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
   students(where: { parent: { uid: { eq: $parentUid } } }) {
     uid
+    username
     user {
       fullName
       email
@@ -40,8 +42,6 @@ query GetStudentWithParent($uid: String!) @auth(level: USER) {
 
 # ── Installed-app inventory ───────────────────────────────────────────────────
 
-# Returns the full installed-app inventory for a student.
-# Called by the parent's app-picker and by the parent's StudentConfigScreen.
 query GetInstalledAppsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "The app validates access via custom logic or shared student data.") {
   installedApps(where: { studentUid: { eq: $studentUid } }) {
     id
@@ -52,7 +52,6 @@ query GetInstalledAppsForStudent($studentUid: String!) @auth(level: USER, insecu
   }
 }
 
-# Inserts a single installed-app row.
 mutation InsertInstalledApp(
   $studentUid: String!
   $packageName: String!
@@ -69,21 +68,17 @@ mutation InsertInstalledApp(
   })
 }
 
-# Wipes all installed-app rows for a student before a fresh sync.
 mutation DeleteAllInstalledAppsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Students are authorized to clear their own installed apps list before sync.") {
   installedApp_deleteMany(where: { studentUid: { eq: $studentUid } })
 }
 
-# ── App rules ─────────────────────────────────────────────────────────────────
-
-# Fetches the global student config and all app rules for a given student.
-# Used by the parent config screen and by the student device to sync rules.
 # ── Student Profile ───────────────────────────────────────────────────────────
 
-# Returns profile data for a student, including the friend code and stats.
+# ── CHANGED: added username ───────────────────────────────────────────────────
 query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Students are authorized to read their own profile data.") {
   student(key: { uid: $uid }) {
     uid
+    username
     friendCode
     totalXp
     totalCoins
@@ -95,24 +90,22 @@ query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Stude
 
 # ── Leaderboard ───────────────────────────────────────────────────────────────
 
-# Returns all students sorted by weeklyXp DESC for the global leaderboard.
-# Tie-break: totalXp DESC (client sorts alphabetically after that).
+# ── CHANGED: replaced user { fullName } with username (leaderboard shows username) ──
 query GetWeeklyLeaderboard @auth(level: USER, insecureReason: "Leaderboard is visible to all authenticated students.") {
   students(orderBy: [{ weeklyXp: DESC }, { totalXp: DESC }], limit: 100) {
     uid
+    username
     weeklyXp
     totalXp
     lastActiveAt
-    user {
-      fullName
-    }
   }
 }
 
-# Looks up a student by their unique friend code.
+# ── CHANGED: added username ───────────────────────────────────────────────────
 query GetStudentByFriendCode($friendCode: String!) @auth(level: USER, insecureReason: "Friend code lookup requires knowing the exact code.") {
   students(where: { friendCode: { eq: $friendCode } }, limit: 1) {
     uid
+    username
     friendCode
     user {
       fullName
@@ -120,7 +113,6 @@ query GetStudentByFriendCode($friendCode: String!) @auth(level: USER, insecureRe
   }
 }
 
-# Returns all pending friend requests sent by a student.
 query GetSentFriendRequests($fromStudentUid: String!) @auth(level: USER, insecureReason: "Students can view their own sent requests.") {
   friendRequests(
     where: { fromStudentUid: { eq: $fromStudentUid } }
@@ -134,13 +126,14 @@ query GetSentFriendRequests($fromStudentUid: String!) @auth(level: USER, insecur
   }
 }
 
-# Returns all accepted friends for a student with profile info.
+# ── CHANGED: added username to the friend sub-selection ──────────────────────
 query GetFriendsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Students can view their own friends list.") {
   friendships(where: { studentUid: { eq: $studentUid } }) {
     id
     friendUid
     friend {
       uid
+      username
       totalXp
       weeklyXp
       lastActiveAt
@@ -153,7 +146,6 @@ query GetFriendsForStudent($studentUid: String!) @auth(level: USER, insecureReas
 
 # ── Parent: Friend Request Approval ──────────────────────────────────────────
 
-# Returns all pending friend requests for all students belonging to a parent.
 query GetPendingFriendRequestsForParent($parentUid: String!) @auth(level: USER, insecureReason: "Parents are authorized to view their children's pending friend requests.") {
   friendRequests(
     where: {
@@ -179,7 +171,6 @@ query GetPendingFriendRequestsForParent($parentUid: String!) @auth(level: USER, 
 
 # ── Student Settings ──────────────────────────────────────────────────────────
 
-# Returns the app preferences for a student. Null if never saved.
 query GetStudentSettings($studentUid: String!) @auth(level: USER, insecureReason: "Students are authorized to read their own settings.") {
   studentSettings(key: { studentUid: $studentUid }) {
     notificationsEnabled
@@ -190,14 +181,12 @@ query GetStudentSettings($studentUid: String!) @auth(level: USER, insecureReason
 
 # ── Avatar Shop ───────────────────────────────────────────────────────────────
 
-# Returns all item IDs owned by a student (catalog items are client-side).
 query GetStudentOwnedItems($studentUid: String!) @auth(level: USER, insecureReason: "Students read their own inventory.") {
   studentOwnedItems(where: { studentUid: { eq: $studentUid } }) {
     itemId
   }
 }
 
-# Returns the student's current avatar configuration.
 query GetStudentAvatar($studentUid: String!) @auth(level: USER, insecureReason: "Students read their own avatar config.") {
   studentAvatar(key: { studentUid: $studentUid }) {
     gender
@@ -214,8 +203,6 @@ query GetStudentAvatar($studentUid: String!) @auth(level: USER, insecureReason: 
 
 # ── App rules ─────────────────────────────────────────────────────────────────
 
-# Fetches the global student config and all app rules for a given student.
-# Used by the parent config screen and by the student device to sync rules.
 query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
   studentConfig(key: { studentUid: $studentUid }) {
     usageHours

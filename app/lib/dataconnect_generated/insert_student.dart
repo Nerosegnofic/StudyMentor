@@ -2,6 +2,7 @@ part of 'generated.dart';
 
 class InsertStudentVariablesBuilder {
   String parentUid;
+  String username;
   Optional<int> _gradeLevel = Optional.optional(nativeFromJson, nativeToJson);
 
   final FirebaseDataConnect _dataConnect;  InsertStudentVariablesBuilder gradeLevel(int? t) {
@@ -9,7 +10,7 @@ class InsertStudentVariablesBuilder {
    return this;
   }
 
-  InsertStudentVariablesBuilder(this._dataConnect, {required  this.parentUid,});
+  InsertStudentVariablesBuilder(this._dataConnect, {required  this.parentUid,required  this.username,});
   Deserializer<InsertStudentData> dataDeserializer = (dynamic json)  => InsertStudentData.fromJson(jsonDecode(json));
   Serializer<InsertStudentVariables> varsSerializer = (InsertStudentVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<InsertStudentData, InsertStudentVariables>> execute() {
@@ -17,7 +18,7 @@ class InsertStudentVariablesBuilder {
   }
 
   MutationRef<InsertStudentData, InsertStudentVariables> ref() {
-    InsertStudentVariables vars= InsertStudentVariables(parentUid: parentUid,gradeLevel: _gradeLevel,);
+    InsertStudentVariables vars= InsertStudentVariables(parentUid: parentUid,username: username,gradeLevel: _gradeLevel,);
     return _dataConnect.mutation("InsertStudent", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -93,11 +94,14 @@ class InsertStudentData {
 @immutable
 class InsertStudentVariables {
   final String parentUid;
+  final String username;
   late final Optional<int>gradeLevel;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   InsertStudentVariables.fromJson(Map<String, dynamic> json):
   
-  parentUid = nativeFromJson<String>(json['parentUid']) {
+  parentUid = nativeFromJson<String>(json['parentUid']),
+  username = nativeFromJson<String>(json['username']) {
+  
   
   
   
@@ -116,16 +120,18 @@ class InsertStudentVariables {
 
     final InsertStudentVariables otherTyped = other as InsertStudentVariables;
     return parentUid == otherTyped.parentUid && 
+    username == otherTyped.username && 
     gradeLevel == otherTyped.gradeLevel;
     
   }
   @override
-  int get hashCode => Object.hashAll([parentUid.hashCode, gradeLevel.hashCode]);
+  int get hashCode => Object.hashAll([parentUid.hashCode, username.hashCode, gradeLevel.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['parentUid'] = nativeToJson<String>(parentUid);
+    json['username'] = nativeToJson<String>(username);
     if(gradeLevel.state == OptionalState.set) {
       json['gradeLevel'] = gradeLevel.toJson();
     }
@@ -134,6 +140,7 @@ class InsertStudentVariables {
 
   InsertStudentVariables({
     required this.parentUid,
+    required this.username,
     required this.gradeLevel,
   });
 }
