@@ -188,6 +188,30 @@ query GetStudentSettings($studentUid: String!) @auth(level: USER, insecureReason
   }
 }
 
+# ── Avatar Shop ───────────────────────────────────────────────────────────────
+
+# Returns all item IDs owned by a student (catalog items are client-side).
+query GetStudentOwnedItems($studentUid: String!) @auth(level: USER, insecureReason: "Students read their own inventory.") {
+  studentOwnedItems(where: { studentUid: { eq: $studentUid } }) {
+    itemId
+  }
+}
+
+# Returns the student's current avatar configuration.
+query GetStudentAvatar($studentUid: String!) @auth(level: USER, insecureReason: "Students read their own avatar config.") {
+  studentAvatar(key: { studentUid: $studentUid }) {
+    gender
+    skinTone
+    equippedHair
+    equippedOutfit
+    equippedBottom
+    equippedShoes
+    equippedAccessory
+    equippedBackground
+    equippedSpecial
+  }
+}
+
 # ── App rules ─────────────────────────────────────────────────────────────────
 
 # Fetches the global student config and all app rules for a given student.

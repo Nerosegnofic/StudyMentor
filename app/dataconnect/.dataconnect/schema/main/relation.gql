@@ -524,6 +524,44 @@ extend type Student {
     having: InstalledApp_Having
   ): [InstalledApp!]! @fdc_generated(from: "InstalledApp.student", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
   """
+  ✨ List `StudentOwnedItem` objects in a one-to-many relationship (where `StudentOwnedItem`.`student` is this object).
+  """
+  studentOwnedItems_on_student(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: StudentOwnedItem_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [StudentOwnedItem_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: StudentOwnedItem_Having
+  ): [StudentOwnedItem!]! @fdc_generated(from: "StudentOwnedItem.student", purpose: QUERY_MULTIPLE_ONE_TO_MANY)
+  """
+  ✨ List `StudentAvatar` objects in a one-to-one relationship (where `StudentAvatar`.`student` is this object).
+  """
+  studentAvatar_on_student: StudentAvatar @fdc_generated(from: "StudentAvatar.student", purpose: QUERY_SINGLE_ONE_TO_ONE)
+  """
   ✨ List `StudentConfig` objects in a one-to-one relationship (where `StudentConfig`.`student` is this object).
   """
   studentConfig_on_student: StudentConfig @fdc_generated(from: "StudentConfig.student", purpose: QUERY_SINGLE_ONE_TO_ONE)
@@ -807,6 +845,110 @@ extend type Student {
   """
   _id: ID! @fdc_generated(from: "Student.uid", purpose: ENTITY_ID)
 }
+extend type StudentAvatar {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "StudentAvatar", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table.
+  """
+  _count: Int! @fdc_generated(from: "StudentAvatar.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `equippedAccessory` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  equippedAccessory_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.equippedAccessory", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `equippedBackground` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  equippedBackground_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.equippedBackground", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `equippedBottom` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  equippedBottom_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.equippedBottom", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `equippedHair` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  equippedHair_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.equippedHair", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `equippedOutfit` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  equippedOutfit_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.equippedOutfit", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `equippedShoes` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  equippedShoes_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.equippedShoes", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `equippedSpecial` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  equippedSpecial_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.equippedSpecial", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `gender` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  gender_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.gender", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `skinTone` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  skinTone_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.skinTone", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `studentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  studentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.studentUid", purpose: QUERY_COUNT)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "StudentAvatar.studentUid", purpose: ENTITY_ID)
+}
 extend type StudentConfig {
   """
   Implicit metadata field that cannot be written. It provides extra information about query results.
@@ -969,6 +1111,64 @@ extend type StudentConfig {
   A generated field that is used for caching results in SDKs.
   """
   _id: ID! @fdc_generated(from: "StudentConfig.studentUid", purpose: ENTITY_ID)
+}
+extend type StudentOwnedItem {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "StudentOwnedItem", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `StudentOwnedItem` table.
+  """
+  _count: Int! @fdc_generated(from: "StudentOwnedItem.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentOwnedItem` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  id_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentOwnedItem.id", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentOwnedItem` table where the `itemId` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  itemId_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentOwnedItem.itemId", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentOwnedItem` table where the `purchasedAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  purchasedAt_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentOwnedItem.purchasedAt", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentOwnedItem` table where the `studentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  studentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentOwnedItem.studentUid", purpose: QUERY_COUNT)
+  """
+  ✨ Minimum of the `purchasedAt` field in the `StudentOwnedItem` table.
+  """
+  purchasedAt_min: Timestamp @fdc_generated(from: "StudentOwnedItem.purchasedAt", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `purchasedAt` field in the `StudentOwnedItem` table.
+  """
+  purchasedAt_max: Timestamp @fdc_generated(from: "StudentOwnedItem.purchasedAt", purpose: QUERY_MAX)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "StudentOwnedItem.id", purpose: ENTITY_ID)
 }
 extend type StudentSettings {
   """

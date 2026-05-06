@@ -38,6 +38,14 @@ part 'upsert_student_settings.dart';
 
 part 'insert_support_ticket.dart';
 
+part 'insert_student_owned_item.dart';
+
+part 'update_student_coins.dart';
+
+part 'upsert_student_avatar.dart';
+
+part 'update_student_xp_and_coins.dart';
+
 part 'upsert_student_config.dart';
 
 part 'get_user_by_uid.dart';
@@ -65,6 +73,10 @@ part 'get_friends_for_student.dart';
 part 'get_pending_friend_requests_for_parent.dart';
 
 part 'get_student_settings.dart';
+
+part 'get_student_owned_items.dart';
+
+part 'get_student_avatar.dart';
 
 part 'get_app_config_for_student.dart';
 
@@ -235,6 +247,26 @@ class ExampleConnector {
   }
   
   
+  InsertStudentOwnedItemVariablesBuilder insertStudentOwnedItem ({required String studentUid, required String itemId, }) {
+    return InsertStudentOwnedItemVariablesBuilder(dataConnect, studentUid: studentUid,itemId: itemId,);
+  }
+  
+  
+  UpdateStudentCoinsVariablesBuilder updateStudentCoins ({required int totalCoins, }) {
+    return UpdateStudentCoinsVariablesBuilder(dataConnect, totalCoins: totalCoins,);
+  }
+  
+  
+  UpsertStudentAvatarVariablesBuilder upsertStudentAvatar ({required String studentUid, required String gender, required String skinTone, }) {
+    return UpsertStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,gender: gender,skinTone: skinTone,);
+  }
+  
+  
+  UpdateStudentXpAndCoinsVariablesBuilder updateStudentXpAndCoins ({required int totalXp, required int weeklyXp, required int totalCoins, required int totalQuestionsAnswered, required int currentStreak, }) {
+    return UpdateStudentXpAndCoinsVariablesBuilder(dataConnect, totalXp: totalXp,weeklyXp: weeklyXp,totalCoins: totalCoins,totalQuestionsAnswered: totalQuestionsAnswered,currentStreak: currentStreak,);
+  }
+  
+  
   UpsertStudentConfigVariablesBuilder upsertStudentConfig ({required String studentUid, required int usageHours, required int usageMinutes, required int cooldownHours, required int cooldownMinutes, }) {
     return UpsertStudentConfigVariablesBuilder(dataConnect, studentUid: studentUid,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,);
   }
@@ -302,6 +334,16 @@ class ExampleConnector {
   
   GetStudentSettingsVariablesBuilder getStudentSettings ({required String studentUid, }) {
     return GetStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetStudentOwnedItemsVariablesBuilder getStudentOwnedItems ({required String studentUid, }) {
+    return GetStudentOwnedItemsVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetStudentAvatarVariablesBuilder getStudentAvatar ({required String studentUid, }) {
+    return GetStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,);
   }
   
   

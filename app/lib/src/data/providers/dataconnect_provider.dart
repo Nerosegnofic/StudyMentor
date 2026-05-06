@@ -423,6 +423,99 @@ class DataConnectProvider {
         .execute();
   }
 
+  // ── Avatar Shop ───────────────────────────────────────────────────────────
+
+  /// Returns the set of item IDs owned by [studentUid].
+  Future<Set<String>> getStudentOwnedItems(String studentUid) async {
+    final result = await _connector
+        .getStudentOwnedItems(studentUid: studentUid)
+        .execute();
+    return result.data.studentOwnedItems.map((e) => e.itemId).toSet();
+  }
+
+  /// Returns the avatar config for [studentUid], or null if never saved.
+  Future<Map<String, dynamic>?> getStudentAvatar(String studentUid) async {
+    final result = await _connector
+        .getStudentAvatar(studentUid: studentUid)
+        .execute();
+    final a = result.data.studentAvatar;
+    if (a == null) return null;
+    return {
+      'gender': a.gender,
+      'skin_tone': a.skinTone,
+      'equipped_hair': a.equippedHair,
+      'equipped_outfit': a.equippedOutfit,
+      'equipped_bottom': a.equippedBottom,
+      'equipped_shoes': a.equippedShoes,
+      'equipped_accessory': a.equippedAccessory,
+      'equipped_background': a.equippedBackground,
+      'equipped_special': a.equippedSpecial,
+    };
+  }
+
+  /// Records a purchased item. Returns the new item's id.
+  Future<void> insertStudentOwnedItem({
+    required String studentUid,
+    required String itemId,
+  }) async {
+    await _connector
+        .insertStudentOwnedItem(studentUid: studentUid, itemId: itemId)
+        .execute();
+  }
+
+  /// Persists the student's avatar configuration.
+  Future<void> upsertStudentAvatar({
+    required String studentUid,
+    required String gender,
+    required String skinTone,
+    String? equippedHair,
+    String? equippedOutfit,
+    String? equippedBottom,
+    String? equippedShoes,
+    String? equippedAccessory,
+    String? equippedBackground,
+    String? equippedSpecial,
+  }) async {
+    await _connector
+        .upsertStudentAvatar(
+          studentUid: studentUid,
+          gender: gender,
+          skinTone: skinTone,
+        )
+        .equippedHair(equippedHair)
+        .equippedOutfit(equippedOutfit)
+        .equippedBottom(equippedBottom)
+        .equippedShoes(equippedShoes)
+        .equippedAccessory(equippedAccessory)
+        .equippedBackground(equippedBackground)
+        .equippedSpecial(equippedSpecial)
+        .execute();
+  }
+
+  /// Sets the student's coin balance (used after a purchase).
+  Future<void> updateStudentCoins(int totalCoins) async {
+    await _connector.updateStudentCoins(totalCoins: totalCoins).execute();
+  }
+
+  /// Awards XP and coins after a quiz. Pass the new absolute totals.
+  Future<void> updateStudentXpAndCoins({
+    required int totalXp,
+    required int weeklyXp,
+    required int totalCoins,
+    required int totalQuestionsAnswered,
+    required int currentStreak,
+  }) async {
+    await _connector
+        .updateStudentXpAndCoins(
+          totalXp: totalXp,
+          weeklyXp: weeklyXp,
+          totalCoins: totalCoins,
+          totalQuestionsAnswered: totalQuestionsAnswered,
+          currentStreak: currentStreak,
+        )
+        .execute();
+  }
+
   // ── Support Tickets ───────────────────────────────────────────────────────
 
   /// Inserts a support ticket from the Help Center.
