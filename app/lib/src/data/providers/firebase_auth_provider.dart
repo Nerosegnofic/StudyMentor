@@ -127,6 +127,49 @@ class FirebaseAuthProvider {
     }
   }
 
+  /// Updates a student's email and/or password using a secondary Firebase
+  /// app instance, so the parent's main session is never disturbed.
+  /// Returns a pending-email string if a verification email was sent, or null.
+  Future<String?> updateStudentCredentials({
+    required String studentEmail,
+    required String currentPassword,
+    String? newEmail,
+    String? newPassword,
+  }) async {
+    final secondaryAuth = await _getSecondaryAuth();
+    try {
+      final cred = await secondaryAuth.signInWithEmailAndPassword(
+        email: studentEmail,
+        password: currentPassword,
+      );
+      final user = cred.user!;
+
+      // Change password first (before a potential email update invalidates the token).
+      if (newPassword != null && newPassword.isNotEmpty) {
+        await user.updatePassword(newPassword);
+      }
+
+      String? pendingEmail;
+      if (newEmail != null &&
+          newEmail.isNotEmpty &&
+          newEmail != studentEmail) {
+        await user.verifyBeforeUpdateEmail(newEmail);
+        pendingEmail = newEmail;
+      }
+
+      return pendingEmail;
+    } finally {
+      await secondaryAuth.signOut();
+    }
+  }
+
+  Future<void> deleteCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+    await user.delete();
+    _cachedPassword = null;
+  }
+
   Future<bool?> checkEmailVerifiedForCredentials(
     String email,
     String password,

@@ -29,6 +29,7 @@ class _ParentSettingsState extends State<ParentSettings> {
 
   bool _isSaving = false;
   bool _isDirty = false;
+  bool _isDeletingAccount = false;
 
   // Baselines for dirty detection.
   String _originalFullName = '';
@@ -129,6 +130,90 @@ class _ParentSettingsState extends State<ParentSettings> {
     );
   }
 
+  // ── delete account ──────────────────────────────────────────────────────────
+
+  Future<void> _confirmDeleteAccount() async {
+    // Step 1: Warn user they must delete all children first.
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Your Account'),
+        content: const Text(
+          'This will permanently delete your account and all associated data. '
+          'You must delete all student accounts first.\n\n'
+          'This action cannot be undone. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+            ),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) return;
+
+    // Step 2: Ask for current password to re-authenticate.
+    final password = await _showPasswordConfirmDialog();
+    if (password == null || password.isEmpty || !mounted) return;
+
+    context.read<AuthBloc>().add(
+      DeleteParentAccountRequested(currentPassword: password),
+    );
+  }
+
+  Future<String?> _showPasswordConfirmDialog() async {
+    final passCtl = TextEditingController();
+    bool obscure = true;
+
+    return await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: const Text('Confirm Your Password'),
+          content: TextField(
+            controller: passCtl,
+            obscureText: obscure,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: 'Current Password',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                ),
+                onPressed: () => setS(() => obscure = !obscure),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(passCtl.text),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+              ),
+              child: const Text('Delete Account'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── build ───────────────────────────────────────────────────────────────────
 
   @override
@@ -146,6 +231,18 @@ class _ParentSettingsState extends State<ParentSettings> {
           _onSaveSuccess(state.updatedUser);
         } else if (state is ProfileUpdateError) {
           setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        } else if (state is ParentAccountDeleteLoading) {
+          setState(() => _isDeletingAccount = true);
+        } else if (state is ParentAccountDeleted) {
+          // AuthUnauthenticated follows immediately — no extra navigation needed.
+        } else if (state is ParentAccountDeleteError) {
+          setState(() => _isDeletingAccount = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -184,6 +281,8 @@ class _ParentSettingsState extends State<ParentSettings> {
                 _buildConfirmPasswordField(),
                 const SizedBox(height: 32),
                 _buildSaveButton(),
+                const SizedBox(height: 40),
+                _buildDeleteAccountSection(),
               ],
             ),
           ),
@@ -421,6 +520,92 @@ class _ParentSettingsState extends State<ParentSettings> {
                 ),
               ),
       ),
+    );
+  }
+
+  // ── delete account section ──────────────────────────────────────────────────
+
+  Widget _buildDeleteAccountSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionHeader('Danger Zone'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.red.shade600,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Delete Account',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.red.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Permanently removes your account and all data. '
+                'You must delete all student accounts first.',
+                style: TextStyle(fontSize: 12, color: Colors.red.shade800),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isDeletingAccount
+                      ? null
+                      : _confirmDeleteAccount,
+                  icon: _isDeletingAccount
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.red.shade600,
+                          ),
+                        )
+                      : Icon(
+                          Icons.delete_forever_rounded,
+                          size: 18,
+                          color: Colors.red.shade600,
+                        ),
+                  label: Text(
+                    'Delete My Account',
+                    style: TextStyle(
+                      color: Colors.red.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: Colors.red.shade400),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

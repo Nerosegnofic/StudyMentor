@@ -255,6 +255,54 @@ mutation UpdateStudentXpAndCoins(
 
 # ── Student Config Mutations ──────────────────────────────────────────────────
 
+# ── Student Account Deletion (parent-side) ───────────────────────────────────
+
+mutation DeleteAllOwnedItemsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's owned items.") {
+  studentOwnedItem_deleteMany(where: { studentUid: { eq: $studentUid } })
+}
+
+mutation DeleteStudentAvatar($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's avatar.") {
+  studentAvatar_delete(key: { studentUid: $studentUid })
+}
+
+mutation DeleteStudentSettings($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's settings.") {
+  studentSettings_delete(key: { studentUid: $studentUid })
+}
+
+mutation DeleteStudentConfig($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's config.") {
+  studentConfig_delete(key: { studentUid: $studentUid })
+}
+
+mutation DeleteAllFriendRequestsByStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's friend requests.") {
+  friendRequest_deleteMany(where: { fromStudentUid: { eq: $studentUid } })
+}
+
+mutation DeleteAllFriendshipsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's friendships.") {
+  friendship_deleteMany(where: { studentUid: { eq: $studentUid } })
+}
+
+mutation DeleteStudentRecord($uid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's student record.") {
+  student_delete(key: { uid: $uid })
+}
+
+mutation DeleteUserRecord($uid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's user record.") {
+  user_delete(key: { uid: $uid })
+}
+
+# ── Student Name Update (parent-side) ─────────────────────────────────────────
+
+mutation UpdateStudentFullName($uid: String!, $fullName: String!) @auth(level: USER, insecureReason: "Parents can update their children's full name.") {
+  user_update(key: { uid: $uid }, data: { fullName: $fullName })
+}
+
+# ── Parent Account Deletion ────────────────────────────────────────────────────
+
+mutation DeleteParentRecord @auth(level: USER) {
+  parent_delete(key: { uid_expr: "auth.uid" })
+}
+
+# ── Student Config ────────────────────────────────────────────────────────────
+
 mutation UpsertStudentConfig(
   $studentUid: String!
   $usageHours: Int!
