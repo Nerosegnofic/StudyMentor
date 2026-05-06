@@ -104,6 +104,20 @@ extend type Query {
     first: Student_FirstRow
   ): Student @fdc_generated(from: "Student", purpose: QUERY_SINGLE)
   """
+  ✨ Look up a single `StudentAvatar` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
+  """
+  studentAvatar(
+    """
+    The key used to identify the object.
+    """
+    key: StudentAvatar_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentAvatar_FirstRow
+  ): StudentAvatar @fdc_generated(from: "StudentAvatar", purpose: QUERY_SINGLE)
+  """
   ✨ Look up a single `StudentConfig` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
   """
   studentConfig(
@@ -117,6 +131,25 @@ extend type Query {
     """
     first: StudentConfig_FirstRow
   ): StudentConfig @fdc_generated(from: "StudentConfig", purpose: QUERY_SINGLE)
+  """
+  ✨ Look up a single `StudentOwnedItem` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
+  """
+  studentOwnedItem(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: StudentOwnedItem_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: StudentOwnedItem_FirstRow
+  ): StudentOwnedItem @fdc_generated(from: "StudentOwnedItem", purpose: QUERY_SINGLE)
   """
   ✨ Look up a single `StudentSettings` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
   """
@@ -369,6 +402,40 @@ extend type Query {
     having: Student_Having
   ): [Student!]! @fdc_generated(from: "Student", purpose: QUERY_MULTIPLE)
   """
+  ✨ List `StudentAvatar` objects in the table and return selected fields, optionally filtered by `where` conditions
+  """
+  studentAvatars(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: StudentAvatar_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [StudentAvatar_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: StudentAvatar_Having
+  ): [StudentAvatar!]! @fdc_generated(from: "StudentAvatar", purpose: QUERY_MULTIPLE)
+  """
   ✨ List `StudentConfig` objects in the table and return selected fields, optionally filtered by `where` conditions
   """
   studentConfigs(
@@ -402,6 +469,40 @@ extend type Query {
     """
     having: StudentConfig_Having
   ): [StudentConfig!]! @fdc_generated(from: "StudentConfig", purpose: QUERY_MULTIPLE)
+  """
+  ✨ List `StudentOwnedItem` objects in the table and return selected fields, optionally filtered by `where` conditions
+  """
+  studentOwnedItems(
+    """
+    Filter condition to narrow down the query results.
+    """
+    where: StudentOwnedItem_Filter
+
+    """
+    Order the query results by specific fields.
+    """
+    orderBy: [StudentOwnedItem_Order!]
+
+    """
+    Number of rows to skip before starting to return the results.
+    """
+    offset: Int
+
+    """
+    Maximum number of rows to return (defaults to 100 rows).
+    """
+    limit: Int = 100
+
+    """
+    Set to true to return distinct results.
+    """
+    distinct: Boolean = false
+
+    """
+    Filter condition to apply to the groups of aggregate queries.
+    """
+    having: StudentOwnedItem_Having
+  ): [StudentOwnedItem!]! @fdc_generated(from: "StudentOwnedItem", purpose: QUERY_MULTIPLE)
   """
   ✨ List `StudentSettings` objects in the table and return selected fields, optionally filtered by `where` conditions
   """

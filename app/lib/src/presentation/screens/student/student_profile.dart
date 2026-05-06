@@ -3,9 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
+import '../../../bloc/shop/shop_bloc.dart';
+import '../../../bloc/shop/shop_event.dart';
+import '../../../bloc/shop/shop_state.dart';
 import '../../../data/providers/dataconnect_provider.dart';
+import '../../../domain/models/avatar_config.dart';
 import '../../../services/friend_code_service.dart';
 import '../../../utils/student_rank_utils.dart';
+import '../../widgets/avatar_widget.dart';
+import 'student_avatar_customization.dart';
 import 'student_settings.dart';
 import 'student_help_center.dart';
 
@@ -28,8 +34,10 @@ class _StudentProfileState extends State<StudentProfile> {
   bool _loading = true;
   String? _friendCode;
   int _totalXp = 0;
+  int _totalCoins = 0;
   int _currentStreak = 0;
   int _totalQuestionsAnswered = 0;
+  AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   // ── Computed from XP ─────────────────────────────────────────────────────
   int get _level => StudentRankUtils.levelFromXp(_totalXp);
@@ -44,21 +52,25 @@ class _StudentProfileState extends State<StudentProfile> {
   Future<void> _loadProfile() async {
     try {
       final provider = DataConnectProvider();
-      final profileFuture = provider.getStudentProfile(widget.uid);
-      final codeFuture = FriendCodeService(provider)
-          .getOrCreate(widget.uid, widget.fullName);
+      final results = await Future.wait([
+        provider.getStudentProfile(widget.uid),
+        FriendCodeService(provider).getOrCreate(widget.uid, widget.fullName),
+        provider.getStudentAvatar(widget.uid),
+      ]);
 
-      final results = await Future.wait([profileFuture, codeFuture]);
       final profile = results[0] as Map<String, dynamic>;
       final code = results[1] as String;
+      final avatarMap = results[2] as Map<String, dynamic>?;
 
       if (mounted) {
         setState(() {
           _totalXp = (profile['total_xp'] as int?) ?? 0;
+          _totalCoins = (profile['total_coins'] as int?) ?? 0;
           _currentStreak = (profile['current_streak'] as int?) ?? 0;
           _totalQuestionsAnswered =
               (profile['total_questions_answered'] as int?) ?? 0;
           _friendCode = code;
+          if (avatarMap != null) _avatarConfig = AvatarConfig.fromMap(avatarMap);
           _loading = false;
         });
       }
@@ -148,38 +160,61 @@ class _StudentProfileState extends State<StudentProfile> {
   }
 
   Widget _buildAvatarWithBadge() {
-    final initial = widget.fullName.isNotEmpty
-        ? widget.fullName[0].toUpperCase()
-        : '?';
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            color: const Color(0xFF2E7D32),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 4),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF2E7D32).withOpacity(0.35),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              initial,
-              style: const TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
+        // Tappable avatar — opens customization
+        GestureDetector(
+          onTap: _loading
+              ? null
+              : () {
+                  final shopBloc = context.read<ShopBloc>();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: shopBloc,
+                        child: StudentAvatarCustomization(
+                          uid: widget.uid,
+                          config: _avatarConfig,
+                        ),
+                      ),
+                    ),
+                  ).then((_) {
+                    // Reload avatar after returning from customization
+                    if (mounted) _loadProfile();
+                  });
+                },
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
+            child: AvatarWidget(config: _avatarConfig, size: 96),
           ),
         ),
+        // Edit pencil badge
+        Positioned(
+          bottom: -2,
+          right: -2,
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4A6CF7),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: const Icon(Icons.edit, color: Colors.white, size: 11),
+          ),
+        ),
+        // Level badge
         Positioned(
           bottom: -10,
           left: 0,
@@ -281,33 +316,71 @@ class _StudentProfileState extends State<StudentProfile> {
                     ),
                   ),
                 )
-              : Row(
+              : Column(
                   children: [
-                    Expanded(
-                      child: _buildStat(
-                        icon: Icons.auto_awesome,
-                        iconBg: const Color(0xFFFFF8E1),
-                        iconColor: const Color(0xFFFFB300),
-                        value: _formatNumber(_totalXp),
-                        label: 'Total XP',
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStat(
+                            icon: Icons.auto_awesome,
+                            iconBg: const Color(0xFFFFF8E1),
+                            iconColor: const Color(0xFFFFB300),
+                            value: _formatNumber(_totalXp),
+                            label: 'Total XP',
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildStat(
+                            icon: Icons.local_fire_department,
+                            iconBg: const Color(0xFFFFEBEE),
+                            iconColor: const Color(0xFFF44336),
+                            value: '$_currentStreak',
+                            label: 'Day Streak',
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildStat(
+                            icon: Icons.check_circle_outline,
+                            iconBg: const Color(0xFFE8F5E9),
+                            iconColor: const Color(0xFF43A047),
+                            value: '$_totalQuestionsAnswered',
+                            label: 'Questions',
+                          ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: _buildStat(
-                        icon: Icons.local_fire_department,
-                        iconBg: const Color(0xFFFFEBEE),
-                        iconColor: const Color(0xFFF44336),
-                        value: '$_currentStreak',
-                        label: 'Day Streak',
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFFCA28)),
                       ),
-                    ),
-                    Expanded(
-                      child: _buildStat(
-                        icon: Icons.check_circle_outline,
-                        iconBg: const Color(0xFFE8F5E9),
-                        iconColor: const Color(0xFF43A047),
-                        value: '$_totalQuestionsAnswered',
-                        label: 'Questions',
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('🪙',
+                              style: TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatNumber(_totalCoins),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFF57F17),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'coins available',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.amber[800],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

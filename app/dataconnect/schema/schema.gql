@@ -115,3 +115,29 @@ type SupportTicket @table(name: "support_tickets", key: ["id"]) {
   status: String! @col(dataType: "varchar(20)") @default(expr: "'open'")
   createdAt: Timestamp! @default(expr: "request.time")
 }
+
+# Records a shop item purchased by a student.
+# itemId references the local catalog (no DB catalog table — catalog is hardcoded client-side).
+type StudentOwnedItem @table(name: "student_owned_items", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  student: Student!
+  studentUid: String!
+  itemId: String! @col(dataType: "varchar(50)")
+  purchasedAt: Timestamp! @default(expr: "request.time")
+}
+
+# Stores the student's current avatar configuration (equipped item IDs per slot).
+# Uses upsert — one row per student.
+type StudentAvatar @table(name: "student_avatars", key: ["studentUid"]) {
+  studentUid: String!
+  student: Student!
+  gender: String! @col(dataType: "varchar(10)") @default(expr: "'male'")
+  skinTone: String! @col(dataType: "varchar(20)") @default(expr: "'medium'")
+  equippedHair: String @col(dataType: "varchar(50)")
+  equippedOutfit: String @col(dataType: "varchar(50)")
+  equippedBottom: String @col(dataType: "varchar(50)")
+  equippedShoes: String @col(dataType: "varchar(50)")
+  equippedAccessory: String @col(dataType: "varchar(50)")
+  equippedBackground: String @col(dataType: "varchar(50)")
+  equippedSpecial: String @col(dataType: "varchar(50)")
+}

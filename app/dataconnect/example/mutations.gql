@@ -200,6 +200,78 @@ mutation InsertSupportTicket(
   )
 }
 
+# ── Avatar Shop Mutations ─────────────────────────────────────────────────────
+
+# Records a shop item as purchased by the student.
+mutation InsertStudentOwnedItem(
+  $studentUid: String!
+  $itemId: String!
+) @auth(level: USER, insecureReason: "Students purchase items for themselves.") {
+  studentOwnedItem_insert(
+    data: {
+      studentUid: $studentUid
+      itemId: $itemId
+    }
+  )
+}
+
+# Deducts coins from the student after a purchase.
+mutation UpdateStudentCoins($totalCoins: Int!) @auth(level: USER) {
+  student_update(
+    key: { uid_expr: "auth.uid" }
+    data: { totalCoins: $totalCoins }
+  )
+}
+
+# Upserts the student's current avatar configuration (equipped item IDs).
+mutation UpsertStudentAvatar(
+  $studentUid: String!
+  $gender: String!
+  $skinTone: String!
+  $equippedHair: String
+  $equippedOutfit: String
+  $equippedBottom: String
+  $equippedShoes: String
+  $equippedAccessory: String
+  $equippedBackground: String
+  $equippedSpecial: String
+) @auth(level: USER, insecureReason: "Students update their own avatar.") {
+  studentAvatar_upsert(
+    data: {
+      studentUid: $studentUid
+      gender: $gender
+      skinTone: $skinTone
+      equippedHair: $equippedHair
+      equippedOutfit: $equippedOutfit
+      equippedBottom: $equippedBottom
+      equippedShoes: $equippedShoes
+      equippedAccessory: $equippedAccessory
+      equippedBackground: $equippedBackground
+      equippedSpecial: $equippedSpecial
+    }
+  )
+}
+
+# Awards XP and coins after a quiz/exam. Call with computed new totals.
+mutation UpdateStudentXpAndCoins(
+  $totalXp: Int!
+  $weeklyXp: Int!
+  $totalCoins: Int!
+  $totalQuestionsAnswered: Int!
+  $currentStreak: Int!
+) @auth(level: USER) {
+  student_update(
+    key: { uid_expr: "auth.uid" }
+    data: {
+      totalXp: $totalXp
+      weeklyXp: $weeklyXp
+      totalCoins: $totalCoins
+      totalQuestionsAnswered: $totalQuestionsAnswered
+      currentStreak: $currentStreak
+    }
+  )
+}
+
 # ── Student Config Mutations ──────────────────────────────────────────────────
 
 # Upserts the global usage and cooldown time limits for a student.
