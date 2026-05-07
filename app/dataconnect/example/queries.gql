@@ -48,7 +48,6 @@ query GetInstalledAppsForStudent($studentUid: String!) @auth(level: USER, insecu
     packageName
     appLabel
     isSystemApp
-    iconBase64
   }
 }
 
@@ -57,14 +56,12 @@ mutation InsertInstalledApp(
   $packageName: String!
   $appLabel: String!
   $isSystemApp: Boolean!
-  $iconBase64: String
 ) @auth(level: USER, insecureReason: "Students are authorized to sync their own installed apps list.") {
   installedApp_insert(data: {
     studentUid: $studentUid
     packageName: $packageName
     appLabel: $appLabel
     isSystemApp: $isSystemApp
-    iconBase64: $iconBase64
   })
 }
 
@@ -214,7 +211,6 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
     id
     packageName
     appLabel
-    iconBase64
   }
 }
 

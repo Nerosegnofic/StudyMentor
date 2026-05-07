@@ -1,6 +1,5 @@
 // lib/src/presentation/screens/parent/student_config_screen.dart
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -55,16 +54,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   void _loadRulesFromSaved(List<AppRuleModel> saved) {
     _rules.clear();
     for (final r in saved) {
-      final icon = _installedApps
-          .where((a) => a.packageName == r.packageName)
-          .firstOrNull
-          ?.iconBase64;
-
       _rules.add(
         PendingAppRule(
           packageName: r.packageName,
           appLabel: r.appLabel,
-          iconBase64: icon ?? r.iconBase64,
         ),
       );
     }
@@ -179,7 +172,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                   PendingAppRule(
                     packageName: app.packageName,
                     appLabel: app.appLabel,
-                    iconBase64: app.iconBase64,
                   ),
                 );
               }
@@ -227,25 +219,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             _installedApps = state.apps;
             _appsLoading = false;
             _isRefreshing = false;
-            // Backfill icons for any rules already in memory.
-            if (!_isLoading) {
-              for (var i = 0; i < _rules.length; i++) {
-                final r = _rules[i];
-                if (r.iconBase64 == null) {
-                  final icon = state.apps
-                      .where((a) => a.packageName == r.packageName)
-                      .firstOrNull
-                      ?.iconBase64;
-                  if (icon != null) {
-                    _rules[i] = PendingAppRule(
-                      packageName: r.packageName,
-                      appLabel: r.appLabel,
-                      iconBase64: icon,
-                    );
-                  }
-                }
-              }
-            }
           });
         }
 
@@ -1142,10 +1115,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                         app.packageName,
                       );
                       return ListTile(
-                        leading: _AppIcon(
-                          iconBase64: app.iconBase64,
-                          label: app.appLabel,
-                        ),
+                        leading: _AppLetterAvatar(label: app.appLabel),
                         title: Text(
                           app.appLabel,
                           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -1231,29 +1201,19 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   }
 }
 
-// ── _AppIcon ──────────────────────────────────────────────────────────────────
+// ── _AppLetterAvatar ──────────────────────────────────────────────────────────
 
-class _AppIcon extends StatelessWidget {
-  final String? iconBase64;
+class _AppLetterAvatar extends StatelessWidget {
   final String label;
-  const _AppIcon({required this.iconBase64, required this.label});
+  const _AppLetterAvatar({required this.label});
 
   @override
   Widget build(BuildContext context) {
-    if (iconBase64 != null && iconBase64!.isNotEmpty) {
-      try {
-        return CircleAvatar(
-          backgroundImage: MemoryImage(base64Decode(iconBase64!)),
-          backgroundColor: const Color(0xFFE8EDFF),
-          radius: 20,
-        );
-      } catch (_) {}
-    }
     return CircleAvatar(
       backgroundColor: const Color(0xFFE8EDFF),
       radius: 20,
       child: Text(
-        label[0].toUpperCase(),
+        label.isNotEmpty ? label[0].toUpperCase() : '?',
         style: const TextStyle(
           color: Color(0xFF4A6CF7),
           fontWeight: FontWeight.w700,
@@ -1284,7 +1244,7 @@ class _AppRuleCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
         child: Row(
           children: [
-            _AppIcon(iconBase64: rule.iconBase64, label: rule.appLabel),
+            _AppLetterAvatar(label: rule.appLabel),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

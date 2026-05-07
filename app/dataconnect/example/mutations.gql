@@ -77,14 +77,12 @@ mutation InsertAppRule(
   $studentUid: String!
   $packageName: String!
   $appLabel: String!
-  $iconBase64: String
 ) @auth(level: USER) {
   appRule_insert(
     data: {
       studentUid: $studentUid
       packageName: $packageName
       appLabel: $appLabel
-      iconBase64: $iconBase64
     }
   )
 }

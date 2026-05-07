@@ -1104,27 +1104,7 @@ ExampleConnector.instance.insertAppRule(
 ).execute();
 ```
 
-#### Optional Arguments
-We return a builder for each query. For InsertAppRule, we created `InsertAppRuleBuilder`. For queries and mutations with optional parameters, we return a builder class.
-The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
-```dart
-class InsertAppRuleVariablesBuilder {
-  ...
-   InsertAppRuleVariablesBuilder iconBase64(String? t) {
-   _iconBase64.value = t;
-   return this;
-  }
 
-  ...
-}
-ExampleConnector.instance.insertAppRule(
-  studentUid: studentUid,
-  packageName: packageName,
-  appLabel: appLabel,
-)
-.iconBase64(iconBase64)
-.execute();
-```
 
 #### Return Type
 `execute()` returns a `OperationResult<InsertAppRuleData, InsertAppRuleVariables>`
@@ -2335,28 +2315,7 @@ ExampleConnector.instance.insertInstalledApp(
 ).execute();
 ```
 
-#### Optional Arguments
-We return a builder for each query. For InsertInstalledApp, we created `InsertInstalledAppBuilder`. For queries and mutations with optional parameters, we return a builder class.
-The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
-```dart
-class InsertInstalledAppVariablesBuilder {
-  ...
-   InsertInstalledAppVariablesBuilder iconBase64(String? t) {
-   _iconBase64.value = t;
-   return this;
-  }
 
-  ...
-}
-ExampleConnector.instance.insertInstalledApp(
-  studentUid: studentUid,
-  packageName: packageName,
-  appLabel: appLabel,
-  isSystemApp: isSystemApp,
-)
-.iconBase64(iconBase64)
-.execute();
-```
 
 #### Return Type
 `execute()` returns a `OperationResult<InsertInstalledAppData, InsertInstalledAppVariables>`

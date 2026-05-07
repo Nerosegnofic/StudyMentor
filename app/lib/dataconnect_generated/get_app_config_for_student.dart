@@ -71,13 +71,11 @@ class GetAppConfigForStudentAppRules {
   final String id;
   final String packageName;
   final String appLabel;
-  final String? iconBase64;
   GetAppConfigForStudentAppRules.fromJson(dynamic json):
   
   id = nativeFromJson<String>(json['id']),
   packageName = nativeFromJson<String>(json['packageName']),
-  appLabel = nativeFromJson<String>(json['appLabel']),
-  iconBase64 = json['iconBase64'] == null ? null : nativeFromJson<String>(json['iconBase64']);
+  appLabel = nativeFromJson<String>(json['appLabel']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -90,12 +88,11 @@ class GetAppConfigForStudentAppRules {
     final GetAppConfigForStudentAppRules otherTyped = other as GetAppConfigForStudentAppRules;
     return id == otherTyped.id && 
     packageName == otherTyped.packageName && 
-    appLabel == otherTyped.appLabel && 
-    iconBase64 == otherTyped.iconBase64;
+    appLabel == otherTyped.appLabel;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, iconBase64.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -103,9 +100,6 @@ class GetAppConfigForStudentAppRules {
     json['id'] = nativeToJson<String>(id);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
-    if (iconBase64 != null) {
-      json['iconBase64'] = nativeToJson<String?>(iconBase64);
-    }
     return json;
   }
 
@@ -113,7 +107,6 @@ class GetAppConfigForStudentAppRules {
     required this.id,
     required this.packageName,
     required this.appLabel,
-    this.iconBase64,
   });
 }
 

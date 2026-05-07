@@ -135,7 +135,6 @@ class DataConnectProvider {
             'id': r.id,
             'package_name': r.packageName,
             'app_label': r.appLabel,
-            'icon_base64': r.iconBase64,
           },
         )
         .toList();
@@ -153,7 +152,6 @@ class DataConnectProvider {
     required String studentUid,
     required String packageName,
     required String appLabel,
-    String? iconBase64,
   }) async {
     await _connector
         .insertAppRule(
@@ -161,7 +159,6 @@ class DataConnectProvider {
           packageName: packageName,
           appLabel: appLabel,
         )
-        .iconBase64(iconBase64)
         .execute();
   }
 
@@ -194,7 +191,6 @@ class DataConnectProvider {
             'package_name': a.packageName,
             'app_label': a.appLabel,
             'is_system_app': a.isSystemApp,
-            'icon_base64': a.iconBase64,
           },
         )
         .toList();
@@ -211,7 +207,6 @@ class DataConnectProvider {
     required String packageName,
     required String appLabel,
     required bool isSystemApp,
-    String? iconBase64,
   }) async {
     await _connector
         .insertInstalledApp(
@@ -220,7 +215,6 @@ class DataConnectProvider {
           appLabel: appLabel,
           isSystemApp: isSystemApp,
         )
-        .iconBase64(iconBase64)
         .execute();
   }
 
