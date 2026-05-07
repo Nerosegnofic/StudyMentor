@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from langchain_postgres import PGVector
 from app.core.embeddings import RateLimitedCohereEmbeddings
 from app.core.config import settings
@@ -36,38 +36,8 @@ def get_vector_store() -> PGVector:
 
 def init_db():
     """
-    Ensures that all necessary relational tables exist in the database.
+    Creates all ORM-defined tables in the database on startup.
+    All schema is driven by the SQLAlchemy models in domain.py — no raw SQL needed.
     """
-    
-    # Create tables using SQLAlchemy ORM
     Base.metadata.create_all(bind=engine)
-    
-    with engine.begin() as conn:
-        # Create legacy mastery_points table
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS mastery_points (
-                id UUID PRIMARY KEY,
-                document_id UUID,
-                unit TEXT,
-                lesson TEXT,
-                skill_id TEXT,
-                point_text TEXT,
-                source TEXT DEFAULT 'regex',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-        
-        # Ensure latest columns exist (schema evolution)
-        for col, col_type, default in [
-            ('skill_id', 'TEXT', None),
-            ('source', 'TEXT', "'regex'"),
-        ]:
-            try:
-                alter_sql = f"ALTER TABLE mastery_points ADD COLUMN IF NOT EXISTS {col} {col_type}"
-                if default:
-                    alter_sql += f" DEFAULT {default}"
-                conn.execute(text(alter_sql))
-            except Exception:
-                pass  # Column already exists
-    
-    print("Database initialization complete (Relational tables checked).", flush=True)
+    print("Database initialization complete.", flush=True)

@@ -1,6 +1,5 @@
 import math
 from typing import List, Dict
-from app.models.schemas import StudentProfile
 
 class IRTEngine:
     """

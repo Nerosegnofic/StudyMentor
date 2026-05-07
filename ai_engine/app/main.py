@@ -3,7 +3,9 @@ from app.core.config import settings
 from app.controllers.routes_documents import router as documents_router
 from app.controllers.routes_quizzes import router as quizzes_router
 from app.controllers.routes_analytics import router as analytics_router
-from app.core.database import get_vector_store, init_db
+from app.controllers.routes_student import router as student_router
+from app.core.database import get_vector_store, init_db, SessionLocal
+from app.core.cleanup import purge_old_data
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -25,14 +27,22 @@ async def startup_event():
         # Langchain-postgres handles setup on instantiation or first interaction
         _ = get_vector_store()
         print("PGVector connectivity initialized on startup.")
+
+        # 3. Run 30-day data retention purge
+        db = SessionLocal()
+        try:
+            purge_old_data(db)
+        finally:
+            db.close()
     except Exception as e:
         # Print failure but don't strictly crash app if DB isn't ready immediately
-        print(f"Warning: Issue connecting to PGVector Database at startup: {e}")
+        print(f"Warning: Issue during startup: {e}")
 
 # Include Routers
 app.include_router(documents_router, prefix="/api/v1")
 app.include_router(quizzes_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
+app.include_router(student_router, prefix="/api/v1")
 
 @app.get("/health", tags=["Health"])
 def health_check():
