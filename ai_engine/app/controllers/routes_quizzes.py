@@ -14,12 +14,21 @@ from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.repositories import (
     get_all_student_skill_states,
-    get_student_bkt_profile,
-    get_student_skill_state
+    get_student_skill_state,
+    get_priority_subject,
+    get_subject_by_id,
+    get_skills_by_subject_id,
+    get_skills_by_names,
+    create_quiz_session,
+    upsert_student_subject_profile_last_quizzed,
+    save_questions,
+    get_quiz_session_by_id,
+    get_question_by_id,
+    save_question_response
 )
 from app.services.quiz.builder import build_quiz_payload
 from app.services.evaluation.bkt_engine import BKTEngine
-from app.models.domain import QuizSession, Question, Skill, QuestionResponse
+from app.models.domain import Question, QuestionResponse
 
 DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
 
@@ -32,9 +41,30 @@ bkt_engine = BKTEngine()
 async def generate_quiz(
     request: GenerateQuizRequest,
     db: Session = Depends(get_db),
+    # The student_uid is "injected" here by FastAPI.
+    # It calls get_current_user() first. If that function fails (e.g. bad token),
+    # this whole function is skipped and the user gets a 401 Unauthorized automatically.
     student_uid: str = Depends(get_current_user)
 ):
     try:
+        # Step 0: Determine the Subject
+        if request.subject_id is None:
+            # Auto-select the subject
+            subject = get_priority_subject(db, student_uid)
+            if not subject:
+                raise HTTPException(
+                    status_code=404, 
+                    detail="No subjects with skills found. Please upload curriculum documents first."
+                )
+        else:
+            # Manually selected subject
+            subject = get_subject_by_id(db, request.subject_id)
+            if not subject:
+                raise HTTPException(status_code=404, detail=f"Subject with ID {request.subject_id} not found.")
+
+        target_subject_id = subject.subject_id
+        target_subject_name = subject.name
+
         # Step 1: Get the student's BKT mastery profile
         # Filter by subject if needed, but for now we get all and let build_quiz_payload handle it.
         # However, to be more precise, we should only consider skills for this subject.
@@ -42,7 +72,7 @@ async def generate_quiz(
         
         # If the student has no profile yet, build a default one across all skills of THIS subject
         if not student_profile:
-            all_skills = db.query(Skill).filter(Skill.subject_id == request.subject_id).all()
+            all_skills = get_skills_by_subject_id(db, target_subject_id)
             student_profile = {skill.name: 0.01 for skill in all_skills}
             
         if not student_profile:
@@ -79,22 +109,21 @@ async def generate_quiz(
         )
         
         # Step 5: Save the generated quiz to the database securely
-        quiz_session = QuizSession(
-            student_uid=student_uid,
-            subject_id=request.subject_id,
-            total_questions=request.total_questions
-        )
-        db.add(quiz_session)
-        db.flush() # flush to get session_id
+        quiz_session = create_quiz_session(db, student_uid, target_subject_id, request.total_questions)
+        
+        # Upsert the StudentSubjectProfile to update last_quizzed_at
+        upsert_student_subject_profile_last_quizzed(db, student_uid, target_subject_id)
         
         # We also need to get skill_ids for the skills used
-        skill_name_to_id = {s.name: s.skill_id for s in db.query(Skill).filter(Skill.name.in_(all_topics)).all()}
+        skills_used = get_skills_by_names(db, all_topics)
+        skill_name_to_id = {s.name: s.skill_id for s in skills_used}
         
-        # Attach session_id to response for submission correlation
+        
+        db_questions = []
         for q in response.questions:
             skill_id = skill_name_to_id.get(q.topic, 1) # Map explicitly using the returned topic
             
-            db_question = Question(
+            db_questions.append(Question(
                 question_id=q.question_id,
                 skill_id=skill_id,
                 session_id=quiz_session.session_id,
@@ -105,12 +134,19 @@ async def generate_quiz(
                 source_enum="AI",
                 explanation=q.explanation,
                 hints=q.hints
-            )
-            db.add(db_question)
+            ))
             
+        save_questions(db, db_questions)
         db.commit()
         
-        return response
+        return GenerateQuizResponse(
+            selected_subject_id=target_subject_id,
+            selected_subject_name=target_subject_name,
+            quiz_title=response.quiz_title,
+            questions=response.questions
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -119,6 +155,8 @@ async def generate_quiz(
 async def submit_quiz(
     request: QuizSubmissionRequest, 
     db: Session = Depends(get_db),
+    # Same as /generate, we trust this UID because it was cryptographically verified
+    # by the Firebase SDK in the core/auth.py dependency.
     student_uid: str = Depends(get_current_user)
 ):
     try:
@@ -126,16 +164,15 @@ async def submit_quiz(
         if total_questions == 0:
             raise HTTPException(status_code=400, detail="Answers list cannot be empty.")
             
-        bkt_profile = get_student_bkt_profile(db, student_uid)
         triggered_punishment = False
         correct_answers = 0
         
         # We also want to update the QuizSession score
-        quiz_session = db.query(QuizSession).filter(QuizSession.session_id == request.quiz_session_id).first()
+        quiz_session = get_quiz_session_by_id(db, request.quiz_session_id)
         
         for ans in request.answers:
             # Secure Server-Side Grading
-            db_question = db.query(Question).filter(Question.question_id == ans.question_id).first()
+            db_question = get_question_by_id(db, ans.question_id)
             if not db_question:
                 continue # Skip invalid questions
                 
@@ -152,7 +189,7 @@ async def submit_quiz(
                 time_taken_ms=ans.time_taken_ms,
                 hints_used=ans.hints_used
             )
-            db.add(db_response)
+            save_question_response(db, db_response)
 
             # Mark question as submitted
             db_question.submitted_at = datetime.utcnow()
@@ -162,21 +199,25 @@ async def submit_quiz(
             skill_name = db_question.skill.name if db_question.skill else "General Math"
             skill_state = get_student_skill_state(db, student_uid, skill_name)
             
-            punished = bkt_engine.update_mastery(
-                profile=bkt_profile,
+            punished, new_spam_count = bkt_engine.update_mastery(
                 skill_state=skill_state,
                 skill_name=skill_name,
                 difficulty=difficulty,
                 correct=is_correct,
                 response_time=ans.time_taken_ms / 1000.0,
-                hints_used=ans.hints_used
+                hints_used=ans.hints_used,
+                current_session_spam_count=quiz_session.consecutive_spam_clicks if quiz_session else 0
             )
+            if quiz_session:
+                quiz_session.consecutive_spam_clicks = new_spam_count
+                
             if punished:
                 triggered_punishment = True
                 
         score = (correct_answers / total_questions) * 100
         if quiz_session:
             quiz_session.score = score
+            quiz_session.end_time = datetime.utcnow() # Assigning the end timestamp upon submission
             
         db.commit()
         
@@ -198,4 +239,3 @@ async def submit_quiz(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-

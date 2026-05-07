@@ -1,6 +1,6 @@
 from .base import Base
 from .curriculum import Subject, Skill, CurriculumChunk
-from .student import StudentBKTProfile, StudentSkillState
+from .student import StudentSkillState, StudentSubjectProfile
 from .quiz import QuizSession, Question, QuestionResponse
 
 __all__ = [
@@ -8,8 +8,8 @@ __all__ = [
     "Subject",
     "Skill",
     "CurriculumChunk",
-    "StudentBKTProfile",
     "StudentSkillState",
+    "StudentSubjectProfile",
     "QuizSession",
     "Question",
     "QuestionResponse",

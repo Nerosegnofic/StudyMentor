@@ -2,6 +2,12 @@ from typing import List, Dict
 from sqlalchemy.orm import Session
 from app.models.domain import Skill
 
+def get_skills_by_subject_id(db: Session, subject_id: int):
+    return db.query(Skill).filter(Skill.subject_id == subject_id).all()
+
+def get_skills_by_names(db: Session, skill_names: list):
+    return db.query(Skill).filter(Skill.name.in_(skill_names)).all()
+
 def save_skills_from_mastery_data(
     db: Session,
     mastery_data: List[Dict],

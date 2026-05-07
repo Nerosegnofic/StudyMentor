@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class GenerateQuizRequest(BaseModel):
-    subject_id: int = Field(..., description="The ID of the subject for which to generate the quiz")
+    subject_id: Optional[int] = Field(None, description="The ID of the subject. If omitted, the system will auto-select the highest priority subject.")
     total_questions: int = Field(default=10, ge=1, le=50, description="Total number of questions to generate")
 
 class QuestionSchema(BaseModel):
@@ -17,6 +17,8 @@ class QuestionSchema(BaseModel):
     hints: List[str] = Field(..., description="Exactly 3 progressive hints to help the student in Arabic")
 
 class GenerateQuizResponse(BaseModel):
+    selected_subject_id: int = Field(..., description="The ID of the subject that was selected (either manually or automatically)")
+    selected_subject_name: str = Field(..., description="The name of the selected subject")
     quiz_title: str
     questions: List[QuestionSchema]
     
@@ -37,3 +39,5 @@ class QuizSubmissionResponse(BaseModel):
     score: float
     total_questions: int
     feedback: str
+
+

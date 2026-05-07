@@ -22,10 +22,21 @@ security = HTTPBearer()
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     """
     Validates the Firebase JWT token from the Authorization header.
-    Returns the Firebase user UID as a string.
+    
+    HOW IT WORKS:
+    1. FastAPI's HTTPBearer extracts the "Bearer <token>" string from the request headers.
+    2. We pass this token to the Firebase Admin SDK (auth.verify_id_token).
+    3. The SDK performs a cryptographic check:
+       - Is the token's signature valid? (Did it actually come from Firebase?)
+       - Is the token expired? (Tokens are usually valid for 1 hour)
+       - Is the "aud" (audience) correct for our project?
+    4. If valid, the SDK returns a dictionary (claims) containing the user's details.
+    5. We extract the "uid" (the unique, immutable ID for that student in Firebase).
+    6. We return this UID to be injected into the route handlers.
     """
     token = credentials.credentials
     try:
+        # This call handles the cryptographic verification
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token.get("uid")
         if not uid:

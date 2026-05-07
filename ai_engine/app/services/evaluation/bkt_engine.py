@@ -1,6 +1,6 @@
 import math
 from typing import Tuple
-from app.models.domain import StudentBKTProfile, StudentSkillState
+from app.models.domain import StudentSkillState
 from app.services.evaluation.config import BKTConfig
 
 class BKTEngine:
@@ -50,35 +50,35 @@ class BKTEngine:
 
     def update_mastery(
         self, 
-        profile: StudentBKTProfile, 
         skill_state: StudentSkillState, 
         skill_name: str, 
         difficulty: int, 
         correct: bool, 
         response_time: float = 10.0, 
-        hints_used: int = 0
-    ) -> bool:
+        hints_used: int = 0,
+        current_session_spam_count: int = 0
+    ) -> Tuple[bool, int]:
         """
         Main entry point for updating a student's cognitive state after an answer.
+        Returns (trigger_punishment, updated_spam_count).
         """
-        profile.current_step += 1
-        
         old_mastery = skill_state.mastery_probability
         guess, slip = self._adjust_parameters(difficulty, response_time)
         effective_quality = max(0.1, 1.0 - (hints_used * 0.3))
         
         trigger_punishment = False 
+        updated_spam_count = current_session_spam_count
         MINIMUM_READ_TIME = 2.0 
         
         if response_time < MINIMUM_READ_TIME:
-            profile.consecutive_spam_clicks += 1
+            updated_spam_count += 1
             effective_quality = 0.0
             slip = 0.80 
             
-            if profile.consecutive_spam_clicks >= self.SPAM_THRESHOLD:
+            if updated_spam_count >= self.SPAM_THRESHOLD:
                 trigger_punishment = True
         else:
-            profile.consecutive_spam_clicks = 0
+            updated_spam_count = 0
 
         # Assuming skill relationship is loaded, fallback to default 0.10 if not
         learn_rate = skill_state.skill.default_learn_rate if skill_state.skill else 0.10
@@ -94,4 +94,4 @@ class BKTEngine:
         # Reusing attempts as last_seen_step for simplicity since last_seen_step is no longer explicitly on state, 
         # or we don't need it. The profile has current_step.
 
-        return trigger_punishment
+        return trigger_punishment, updated_spam_count

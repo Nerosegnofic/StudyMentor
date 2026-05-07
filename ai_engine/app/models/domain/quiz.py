@@ -15,6 +15,7 @@ class QuizSession(Base):
     end_time = Column(DateTime, nullable=True)
     total_questions = Column(Integer, nullable=False)
     score = Column(Float, nullable=True)
+    consecutive_spam_clicks = Column(Integer, default=0) # Tracks "guessing" behavior within this specific quiz session
     
     subject = relationship("Subject")
     questions = relationship("Question", back_populates="session", cascade="all, delete-orphan")

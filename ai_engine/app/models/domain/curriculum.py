@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text, JSON
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text, JSON, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
@@ -12,6 +12,11 @@ class Subject(Base):
     name = Column(String, nullable=False)
     weight = Column(Float, default=1.0)
     color_hex = Column(String)
+    
+    # Hybrid Approach: Global vs Private subjects
+    is_global = Column(Boolean, default=True)
+    student_uid = Column(String, nullable=True, index=True) # Null if is_global=True
+    
     
     skills = relationship("Skill", back_populates="subject", cascade="all, delete-orphan")
 
