@@ -4,13 +4,8 @@ class InsertAppRuleVariablesBuilder {
   String studentUid;
   String packageName;
   String appLabel;
-  Optional<String> _iconBase64 = Optional.optional(nativeFromJson, nativeToJson);
 
-  final FirebaseDataConnect _dataConnect;  InsertAppRuleVariablesBuilder iconBase64(String? t) {
-   _iconBase64.value = t;
-   return this;
-  }
-
+  final FirebaseDataConnect _dataConnect;
   InsertAppRuleVariablesBuilder(this._dataConnect, {required  this.studentUid,required  this.packageName,required  this.appLabel,});
   Deserializer<InsertAppRuleData> dataDeserializer = (dynamic json)  => InsertAppRuleData.fromJson(jsonDecode(json));
   Serializer<InsertAppRuleVariables> varsSerializer = (InsertAppRuleVariables vars) => jsonEncode(vars.toJson());
@@ -19,7 +14,7 @@ class InsertAppRuleVariablesBuilder {
   }
 
   MutationRef<InsertAppRuleData, InsertAppRuleVariables> ref() {
-    InsertAppRuleVariables vars= InsertAppRuleVariables(studentUid: studentUid,packageName: packageName,appLabel: appLabel,iconBase64: _iconBase64,);
+    InsertAppRuleVariables vars= InsertAppRuleVariables(studentUid: studentUid,packageName: packageName,appLabel: appLabel,);
     return _dataConnect.mutation("InsertAppRule", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -28,7 +23,7 @@ class InsertAppRuleVariablesBuilder {
 class InsertAppRuleAppRuleInsert {
   final String id;
   InsertAppRuleAppRuleInsert.fromJson(dynamic json):
-  
+
   id = nativeFromJson<String>(json['id']);
   @override
   bool operator ==(Object other) {
@@ -41,11 +36,11 @@ class InsertAppRuleAppRuleInsert {
 
     final InsertAppRuleAppRuleInsert otherTyped = other as InsertAppRuleAppRuleInsert;
     return id == otherTyped.id;
-    
+
   }
   @override
   int get hashCode => id.hashCode;
-  
+
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -62,7 +57,7 @@ class InsertAppRuleAppRuleInsert {
 class InsertAppRuleData {
   final InsertAppRuleAppRuleInsert appRule_insert;
   InsertAppRuleData.fromJson(dynamic json):
-  
+
   appRule_insert = InsertAppRuleAppRuleInsert.fromJson(json['appRule_insert']);
   @override
   bool operator ==(Object other) {
@@ -75,11 +70,11 @@ class InsertAppRuleData {
 
     final InsertAppRuleData otherTyped = other as InsertAppRuleData;
     return appRule_insert == otherTyped.appRule_insert;
-    
+
   }
   @override
   int get hashCode => appRule_insert.hashCode;
-  
+
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -97,22 +92,12 @@ class InsertAppRuleVariables {
   final String studentUid;
   final String packageName;
   final String appLabel;
-  late final Optional<String>iconBase64;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   InsertAppRuleVariables.fromJson(Map<String, dynamic> json):
-  
+
   studentUid = nativeFromJson<String>(json['studentUid']),
   packageName = nativeFromJson<String>(json['packageName']),
-  appLabel = nativeFromJson<String>(json['appLabel']) {
-  
-  
-  
-  
-  
-    iconBase64 = Optional.optional(nativeFromJson, nativeToJson);
-    iconBase64.value = json['iconBase64'] == null ? null : nativeFromJson<String>(json['iconBase64']);
-  
-  }
+  appLabel = nativeFromJson<String>(json['appLabel']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -123,24 +108,20 @@ class InsertAppRuleVariables {
     }
 
     final InsertAppRuleVariables otherTyped = other as InsertAppRuleVariables;
-    return studentUid == otherTyped.studentUid && 
-    packageName == otherTyped.packageName && 
-    appLabel == otherTyped.appLabel && 
-    iconBase64 == otherTyped.iconBase64;
-    
+    return studentUid == otherTyped.studentUid &&
+    packageName == otherTyped.packageName &&
+    appLabel == otherTyped.appLabel;
+
   }
   @override
-  int get hashCode => Object.hashAll([studentUid.hashCode, packageName.hashCode, appLabel.hashCode, iconBase64.hashCode]);
-  
+  int get hashCode => Object.hashAll([studentUid.hashCode, packageName.hashCode, appLabel.hashCode]);
+
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['studentUid'] = nativeToJson<String>(studentUid);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
-    if(iconBase64.state == OptionalState.set) {
-      json['iconBase64'] = iconBase64.toJson();
-    }
     return json;
   }
 
@@ -148,7 +129,5 @@ class InsertAppRuleVariables {
     required this.studentUid,
     required this.packageName,
     required this.appLabel,
-    required this.iconBase64,
   });
 }
-

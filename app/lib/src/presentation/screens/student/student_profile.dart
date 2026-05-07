@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/shop/shop_bloc.dart';
-import '../../../bloc/shop/shop_event.dart';
-import '../../../bloc/shop/shop_state.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/avatar_config.dart';
-import '../../../services/friend_code_service.dart';
 import '../../../utils/student_rank_utils.dart';
 import '../../widgets/avatar_widget.dart';
 import 'student_avatar_customization.dart';
@@ -19,27 +15,20 @@ class StudentProfile extends StatefulWidget {
   final String fullName;
   final String uid;
 
-  const StudentProfile({
-    super.key,
-    required this.fullName,
-    required this.uid,
-  });
+  const StudentProfile({super.key, required this.fullName, required this.uid});
 
   @override
   State<StudentProfile> createState() => _StudentProfileState();
 }
 
 class _StudentProfileState extends State<StudentProfile> {
-  // ── Loaded state ──────────────────────────────────────────────────────────
   bool _loading = true;
-  String? _friendCode;
   int _totalXp = 0;
   int _totalCoins = 0;
   int _currentStreak = 0;
   int _totalQuestionsAnswered = 0;
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
-  // ── Computed from XP ─────────────────────────────────────────────────────
   int get _level => StudentRankUtils.levelFromXp(_totalXp);
   String get _rank => StudentRankUtils.rankFromLevel(_level);
 
@@ -54,13 +43,11 @@ class _StudentProfileState extends State<StudentProfile> {
       final provider = DataConnectProvider();
       final results = await Future.wait([
         provider.getStudentProfile(widget.uid),
-        FriendCodeService(provider).getOrCreate(widget.uid, widget.fullName),
         provider.getStudentAvatar(widget.uid),
       ]);
 
       final profile = results[0] as Map<String, dynamic>;
-      final code = results[1] as String;
-      final avatarMap = results[2] as Map<String, dynamic>?;
+      final avatarMap = results[1];
 
       if (mounted) {
         setState(() {
@@ -69,39 +56,15 @@ class _StudentProfileState extends State<StudentProfile> {
           _currentStreak = (profile['current_streak'] as int?) ?? 0;
           _totalQuestionsAnswered =
               (profile['total_questions_answered'] as int?) ?? 0;
-          _friendCode = code;
-          if (avatarMap != null) _avatarConfig = AvatarConfig.fromMap(avatarMap);
+          if (avatarMap != null) {
+            _avatarConfig = AvatarConfig.fromMap(avatarMap);
+          }
           _loading = false;
         });
       }
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _friendCode = _generateFallback();
-          _loading = false;
-        });
-      }
+      if (mounted) setState(() => _loading = false);
     }
-  }
-
-  String _generateFallback() {
-    final first = widget.fullName.trim().split(RegExp(r'\s+')).first;
-    final letters = first.toUpperCase().replaceAll(RegExp(r'[^A-Z]'), '');
-    final prefix =
-        letters.length >= 4 ? letters.substring(0, 4) : letters.padRight(4, 'X');
-    return '$prefix-0000';
-  }
-
-  void _copyCode() {
-    if (_friendCode == null) return;
-    Clipboard.setData(ClipboardData(text: _friendCode!));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Friend code copied!'),
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override
@@ -117,8 +80,6 @@ class _StudentProfileState extends State<StudentProfile> {
             child: Column(
               children: [
                 _buildProgressCard(),
-                const SizedBox(height: 14),
-                _buildFriendCodeCard(),
                 const SizedBox(height: 24),
                 _buildSettingsSection(),
                 const SizedBox(height: 20),
@@ -131,15 +92,13 @@ class _StudentProfileState extends State<StudentProfile> {
     );
   }
 
-  // ── Header: avatar + level badge + name + rank pill ──────────────────────
+  // ── Header ────────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 28, bottom: 28),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF5F7FF),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFFF5F7FF)),
       child: Column(
         children: [
           _buildAvatarWithBadge(),
@@ -163,7 +122,6 @@ class _StudentProfileState extends State<StudentProfile> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // Tappable avatar — opens customization
         GestureDetector(
           onTap: _loading
               ? null
@@ -181,7 +139,6 @@ class _StudentProfileState extends State<StudentProfile> {
                       ),
                     ),
                   ).then((_) {
-                    // Reload avatar after returning from customization
                     if (mounted) _loadProfile();
                   });
                 },
@@ -200,7 +157,6 @@ class _StudentProfileState extends State<StudentProfile> {
             child: AvatarWidget(config: _avatarConfig, size: 96),
           ),
         ),
-        // Edit pencil badge
         Positioned(
           bottom: -2,
           right: -2,
@@ -214,7 +170,6 @@ class _StudentProfileState extends State<StudentProfile> {
             child: const Icon(Icons.edit, color: Colors.white, size: 11),
           ),
         ),
-        // Level badge
         Positioned(
           bottom: -10,
           left: 0,
@@ -278,7 +233,7 @@ class _StudentProfileState extends State<StudentProfile> {
     );
   }
 
-  // ── My Progress card ─────────────────────────────────────────────────────
+  // ── Progress card ─────────────────────────────────────────────────────────
 
   Widget _buildProgressCard() {
     return Container(
@@ -352,7 +307,9 @@ class _StudentProfileState extends State<StudentProfile> {
                     const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF8E1),
                         borderRadius: BorderRadius.circular(12),
@@ -361,8 +318,7 @@ class _StudentProfileState extends State<StudentProfile> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('🪙',
-                              style: TextStyle(fontSize: 18)),
+                          const Text('🪙', style: TextStyle(fontSize: 18)),
                           const SizedBox(width: 8),
                           Text(
                             _formatNumber(_totalCoins),
@@ -423,104 +379,7 @@ class _StudentProfileState extends State<StudentProfile> {
     );
   }
 
-  // ── Friend Code card ─────────────────────────────────────────────────────
-
-  Widget _buildFriendCodeCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2E7D32),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Your Friend Code',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
-              GestureDetector(
-                onTap: _copyCode,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.copy, color: Colors.white, size: 14),
-                      SizedBox(width: 5),
-                      Text(
-                        'Copy',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: _loading
-                ? const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  )
-                : Text(
-                    _friendCode ?? '—',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: 2,
-                    ),
-                  ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Share this code with friends so they can add you!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Settings section ─────────────────────────────────────────────────────
+  // ── Settings section ──────────────────────────────────────────────────────
 
   Widget _buildSettingsSection() {
     return Column(
@@ -564,11 +423,7 @@ class _StudentProfileState extends State<StudentProfile> {
                   ),
                 ),
               ),
-              Divider(
-                height: 1,
-                indent: 60,
-                color: Colors.grey.shade100,
-              ),
+              Divider(height: 1, indent: 60, color: Colors.grey.shade100),
               _buildSettingsRow(
                 icon: Icons.help_outline,
                 iconBg: const Color(0xFFE3F2FD),
@@ -632,26 +487,19 @@ class _StudentProfileState extends State<StudentProfile> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey.shade400,
-              size: 20,
-            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
           ],
         ),
       ),
     );
   }
 
-  // ── Log Out button ───────────────────────────────────────────────────────
+  // ── Log Out button ────────────────────────────────────────────────────────
 
   Widget _buildLogoutButton() {
     return SizedBox(

@@ -1,29 +1,30 @@
 part of 'generated.dart';
 
-class GetWeeklyLeaderboardVariablesBuilder {
-  
+class GetSiblingLeaderboardVariablesBuilder {
+  String parentUid;
+
   final FirebaseDataConnect _dataConnect;
-  GetWeeklyLeaderboardVariablesBuilder(this._dataConnect, );
-  Deserializer<GetWeeklyLeaderboardData> dataDeserializer = (dynamic json)  => GetWeeklyLeaderboardData.fromJson(jsonDecode(json));
-  
-  Future<QueryResult<GetWeeklyLeaderboardData, void>> execute() {
+  GetSiblingLeaderboardVariablesBuilder(this._dataConnect, {required  this.parentUid,});
+  Deserializer<GetSiblingLeaderboardData> dataDeserializer = (dynamic json)  => GetSiblingLeaderboardData.fromJson(jsonDecode(json));
+  Serializer<GetSiblingLeaderboardVariables> varsSerializer = (GetSiblingLeaderboardVariables vars) => jsonEncode(vars.toJson());
+  Future<QueryResult<GetSiblingLeaderboardData, GetSiblingLeaderboardVariables>> execute() {
     return ref().execute();
   }
 
-  QueryRef<GetWeeklyLeaderboardData, void> ref() {
-    
-    return _dataConnect.query("GetWeeklyLeaderboard", dataDeserializer, emptySerializer, null);
+  QueryRef<GetSiblingLeaderboardData, GetSiblingLeaderboardVariables> ref() {
+    GetSiblingLeaderboardVariables vars= GetSiblingLeaderboardVariables(parentUid: parentUid,);
+    return _dataConnect.query("GetSiblingLeaderboard", dataDeserializer, varsSerializer, vars);
   }
 }
 
 @immutable
-class GetWeeklyLeaderboardStudents {
+class GetSiblingLeaderboardStudents {
   final String uid;
   final String username;
   final int? weeklyXp;
   final int? totalXp;
   final Timestamp? lastActiveAt;
-  GetWeeklyLeaderboardStudents.fromJson(dynamic json):
+  GetSiblingLeaderboardStudents.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
   username = nativeFromJson<String>(json['username']),
@@ -39,7 +40,7 @@ class GetWeeklyLeaderboardStudents {
       return false;
     }
 
-    final GetWeeklyLeaderboardStudents otherTyped = other as GetWeeklyLeaderboardStudents;
+    final GetSiblingLeaderboardStudents otherTyped = other as GetSiblingLeaderboardStudents;
     return uid == otherTyped.uid && 
     username == otherTyped.username && 
     weeklyXp == otherTyped.weeklyXp && 
@@ -67,7 +68,7 @@ class GetWeeklyLeaderboardStudents {
     return json;
   }
 
-  GetWeeklyLeaderboardStudents({
+  GetSiblingLeaderboardStudents({
     required this.uid,
     required this.username,
     this.weeklyXp,
@@ -77,12 +78,12 @@ class GetWeeklyLeaderboardStudents {
 }
 
 @immutable
-class GetWeeklyLeaderboardData {
-  final List<GetWeeklyLeaderboardStudents> students;
-  GetWeeklyLeaderboardData.fromJson(dynamic json):
+class GetSiblingLeaderboardData {
+  final List<GetSiblingLeaderboardStudents> students;
+  GetSiblingLeaderboardData.fromJson(dynamic json):
   
   students = (json['students'] as List<dynamic>)
-        .map((e) => GetWeeklyLeaderboardStudents.fromJson(e))
+        .map((e) => GetSiblingLeaderboardStudents.fromJson(e))
         .toList();
   @override
   bool operator ==(Object other) {
@@ -93,7 +94,7 @@ class GetWeeklyLeaderboardData {
       return false;
     }
 
-    final GetWeeklyLeaderboardData otherTyped = other as GetWeeklyLeaderboardData;
+    final GetSiblingLeaderboardData otherTyped = other as GetSiblingLeaderboardData;
     return students == otherTyped.students;
     
   }
@@ -107,8 +108,43 @@ class GetWeeklyLeaderboardData {
     return json;
   }
 
-  GetWeeklyLeaderboardData({
+  GetSiblingLeaderboardData({
     required this.students,
+  });
+}
+
+@immutable
+class GetSiblingLeaderboardVariables {
+  final String parentUid;
+  @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
+  GetSiblingLeaderboardVariables.fromJson(Map<String, dynamic> json):
+  
+  parentUid = nativeFromJson<String>(json['parentUid']);
+  @override
+  bool operator ==(Object other) {
+    if(identical(this, other)) {
+      return true;
+    }
+    if(other.runtimeType != runtimeType) {
+      return false;
+    }
+
+    final GetSiblingLeaderboardVariables otherTyped = other as GetSiblingLeaderboardVariables;
+    return parentUid == otherTyped.parentUid;
+    
+  }
+  @override
+  int get hashCode => parentUid.hashCode;
+  
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> json = {};
+    json['parentUid'] = nativeToJson<String>(parentUid);
+    return json;
+  }
+
+  GetSiblingLeaderboardVariables({
+    required this.parentUid,
   });
 }
 

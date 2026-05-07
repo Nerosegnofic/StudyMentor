@@ -15,6 +15,7 @@ class StudentNavigationBar extends StatelessWidget {
     return NavigationBar(
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
+      labelTextStyle: WidgetStateProperty.all(const TextStyle(fontSize: 10)),
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
@@ -30,6 +31,11 @@ class StudentNavigationBar extends StatelessWidget {
           icon: Icon(Icons.leaderboard_outlined),
           selectedIcon: Icon(Icons.leaderboard),
           label: 'Leaderboard',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.people_outline),
+          selectedIcon: Icon(Icons.people),
+          label: 'Friends',
         ),
         NavigationDestination(
           icon: Icon(Icons.person_outline),

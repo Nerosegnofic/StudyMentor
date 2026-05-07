@@ -11,10 +11,10 @@ mutation InsertUser($email: String!, $fullName: String!, $role: Role!) @auth(lev
   )
 }
 
-mutation UpsertCurrentUser($email: String!, $fullName: String, $role: Role!) @auth(level: USER) {
-  user_upsert(
+mutation UpsertCurrentUser($email: String, $fullName: String, $role: Role!) @auth(level: USER) {
+  user_update(
+    key: { uid_expr: "auth.uid" }
     data: {
-      uid_expr: "auth.uid"
       email: $email
       fullName: $fullName
       role: $role
@@ -39,12 +39,17 @@ mutation InsertParent($pinCode: String, $phoneNumber: String) @auth(level: USER)
   )
 }
 
-mutation InsertStudent($parentUid: String!, $gradeLevel: Int) @auth(level: USER) {
+mutation InsertStudent(
+  $parentUid: String!
+  $username: String!
+  $gradeLevel: Int
+) @auth(level: USER) {
   student_insert(
     data: {
       uid_expr: "auth.uid"
       userUid_expr: "auth.uid"
       parentUid: $parentUid
+      username: $username
       gradeLevel: $gradeLevel
       totalXp: 0
       totalCoins: 0
@@ -68,36 +73,24 @@ mutation MarkEmailVerified @auth(level: USER) {
 
 # ── App Rule Mutations ────────────────────────────────────────────────────────
 
-# Inserts a single app rule for a student.
-# Time limits are not stored per-app — they are stored globally in StudentConfig.
 mutation InsertAppRule(
   $studentUid: String!
   $packageName: String!
   $appLabel: String!
-  $iconBase64: String
 ) @auth(level: USER) {
   appRule_insert(
     data: {
       studentUid: $studentUid
       packageName: $packageName
       appLabel: $appLabel
-      iconBase64: $iconBase64
     }
   )
 }
 
-# Deletes ALL app rules for a student — used before re-saving the full list.
 mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
   appRule_deleteMany(where: { studentUid: { eq: $studentUid } })
 }
 
-# ── Student Config Mutations ──────────────────────────────────────────────────
-
-# Upserts the global usage and cooldown time limits for a student.
-# These limits apply to ALL restricted apps configured for the student.
-# ── Friend Code ──────────────────────────────────────────────────────────────
-
-# Sets (or updates) the friend code on the currently-authenticated student.
 mutation UpdateStudentFriendCode($friendCode: String!) @auth(level: USER) {
   student_update(
     key: { uid_expr: "auth.uid" }
@@ -105,9 +98,6 @@ mutation UpdateStudentFriendCode($friendCode: String!) @auth(level: USER) {
   )
 }
 
-# ── Leaderboard / Social ─────────────────────────────────────────────────────
-
-# Heartbeat: stamps the current student's lastActiveAt to now.
 mutation UpdateLastActiveAt @auth(level: USER) {
   student_update(
     key: { uid_expr: "auth.uid" }
@@ -115,7 +105,6 @@ mutation UpdateLastActiveAt @auth(level: USER) {
   )
 }
 
-# Sends a friend request. Stores target name denormalized for display.
 mutation SendFriendRequest(
   $fromStudentUid: String!
   $toFriendCode: String!
@@ -132,7 +121,6 @@ mutation SendFriendRequest(
   )
 }
 
-# Creates one directional friendship row. Call twice (A→B, B→A) to make it mutual.
 mutation CreateFriendship(
   $studentUid: String!
   $friendUid: String!
@@ -145,13 +133,10 @@ mutation CreateFriendship(
   )
 }
 
-# Removes a single directional friendship row by its ID.
 mutation RemoveFriend($id: UUID!) @auth(level: USER, insecureReason: "Students can remove their own friendships.") {
   friendship_delete(key: { id: $id })
 }
 
-# Updates the status of a friend request (e.g., 'accepted' or 'rejected').
-# Called by the parent when approving or rejecting a child's friend request.
 mutation UpdateFriendRequestStatus(
   $id: UUID!
   $status: String!
@@ -164,7 +149,6 @@ mutation UpdateFriendRequestStatus(
 
 # ── Student Settings ──────────────────────────────────────────────────────────
 
-# Upserts the per-student app preferences.
 mutation UpsertStudentSettings(
   $studentUid: String!
   $notificationsEnabled: Boolean!
@@ -183,7 +167,6 @@ mutation UpsertStudentSettings(
 
 # ── Support Tickets ───────────────────────────────────────────────────────────
 
-# Inserts a support ticket from the Help Center.
 mutation InsertSupportTicket(
   $userId: String!
   $userName: String!
@@ -202,7 +185,6 @@ mutation InsertSupportTicket(
 
 # ── Avatar Shop Mutations ─────────────────────────────────────────────────────
 
-# Records a shop item as purchased by the student.
 mutation InsertStudentOwnedItem(
   $studentUid: String!
   $itemId: String!
@@ -215,7 +197,6 @@ mutation InsertStudentOwnedItem(
   )
 }
 
-# Deducts coins from the student after a purchase.
 mutation UpdateStudentCoins($totalCoins: Int!) @auth(level: USER) {
   student_update(
     key: { uid_expr: "auth.uid" }
@@ -223,7 +204,6 @@ mutation UpdateStudentCoins($totalCoins: Int!) @auth(level: USER) {
   )
 }
 
-# Upserts the student's current avatar configuration (equipped item IDs).
 mutation UpsertStudentAvatar(
   $studentUid: String!
   $gender: String!
@@ -252,7 +232,6 @@ mutation UpsertStudentAvatar(
   )
 }
 
-# Awards XP and coins after a quiz/exam. Call with computed new totals.
 mutation UpdateStudentXpAndCoins(
   $totalXp: Int!
   $weeklyXp: Int!
@@ -274,8 +253,54 @@ mutation UpdateStudentXpAndCoins(
 
 # ── Student Config Mutations ──────────────────────────────────────────────────
 
-# Upserts the global usage and cooldown time limits for a student.
-# These limits apply to ALL restricted apps configured for the student.
+# ── Student Account Deletion (parent-side) ───────────────────────────────────
+
+mutation DeleteAllOwnedItemsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's owned items.") {
+  studentOwnedItem_deleteMany(where: { studentUid: { eq: $studentUid } })
+}
+
+mutation DeleteStudentAvatar($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's avatar.") {
+  studentAvatar_delete(key: { studentUid: $studentUid })
+}
+
+mutation DeleteStudentSettings($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's settings.") {
+  studentSettings_delete(key: { studentUid: $studentUid })
+}
+
+mutation DeleteStudentConfig($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's config.") {
+  studentConfig_delete(key: { studentUid: $studentUid })
+}
+
+mutation DeleteAllFriendRequestsByStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's friend requests.") {
+  friendRequest_deleteMany(where: { fromStudentUid: { eq: $studentUid } })
+}
+
+mutation DeleteAllFriendshipsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's friendships.") {
+  friendship_deleteMany(where: { studentUid: { eq: $studentUid } })
+}
+
+mutation DeleteStudentRecord($uid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's student record.") {
+  student_delete(key: { uid: $uid })
+}
+
+mutation DeleteUserRecord($uid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's user record.") {
+  user_delete(key: { uid: $uid })
+}
+
+# ── Student Name Update (parent-side) ─────────────────────────────────────────
+
+mutation UpdateStudentFullName($uid: String!, $fullName: String!) @auth(level: USER, insecureReason: "Parents can update their children's full name.") {
+  user_update(key: { uid: $uid }, data: { fullName: $fullName })
+}
+
+# ── Parent Account Deletion ────────────────────────────────────────────────────
+
+mutation DeleteParentRecord @auth(level: USER) {
+  parent_delete(key: { uid_expr: "auth.uid" })
+}
+
+# ── Student Config ────────────────────────────────────────────────────────────
+
 mutation UpsertStudentConfig(
   $studentUid: String!
   $usageHours: Int!

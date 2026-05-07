@@ -23,63 +23,58 @@ abstract class AuthRepository {
     required String password,
     required String parentUid,
     required int gradeLevel,
+    required String username,
   });
   Future<List<StudentModel>> getStudentsByParent(String parentUid);
   Future<String> getParentFullName(String studentUid);
-
-  /// Refreshes the email-verification status for each student in [students].
   Future<List<StudentModel>> refreshStudentVerificationStatus(
     List<StudentModel> students,
   );
-
-  /// Verifies parent credentials for a given student.
   Future<bool> verifyParentCredentials({
     required String studentUid,
     required String parentEmail,
     required String parentPassword,
   });
-
   Future<void> markEmailVerifiedInDatabase(String uid);
 
   /// Updates the current user's profile.
+  /// [newEmail] triggers a verification email to the new address via Firebase.
+  /// The DB row is updated immediately; Auth reflects it after verification.
   Future<UserModel> updateProfile({
     String? newFullName,
+    String? newEmail, // ── ADDED ────────────────────────────────────
     String? currentPassword,
     String? newPassword,
   });
 
-  // ── Installed-App Inventory ───────────────────────────────────────────────
-
-  /// Returns the installed-app inventory for [studentUid] from DataConnect.
-  /// Called by the parent's app-picker.
   Future<List<InstalledAppModel>> getInstalledAppsForStudent(String studentUid);
-
-  /// Replaces the student's entire inventory in DataConnect with [apps].
-  /// Called by the student device on login and on dirty-flag resume.
   Future<void> syncInstalledAppsForStudent({
     required String studentUid,
     required List<InstalledAppModel> apps,
   });
-
-  // ── App Configuration ─────────────────────────────────────────────────────
-
-  /// Fetches the global student config and all app rules for [studentUid].
-  /// Returns a record with a nullable [StudentConfigModel] (null if the parent
-  /// hasn't saved one yet — callers should fall back to defaults) and the
-  /// list of [AppRuleModel]s.
-  /// Called by both the parent config screen and the student device.
   Future<({StudentConfigModel? config, List<AppRuleModel> rules})>
   getAppConfigForStudent(String studentUid);
-
-  /// Saves (replaces) all app rules and upserts the global config for a student.
-  ///
-  /// Strategy:
-  ///  1. Upsert the StudentConfig row (creates it if it does not exist).
-  ///  2. Delete all existing AppRule rows for this student.
-  ///  3. Insert each rule in [rules] one by one.
   Future<void> saveAppConfigForStudent({
     required String studentUid,
     required List<PendingAppRule> rules,
     required StudentConfigModel config,
+  });
+
+  Future<void> deleteStudent(String studentUid);
+  Future<void> updateStudentFullName({
+    required String studentUid,
+    required String fullName,
+  });
+  Future<void> deleteParentAccount({required String currentPassword});
+
+  /// Updates a student's account from the parent side.
+  /// Returns pendingEmail if a verification email was sent, otherwise null.
+  Future<String?> updateStudentProfile({
+    required String studentUid,
+    required String studentEmail,
+    String? newFullName,
+    String? newEmail,
+    String? currentPassword,
+    String? newPassword,
   });
 }

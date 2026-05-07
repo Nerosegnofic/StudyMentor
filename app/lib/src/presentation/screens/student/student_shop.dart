@@ -3,9 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/shop/shop_bloc.dart';
 import '../../../bloc/shop/shop_event.dart';
 import '../../../bloc/shop/shop_state.dart';
-import '../../../data/catalog/avatar_items_catalog.dart';
 import '../../../domain/models/avatar_item.dart';
-import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
 import 'student_avatar_customization.dart';
 
@@ -94,7 +92,7 @@ class _StudentShopState extends State<StudentShop>
                     ),
               ),
             ShopLoaded() => _ShopBody(
-                state: state as ShopLoaded,
+                state: state,
                 uid: widget.uid,
                 tabController: _tabController,
                 categoryTabs: _categoryTabs,

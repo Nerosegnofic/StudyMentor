@@ -27,14 +27,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<StudentLogoutVerificationRequested>(_onStudentLogoutVerification);
     on<VerifyParentAndLogoutRequested>(_onVerifyParentAndLogout);
     on<UpdateProfileRequested>(_onUpdateProfile);
-    // App configuration
     on<LoadAppRulesRequested>(_onLoadAppRules);
     on<SaveAppRulesRequested>(_onSaveAppRules);
     on<LoadStudentAppConfigRequested>(_onLoadStudentAppConfig);
-    // Installed-app inventory
     on<SyncInstalledAppsRequested>(_onSyncInstalledApps);
     on<LoadInstalledAppsForStudentRequested>(_onLoadInstalledAppsForStudent);
     on<RefreshStudentDataRequested>(_onRefreshStudentData);
+    on<DeleteStudentRequested>(_onDeleteStudent);
+    on<UpdateStudentFullNameRequested>(_onUpdateStudentFullName);
+    on<DeleteParentAccountRequested>(_onDeleteParentAccount);
+    on<UpdateStudentProfileRequested>(_onUpdateStudentProfile);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -151,6 +153,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  // ── CHANGED: forward username to repository ───────────────────────────────
   Future<void> _onCreateStudent(
     CreateStudentRequested event,
     Emitter<AuthState> emit,
@@ -163,6 +166,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         parentUid: event.parentUid,
         gradeLevel: event.gradeLevel,
+        username: event.username, // ── ADDED ─────────────────────────────────
       );
       emit(StudentCreated());
       emit(AuthAuthenticated(parent));
@@ -261,9 +265,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final updatedUser = await repository.updateProfile(
         newFullName: event.newFullName,
+        newEmail: event.newEmail, // ── ADDED ────────────────────────
         currentPassword: event.currentPassword,
         newPassword: event.newPassword,
       );
+
+      // If an email change was requested, tell the UI to show the
+      // "check your inbox" banner before moving to AuthAuthenticated.
+      if (event.newEmail != null && event.newEmail!.isNotEmpty) {
+        emit(EmailUpdateVerificationSent(event.newEmail!));
+      }
+
       emit(ProfileUpdateSuccess(updatedUser));
       emit(AuthAuthenticated(updatedUser));
     } catch (e) {
@@ -273,7 +285,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   // ── App Configuration Handlers ────────────────────────────────────────────
 
-  /// Parent opens the config screen — load saved rules and global config.
   Future<void> _onLoadAppRules(
     LoadAppRulesRequested event,
     Emitter<AuthState> emit,
@@ -295,7 +306,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Parent taps Save — replace all rules and upsert global config.
   Future<void> _onSaveAppRules(
     SaveAppRulesRequested event,
     Emitter<AuthState> emit,
@@ -313,7 +323,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Student device loads its own saved config.
   Future<void> _onLoadStudentAppConfig(
     LoadStudentAppConfigRequested event,
     Emitter<AuthState> emit,
@@ -337,7 +346,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   // ── Installed-App Inventory Handlers ─────────────────────────────────────
 
-  /// Student device: fetch PackageManager apps, upload to DataConnect, clear flag.
   Future<void> _onSyncInstalledApps(
     SyncInstalledAppsRequested event,
     Emitter<AuthState> emit,
@@ -352,12 +360,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await InstalledAppsService.instance.markInventoryClean();
       emit(InstalledAppsSynced());
     } catch (e) {
-      // Sync failure is non-fatal — enforcement continues with the last rules.
       debugPrint('[InstalledApps] sync error: $e');
     }
   }
 
-  /// Parent side: load a student's inventory from DataConnect for the picker.
   Future<void> _onLoadInstalledAppsForStudent(
     LoadInstalledAppsForStudentRequested event,
     Emitter<AuthState> emit,
@@ -372,7 +378,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Parent taps refresh — re-fetches both installed apps and rules in parallel.
   Future<void> _onRefreshStudentData(
     RefreshStudentDataRequested event,
     Emitter<AuthState> emit,
@@ -403,6 +408,93 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
     } catch (e) {
       emit(AppConfigError(_mapException(e)));
+    }
+  }
+
+  // ── Student Deletion ─────────────────────────────────────────────────────
+
+  Future<void> _onDeleteStudent(
+    DeleteStudentRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentDeleteLoading());
+    try {
+      await repository.deleteStudent(event.studentUid);
+      // Reload students list for parent.
+      final students = await repository.getStudentsByParent(event.parentUid);
+      emit(StudentDeleted(studentUid: event.studentUid));
+      emit(StudentsLoaded(students));
+    } catch (e) {
+      emit(StudentDeleteError(_mapException(e)));
+    }
+  }
+
+  // ── Student Full Name Update ──────────────────────────────────────────────
+
+  Future<void> _onUpdateStudentFullName(
+    UpdateStudentFullNameRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentNameUpdateLoading());
+    try {
+      await repository.updateStudentFullName(
+        studentUid: event.studentUid,
+        fullName: event.fullName,
+      );
+      emit(
+        StudentNameUpdateSuccess(
+          studentUid: event.studentUid,
+          newFullName: event.fullName,
+        ),
+      );
+    } catch (e) {
+      emit(StudentNameUpdateError(_mapException(e)));
+    }
+  }
+
+  // ── Parent Account Deletion ───────────────────────────────────────────────
+
+  Future<void> _onDeleteParentAccount(
+    DeleteParentAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(ParentAccountDeleteLoading());
+    try {
+      await repository.deleteParentAccount(
+        currentPassword: event.currentPassword,
+      );
+      emit(ParentAccountDeleted());
+      emit(AuthUnauthenticated());
+    } catch (e) {
+      emit(ParentAccountDeleteError(_mapProfileUpdateException(e)));
+    }
+  }
+
+  // ── Student Profile Update (parent-side) ─────────────────────────────────
+
+  Future<void> _onUpdateStudentProfile(
+    UpdateStudentProfileRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentProfileUpdateLoading());
+    try {
+      final pendingEmail = await repository.updateStudentProfile(
+        studentUid: event.studentUid,
+        studentEmail: event.studentEmail,
+        newFullName: event.newFullName,
+        newEmail: event.newEmail,
+        currentPassword: event.currentPassword,
+        newPassword: event.newPassword,
+      );
+      emit(
+        StudentProfileUpdateSuccess(
+          studentUid: event.studentUid,
+          newFullName: event.newFullName,
+          pendingEmail: pendingEmail,
+        ),
+      );
+    } catch (e) {
+      emit(StudentProfileUpdateError(_mapProfileUpdateException(e)));
     }
   }
 
@@ -449,6 +541,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
     if (msg.contains('network-request-failed')) {
       return 'Network error. Check your connection and try again.';
+    }
+    if (msg.contains('email-already-in-use')) {
+      return 'That email address is already in use by another account.';
     }
     return 'Update failed: $msg';
   }

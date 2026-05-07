@@ -11,12 +11,12 @@ import 'src/bloc/auth/auth_state.dart';
 import 'src/data/providers/dataconnect_provider.dart';
 import 'src/data/providers/firebase_auth_provider.dart';
 import 'src/data/repositories/auth_repository_impl.dart';
-import 'src/presentation/screens/confirm_email_screen.dart';
-import 'src/presentation/screens/forgot_password_screen.dart';
-import 'src/presentation/screens/login_screen.dart';
+import 'src/presentation/screens/auth/confirm_email_screen.dart';
+import 'src/presentation/screens/auth/forgot_password_screen.dart';
+import 'src/presentation/screens/auth/login_screen.dart';
 import 'src/presentation/screens/parent/parent_screen.dart';
-import 'src/presentation/screens/register_screen.dart';
-import 'src/presentation/screens/student_screen.dart';
+import 'src/presentation/screens/auth/parent_register_screen.dart';
+import 'src/presentation/screens/student/student_screen.dart';
 import 'src/services/installed_apps_service.dart';
 
 // ── WorkManager task identifiers ─────────────────────────────────────────────
@@ -54,7 +54,6 @@ void callbackDispatcher() {
             packageName: app.packageName,
             appLabel: app.appLabel,
             isSystemApp: app.isSystemApp,
-            iconBase64: app.iconBase64,
           ),
         ),
       );
@@ -117,7 +116,7 @@ class StudyMentorApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           routes: {
             '/login': (_) => const LoginScreen(),
-            '/register': (_) => const RegisterScreen(),
+            '/register': (_) => const ParentRegisterScreen(),
             '/confirm-email': (_) => const ConfirmEmailScreen(),
             '/forgot-password': (_) => const ForgotPasswordScreen(),
             '/parent': (context) {

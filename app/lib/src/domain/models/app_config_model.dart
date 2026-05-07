@@ -34,39 +34,33 @@ class AppRuleModel {
   final String id;
   final String packageName;
   final String appLabel;
-  final String? iconBase64;
 
   AppRuleModel({
     required this.id,
     required this.packageName,
     required this.appLabel,
-    this.iconBase64,
   });
 
   factory AppRuleModel.fromJson(Map<String, dynamic> json) => AppRuleModel(
     id: json['id'] as String,
     packageName: json['package_name'] as String,
     appLabel: json['app_label'] as String,
-    iconBase64: json['icon_base64'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'package_name': packageName,
     'app_label': appLabel,
-    'icon_base64': iconBase64,
   };
 
   AppRuleModel copyWith({
     String? id,
     String? packageName,
     String? appLabel,
-    String? iconBase64,
   }) => AppRuleModel(
     id: id ?? this.id,
     packageName: packageName ?? this.packageName,
     appLabel: appLabel ?? this.appLabel,
-    iconBase64: iconBase64 ?? this.iconBase64,
   );
 }
 
@@ -75,11 +69,9 @@ class AppRuleModel {
 class PendingAppRule {
   final String packageName;
   final String appLabel;
-  final String? iconBase64;
 
   PendingAppRule({
     required this.packageName,
     required this.appLabel,
-    this.iconBase64,
   });
 }

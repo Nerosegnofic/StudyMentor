@@ -1,16 +1,21 @@
 part of 'generated.dart';
 
 class UpsertCurrentUserVariablesBuilder {
-  String email;
+  Optional<String> _email = Optional.optional(nativeFromJson, nativeToJson);
   Optional<String> _fullName = Optional.optional(nativeFromJson, nativeToJson);
   Role role;
 
-  final FirebaseDataConnect _dataConnect;  UpsertCurrentUserVariablesBuilder fullName(String? t) {
+  final FirebaseDataConnect _dataConnect;
+  UpsertCurrentUserVariablesBuilder email(String? t) {
+   _email.value = t;
+   return this;
+  }
+  UpsertCurrentUserVariablesBuilder fullName(String? t) {
    _fullName.value = t;
    return this;
   }
 
-  UpsertCurrentUserVariablesBuilder(this._dataConnect, {required  this.email,required  this.role,});
+  UpsertCurrentUserVariablesBuilder(this._dataConnect, {required  this.role,});
   Deserializer<UpsertCurrentUserData> dataDeserializer = (dynamic json)  => UpsertCurrentUserData.fromJson(jsonDecode(json));
   Serializer<UpsertCurrentUserVariables> varsSerializer = (UpsertCurrentUserVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<UpsertCurrentUserData, UpsertCurrentUserVariables>> execute() {
@@ -18,15 +23,15 @@ class UpsertCurrentUserVariablesBuilder {
   }
 
   MutationRef<UpsertCurrentUserData, UpsertCurrentUserVariables> ref() {
-    UpsertCurrentUserVariables vars= UpsertCurrentUserVariables(email: email,fullName: _fullName,role: role,);
+    UpsertCurrentUserVariables vars= UpsertCurrentUserVariables(email: _email,fullName: _fullName,role: role,);
     return _dataConnect.mutation("UpsertCurrentUser", dataDeserializer, varsSerializer, vars);
   }
 }
 
 @immutable
-class UpsertCurrentUserUserUpsert {
+class UpsertCurrentUserUserUpdate {
   final String uid;
-  UpsertCurrentUserUserUpsert.fromJson(dynamic json):
+  UpsertCurrentUserUserUpdate.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']);
   @override
@@ -38,7 +43,7 @@ class UpsertCurrentUserUserUpsert {
       return false;
     }
 
-    final UpsertCurrentUserUserUpsert otherTyped = other as UpsertCurrentUserUserUpsert;
+    final UpsertCurrentUserUserUpdate otherTyped = other as UpsertCurrentUserUserUpdate;
     return uid == otherTyped.uid;
     
   }
@@ -52,17 +57,17 @@ class UpsertCurrentUserUserUpsert {
     return json;
   }
 
-  UpsertCurrentUserUserUpsert({
+  UpsertCurrentUserUserUpdate({
     required this.uid,
   });
 }
 
 @immutable
 class UpsertCurrentUserData {
-  final UpsertCurrentUserUserUpsert user_upsert;
+  final UpsertCurrentUserUserUpdate? user_update;
   UpsertCurrentUserData.fromJson(dynamic json):
   
-  user_upsert = UpsertCurrentUserUserUpsert.fromJson(json['user_upsert']);
+  user_update = json['user_update'] == null ? null : UpsertCurrentUserUserUpdate.fromJson(json['user_update']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -73,35 +78,39 @@ class UpsertCurrentUserData {
     }
 
     final UpsertCurrentUserData otherTyped = other as UpsertCurrentUserData;
-    return user_upsert == otherTyped.user_upsert;
+    return user_update == otherTyped.user_update;
     
   }
   @override
-  int get hashCode => user_upsert.hashCode;
+  int get hashCode => user_update.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['user_upsert'] = user_upsert.toJson();
+    if (user_update != null) {
+      json['user_update'] = user_update!.toJson();
+    }
     return json;
   }
 
   UpsertCurrentUserData({
-    required this.user_upsert,
+    this.user_update,
   });
 }
 
 @immutable
 class UpsertCurrentUserVariables {
-  final String email;
+  late final Optional<String>email;
   late final Optional<String>fullName;
   final Role role;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   UpsertCurrentUserVariables.fromJson(Map<String, dynamic> json):
   
-  email = nativeFromJson<String>(json['email']),
   role = Role.values.byName(json['role']) {
   
+  
+    email = Optional.optional(nativeFromJson, nativeToJson);
+    email.value = json['email'] == null ? null : nativeFromJson<String>(json['email']);
   
   
     fullName = Optional.optional(nativeFromJson, nativeToJson);
@@ -130,7 +139,9 @@ class UpsertCurrentUserVariables {
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['email'] = nativeToJson<String>(email);
+    if(email.state == OptionalState.set) {
+      json['email'] = email.toJson();
+    }
     if(fullName.state == OptionalState.set) {
       json['fullName'] = fullName.toJson();
     }

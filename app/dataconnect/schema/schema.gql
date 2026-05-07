@@ -24,6 +24,8 @@ type Student @table(name: "students", key: ["uid"]) {
   uid: String! @default(expr: "auth.uid")
   user: User!
   parent: Parent!
+  # ── ADDED: unique username chosen by parent at registration ──────────────
+  username: String! @col(dataType: "varchar(50)") @unique
   friendCode: String @col(dataType: "varchar(20)")
   gradeLevel: Int
   totalXp: Int @default(expr: "0")
@@ -45,7 +47,6 @@ type InstalledApp @table(name: "installed_apps", key: ["id"], singular: "install
   packageName: String! @col(dataType: "varchar(255)")
   appLabel: String! @col(dataType: "varchar(255)")
   isSystemApp: Boolean! @default(expr: "false")
-  iconBase64: String @col(dataType: "text")
 }
 
 # One row per configured app per student.
@@ -57,7 +58,6 @@ type AppRule @table(name: "app_rules", key: ["id"]) {
   studentUid: String!
   packageName: String! @col(dataType: "varchar(255)")
   appLabel: String! @col(dataType: "varchar(255)")
-  iconBase64: String @col(dataType: "text")
 }
 
 # One row per student holding the global usage and cooldown time limits.

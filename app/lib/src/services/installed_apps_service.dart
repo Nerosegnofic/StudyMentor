@@ -35,7 +35,6 @@ class InstalledAppsService {
             packageName: m['package'] as String,
             appLabel: m['label'] as String,
             isSystemApp: m['isSystem'] as bool? ?? false,
-            iconBase64: m['iconBase64'] as String?,
           ),
         )
         .toList();

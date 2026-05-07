@@ -46,6 +46,26 @@ part 'upsert_student_avatar.dart';
 
 part 'update_student_xp_and_coins.dart';
 
+part 'delete_all_owned_items_for_student.dart';
+
+part 'delete_student_avatar.dart';
+
+part 'delete_student_settings.dart';
+
+part 'delete_student_config.dart';
+
+part 'delete_all_friend_requests_by_student.dart';
+
+part 'delete_all_friendships_for_student.dart';
+
+part 'delete_student_record.dart';
+
+part 'delete_user_record.dart';
+
+part 'update_student_full_name.dart';
+
+part 'delete_parent_record.dart';
+
 part 'upsert_student_config.dart';
 
 part 'get_user_by_uid.dart';
@@ -79,6 +99,8 @@ part 'get_student_owned_items.dart';
 part 'get_student_avatar.dart';
 
 part 'get_app_config_for_student.dart';
+
+part 'get_sibling_leaderboard.dart';
 
 
 
@@ -167,8 +189,8 @@ class ExampleConnector {
   }
   
   
-  UpsertCurrentUserVariablesBuilder upsertCurrentUser ({required String email, required Role role, }) {
-    return UpsertCurrentUserVariablesBuilder(dataConnect, email: email,role: role,);
+  UpsertCurrentUserVariablesBuilder upsertCurrentUser ({required Role role, }) {
+    return UpsertCurrentUserVariablesBuilder(dataConnect, role: role,);
   }
   
   
@@ -182,8 +204,8 @@ class ExampleConnector {
   }
   
   
-  InsertStudentVariablesBuilder insertStudent ({required String parentUid, }) {
-    return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,);
+  InsertStudentVariablesBuilder insertStudent ({required String parentUid, required String username, }) {
+    return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,username: username,);
   }
   
   
@@ -264,6 +286,56 @@ class ExampleConnector {
   
   UpdateStudentXpAndCoinsVariablesBuilder updateStudentXpAndCoins ({required int totalXp, required int weeklyXp, required int totalCoins, required int totalQuestionsAnswered, required int currentStreak, }) {
     return UpdateStudentXpAndCoinsVariablesBuilder(dataConnect, totalXp: totalXp,weeklyXp: weeklyXp,totalCoins: totalCoins,totalQuestionsAnswered: totalQuestionsAnswered,currentStreak: currentStreak,);
+  }
+  
+  
+  DeleteAllOwnedItemsForStudentVariablesBuilder deleteAllOwnedItemsForStudent ({required String studentUid, }) {
+    return DeleteAllOwnedItemsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  DeleteStudentAvatarVariablesBuilder deleteStudentAvatar ({required String studentUid, }) {
+    return DeleteStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  DeleteStudentSettingsVariablesBuilder deleteStudentSettings ({required String studentUid, }) {
+    return DeleteStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  DeleteStudentConfigVariablesBuilder deleteStudentConfig ({required String studentUid, }) {
+    return DeleteStudentConfigVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  DeleteAllFriendRequestsByStudentVariablesBuilder deleteAllFriendRequestsByStudent ({required String studentUid, }) {
+    return DeleteAllFriendRequestsByStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  DeleteAllFriendshipsForStudentVariablesBuilder deleteAllFriendshipsForStudent ({required String studentUid, }) {
+    return DeleteAllFriendshipsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  DeleteStudentRecordVariablesBuilder deleteStudentRecord ({required String uid, }) {
+    return DeleteStudentRecordVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  DeleteUserRecordVariablesBuilder deleteUserRecord ({required String uid, }) {
+    return DeleteUserRecordVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  UpdateStudentFullNameVariablesBuilder updateStudentFullName ({required String uid, required String fullName, }) {
+    return UpdateStudentFullNameVariablesBuilder(dataConnect, uid: uid,fullName: fullName,);
+  }
+  
+  
+  DeleteParentRecordVariablesBuilder deleteParentRecord () {
+    return DeleteParentRecordVariablesBuilder(dataConnect, );
   }
   
   
@@ -349,6 +421,11 @@ class ExampleConnector {
   
   GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
     return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetSiblingLeaderboardVariablesBuilder getSiblingLeaderboard ({required String parentUid, }) {
+    return GetSiblingLeaderboardVariablesBuilder(dataConnect, parentUid: parentUid,);
   }
   
 

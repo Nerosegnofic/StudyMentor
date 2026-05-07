@@ -17,15 +17,6 @@ extend type AppRule {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "AppRule.appLabel", purpose: QUERY_COUNT)
   """
-  ✨ Count the number of rows in the `AppRule` table where the `iconBase64` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  iconBase64_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "AppRule.iconBase64", purpose: QUERY_COUNT)
-  """
   ✨ Count the number of rows in the `AppRule` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   id_count(
@@ -218,15 +209,6 @@ extend type InstalledApp {
     """
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "InstalledApp.appLabel", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `InstalledApp` table where the `iconBase64` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  iconBase64_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "InstalledApp.iconBase64", purpose: QUERY_COUNT)
   """
   ✨ Count the number of rows in the `InstalledApp` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
@@ -667,6 +649,15 @@ extend type Student {
     """
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.userUid", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `Student` table where the `username` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  username_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Student.username", purpose: QUERY_COUNT)
   """
   ✨ Count the number of rows in the `Student` table where the `weeklyXp` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """

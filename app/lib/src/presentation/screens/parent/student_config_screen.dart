@@ -1,6 +1,5 @@
 // lib/src/presentation/screens/parent/student_config_screen.dart
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +9,7 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
+import 'parent_student_settings_screen.dart';
 
 class StudentConfigScreen extends StatefulWidget {
   final StudentModel student;
@@ -30,6 +30,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isDirty = false;
+  bool _isDeleting = false;
 
   /// True while a parent-triggered refresh is in flight.
   bool _isRefreshing = false;
@@ -53,16 +54,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   void _loadRulesFromSaved(List<AppRuleModel> saved) {
     _rules.clear();
     for (final r in saved) {
-      final icon = _installedApps
-          .where((a) => a.packageName == r.packageName)
-          .firstOrNull
-          ?.iconBase64;
-
       _rules.add(
         PendingAppRule(
           packageName: r.packageName,
           appLabel: r.appLabel,
-          iconBase64: icon ?? r.iconBase64,
         ),
       );
     }
@@ -177,7 +172,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                   PendingAppRule(
                     packageName: app.packageName,
                     appLabel: app.appLabel,
-                    iconBase64: app.iconBase64,
                   ),
                 );
               }
@@ -225,25 +219,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             _installedApps = state.apps;
             _appsLoading = false;
             _isRefreshing = false;
-            // Backfill icons for any rules already in memory.
-            if (!_isLoading) {
-              for (var i = 0; i < _rules.length; i++) {
-                final r = _rules[i];
-                if (r.iconBase64 == null) {
-                  final icon = state.apps
-                      .where((a) => a.packageName == r.packageName)
-                      .firstOrNull
-                      ?.iconBase64;
-                  if (icon != null) {
-                    _rules[i] = PendingAppRule(
-                      packageName: r.packageName,
-                      appLabel: r.appLabel,
-                      iconBase64: icon,
-                    );
-                  }
-                }
-              }
-            }
           });
         }
 
@@ -270,6 +245,25 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             _isSaving = false;
             _isRefreshing = false;
           });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
+
+        if (state is StudentDeleteLoading) {
+          setState(() => _isDeleting = true);
+        }
+
+        if (state is StudentDeleted) {
+          // Navigate back — the parent students screen refreshes via StudentsLoaded.
+          if (mounted) Navigator.of(context).pop();
+        }
+
+        if (state is StudentDeleteError) {
+          setState(() => _isDeleting = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -389,11 +383,52 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             _markDirty();
           },
         ),
+        // ── Quick-action row: Settings ────────────────────────────────────
+        _buildQuickActions(),
         // ── App rules list or empty state ──────────────────────────────────
         Expanded(
           child: _rules.isEmpty ? _buildEmptyState() : _buildRulesList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.manage_accounts_outlined,
+              label: 'Edit Profile',
+              color: const Color(0xFF1E88E5),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<AuthBloc>(),
+                    child: ParentStudentSettingsScreen(
+                      student: widget.student,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.delete_outline_rounded,
+              label: 'Delete Account',
+              color: Colors.red.shade600,
+              isDestructive: true,
+              isLoading: _isDeleting,
+              onTap: _isDeleting ? null : _confirmDeleteStudent,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -481,6 +516,48 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       itemCount: _rules.length,
       itemBuilder: (ctx, i) =>
           _AppRuleCard(rule: _rules[i], onRemove: () => _removeRule(i)),
+    );
+  }
+
+  // ── delete student ─────────────────────────────────────────────────────────
+
+  Future<void> _confirmDeleteStudent() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Student Account'),
+        content: Text(
+          'This will permanently delete ${widget.student.fullName}\'s account and all their data — progress, items, friends, and settings. '
+          'This cannot be undone.\n\nAre you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Get parentUid from current auth state.
+    final authState = context.read<AuthBloc>().state;
+    final parentUid =
+        authState is AuthAuthenticated ? authState.user.uid : '';
+
+    context.read<AuthBloc>().add(
+      DeleteStudentRequested(
+        studentUid: widget.student.uid,
+        parentUid: parentUid,
+      ),
     );
   }
 
@@ -1038,10 +1115,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                         app.packageName,
                       );
                       return ListTile(
-                        leading: _AppIcon(
-                          iconBase64: app.iconBase64,
-                          label: app.appLabel,
-                        ),
+                        leading: _AppLetterAvatar(label: app.appLabel),
                         title: Text(
                           app.appLabel,
                           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -1127,29 +1201,19 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   }
 }
 
-// ── _AppIcon ──────────────────────────────────────────────────────────────────
+// ── _AppLetterAvatar ──────────────────────────────────────────────────────────
 
-class _AppIcon extends StatelessWidget {
-  final String? iconBase64;
+class _AppLetterAvatar extends StatelessWidget {
   final String label;
-  const _AppIcon({required this.iconBase64, required this.label});
+  const _AppLetterAvatar({required this.label});
 
   @override
   Widget build(BuildContext context) {
-    if (iconBase64 != null && iconBase64!.isNotEmpty) {
-      try {
-        return CircleAvatar(
-          backgroundImage: MemoryImage(base64Decode(iconBase64!)),
-          backgroundColor: const Color(0xFFE8EDFF),
-          radius: 20,
-        );
-      } catch (_) {}
-    }
     return CircleAvatar(
       backgroundColor: const Color(0xFFE8EDFF),
       radius: 20,
       child: Text(
-        label[0].toUpperCase(),
+        label.isNotEmpty ? label[0].toUpperCase() : '?',
         style: const TextStyle(
           color: Color(0xFF4A6CF7),
           fontWeight: FontWeight.w700,
@@ -1180,7 +1244,7 @@ class _AppRuleCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
         child: Row(
           children: [
-            _AppIcon(iconBase64: rule.iconBase64, label: rule.appLabel),
+            _AppLetterAvatar(label: rule.appLabel),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -1255,6 +1319,69 @@ class _TimeInput extends StatelessWidget {
         ),
         suffixText: suffix,
         suffixStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+      ),
+    );
+  }
+}
+
+// ── _QuickActionButton ────────────────────────────────────────────────────────
+
+class _QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isDestructive;
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.isDestructive = false,
+    this.isLoading = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isDestructive
+        ? Colors.red.shade50
+        : const Color(0xFFE8EDFF);
+
+    return Material(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              isLoading
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: color,
+                      ),
+                    )
+                  : Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
