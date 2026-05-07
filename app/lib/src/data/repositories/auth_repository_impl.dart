@@ -273,7 +273,6 @@ class AuthRepositoryImpl implements AuthRepository {
           packageName: app.packageName,
           appLabel: app.appLabel,
           isSystemApp: app.isSystemApp,
-          iconBase64: app.iconBase64,
         ),
       ),
     );
@@ -307,7 +306,6 @@ class AuthRepositoryImpl implements AuthRepository {
         studentUid: studentUid,
         packageName: rule.packageName,
         appLabel: rule.appLabel,
-        iconBase64: rule.iconBase64,
       );
     }
   }

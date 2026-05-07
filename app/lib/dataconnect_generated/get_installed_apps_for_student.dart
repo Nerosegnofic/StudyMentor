@@ -23,14 +23,12 @@ class GetInstalledAppsForStudentInstalledApps {
   final String packageName;
   final String appLabel;
   final bool isSystemApp;
-  final String? iconBase64;
   GetInstalledAppsForStudentInstalledApps.fromJson(dynamic json):
-  
+
   id = nativeFromJson<String>(json['id']),
   packageName = nativeFromJson<String>(json['packageName']),
   appLabel = nativeFromJson<String>(json['appLabel']),
-  isSystemApp = nativeFromJson<bool>(json['isSystemApp']),
-  iconBase64 = json['iconBase64'] == null ? null : nativeFromJson<String>(json['iconBase64']);
+  isSystemApp = nativeFromJson<bool>(json['isSystemApp']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -41,16 +39,15 @@ class GetInstalledAppsForStudentInstalledApps {
     }
 
     final GetInstalledAppsForStudentInstalledApps otherTyped = other as GetInstalledAppsForStudentInstalledApps;
-    return id == otherTyped.id && 
-    packageName == otherTyped.packageName && 
-    appLabel == otherTyped.appLabel && 
-    isSystemApp == otherTyped.isSystemApp && 
-    iconBase64 == otherTyped.iconBase64;
-    
+    return id == otherTyped.id &&
+    packageName == otherTyped.packageName &&
+    appLabel == otherTyped.appLabel &&
+    isSystemApp == otherTyped.isSystemApp;
+
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, isSystemApp.hashCode, iconBase64.hashCode]);
-  
+  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, isSystemApp.hashCode]);
+
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -58,9 +55,6 @@ class GetInstalledAppsForStudentInstalledApps {
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
     json['isSystemApp'] = nativeToJson<bool>(isSystemApp);
-    if (iconBase64 != null) {
-      json['iconBase64'] = nativeToJson<String?>(iconBase64);
-    }
     return json;
   }
 
@@ -69,7 +63,6 @@ class GetInstalledAppsForStudentInstalledApps {
     required this.packageName,
     required this.appLabel,
     required this.isSystemApp,
-    this.iconBase64,
   });
 }
 
@@ -77,7 +70,7 @@ class GetInstalledAppsForStudentInstalledApps {
 class GetInstalledAppsForStudentData {
   final List<GetInstalledAppsForStudentInstalledApps> installedApps;
   GetInstalledAppsForStudentData.fromJson(dynamic json):
-  
+
   installedApps = (json['installedApps'] as List<dynamic>)
         .map((e) => GetInstalledAppsForStudentInstalledApps.fromJson(e))
         .toList();
@@ -92,11 +85,11 @@ class GetInstalledAppsForStudentData {
 
     final GetInstalledAppsForStudentData otherTyped = other as GetInstalledAppsForStudentData;
     return installedApps == otherTyped.installedApps;
-    
+
   }
   @override
   int get hashCode => installedApps.hashCode;
-  
+
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -114,7 +107,7 @@ class GetInstalledAppsForStudentVariables {
   final String studentUid;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   GetInstalledAppsForStudentVariables.fromJson(Map<String, dynamic> json):
-  
+
   studentUid = nativeFromJson<String>(json['studentUid']);
   @override
   bool operator ==(Object other) {
@@ -127,11 +120,11 @@ class GetInstalledAppsForStudentVariables {
 
     final GetInstalledAppsForStudentVariables otherTyped = other as GetInstalledAppsForStudentVariables;
     return studentUid == otherTyped.studentUid;
-    
+
   }
   @override
   int get hashCode => studentUid.hashCode;
-  
+
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -143,4 +136,3 @@ class GetInstalledAppsForStudentVariables {
     required this.studentUid,
   });
 }
-

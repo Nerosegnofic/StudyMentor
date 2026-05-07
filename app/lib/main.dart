@@ -54,7 +54,6 @@ void callbackDispatcher() {
             packageName: app.packageName,
             appLabel: app.appLabel,
             isSystemApp: app.isSystemApp,
-            iconBase64: app.iconBase64,
           ),
         ),
       );

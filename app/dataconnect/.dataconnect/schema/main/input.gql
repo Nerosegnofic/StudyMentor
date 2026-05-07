@@ -109,14 +109,6 @@ input AppRule_Data {
   """
   appLabel_expr: String_Expr @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `AppRule`.`iconBase64` of type `String`
-  """
-  iconBase64: String
-  """
-  ✨ `_expr` server value variant of `iconBase64` (✨ Generated from Field `AppRule`.`iconBase64` of type `String`)
-  """
-  iconBase64_expr: String_Expr @fdc_forbiddenInVariables
-  """
   ✨ Generated from Field `AppRule`.`packageName` of type `String!`
   """
   packageName: String
@@ -157,10 +149,6 @@ input AppRule_Filter {
   ✨ Generated from Field `AppRule`.`appLabel` of type `String!`
   """
   appLabel: String_Filter
-  """
-  ✨ Generated from Field `AppRule`.`iconBase64` of type `String`
-  """
-  iconBase64: String_Filter
   """
   ✨ Generated from Field `AppRule`.`packageName` of type `String!`
   """
@@ -207,10 +195,6 @@ input AppRule_Having {
   ✨ Generated from Field `AppRule`.`appLabel_count` of type `Int!`
   """
   appLabel_count: Int_Filter
-  """
-  ✨ Generated from Field `AppRule`.`iconBase64_count` of type `Int!`
-  """
-  iconBase64_count: Int_Filter
   """
   ✨ Generated from Field `AppRule`.`id_count` of type `Int!`
   """
@@ -271,10 +255,6 @@ input AppRule_Order {
   """
   appLabel: OrderDirection
   """
-  ✨ Generated from Field `AppRule`.`iconBase64` of type `String`
-  """
-  iconBase64: OrderDirection
-  """
   ✨ Generated from Field `AppRule`.`packageName` of type `String!`
   """
   packageName: OrderDirection
@@ -286,10 +266,6 @@ input AppRule_Order {
   ✨ Generated from Field `AppRule`.`appLabel_count` of type `Int!`
   """
   appLabel_count: OrderDirection
-  """
-  ✨ Generated from Field `AppRule`.`iconBase64_count` of type `Int!`
-  """
-  iconBase64_count: OrderDirection
   """
   ✨ Generated from Field `AppRule`.`id_count` of type `Int!`
   """
@@ -874,14 +850,6 @@ input InstalledApp_Data {
   """
   appLabel_expr: String_Expr @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `InstalledApp`.`iconBase64` of type `String`
-  """
-  iconBase64: String
-  """
-  ✨ `_expr` server value variant of `iconBase64` (✨ Generated from Field `InstalledApp`.`iconBase64` of type `String`)
-  """
-  iconBase64_expr: String_Expr @fdc_forbiddenInVariables
-  """
   ✨ Generated from Field `InstalledApp`.`isSystemApp` of type `Boolean!`
   """
   isSystemApp: Boolean
@@ -930,10 +898,6 @@ input InstalledApp_Filter {
   ✨ Generated from Field `InstalledApp`.`appLabel` of type `String!`
   """
   appLabel: String_Filter
-  """
-  ✨ Generated from Field `InstalledApp`.`iconBase64` of type `String`
-  """
-  iconBase64: String_Filter
   """
   ✨ Generated from Field `InstalledApp`.`isSystemApp` of type `Boolean!`
   """
@@ -984,10 +948,6 @@ input InstalledApp_Having {
   ✨ Generated from Field `InstalledApp`.`appLabel_count` of type `Int!`
   """
   appLabel_count: Int_Filter
-  """
-  ✨ Generated from Field `InstalledApp`.`iconBase64_count` of type `Int!`
-  """
-  iconBase64_count: Int_Filter
   """
   ✨ Generated from Field `InstalledApp`.`id_count` of type `Int!`
   """
@@ -1052,10 +1012,6 @@ input InstalledApp_Order {
   """
   appLabel: OrderDirection
   """
-  ✨ Generated from Field `InstalledApp`.`iconBase64` of type `String`
-  """
-  iconBase64: OrderDirection
-  """
   ✨ Generated from Field `InstalledApp`.`isSystemApp` of type `Boolean!`
   """
   isSystemApp: OrderDirection
@@ -1071,10 +1027,6 @@ input InstalledApp_Order {
   ✨ Generated from Field `InstalledApp`.`appLabel_count` of type `Int!`
   """
   appLabel_count: OrderDirection
-  """
-  ✨ Generated from Field `InstalledApp`.`iconBase64_count` of type `Int!`
-  """
-  iconBase64_count: OrderDirection
   """
   ✨ Generated from Field `InstalledApp`.`id_count` of type `Int!`
   """
