@@ -126,6 +126,19 @@ type StudentOwnedItem @table(name: "student_owned_items", key: ["id"]) {
   purchasedAt: Timestamp! @default(expr: "request.time")
 }
 
+# ── Garden System ─────────────────────────────────────────────────────────────
+
+# One row per (student, subject). Tracks XP and level for each subject's plant.
+# Uses upsert pattern — compound primary key enforces one row per student+subject.
+type SubjectProgress @table(name: "subject_progress", key: ["studentUid", "subjectKey"]) {
+  studentUid: String!
+  student: Student!
+  subjectKey: String! @col(dataType: "varchar(50)")
+  totalXp: Int! @default(expr: "0")
+  level: Int! @default(expr: "1")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
 # Stores the student's current avatar configuration (equipped item IDs per slot).
 # Uses upsert — one row per student.
 type StudentAvatar @table(name: "student_avatars", key: ["studentUid"]) {

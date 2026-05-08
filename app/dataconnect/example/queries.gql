@@ -228,3 +228,15 @@ query GetSiblingLeaderboard($parentUid: String!) @auth(level: USER, insecureReas
     lastActiveAt
   }
 }
+
+# ── Garden System ─────────────────────────────────────────────────────────────
+
+query GetAllSubjectProgress($studentUid: String!) @auth(level: USER, insecureReason: "Student queries their own progress by passing their UID.") {
+  subjectProgresses(where: { studentUid: { eq: $studentUid } }) {
+    studentUid
+    subjectKey
+    totalXp
+    level
+    updatedAt
+  }
+}
