@@ -37,11 +37,6 @@ class StudentNavigationBar extends StatelessWidget {
           selectedIcon: Icon(Icons.people),
           label: 'Friends',
         ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: 'Profile',
-        ),
       ],
     );
   }
