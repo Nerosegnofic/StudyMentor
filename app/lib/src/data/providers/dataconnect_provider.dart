@@ -2,6 +2,9 @@
 
 import '../../../dataconnect_generated/generated.dart';
 import '../../domain/models/app_config_model.dart';
+import '../../domain/models/subject_progress_model.dart';
+import '../../domain/models/skill_progress_model.dart';
+import '../catalog/subject_catalog.dart';
 
 class DataConnectProvider {
   final _connector = ExampleConnector.instance;
@@ -602,4 +605,67 @@ class DataConnectProvider {
         )
         .execute();
   }
+
+  // ── Garden System ─────────────────────────────────────────────────────────
+
+  /// Returns all [SubjectProgressModel]s for [studentUid].
+  Future<List<SubjectProgressModel>> getAllSubjectProgress(String studentUid) async {
+    final result = await _connector
+        .getAllSubjectProgress(studentUid: studentUid)
+        .execute();
+    return result.data.subjectProgresses.map((r) {
+      return SubjectProgressModel(
+        studentUid: r.studentUid,
+        subjectKey: r.subjectKey,
+        totalXp: r.totalXp,
+        level: r.level,
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(r.updatedAt.seconds * 1000, isUtc: true),
+      );
+    }).toList();
+  }
+
+  /// Returns placeholder [SkillProgressModel]s for one subject based on the local catalog.
+  /// Skill progress is not persisted to the database — all counters start at zero.
+  Future<List<SkillProgressModel>> getSkillsForSubject({
+    required String studentUid,
+    required String subjectKey,
+  }) async {
+    final subject = SubjectCatalog.byKey(subjectKey);
+    if (subject == null) return [];
+    return subject.skillKeys
+        .map((key) => SkillProgressModel.empty(
+              studentUid: studentUid,
+              subjectKey: subjectKey,
+              skillKey: key,
+            ))
+        .toList();
+  }
+
+  /// Upsert (create or update) subject XP and level.
+  Future<void> upsertSubjectProgress({
+    required String studentUid,
+    required String subjectKey,
+    required int totalXp,
+    required int level,
+  }) async {
+    await _connector
+        .upsertSubjectProgress(
+          studentUid: studentUid,
+          subjectKey: subjectKey,
+          totalXp: totalXp,
+          level: level,
+        )
+        .execute();
+  }
+
+  /// Skill progress is not persisted to the database — this is intentionally a no-op.
+  Future<void> upsertSkillProgress({
+    required String studentUid,
+    required String subjectKey,
+    required String skillKey,
+    required int correctAnswers,
+    required int wrongAnswers,
+    required int totalAttempts,
+  }) async {}
 }
+

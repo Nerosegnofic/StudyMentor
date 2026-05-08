@@ -4,6 +4,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/shop/shop_bloc.dart';
+import '../../../bloc/garden/garden_bloc.dart';
 import '../../widgets/parent_verification_dialog.dart';
 import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
@@ -29,16 +30,9 @@ class _StudentScreenState extends State<StudentScreen>
     with WidgetsBindingObserver {
   int _selectedIndex = 0;
   int _coins = 0;
+  int _xp = 0;
   int _level = 1;
   String _parentUid = '';
-
-  static const List<String> _titles = [
-    'Home',
-    'Shop',
-    'Leaderboard',
-    'Friends',
-    'Profile',
-  ];
 
   @override
   void initState() {
@@ -63,8 +57,8 @@ class _StudentScreenState extends State<StudentScreen>
         final profile = results[0] as Map<String, dynamic>;
         setState(() {
           _coins = (profile['total_coins'] as int?) ?? 0;
-          final xp = (profile['total_xp'] as int?) ?? 0;
-          _level = (xp ~/ 500) + 1;
+          _xp = (profile['total_xp'] as int?) ?? 0;
+          _level = (_xp ~/ 500) + 1;
           _parentUid = results[1] as String;
         });
       }
@@ -113,8 +107,11 @@ class _StudentScreenState extends State<StudentScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ShopBloc>(
-      create: (_) => ShopBloc(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ShopBloc>(create: (_) => ShopBloc()),
+        BlocProvider<GardenBloc>(create: (_) => GardenBloc()),
+      ],
       child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) {
@@ -134,73 +131,29 @@ class _StudentScreenState extends State<StudentScreen>
             }
           },
           child: Scaffold(
-            backgroundColor: const Color(0xFFF5F7FF),
-            appBar: AppBar(
-              title: Text(
-                _selectedIndex == 0
-                    ? 'Welcome, ${widget.fullName}'
-                    : _titles[_selectedIndex],
-              ),
-              automaticallyImplyLeading: false,
-              actions: [
-                // Coin balance in app bar when on shop tab
-                if (_selectedIndex == 1)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+            backgroundColor: const Color(0xFFF5F7FA),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  _buildTopNav(context),
+                  Expanded(
+                    child: IndexedStack(
+                      index: _selectedIndex,
+                      children: [
+                        StudentHome(fullName: widget.fullName, uid: widget.uid),
+                        StudentShop(uid: widget.uid, coins: _coins, level: _level),
+                        StudentLeaderboard(
+                          uid: widget.uid,
+                          fullName: widget.fullName,
+                          parentUid: _parentUid,
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF8E1),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFFFCA28)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🪙', style: TextStyle(fontSize: 14)),
-                            const SizedBox(width: 4),
-                            Text(
-                              '$_coins',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFF57F17),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                        StudentFriends(uid: widget.uid, fullName: widget.fullName),
+                        StudentProfile(fullName: widget.fullName, uid: widget.uid),
+                      ],
                     ),
                   ),
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: () {
-                    context.read<AuthBloc>().add(
-                      StudentLogoutVerificationRequested(
-                        studentUid: widget.uid,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            body: IndexedStack(
-              index: _selectedIndex,
-              children: [
-                StudentHome(fullName: widget.fullName, uid: widget.uid),
-                StudentShop(uid: widget.uid, coins: _coins, level: _level),
-                StudentLeaderboard(
-                  uid: widget.uid,
-                  fullName: widget.fullName,
-                  parentUid: _parentUid,
-                ),
-                StudentFriends(uid: widget.uid, fullName: widget.fullName),
-                StudentProfile(fullName: widget.fullName, uid: widget.uid),
-              ],
+                ],
+              ),
             ),
             bottomNavigationBar: StudentNavigationBar(
               currentIndex: _selectedIndex,
@@ -210,5 +163,127 @@ class _StudentScreenState extends State<StudentScreen>
         ),
       ),
     );
+  }
+
+  // ── Custom top navigation bar ──────────────────────────────────────────────
+
+  Widget _buildTopNav(BuildContext context) {
+    final firstName = widget.fullName.split(' ').first;
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        children: [
+          // Avatar — shows first letter, tap to logout
+          GestureDetector(
+            onTap: () => context.read<AuthBloc>().add(
+              StudentLogoutVerificationRequested(studentUid: widget.uid),
+            ),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFD95A),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF5D4037),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Spacer(),
+          // XP pill
+          _navPill(
+            icon: Icons.star_rounded,
+            iconColor: const Color(0xFFFFC107),
+            label: _formatNum(_xp),
+          ),
+          const SizedBox(width: 8),
+          // Coins pill
+          _navPill(
+            icon: Icons.monetization_on_rounded,
+            iconColor: const Color(0xFFFFA000),
+            label: _formatNum(_coins),
+          ),
+          const SizedBox(width: 6),
+          // Bell with green dot
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Color(0xFF757575),
+                  size: 24,
+                ),
+                onPressed: () {},
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _navPill({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFE082)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: iconColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFE6A800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatNum(int n) {
+    if (n >= 1000) {
+      final s = n.toString();
+      final thousands = s.substring(0, s.length - 3);
+      final remainder = s.substring(s.length - 3);
+      return '$thousands,$remainder';
+    }
+    return '$n';
   }
 }

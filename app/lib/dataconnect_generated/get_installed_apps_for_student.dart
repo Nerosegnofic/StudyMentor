@@ -24,7 +24,7 @@ class GetInstalledAppsForStudentInstalledApps {
   final String appLabel;
   final bool isSystemApp;
   GetInstalledAppsForStudentInstalledApps.fromJson(dynamic json):
-
+  
   id = nativeFromJson<String>(json['id']),
   packageName = nativeFromJson<String>(json['packageName']),
   appLabel = nativeFromJson<String>(json['appLabel']),
@@ -39,15 +39,15 @@ class GetInstalledAppsForStudentInstalledApps {
     }
 
     final GetInstalledAppsForStudentInstalledApps otherTyped = other as GetInstalledAppsForStudentInstalledApps;
-    return id == otherTyped.id &&
-    packageName == otherTyped.packageName &&
-    appLabel == otherTyped.appLabel &&
+    return id == otherTyped.id && 
+    packageName == otherTyped.packageName && 
+    appLabel == otherTyped.appLabel && 
     isSystemApp == otherTyped.isSystemApp;
-
+    
   }
   @override
   int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, isSystemApp.hashCode]);
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -70,7 +70,7 @@ class GetInstalledAppsForStudentInstalledApps {
 class GetInstalledAppsForStudentData {
   final List<GetInstalledAppsForStudentInstalledApps> installedApps;
   GetInstalledAppsForStudentData.fromJson(dynamic json):
-
+  
   installedApps = (json['installedApps'] as List<dynamic>)
         .map((e) => GetInstalledAppsForStudentInstalledApps.fromJson(e))
         .toList();
@@ -85,11 +85,11 @@ class GetInstalledAppsForStudentData {
 
     final GetInstalledAppsForStudentData otherTyped = other as GetInstalledAppsForStudentData;
     return installedApps == otherTyped.installedApps;
-
+    
   }
   @override
   int get hashCode => installedApps.hashCode;
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -107,7 +107,7 @@ class GetInstalledAppsForStudentVariables {
   final String studentUid;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   GetInstalledAppsForStudentVariables.fromJson(Map<String, dynamic> json):
-
+  
   studentUid = nativeFromJson<String>(json['studentUid']);
   @override
   bool operator ==(Object other) {
@@ -120,11 +120,11 @@ class GetInstalledAppsForStudentVariables {
 
     final GetInstalledAppsForStudentVariables otherTyped = other as GetInstalledAppsForStudentVariables;
     return studentUid == otherTyped.studentUid;
-
+    
   }
   @override
   int get hashCode => studentUid.hashCode;
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -136,3 +136,4 @@ class GetInstalledAppsForStudentVariables {
     required this.studentUid,
   });
 }
+
