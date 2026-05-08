@@ -10,6 +10,7 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../data/catalog/subject_catalog.dart';
+import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/subject_progress_model.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
@@ -35,6 +36,9 @@ class _StudentHomeState extends State<StudentHome> {
   bool _rulesLoading = true;
   final Map<String, String?> _iconCache = {};
 
+  int _streak = 0;
+  int _rank = 0;
+
   // Last known garden data — persists across BLoC state changes.
   Map<String, SubjectProgressModel> _gardenCache = {};
 
@@ -45,6 +49,32 @@ class _StudentHomeState extends State<StudentHome> {
     context.read<AuthBloc>().add(LoadStudentAppConfigRequested(studentUid: widget.uid));
     context.read<AuthBloc>().add(SyncInstalledAppsRequested(studentUid: widget.uid));
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
+    _loadStreakAndRank();
+  }
+
+  Future<void> _loadStreakAndRank() async {
+    try {
+      final provider = DataConnectProvider();
+      final results = await Future.wait([
+        provider.getStudentProfile(widget.uid),
+        provider.getWeeklyLeaderboard(),
+      ]);
+      final profile = results[0] as Map<String, dynamic>;
+      final leaderboard = results[1] as List<Map<String, dynamic>>;
+
+      leaderboard.sort(
+        (a, b) => (b['weekly_xp'] as int).compareTo(a['weekly_xp'] as int),
+      );
+      final rankIndex = leaderboard.indexWhere((e) => e['uid'] == widget.uid);
+      final rank = rankIndex >= 0 ? rankIndex + 1 : 0;
+
+      if (mounted) {
+        setState(() {
+          _streak = (profile['current_streak'] as int?) ?? 0;
+          _rank = rank;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _refresh() async {
@@ -55,6 +85,7 @@ class _StudentHomeState extends State<StudentHome> {
     context.read<AuthBloc>().add(LoadParentNameRequested(studentUid: widget.uid));
     context.read<AuthBloc>().add(LoadStudentAppConfigRequested(studentUid: widget.uid));
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
+    _loadStreakAndRank();
   }
 
   Future<void> _loadIcons(List<AppRuleModel> rules) async {
@@ -449,13 +480,15 @@ class _StudentHomeState extends State<StudentHome> {
   // ── Quick stats ─────────────────────────────────────────────────────────────
 
   Widget _buildQuickStats() {
+    final streakLabel = _streak == 1 ? '1 day' : '$_streak days';
+    final rankLabel = _rank > 0 ? '#$_rank' : '#0';
     return Row(
       children: [
-        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '12')),
+        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '0')),
         const SizedBox(width: 10),
-        Expanded(child: _statCard(const Text('🔥', style: TextStyle(fontSize: 22)), 'Streak', '7 days')),
+        Expanded(child: _statCard(const Text('🔥', style: TextStyle(fontSize: 22)), 'Streak', streakLabel)),
         const SizedBox(width: 10),
-        Expanded(child: _statCard(const Text('⭐', style: TextStyle(fontSize: 22)), 'Rank', '#24')),
+        Expanded(child: _statCard(const Text('⭐', style: TextStyle(fontSize: 22)), 'Rank', rankLabel)),
       ],
     );
   }
@@ -870,17 +903,31 @@ class _AppIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final avatar = _buildAvatar();
+    return Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF6DBF5E), width: 2),
+      ),
+      child: avatar,
+    );
+  }
+
+  Widget _buildAvatar() {
     if (iconBase64 != null && iconBase64!.isNotEmpty) {
       try {
         return CircleAvatar(
           backgroundImage: MemoryImage(base64Decode(iconBase64!)),
           backgroundColor: const Color(0xFFE8EDFF),
-          radius: 20,
+          radius: 19,
         );
       } catch (_) {}
     }
     return CircleAvatar(
-      radius: 20,
+      radius: 19,
       backgroundColor: const Color(0xFFE8EDFF),
       child: Text(
         label[0].toUpperCase(),

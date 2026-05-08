@@ -17,7 +17,9 @@
       "Bash(Start-Sleep -Seconds 30)",
       "Bash(Get-Content \"C:\\\\Users\\\\11\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--GP-Graduation-Project-StudyMentor-app\\\\82e7a3fe-d837-41a0-b1f2-2c96a0e0412d\\\\tasks\\\\bt5kmsc23.output\" -ErrorAction SilentlyContinue)",
       "Bash(python3 *)",
-      "Bash(command -v firebase)"
+      "Bash(command -v firebase)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Format-Table FullName)"
     ]
   }
 }

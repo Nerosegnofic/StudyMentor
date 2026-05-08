@@ -5,6 +5,8 @@ import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/shop/shop_bloc.dart';
 import '../../../bloc/garden/garden_bloc.dart';
+import '../../../domain/models/avatar_config.dart';
+import '../../widgets/avatar_widget.dart';
 import '../../widgets/parent_verification_dialog.dart';
 import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
@@ -33,6 +35,7 @@ class _StudentScreenState extends State<StudentScreen>
   int _xp = 0;
   int _level = 1;
   String _parentUid = '';
+  AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   @override
   void initState() {
@@ -52,14 +55,19 @@ class _StudentScreenState extends State<StudentScreen>
       final results = await Future.wait([
         provider.getStudentProfile(widget.uid),
         provider.getParentUidForStudent(widget.uid),
+        provider.getStudentAvatar(widget.uid),
       ]);
       if (mounted) {
         final profile = results[0] as Map<String, dynamic>;
+        final avatarMap = results[2];
         setState(() {
           _coins = (profile['total_coins'] as int?) ?? 0;
           _xp = (profile['total_xp'] as int?) ?? 0;
           _level = (_xp ~/ 500) + 1;
           _parentUid = results[1] as String;
+          if (avatarMap != null) {
+            _avatarConfig = AvatarConfig.fromMap(avatarMap as Map<String, dynamic>);
+          }
         });
       }
     } catch (_) {}
@@ -135,7 +143,7 @@ class _StudentScreenState extends State<StudentScreen>
             body: SafeArea(
               child: Column(
                 children: [
-                  _buildTopNav(context),
+                  Builder(builder: (ctx) => _buildTopNav(ctx)),
                   Expanded(
                     child: IndexedStack(
                       index: _selectedIndex,
@@ -148,7 +156,6 @@ class _StudentScreenState extends State<StudentScreen>
                           parentUid: _parentUid,
                         ),
                         StudentFriends(uid: widget.uid, fullName: widget.fullName),
-                        StudentProfile(fullName: widget.fullName, uid: widget.uid),
                       ],
                     ),
                   ),
@@ -168,34 +175,50 @@ class _StudentScreenState extends State<StudentScreen>
   // ── Custom top navigation bar ──────────────────────────────────────────────
 
   Widget _buildTopNav(BuildContext context) {
-    final firstName = widget.fullName.split(' ').first;
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
-          // Avatar — shows first letter, tap to logout
+          // Avatar — tap to open profile page
           GestureDetector(
-            onTap: () => context.read<AuthBloc>().add(
-              StudentLogoutVerificationRequested(studentUid: widget.uid),
-            ),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFD95A),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF5D4037),
+            onTap: () {
+              final shopBloc = context.read<ShopBloc>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: shopBloc,
+                    child: Scaffold(
+                      body: SafeArea(
+                        child: StudentProfile(
+                          fullName: widget.fullName,
+                          uid: widget.uid,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
+              ).then((_) {
+                if (mounted) _loadCoinsAndLevel();
+              });
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF4CAF50), width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4CAF50).withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
+              child: ClipOval(child: AvatarWidget(config: _avatarConfig, size: 43)),
             ),
           ),
           const Spacer(),
