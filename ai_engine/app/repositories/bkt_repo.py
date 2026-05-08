@@ -21,6 +21,15 @@ def get_student_skill_state(db: Session, student_uid: str, skill_name: str) -> S
     )
 
     if not state:
-        raise ValueError(f"Skill state not found for student '{student_uid}' on skill '{skill_name}'.")
+        # Create a default state if none exists
+        state = StudentSkillState(
+            student_uid=student_uid,
+            skill_id=skill.skill_id,
+            mastery_probability=0.01,  # Default starting mastery
+            is_mastered=False,
+            attempts=0
+        )
+        db.add(state)
+        db.flush() # Ensure state has IDs but don't commit yet
 
     return state

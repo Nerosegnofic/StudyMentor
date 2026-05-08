@@ -16,7 +16,7 @@ def generate_chunk_id(content: str, metadata: dict, document_id: UUID) -> str:
     hash_hex = hashlib.sha256(hash_input.encode('utf-8')).hexdigest()[:32]
     return str(uuid.UUID(hash_hex))
 
-def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID):
+def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID, firebase_uid: str = None):
     """
     Stores the vectorized chunks into PGVector incrementally.
     Skips chunks that are already embedded in the database.
@@ -41,6 +41,8 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID):
     
     for doc in langchain_docs:
         doc.metadata["document_id"] = str(document_id)
+        if firebase_uid:
+            doc.metadata["firebase_uid"] = firebase_uid
         chunk_id = generate_chunk_id(doc.page_content, doc.metadata, document_id)
         
         if chunk_id not in existing_ids and chunk_id not in new_chunks_registry:

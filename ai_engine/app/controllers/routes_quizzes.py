@@ -98,8 +98,8 @@ async def generate_quiz(
         
         topic_instructions = "\n".join(instruction_lines)
         
-        # Step 3: PGVector Retrieval
-        context = retrieve_context_for_topics(all_topics, k=10)
+        # Step 3: PGVector Retrieval (scoped to this student's documents)
+        context = retrieve_context_for_topics(all_topics, k=10, firebase_uid=student_uid)
         
         # Step 4: LangChain structured generation
         response = generator_context.execute_generation(
@@ -140,6 +140,7 @@ async def generate_quiz(
         db.commit()
         
         return GenerateQuizResponse(
+            quiz_session_id=str(quiz_session.session_id),
             selected_subject_id=target_subject_id,
             selected_subject_name=target_subject_name,
             quiz_title=response.quiz_title,
@@ -169,6 +170,18 @@ async def submit_quiz(
         
         # We also want to update the QuizSession score
         quiz_session = get_quiz_session_by_id(db, request.quiz_session_id)
+
+        # Guard: reject if session doesn't exist
+        if not quiz_session:
+            raise HTTPException(status_code=404, detail="Quiz session not found.")
+
+        # Guard: reject if the quiz was already submitted
+        if quiz_session.end_time is not None:
+            raise HTTPException(status_code=409, detail="This quiz has already been submitted.")
+
+        # Guard: reject if the quiz belongs to a different student
+        if quiz_session.student_uid != student_uid:
+            raise HTTPException(status_code=403, detail="You are not allowed to submit this quiz.")
         
         for ans in request.answers:
             # Secure Server-Side Grading

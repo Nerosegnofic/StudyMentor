@@ -16,7 +16,13 @@ from app.core.database import SessionLocal
 parser_context = ParserContext(strategy=LlamaParseStrategy())
 chunker_context = ChunkerContext(strategy=MarkdownRecursiveChunkerStrategy())
 
-def process_and_ingest_document(document_id: UUID, file_content: bytes, filename: str, subject_id: int = 1):
+def process_and_ingest_document(
+    document_id: UUID, 
+    file_content: bytes, 
+    filename: str, 
+    subject_id: int = 1,
+    firebase_uid: str = None
+):
     """
     Orchestrates the RAG ingestion pipeline:
     1. Parse PDF -> Markdown
@@ -24,6 +30,8 @@ def process_and_ingest_document(document_id: UUID, file_content: bytes, filename
     3. Extract Mastery Points via regex
     4. Chunk -> LangChain docs
     5. Store -> PGVector + Mastery Points DB
+
+    - `firebase_uid`: If provided, tags the vector embeddings with user ownership.
     """
     suffix = os.path.splitext(filename)[1]
     db = SessionLocal()
@@ -46,7 +54,7 @@ def process_and_ingest_document(document_id: UUID, file_content: bytes, filename
             langchain_docs = chunker_context.execute_chunking(cleaned_text, document_id)
             
             # Step 5: Store Vector Embeddings
-            save_chunks_to_pgvector(langchain_docs, document_id)
+            save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid)
             
             # Step 6a: Populate Skills from raw regex extraction
             if raw_mastery_data:

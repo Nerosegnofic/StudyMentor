@@ -3,19 +3,31 @@ from fastapi import Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import firebase_admin
 from firebase_admin import auth, credentials
+from app.core.config import settings
 
-# Initialize Firebase Admin
-# In production, ensure the FIREBASE_SERVICE_ACCOUNT_JSON environment variable is set.
-# If not set, it might use Application Default Credentials.
-try:
-    if not firebase_admin._apps:
-        if os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON"):
-            cred = credentials.Certificate(os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON"))
-            firebase_admin.initialize_app(cred)
+def init_firebase():
+    """
+    Initializes the Firebase Admin SDK. 
+    Called during FastAPI startup to ensure the default app is ready.
+    """
+    try:
+        if not firebase_admin._apps:
+            if settings.FIREBASE_SERVICE_ACCOUNT_JSON:
+                print(f"DEBUG: Initializing Firebase with Service Account: {settings.FIREBASE_SERVICE_ACCOUNT_JSON}")
+                cred = credentials.Certificate(settings.FIREBASE_SERVICE_ACCOUNT_JSON)
+                firebase_admin.initialize_app(cred)
+                print("DEBUG: Firebase initialized with Service Account.")
+            else:
+                print(f"DEBUG: Falling back to Project ID: {settings.FIREBASE_PROJECT_ID}")
+                firebase_admin.initialize_app(options={'projectId': settings.FIREBASE_PROJECT_ID})
+                print("DEBUG: Firebase initialized with Project ID fallback.")
         else:
-            firebase_admin.initialize_app()
-except Exception as e:
-    print(f"Firebase Admin initialization warning: {e}")
+            print(f"DEBUG: Firebase already initialized: {firebase_admin._apps}")
+    except Exception as e:
+        print(f"CRITICAL: Firebase Admin initialization failed: {e}")
+        # In a real microservice, you might want to raise an error here to prevent startup
+        # if authentication is mandatory.
+
 
 security = HTTPBearer()
 
@@ -46,6 +58,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=401, detail="Firebase Token has expired.")
     except Exception as e:
         # Generic catch for dev environments if needed, but strict in prod
+        print(f"DEBUG: Firebase Token Verification Failed: {str(e)}")
         raise HTTPException(status_code=401, detail=f"Invalid authentication credentials: {str(e)}")
 
 def get_current_user_optional(request: Request) -> str | None:

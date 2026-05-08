@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy.orm import Session, func, cast, Date
+from sqlalchemy.orm import Session
+from sqlalchemy import func, cast, Date
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from datetime import datetime, timedelta

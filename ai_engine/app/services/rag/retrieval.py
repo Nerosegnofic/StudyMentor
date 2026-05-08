@@ -1,7 +1,7 @@
 from typing import List
 from app.core.database import get_vector_store
 
-def retrieve_context_for_topics(topics: List[str], k: int = 10) -> str:
+def retrieve_context_for_topics(topics: List[str], k: int = 10, firebase_uid: str = None) -> str:
     """
     Retrieves a fair distribution of textbook chunks across multiple topics.
     Uses Quota-based (Round Robin) retrieval with smart metadata filtering.
@@ -30,14 +30,24 @@ def retrieve_context_for_topics(topics: List[str], k: int = 10) -> str:
     final_docs = []
     
     for topic in topics:
+        # Build the metadata filter.
+        # If a firebase_uid is provided, scope results to that user's documents.
+        topic_filter = {"content_type": "substantive"}
+        if firebase_uid:
+            topic_filter["firebase_uid"] = firebase_uid
+        
         # 2. Search for this topic (fetch more than needed to allow for re-ranking)
         topic_docs = vector_store.similarity_search(
             topic, 
             k=quota * 4, 
-            filter={"content_type": "substantive"}
+            filter=topic_filter
         )
         
-        # 3. Fallback
+        # 3. Fallback: try without content_type filter, then without uid filter
+        if len(topic_docs) < 1 and firebase_uid:
+            topic_docs = vector_store.similarity_search(
+                topic, k=quota * 4, filter={"firebase_uid": firebase_uid}
+            )
         if len(topic_docs) < 1:
             topic_docs = vector_store.similarity_search(topic, k=quota * 4)
         

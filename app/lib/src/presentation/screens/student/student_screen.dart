@@ -1,19 +1,29 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/shop/shop_bloc.dart';
+import '../../../bloc/document/document_upload_bloc.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../widgets/parent_verification_dialog.dart';
 import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import 'student_home.dart';
+import 'student_quiz.dart';
+import 'student_documents.dart';
 import 'student_shop.dart';
 import 'student_leaderboard.dart';
 import 'student_friends.dart';
 import 'student_profile.dart';
+
+/// Base URL for the AI Engine.
+/// Change to your machine's LAN IP when testing on a physical device.
+const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -32,8 +42,15 @@ class _StudentScreenState extends State<StudentScreen>
   int _level = 1;
   String _parentUid = '';
 
+  /// Stable repository instance — created once in initState.
+  late final AiEngineRepository _aiRepo;
+
+  /// Subscription to the quiz-trigger stream from MascotOverlayService.
+  StreamSubscription<void>? _quizSub;
+
   static const List<String> _titles = [
     'Home',
+    'Documents',
     'Shop',
     'Leaderboard',
     'Friends',
@@ -45,9 +62,17 @@ class _StudentScreenState extends State<StudentScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    _aiRepo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
+
     MascotOverlayService.instance.init().then(
       (_) => MascotOverlayService.instance.start(),
     );
+
+    // Subscribe to overlay quiz trigger.
+    _quizSub = MascotOverlayService.instance.quizRequested.listen((_) {
+      _openQuizOverlay();
+    });
+
     DataConnectProvider().updateLastActiveAt().catchError((_) {});
     _loadCoinsAndLevel();
   }
@@ -86,10 +111,25 @@ class _StudentScreenState extends State<StudentScreen>
 
   @override
   void dispose() {
+    _quizSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MascotOverlayService.instance.stop();
     super.dispose();
   }
+
+  // ── Quiz overlay ─────────────────────────────────────────────────────────
+
+  void _openQuizOverlay() {
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => QuizOverlayPage(repository: _aiRepo),
+      ),
+    );
+  }
+
+  // ── Verification dialog ───────────────────────────────────────────────────
 
   void _showVerificationDialog({String? errorMessage}) {
     showDialog(
@@ -113,8 +153,13 @@ class _StudentScreenState extends State<StudentScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ShopBloc>(
-      create: (_) => ShopBloc(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ShopBloc>(create: (_) => ShopBloc()),
+        BlocProvider<DocumentUploadBloc>(
+          create: (_) => DocumentUploadBloc(repository: _aiRepo),
+        ),
+      ],
       child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) {
@@ -143,8 +188,8 @@ class _StudentScreenState extends State<StudentScreen>
               ),
               automaticallyImplyLeading: false,
               actions: [
-                // Coin balance in app bar when on shop tab
-                if (_selectedIndex == 1)
+                // Coin balance in app bar when on shop tab (index 2)
+                if (_selectedIndex == 2)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: Center(
@@ -176,6 +221,14 @@ class _StudentScreenState extends State<StudentScreen>
                       ),
                     ),
                   ),
+                // Debug-only: simulate the mascot overlay triggering a quiz.
+                if (kDebugMode)
+                  IconButton(
+                    icon: const Text('🧪', style: TextStyle(fontSize: 18)),
+                    tooltip: 'Simulate quiz trigger (debug)',
+                    onPressed: () =>
+                        MascotOverlayService.instance.triggerQuizForTesting(),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.logout),
                   onPressed: () {
@@ -192,6 +245,7 @@ class _StudentScreenState extends State<StudentScreen>
               index: _selectedIndex,
               children: [
                 StudentHome(fullName: widget.fullName, uid: widget.uid),
+                const StudentDocumentUploadScreen(),
                 StudentShop(uid: widget.uid, coins: _coins, level: _level),
                 StudentLeaderboard(
                   uid: widget.uid,

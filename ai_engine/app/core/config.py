@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     COHERE_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
     POSTGRES_CONNECTION: Optional[str] = None
+    FIREBASE_PROJECT_ID: str = "fcai-studymentor"
+    FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = None
     
     model_config = SettingsConfigDict(env_file=ENV_FILE_PATH, extra="ignore")
 

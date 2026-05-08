@@ -36,6 +36,22 @@ class MascotOverlayService {
   // Resets to zero only when the cooldown ends.
   int _totalUsageSeconds = 0;
 
+  // ── Quiz trigger stream ────────────────────────────────────────────────────
+  // Fires whenever the native overlay's "Start Quiz" button is tapped.
+  // StudentScreen subscribes to this and pushes the quiz route.
+  final StreamController<void> _quizController =
+      StreamController<void>.broadcast();
+
+  /// Stream that emits once every time the overlay requests a quiz.
+  Stream<void> get quizRequested => _quizController.stream;
+
+  /// Dev helper — call from a button in debug builds to simulate the
+  /// overlay triggering a quiz without a real restricted-app session.
+  void triggerQuizForTesting() {
+    debugPrint('[MascotOverlayService] Quiz trigger (test).');
+    _quizController.add(null);
+  }
+
   // ── Config ─────────────────────────────────────────────────────────────────
   Set<String> _monitoredPackages = {};
   StudentConfigModel _config = const StudentConfigModel();
@@ -79,6 +95,7 @@ class MascotOverlayService {
     _overlayVisible = false;
     _remainingSeconds = 0;
     _totalUsageSeconds = 0;
+    _quizController.close();
     debugPrint('[MascotOverlayService] Stopped.');
   }
 
@@ -139,6 +156,12 @@ class MascotOverlayService {
           );
           await _showOverlayNative(remainingSeconds: _remainingSeconds);
         }
+
+      case 'onQuizRequested':
+        // The native overlay's "Start Quiz" button was tapped.
+        // Signal Flutter to open the quiz screen.
+        debugPrint('[MascotOverlayService] Native overlay requested quiz.');
+        _quizController.add(null);
     }
   }
 

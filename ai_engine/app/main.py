@@ -6,38 +6,35 @@ from app.controllers.routes_analytics import router as analytics_router
 from app.controllers.routes_student import router as student_router
 from app.core.database import get_vector_store, init_db, SessionLocal
 from app.core.cleanup import purge_old_data
+from app.core.auth import init_firebase
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    description="Adaptive AI Math Assessment Microservice (RAG & Engine)"
-)
+from contextlib import asynccontextmanager
 
-@app.on_event("startup")
-async def startup_event():
-    """
-    Lifecycle event that triggers when the Uvicorn server starts.
-    Tests the connection to the PGVector extension to avoid late-stage crashes.
-    """
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    print("DEBUG: Lifespan startup sequence beginning...")
     try:
-        # 1. Initialize relational tables
+        init_firebase()
         init_db()
-        
-        # 2. Test PGVector connectivity
-        # Langchain-postgres handles setup on instantiation or first interaction
         _ = get_vector_store()
-        print("PGVector connectivity initialized on startup.")
-
-        # 3. Run 30-day data retention purge
         db = SessionLocal()
         try:
             purge_old_data(db)
         finally:
             db.close()
+        print("DEBUG: Lifespan startup sequence complete.")
     except Exception as e:
-        # Print failure but don't strictly crash app if DB isn't ready immediately
-        print(f"Warning: Issue during startup: {e}")
+        print(f"CRITICAL: Lifespan startup failed: {e}")
+    yield
+    # Shutdown logic (if any)
 
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    description="Adaptive AI Math Assessment Microservice (RAG & Engine)",
+    lifespan=lifespan
+)
 # Include Routers
 app.include_router(documents_router, prefix="/api/v1")
 app.include_router(quizzes_router, prefix="/api/v1")

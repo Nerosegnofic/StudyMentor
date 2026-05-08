@@ -17,6 +17,7 @@ class QuestionSchema(BaseModel):
     hints: List[str] = Field(..., description="Exactly 3 progressive hints to help the student in Arabic")
 
 class GenerateQuizResponse(BaseModel):
+    quiz_session_id: str = Field(..., description="The ID of the generated quiz session")
     selected_subject_id: int = Field(..., description="The ID of the subject that was selected (either manually or automatically)")
     selected_subject_name: str = Field(..., description="The name of the selected subject")
     quiz_title: str

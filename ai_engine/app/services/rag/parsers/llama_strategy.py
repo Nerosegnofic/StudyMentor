@@ -14,7 +14,7 @@ class LlamaParseStrategy(DocumentParserStrategy):
             
         parser = LlamaParse(
             result_type="markdown",
-            premium_mode=True,
+            premium_mode=False, # Switching to standard mode for better stability on free keys
             language="ar",
             system_prompt ="""
             This is a bilingual educational textbook. 
@@ -26,6 +26,11 @@ class LlamaParseStrategy(DocumentParserStrategy):
             verbose=True
         )
         print(f"[{document_id}] Starting LlamaParse extraction...", flush=True)
-        documents = parser.load_data(temp_file_path)
+        try:
+            documents = parser.load_data(temp_file_path)
+        except Exception as e:
+            print(f"CRITICAL: LlamaParse failed: {str(e)}", flush=True)
+            return "" # Return empty so the pipeline handles it gracefully
+
         print(f"[{document_id}] Extraction complete! Found {len(documents)} pages.", flush=True)
         return "\n\n".join([doc.text for doc in documents])

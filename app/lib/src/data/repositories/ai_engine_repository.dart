@@ -1,0 +1,271 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import '../catalog/document_models.dart';
+
+// ---------------------------------------------------------------------------
+// Quiz DTOs (mirrors ai_engine/app/models/schemas/quiz_schemas.py)
+// ---------------------------------------------------------------------------
+
+class GenerateQuizRequest {
+  final int? subjectId;
+  final int totalQuestions;
+
+  const GenerateQuizRequest({this.subjectId, required this.totalQuestions});
+
+  Map<String, dynamic> toJson() => {
+        'subject_id': subjectId,
+        'total_questions': totalQuestions,
+      };
+}
+
+class QuestionModel {
+  final String questionId;
+  final String topic;
+  final String questionText;
+  final List<String> options;
+  final String correctAnswer;
+  final String explanation;
+  final int difficulty;
+  final List<String> hints;
+
+  const QuestionModel({
+    required this.questionId,
+    required this.topic,
+    required this.questionText,
+    required this.options,
+    required this.correctAnswer,
+    required this.explanation,
+    required this.difficulty,
+    required this.hints,
+  });
+
+  factory QuestionModel.fromJson(Map<String, dynamic> json) {
+    return QuestionModel(
+      questionId: json['question_id'] as String,
+      topic: json['topic'] as String,
+      questionText: json['question_text'] as String,
+      options: List<String>.from(json['options'] as List),
+      correctAnswer: json['correct_answer'] as String,
+      explanation: json['explanation'] as String,
+      difficulty: json['difficulty'] as int,
+      hints: List<String>.from(json['hints'] as List),
+    );
+  }
+}
+
+class GenerateQuizResponse {
+  final String quizSessionId;
+  final int selectedSubjectId;
+  final String selectedSubjectName;
+  final String quizTitle;
+  final List<QuestionModel> questions;
+
+  const GenerateQuizResponse({
+    required this.quizSessionId,
+    required this.selectedSubjectId,
+    required this.selectedSubjectName,
+    required this.quizTitle,
+    required this.questions,
+  });
+
+  factory GenerateQuizResponse.fromJson(Map<String, dynamic> json) {
+    return GenerateQuizResponse(
+      quizSessionId: json['quiz_session_id'] as String,
+      selectedSubjectId: json['selected_subject_id'] as int,
+      selectedSubjectName: json['selected_subject_name'] as String,
+      quizTitle: json['quiz_title'] as String,
+      questions: (json['questions'] as List)
+          .map((q) => QuestionModel.fromJson(q as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class StudentAnswer {
+  final String questionId;
+  final String selectedOption;
+  final int timeTakenMs;
+  final int hintsUsed;
+
+  const StudentAnswer({
+    required this.questionId,
+    required this.selectedOption,
+    required this.timeTakenMs,
+    required this.hintsUsed,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'question_id': questionId,
+        'selected_option': selectedOption,
+        'time_taken_ms': timeTakenMs,
+        'hints_used': hintsUsed,
+      };
+}
+
+class QuizSubmissionRequest {
+  final String quizSessionId;
+  final List<StudentAnswer> answers;
+
+  const QuizSubmissionRequest({
+    required this.quizSessionId,
+    required this.answers,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'quiz_session_id': quizSessionId,
+        'answers': answers.map((a) => a.toJson()).toList(),
+      };
+}
+
+class QuizSubmissionResponse {
+  final double score;
+  final int totalQuestions;
+  final String feedback;
+
+  const QuizSubmissionResponse({
+    required this.score,
+    required this.totalQuestions,
+    required this.feedback,
+  });
+
+  factory QuizSubmissionResponse.fromJson(Map<String, dynamic> json) {
+    return QuizSubmissionResponse(
+      score: (json['score'] as num).toDouble(),
+      totalQuestions: json['total_questions'] as int,
+      feedback: json['feedback'] as String,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Repository
+// ---------------------------------------------------------------------------
+
+/// Centralised HTTP client for all AI Engine endpoints.
+///
+/// Every method automatically attaches the Firebase JWT obtained from the
+/// currently signed-in user.  If no user is logged in an [Exception] is
+/// thrown before any network request is made.
+///
+/// Usage:
+/// ```dart
+/// final repo = AiEngineRepository(baseUrl: 'http://10.0.2.2:8000');
+/// final quiz = await repo.generateQuiz(GenerateQuizRequest(totalQuestions: 5));
+/// ```
+class AiEngineRepository {
+  /// Base URL of the AI Engine.
+  /// - Android emulator → `http://10.0.2.2:8000`
+  /// - iOS simulator   → `http://127.0.0.1:8000`
+  /// - Physical device → your machine's LAN IP, e.g. `http://192.168.x.x:8000`
+  final String baseUrl;
+  final FirebaseAuth _auth;
+
+  AiEngineRepository({
+    required this.baseUrl,
+    FirebaseAuth? auth,
+  }) : _auth = auth ?? FirebaseAuth.instance;
+
+  // -------------------------------------------------------------------------
+  // Internal helpers
+  // -------------------------------------------------------------------------
+
+  /// Returns JSON headers with a fresh Firebase Bearer token.
+  Future<Map<String, String>> _getJsonHeaders() async {
+    final token = await _requireToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
+  /// Returns the raw Bearer token string.
+  Future<String> _requireToken() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('User is not authenticated.');
+    // force: false — use cached token unless it has less than 5 min left.
+    final token = await user.getIdToken(false);
+    if (token == null) throw Exception('Unable to retrieve Firebase ID token.');
+    return token;
+  }
+
+  void _assertSuccess(http.Response response, String context) {
+    if (response.statusCode != 200) {
+      throw Exception('$context failed [${response.statusCode}]: ${response.body}');
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Quiz endpoints
+  // -------------------------------------------------------------------------
+
+  /// `POST /quizzes/generate` — generates an adaptive quiz.
+  Future<GenerateQuizResponse> generateQuiz(GenerateQuizRequest request) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/quizzes/generate'),
+      headers: headers,
+      body: jsonEncode(request.toJson()),
+    );
+    _assertSuccess(response, 'generateQuiz');
+    return GenerateQuizResponse.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  /// `POST /quizzes/submit` — submits answers and updates BKT mastery.
+  Future<QuizSubmissionResponse> submitQuiz(QuizSubmissionRequest request) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/quizzes/submit'),
+      headers: headers,
+      body: jsonEncode(request.toJson()),
+    );
+    _assertSuccess(response, 'submitQuiz');
+    return QuizSubmissionResponse.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  // -------------------------------------------------------------------------
+  // Document endpoints
+  // -------------------------------------------------------------------------
+
+  /// `POST /documents/upload` — uploads a PDF and starts async ingestion.
+  ///
+  /// The request is sent as `multipart/form-data` because the backend reads
+  /// the file via FastAPI's [UploadFile].
+  ///
+  /// Parameters:
+  /// - [pdfFile]: The [File] on the device's filesystem to upload.
+  /// - [subjectId]: Which subject the document belongs to (default: `1`).
+  ///
+  /// Returns a [DocumentUploadResponse] immediately; the actual embedding and
+  /// chunking happen asynchronously on the server.
+  Future<DocumentUploadResponse> uploadDocument({
+    required File pdfFile,
+    required String subjectName,
+  }) async {
+    final token = await _requireToken();
+
+    final uri = Uri.parse('$baseUrl/api/v1/documents/upload');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..fields['subject_name'] = subjectName;
+
+    request.files.add(await http.MultipartFile.fromPath(
+        'file', // must match FastAPI's File(...) parameter name
+        pdfFile.path,
+      ));
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'uploadDocument failed [${response.statusCode}]: ${response.body}');
+    }
+
+    return DocumentUploadResponse.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+}

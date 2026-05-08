@@ -4,3 +4,4 @@ from uuid import UUID
 class DocumentUploadResponse(BaseModel):
     status: str
     document_id: UUID
+    firebase_uid: str
