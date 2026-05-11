@@ -21,10 +21,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canGoBack = Navigator.of(context).canPop();
     return PopScope(
-      canPop: false,
+      canPop: canGoBack,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) SystemNavigator.pop();
+        if (!didPop && !canGoBack) SystemNavigator.pop();
       },
       child: Scaffold(
         appBar: AppBar(title: const Text('Login')),
@@ -100,8 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         : const Text('Login'),
                   ),
                   TextButton(
-                    onPressed: () =>
-                        Navigator.pushReplacementNamed(context, '/register'),
+                    onPressed: () => Navigator.pushNamed(context, '/register'),
                     child: const Text(
                       'Not registered yet? Register as a Parent',
                     ),

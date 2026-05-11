@@ -52,20 +52,12 @@ class AuthRepositoryImpl implements AuthRepository {
     return UserModel.fromJson(profile);
   }
 
-  /// Marks the user active in the DB and syncs their verified Firebase Auth
-  /// email. This is the point where a verified email change is committed to
-  /// the DB — Firebase Auth's email is the source of truth here.
   Future<void> _markUserActive({required String uid}) async {
     try {
       final profile = await dataConnect.getUserProfile(uid);
       final roleStr = profile['role'] as String;
       final role = roleStr == 'Parent' ? Role.Parent : Role.Student;
 
-      // ── Sync the confirmed Firebase Auth email to the DB ─────────────────
-      // If the user previously requested an email change and has now verified
-      // it, firebase.currentUser.email will already reflect the new address.
-      // Passing it here commits it to the DB at the first login after
-      // verification — without ever writing an unverified address.
       final confirmedEmail = firebase.currentUser?.email;
       var builder = ExampleConnector.instance.upsertCurrentUser(role: role);
       if (confirmedEmail != null) {
@@ -202,9 +194,6 @@ class AuthRepositoryImpl implements AuthRepository {
     final user = firebase.currentUser;
     if (user == null) throw Exception('No authenticated user.');
 
-    // ── Read role FIRST, before any Firebase Auth mutations ───────────────
-    // verifyBeforeUpdateEmail can invalidate the ID token; reading the DB
-    // before that call guarantees a clean session.
     final profileSnapshot = await dataConnect.getUserProfile(user.uid);
     final roleStr = profileSnapshot['role'] as String;
     final role = roleStr == 'Parent' ? Role.Parent : Role.Student;
@@ -217,16 +206,10 @@ class AuthRepositoryImpl implements AuthRepository {
     final isChangingEmail =
         newEmail != null && newEmail.isNotEmpty && newEmail != user.email;
 
-    // Re-auth is required for both email and password changes.
     if ((isChangingPassword || isChangingEmail) && currentPassword != null) {
       await firebase.reauthenticate(currentPassword);
     }
 
-    // Send verification to the new address. Firebase applies the change
-    // only after the user clicks the link in the email. We intentionally
-    // do NOT write the new email to the DB here — the DB is updated in
-    // _markUserActive on the next login after verification, at which point
-    // Firebase Auth's email is already the confirmed new address.
     if (isChangingEmail) {
       await firebase.verifyBeforeUpdateEmail(newEmail);
     }
@@ -235,8 +218,6 @@ class AuthRepositoryImpl implements AuthRepository {
       await firebase.updatePassword(newPassword);
     }
 
-    // Only write name changes to the DB. Email is intentionally excluded
-    // to prevent the UI from showing an unverified address.
     if (newFullName != null && newFullName.isNotEmpty) {
       final builder = ExampleConnector.instance
           .upsertCurrentUser(role: role)
@@ -244,7 +225,6 @@ class AuthRepositoryImpl implements AuthRepository {
       await builder.execute();
     }
 
-    // Reload before the final read to ensure a fresh token.
     await firebase.reloadUser();
     final updated = await dataConnect.getUserProfile(user.uid);
     return UserModel.fromJson(updated);
@@ -312,8 +292,24 @@ class AuthRepositoryImpl implements AuthRepository {
 
   // ── Student Deletion ──────────────────────────────────────────────────────
 
+  // ── CHANGED: Auth account is deleted first via the secondary Firebase app
+  // (same pattern as updateStudentCredentials). The DB cleanup runs after,
+  // so if Auth deletion fails the whole operation surfaces the error cleanly
+  // and nothing is partially removed.
   @override
-  Future<void> deleteStudent(String studentUid) async {
+  Future<void> deleteStudent({
+    required String studentUid,
+    required String studentEmail,
+    required String studentPassword,
+  }) async {
+    // Step 1: delete the Firebase Auth account via the secondary app.
+    // The parent's main session is never touched.
+    await firebase.deleteStudentAuthAccount(
+      studentEmail: studentEmail,
+      studentPassword: studentPassword,
+    );
+
+    // Step 2: wipe all database records now that Auth is gone.
     await dataConnect.deleteStudentAllData(studentUid);
   }
 
@@ -324,7 +320,10 @@ class AuthRepositoryImpl implements AuthRepository {
     required String studentUid,
     required String fullName,
   }) async {
-    await dataConnect.updateStudentFullName(uid: studentUid, fullName: fullName);
+    await dataConnect.updateStudentFullName(
+      uid: studentUid,
+      fullName: fullName,
+    );
   }
 
   // ── Student Profile Update (parent-side: name + email + password) ─────────
@@ -338,7 +337,6 @@ class AuthRepositoryImpl implements AuthRepository {
     String? currentPassword,
     String? newPassword,
   }) async {
-    // Update full name in DB if changed.
     if (newFullName != null && newFullName.isNotEmpty) {
       await dataConnect.updateStudentFullName(
         uid: studentUid,
@@ -346,8 +344,6 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    // Email and/or password changes require signing in as the student via
-    // a secondary Firebase app. The parent's main session is never touched.
     final isChangingEmail =
         newEmail != null && newEmail.isNotEmpty && newEmail != studentEmail;
     final isChangingPassword = newPassword != null && newPassword.isNotEmpty;
@@ -370,10 +366,8 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> deleteParentAccount({required String currentPassword}) async {
     if (firebase.currentUser == null) throw Exception('No authenticated user.');
 
-    // Re-authenticate first (required for account deletion).
     await firebase.reauthenticate(currentPassword);
 
-    // Delete DB records while still authenticated (DataConnect needs the token).
     try {
       await dataConnect.deleteParentRecord();
     } catch (_) {}
@@ -381,7 +375,6 @@ class AuthRepositoryImpl implements AuthRepository {
       await ExampleConnector.instance.deleteUser().execute();
     } catch (_) {}
 
-    // Finally delete the Firebase Auth account (signs out automatically).
     await firebase.deleteCurrentUser();
   }
 }

@@ -153,7 +153,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ── CHANGED: forward username to repository ───────────────────────────────
   Future<void> _onCreateStudent(
     CreateStudentRequested event,
     Emitter<AuthState> emit,
@@ -166,7 +165,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         parentUid: event.parentUid,
         gradeLevel: event.gradeLevel,
-        username: event.username, // ── ADDED ─────────────────────────────────
+        username: event.username,
       );
       emit(StudentCreated());
       emit(AuthAuthenticated(parent));
@@ -223,6 +222,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     StudentLogoutVerificationRequested event,
     Emitter<AuthState> emit,
   ) async {
+    emit(AuthIdle());
     emit(StudentLogoutVerificationRequired(studentUid: event.studentUid));
   }
 
@@ -265,13 +265,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final updatedUser = await repository.updateProfile(
         newFullName: event.newFullName,
-        newEmail: event.newEmail, // ── ADDED ────────────────────────
+        newEmail: event.newEmail,
         currentPassword: event.currentPassword,
         newPassword: event.newPassword,
       );
 
-      // If an email change was requested, tell the UI to show the
-      // "check your inbox" banner before moving to AuthAuthenticated.
       if (event.newEmail != null && event.newEmail!.isNotEmpty) {
         emit(EmailUpdateVerificationSent(event.newEmail!));
       }
@@ -411,21 +409,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ── Student Deletion ─────────────────────────────────────────────────────
+  // ── Student Deletion ──────────────────────────────────────────────────────
 
+  // Uses _mapDeletionException instead of the generic _mapException so that:
+  // (a) wrong-password errors are reliably caught across Firebase SDK versions
+  //     (both the legacy 'wrong-password' code and the newer 'invalid-credential'
+  //     / 'INVALID_LOGIN_CREDENTIALS' codes are matched), and
+  // (b) unexpected failures never surface raw internal error strings to the UI.
   Future<void> _onDeleteStudent(
     DeleteStudentRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(StudentDeleteLoading());
     try {
-      await repository.deleteStudent(event.studentUid);
-      // Reload students list for parent.
+      await repository.deleteStudent(
+        studentUid: event.studentUid,
+        studentEmail: event.studentEmail,
+        studentPassword: event.studentPassword,
+      );
       final students = await repository.getStudentsByParent(event.parentUid);
       emit(StudentDeleted(studentUid: event.studentUid));
       emit(StudentsLoaded(students));
     } catch (e) {
-      emit(StudentDeleteError(_mapException(e)));
+      emit(StudentDeleteError(_mapDeletionException(e)));
     }
   }
 
@@ -514,16 +520,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   String _mapParentVerificationException(dynamic e) {
     final msg = e.toString();
-    if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
-      return 'Invalid parent credentials. Logout denied.';
-    }
     if (msg.contains('network-request-failed')) {
       return 'Network error. Check your connection and try again.';
     }
-    if (msg.contains('parent-mismatch')) {
-      return 'These credentials do not belong to your linked parent.';
-    }
-    return 'Verification failed: $msg';
+    return 'Invalid parent credentials. Logout denied.';
   }
 
   String _mapProfileUpdateException(dynamic e) {
@@ -546,5 +546,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return 'That email address is already in use by another account.';
     }
     return 'Update failed: $msg';
+  }
+
+  // Dedicated mapper for student deletion errors. Handles both the legacy
+  // Firebase 'wrong-password' error code and the newer 'invalid-credential' /
+  // 'INVALID_LOGIN_CREDENTIALS' codes introduced in recent SDK versions, so a
+  // bad password always produces the 'Invalid credentials' sentinel that
+  // parent_students.dart checks for. All unexpected failures produce a generic
+  // message so internal details are never exposed to the UI.
+  String _mapDeletionException(dynamic e) {
+    final msg = e.toString().toLowerCase();
+    if (msg.contains('wrong-password') ||
+        msg.contains('invalid-credential') ||
+        msg.contains('invalid_login_credentials') ||
+        msg.contains('user-not-found') ||
+        msg.contains('invalid-email')) {
+      // Must contain 'Invalid credentials' — matched by the contains() check
+      // in parent_students.dart to show the friendly wrong-password message.
+      return 'Invalid credentials';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    // Never surface raw exception details for a deletion failure.
+    return 'Unable to delete account. Please try again.';
   }
 }

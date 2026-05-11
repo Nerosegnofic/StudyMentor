@@ -143,7 +143,13 @@ class RootPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
-      listenWhen: (prev, curr) => curr is AuthError,
+      // Exclude deletion-specific states so they never trigger the generic
+      // error snackbar here. StudentDeleteError and StudentDeleteLoading are
+      // handled entirely within ParentStudents / its dialog.
+      listenWhen: (prev, curr) =>
+          curr is AuthError &&
+          curr is! StudentDeleteError &&
+          curr is! StudentDeleteLoading,
       listener: (context, state) {
         if (state is AuthError) {
           ScaffoldMessenger.of(

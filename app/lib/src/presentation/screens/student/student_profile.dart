@@ -512,11 +512,11 @@ class _StudentProfileState extends State<StudentProfile> {
         label: const Text('Log Out'),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          side: BorderSide(color: Colors.grey.shade300),
+          side: const BorderSide(color: Color(0xFFEF5350)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          foregroundColor: Colors.grey.shade700,
+          foregroundColor: const Color(0xFFEF5350),
           backgroundColor: Colors.white,
         ),
       ),
