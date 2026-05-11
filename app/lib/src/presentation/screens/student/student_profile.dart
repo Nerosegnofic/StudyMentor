@@ -9,7 +9,6 @@ import '../../../utils/student_rank_utils.dart';
 import '../../widgets/avatar_widget.dart';
 import 'student_avatar_customization.dart';
 import 'student_settings.dart';
-import 'student_help_center.dart';
 
 class StudentProfile extends StatefulWidget {
   final String fullName;
@@ -408,39 +407,18 @@ class _StudentProfileState extends State<StudentProfile> {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              _buildSettingsRow(
-                icon: Icons.settings_outlined,
-                iconBg: const Color(0xFFE3F2FD),
-                iconColor: const Color(0xFF1E88E5),
-                title: 'App Settings',
-                subtitle: 'Notifications, Sound',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => StudentSettings(uid: widget.uid),
-                  ),
-                ),
+          child: _buildSettingsRow(
+            icon: Icons.settings_outlined,
+            iconBg: const Color(0xFFE3F2FD),
+            iconColor: const Color(0xFF1E88E5),
+            title: 'App Settings',
+            subtitle: 'Notifications, Sound',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => StudentSettings(uid: widget.uid),
               ),
-              Divider(height: 1, indent: 60, color: Colors.grey.shade100),
-              _buildSettingsRow(
-                icon: Icons.help_outline,
-                iconBg: const Color(0xFFE3F2FD),
-                iconColor: const Color(0xFF1E88E5),
-                title: 'Help & Support',
-                subtitle: 'Get help or report issues',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => StudentHelpCenter(
-                      uid: widget.uid,
-                      fullName: widget.fullName,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ],

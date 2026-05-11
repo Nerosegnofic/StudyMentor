@@ -31,6 +31,11 @@ class ParentNavigationBar extends StatelessWidget {
           selectedIcon: Icon(Icons.settings),
           label: 'Settings',
         ),
+        NavigationDestination(
+          icon: Icon(Icons.help_outline),
+          selectedIcon: Icon(Icons.help),
+          label: 'Help',
+        ),
       ],
     );
   }
