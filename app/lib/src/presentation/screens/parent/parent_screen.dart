@@ -50,6 +50,15 @@ class _ParentScreenState extends State<ParentScreen> {
         if (!didPop) SystemNavigator.pop();
       },
       child: BlocListener<AuthBloc, AuthState>(
+        // Only handle generic AuthErrors here. Deletion-specific states
+        // (StudentDeleteLoading, StudentDeleteError, StudentDeleted) are
+        // handled entirely within ParentStudents — letting them through here
+        // would cause its AuthError snackbar to fire on unrelated states that
+        // arrive in the same state sequence, producing a duplicate message.
+        listenWhen: (_, curr) =>
+            curr is AuthError &&
+            curr is! StudentDeleteError &&
+            curr is! StudentDeleteLoading,
         listener: (context, state) {
           if (state is AuthError) {
             ScaffoldMessenger.of(

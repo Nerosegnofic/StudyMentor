@@ -66,7 +66,9 @@ class _StudentScreenState extends State<StudentScreen>
           _level = (_xp ~/ 500) + 1;
           _parentUid = results[1] as String;
           if (avatarMap != null) {
-            _avatarConfig = AvatarConfig.fromMap(avatarMap as Map<String, dynamic>);
+            _avatarConfig = AvatarConfig.fromMap(
+              avatarMap as Map<String, dynamic>,
+            );
           }
         });
       }
@@ -96,7 +98,7 @@ class _StudentScreenState extends State<StudentScreen>
   void _showVerificationDialog({String? errorMessage}) {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (dialogContext) => ParentVerificationDialog(
         errorMessage: errorMessage,
         onSubmit: (email, password) {
@@ -137,6 +139,9 @@ class _StudentScreenState extends State<StudentScreen>
             if (state is ParentVerificationFailed) {
               _showVerificationDialog(errorMessage: state.message);
             }
+            if (state is AuthUnauthenticated) {
+              Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+            }
           },
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FA),
@@ -149,13 +154,20 @@ class _StudentScreenState extends State<StudentScreen>
                       index: _selectedIndex,
                       children: [
                         StudentHome(fullName: widget.fullName, uid: widget.uid),
-                        StudentShop(uid: widget.uid, coins: _coins, level: _level),
+                        StudentShop(
+                          uid: widget.uid,
+                          coins: _coins,
+                          level: _level,
+                        ),
                         StudentLeaderboard(
                           uid: widget.uid,
                           fullName: widget.fullName,
                           parentUid: _parentUid,
                         ),
-                        StudentFriends(uid: widget.uid, fullName: widget.fullName),
+                        StudentFriends(
+                          uid: widget.uid,
+                          fullName: widget.fullName,
+                        ),
                       ],
                     ),
                   ),
@@ -218,7 +230,9 @@ class _StudentScreenState extends State<StudentScreen>
                   ),
                 ],
               ),
-              child: ClipOval(child: AvatarWidget(config: _avatarConfig, size: 43)),
+              child: ClipOval(
+                child: AvatarWidget(config: _avatarConfig, size: 43),
+              ),
             ),
           ),
           const Spacer(),

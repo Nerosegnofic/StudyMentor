@@ -13,6 +13,8 @@ abstract class AuthState extends Equatable {
 
 class AuthInitial extends AuthState {}
 
+class AuthIdle extends AuthState {}
+
 class AuthLoading extends AuthState {}
 
 class AuthAuthenticated extends AuthState {
@@ -194,7 +196,10 @@ class StudentNameUpdateLoading extends AuthState {}
 class StudentNameUpdateSuccess extends AuthState {
   final String studentUid;
   final String newFullName;
-  StudentNameUpdateSuccess({required this.studentUid, required this.newFullName});
+  StudentNameUpdateSuccess({
+    required this.studentUid,
+    required this.newFullName,
+  });
   @override
   List<Object?> get props => [studentUid, newFullName];
 }
@@ -213,6 +218,7 @@ class StudentProfileUpdateLoading extends AuthState {}
 class StudentProfileUpdateSuccess extends AuthState {
   final String studentUid;
   final String? newFullName;
+
   /// Non-null if an email verification was sent to a new address.
   final String? pendingEmail;
   StudentProfileUpdateSuccess({

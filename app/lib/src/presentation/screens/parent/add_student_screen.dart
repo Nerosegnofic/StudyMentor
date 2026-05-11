@@ -95,9 +95,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               children: [
                 TextFormField(
                   controller: _fullNameCtl,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                  ), // ── CHANGED
+                  decoration: const InputDecoration(labelText: 'Name'),
                   validator: (v) => v!.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 8),
@@ -122,6 +120,10 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
                   value: _selectedGrade,
+                  style: TextStyle(
+                    fontWeight: FontWeight.normal,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                   decoration: const InputDecoration(labelText: 'Grade'),
                   items: _gradeOptions
                       .map(
