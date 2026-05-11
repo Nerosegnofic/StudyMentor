@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../services/support_ticket_service.dart';
 
-class StudentHelpCenter extends StatefulWidget {
+class ParentHelpCenter extends StatefulWidget {
   final String uid;
   final String fullName;
 
-  const StudentHelpCenter({
+  const ParentHelpCenter({
     super.key,
     required this.uid,
     required this.fullName,
   });
 
   @override
-  State<StudentHelpCenter> createState() => _StudentHelpCenterState();
+  State<ParentHelpCenter> createState() => _ParentHelpCenterState();
 }
 
-class _StudentHelpCenterState extends State<StudentHelpCenter> {
+class _ParentHelpCenterState extends State<ParentHelpCenter> {
   static const _issueTypes = [
     _IssueType(
       label: 'App is glitchy',

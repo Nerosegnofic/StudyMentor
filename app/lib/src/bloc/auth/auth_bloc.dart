@@ -508,14 +508,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   String _mapException(dynamic e) {
     final msg = e.toString();
-    if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
-      return 'Invalid credentials.';
-    }
     if (msg.contains('weak-password')) return 'Password is too weak.';
     if (msg.contains('network-request-failed')) {
       return 'Network error. Check your connection.';
     }
-    return 'Authentication error: $msg';
+    // All auth failures — wrong password, unknown email, invalid credential,
+    // malformed data, expired tokens, etc. — return the same generic message
+    // so that no information about account existence is leaked to the UI.
+    return 'The supplied auth credential is incorrect, malformed, or has expired.';
   }
 
   String _mapParentVerificationException(dynamic e) {

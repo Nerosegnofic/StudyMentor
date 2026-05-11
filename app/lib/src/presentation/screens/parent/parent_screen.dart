@@ -9,6 +9,7 @@ import 'add_student_screen.dart';
 import 'parent_dashboard.dart';
 import 'parent_settings.dart';
 import 'parent_students.dart';
+import 'parent_help_center.dart';
 
 class ParentScreen extends StatefulWidget {
   final String fullName;
@@ -24,6 +25,17 @@ class _ParentScreenState extends State<ParentScreen> {
   int _selectedIndex = 1;
 
   void _onTabSelected(int index) {
+    if (index == 3) {
+      // Push Help as a modal route so the nav bar stays visible on return
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              ParentHelpCenter(uid: widget.uid, fullName: widget.fullName),
+        ),
+      );
+      return; // Don't update _selectedIndex — tab stays unselected
+    }
     setState(() => _selectedIndex = index);
   }
 
@@ -50,11 +62,6 @@ class _ParentScreenState extends State<ParentScreen> {
         if (!didPop) SystemNavigator.pop();
       },
       child: BlocListener<AuthBloc, AuthState>(
-        // Only handle generic AuthErrors here. Deletion-specific states
-        // (StudentDeleteLoading, StudentDeleteError, StudentDeleted) are
-        // handled entirely within ParentStudents — letting them through here
-        // would cause its AuthError snackbar to fire on unrelated states that
-        // arrive in the same state sequence, producing a duplicate message.
         listenWhen: (_, curr) =>
             curr is AuthError &&
             curr is! StudentDeleteError &&
