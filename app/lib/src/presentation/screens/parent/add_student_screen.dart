@@ -69,139 +69,153 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is AuthLoading) {
-          setState(() => _loading = true);
-        } else {
-          setState(() => _loading = false);
-        }
-        if (state is StudentCreated) {
-          _showSuccessAndPop();
-        }
-        if (state is AuthError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          // Reset BLoC state so RootPage never sees a stale AuthLoading or
+          // AuthError left over from a failed CreateStudentRequested call.
+          context.read<AuthBloc>().add(ResetAuthState());
         }
       },
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Register Your Child')),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                TextFormField(
-                  controller: _fullNameCtl,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _usernameCtl,
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
-                    hintText: 'Shown on leaderboard (e.g. coolkid42)',
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthLoading) {
+            setState(() => _loading = true);
+          } else {
+            setState(() => _loading = false);
+          }
+          if (state is StudentCreated) {
+            _showSuccessAndPop();
+          }
+          if (state is AuthError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Register Your Child')),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  TextFormField(
+                    controller: _fullNameCtl,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
                   ),
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Required';
-                    if (v.trim().length < 3) return 'At least 3 characters';
-                    if (v.trim().length > 50) return 'Max 50 characters';
-                    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v.trim())) {
-                      return 'Only letters, numbers and underscores';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: _selectedGrade,
-                  style: TextStyle(
-                    fontWeight: FontWeight.normal,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _usernameCtl,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      hintText: 'Shown on leaderboard (e.g. coolkid42)',
+                    ),
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Required';
+                      if (v.trim().length < 3) return 'At least 3 characters';
+                      if (v.trim().length > 50) return 'Max 50 characters';
+                      if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v.trim())) {
+                        return 'Only letters, numbers and underscores';
+                      }
+                      return null;
+                    },
                   ),
-                  decoration: const InputDecoration(labelText: 'Grade'),
-                  items: _gradeOptions
-                      .map(
-                        (g) => DropdownMenuItem<int>(
-                          value: g['value'] as int,
-                          child: Text(g['label'] as String),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int>(
+                    value: _selectedGrade,
+                    style: TextStyle(
+                      fontWeight: FontWeight.normal,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                    decoration: const InputDecoration(labelText: 'Grade'),
+                    items: _gradeOptions
+                        .map(
+                          (g) => DropdownMenuItem<int>(
+                            value: g['value'] as int,
+                            child: Text(g['label'] as String),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _selectedGrade = value),
+                    validator: (v) =>
+                        v == null ? 'Please select a grade' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _emailCtl,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: (v) => v!.contains('@') ? null : 'Invalid email',
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _passCtl,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                         ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => _selectedGrade = value),
-                  validator: (v) => v == null ? 'Please select a grade' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _emailCtl,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator: (v) => v!.contains('@') ? null : 'Invalid email',
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _passCtl,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
+                    obscureText: _obscurePassword,
+                    validator: (v) =>
+                        v!.length >= 6 ? null : 'Min 6 characters',
                   ),
-                  obscureText: _obscurePassword,
-                  validator: (v) => v!.length >= 6 ? null : 'Min 6 characters',
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _confirmCtl,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirm
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _confirmCtl,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirm
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
                       ),
-                      onPressed: () =>
-                          setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
+                    obscureText: _obscureConfirm,
+                    validator: (v) =>
+                        v == _passCtl.text ? null : 'Passwords do not match',
                   ),
-                  obscureText: _obscureConfirm,
-                  validator: (v) =>
-                      v == _passCtl.text ? null : 'Passwords do not match',
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _loading
-                      ? null
-                      : () {
-                          if (_formKey.currentState!.validate()) {
-                            context.read<AuthBloc>().add(
-                              CreateStudentRequested(
-                                fullName: _fullNameCtl.text.trim(),
-                                username: _usernameCtl.text.trim(),
-                                email: _emailCtl.text.trim(),
-                                password: _passCtl.text.trim(),
-                                parentUid: widget.parentUid,
-                                gradeLevel: _selectedGrade!,
-                              ),
-                            );
-                          }
-                        },
-                  child: _loading
-                      ? const CircularProgressIndicator()
-                      : const Text('Register Student'),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _loading
+                        ? null
+                        : () {
+                            if (_formKey.currentState!.validate()) {
+                              context.read<AuthBloc>().add(
+                                CreateStudentRequested(
+                                  fullName: _fullNameCtl.text.trim(),
+                                  username: _usernameCtl.text.trim(),
+                                  email: _emailCtl.text.trim(),
+                                  password: _passCtl.text.trim(),
+                                  parentUid: widget.parentUid,
+                                  gradeLevel: _selectedGrade!,
+                                ),
+                              );
+                            }
+                          },
+                    child: _loading
+                        ? const CircularProgressIndicator()
+                        : const Text('Register Student'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

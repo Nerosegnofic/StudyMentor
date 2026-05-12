@@ -89,25 +89,39 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    await firebase.signUp(email, password);
-    await dataConnect.createUserProfile(
-      email: email,
-      fullName: fullName,
-      role: 'Student',
-    );
-    await dataConnect.createStudentProfile(
-      parentUid: parentUid,
-      username: username,
-      gradeLevel: gradeLevel,
-    );
-
     try {
-      await ExampleConnector.instance.setUserInactive().execute();
-    } catch (_) {}
+      await firebase.signUp(email, password);
+      await dataConnect.createUserProfile(
+        email: email,
+        fullName: fullName,
+        role: 'Student',
+      );
+      await dataConnect.createStudentProfile(
+        parentUid: parentUid,
+        username: username,
+        gradeLevel: gradeLevel,
+      );
 
-    await firebase.sendEmailVerification();
-    await firebase.signOut();
-    await firebase.signInWithPassword(parentEmail, parentPassword);
+      try {
+        await ExampleConnector.instance.setUserInactive().execute();
+      } catch (_) {}
+
+      await firebase.sendEmailVerification();
+      await firebase.signOut();
+      await firebase.signInWithPassword(parentEmail, parentPassword);
+    } catch (e) {
+      // Registration failed at some point — always restore the parent session.
+      // firebase.signUp() displaces the parent even when it throws, so this
+      // guard is unconditional.
+      try {
+        await firebase.signOut();
+        await firebase.signInWithPassword(parentEmail, parentPassword);
+      } catch (_) {
+        // If we can't restore the session, rethrow the original error and let
+        // the BLoC surface it. The root navigator will handle the unauth state.
+      }
+      rethrow;
+    }
 
     final uid = firebase.currentUser!.uid;
     final profile = await dataConnect.getUserProfile(uid);

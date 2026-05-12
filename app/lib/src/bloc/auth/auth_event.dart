@@ -11,6 +11,8 @@ abstract class AuthEvent extends Equatable {
 
 class AppStarted extends AuthEvent {}
 
+class ResetAuthState extends AuthEvent {}
+
 class RegisterRequested extends AuthEvent {
   final String fullName;
   final String email;
