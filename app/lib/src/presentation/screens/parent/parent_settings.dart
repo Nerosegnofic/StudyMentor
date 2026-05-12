@@ -38,6 +38,13 @@ class _ParentSettingsState extends State<ParentSettings> {
   // Shown after a successful email-change request.
   String? _pendingEmailNotice;
 
+  // Student list — loaded once on init and updated whenever StudentsLoaded
+  // is emitted (e.g. after a student is deleted in the Students tab).
+  // null  → still loading (show a spinner on the delete button)
+  // empty → no children, delete is allowed
+  // non-empty → children exist, delete is blocked
+  int? _linkedChildCount;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +63,13 @@ class _ParentSettingsState extends State<ParentSettings> {
     _currentPassCtl.addListener(_onFieldChanged);
     _newPassCtl.addListener(_onFieldChanged);
     _confirmPassCtl.addListener(_onFieldChanged);
+
+    // Kick off a student-list load so we know whether the parent has any
+    // linked children. Re-uses the same event/state as ParentStudents —
+    // no new BLoC wiring needed.
+    if (user != null) {
+      context.read<AuthBloc>().add(LoadStudentsRequested(parentUid: user.uid));
+    }
   }
 
   @override
@@ -150,9 +164,7 @@ class _ParentSettingsState extends State<ParentSettings> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
             child: const Text('Continue'),
           ),
         ],
@@ -220,7 +232,11 @@ class _ParentSettingsState extends State<ParentSettings> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is ProfileUpdateLoading) {
+        if (state is StudentsLoaded) {
+          // Keep _linkedChildCount in sync whenever the student list changes —
+          // whether from our own initState request or from the Students tab.
+          setState(() => _linkedChildCount = state.students.length);
+        } else if (state is ProfileUpdateLoading) {
           setState(() => _isSaving = true);
         } else if (state is EmailUpdateVerificationSent) {
           // Show the pending-verification banner; keep saving = true
@@ -526,6 +542,15 @@ class _ParentSettingsState extends State<ParentSettings> {
   // ── delete account section ──────────────────────────────────────────────────
 
   Widget _buildDeleteAccountSection() {
+    // _linkedChildCount == null  → still loading, disable the button
+    // _linkedChildCount == 0     → no children, allow deletion
+    // _linkedChildCount  > 0     → children exist, block deletion
+    final isLoadingChildren = _linkedChildCount == null;
+    final hasLinkedChildren =
+        _linkedChildCount != null && _linkedChildCount! > 0;
+    final canDelete =
+        !isLoadingChildren && !hasLinkedChildren && !_isDeletingAccount;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -565,39 +590,59 @@ class _ParentSettingsState extends State<ParentSettings> {
                 'You must delete all student accounts first.',
                 style: TextStyle(fontSize: 12, color: Colors.red.shade800),
               ),
+              // ── Linked-children restriction notice ────────────────────────
+              if (hasLinkedChildren) ...[
+                const SizedBox(height: 10),
+                _buildLinkedChildrenNotice(),
+              ],
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _isDeletingAccount
-                      ? null
-                      : _confirmDeleteAccount,
-                  icon: _isDeletingAccount
-                      ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.red.shade600,
+                child: Tooltip(
+                  // Surface a short tooltip on long-press for accessibility,
+                  // matching the inline notice copy when children are present.
+                  message: hasLinkedChildren
+                      ? 'Remove all linked children before deleting your account.'
+                      : '',
+                  child: OutlinedButton.icon(
+                    onPressed: canDelete ? _confirmDeleteAccount : null,
+                    icon: _isDeletingAccount || isLoadingChildren
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: canDelete
+                                  ? Colors.red.shade600
+                                  : Colors.grey.shade400,
+                            ),
+                          )
+                        : Icon(
+                            Icons.delete_forever_rounded,
+                            size: 18,
+                            color: canDelete
+                                ? Colors.red.shade600
+                                : Colors.grey.shade400,
                           ),
-                        )
-                      : Icon(
-                          Icons.delete_forever_rounded,
-                          size: 18,
-                          color: Colors.red.shade600,
-                        ),
-                  label: Text(
-                    'Delete My Account',
-                    style: TextStyle(
-                      color: Colors.red.shade600,
-                      fontWeight: FontWeight.w600,
+                    label: Text(
+                      'Delete My Account',
+                      style: TextStyle(
+                        color: canDelete
+                            ? Colors.red.shade600
+                            : Colors.grey.shade400,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: BorderSide(color: Colors.red.shade400),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(
+                        color: canDelete
+                            ? Colors.red.shade400
+                            : Colors.grey.shade300,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),
@@ -606,6 +651,45 @@ class _ParentSettingsState extends State<ParentSettings> {
           ),
         ),
       ],
+    );
+  }
+
+  // ── linked-children restriction notice ────────────────────────────────────
+
+  Widget _buildLinkedChildrenNotice() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFFB74D)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(
+              Icons.child_care_rounded,
+              size: 15,
+              color: Color(0xFFF57C00),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'You can only delete your account after removing all linked '
+              'children. Go to the Students tab to delete each child\'s '
+              'account first.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.orange.shade900,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
