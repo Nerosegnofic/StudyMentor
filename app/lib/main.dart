@@ -1,8 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
 import 'src/bloc/auth/auth_bloc.dart';
@@ -157,22 +158,24 @@ class RootPage extends StatelessWidget {
           ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
+      // AuthLoading only triggers a root rebuild during the true cold-start
+      // flow (AuthInitial → AuthLoading). Any AuthLoading emitted mid-session
+      // (e.g. during student creation) is ignored here, preventing RootPage
+      // from replacing the parent dashboard with an infinite spinner when the
+      // user navigates back from AddStudentScreen after a failed attempt.
       buildWhen: (prev, curr) =>
           curr is AuthInitial ||
-          (curr is AuthLoading &&
-              prev is! AuthUnauthenticated &&
-              prev is! AuthError) ||
+          (curr is AuthLoading && prev is AuthInitial) ||
           curr is AuthAuthenticated ||
           curr is AuthUnauthenticated ||
-          curr is AuthEmailUnverified ||
-          curr is AuthError,
+          curr is AuthEmailUnverified,
       builder: (context, state) {
         if (state is AuthInitial || state is AuthLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (state is AuthUnauthenticated || state is AuthError) {
+        if (state is AuthUnauthenticated) {
           return const LoginScreen();
         }
         if (state is AuthEmailUnverified) {

@@ -14,6 +14,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({required this.repository}) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
+    on<ResetAuthState>(_onResetAuthState);
     on<RegisterRequested>(_onRegister);
     on<LoginRequested>(_onLogin);
     on<LogoutRequested>(_onLogout);
@@ -49,6 +50,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } else {
           emit(AuthAuthenticated(profile));
         }
+      } else {
+        emit(AuthUnauthenticated());
+      }
+    } catch (e) {
+      emit(AuthUnauthenticated());
+    }
+  }
+
+  /// Restores the authenticated state after a sub-flow (e.g. AddStudentScreen)
+  /// is cancelled or dismissed without completing. Prevents the BLoC from
+  /// staying stuck in AuthLoading or AuthError and causing RootPage to show
+  /// a spinner when the parent navigates back.
+  Future<void> _onResetAuthState(
+    ResetAuthState event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final profile = await repository.getUserProfile();
+      if (profile != null) {
+        emit(AuthAuthenticated(profile));
       } else {
         emit(AuthUnauthenticated());
       }
