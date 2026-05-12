@@ -449,9 +449,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         studentEmail: event.studentEmail,
         studentPassword: event.studentPassword,
       );
-      final students = await repository.getStudentsByParent(event.parentUid);
+      // Only emit StudentDeleted. ParentStudents sets _isLoading = true on
+      // this state and immediately fires LoadStudentsRequested, which will
+      // produce the authoritative StudentsLoaded. Emitting StudentsLoaded
+      // here raced against that — the (possibly empty) list arrived and
+      // cleared _isLoading before the fresh fetch completed, causing the
+      // "No students" empty state to flash.
       emit(StudentDeleted(studentUid: event.studentUid));
-      emit(StudentsLoaded(students));
     } catch (e) {
       emit(StudentDeleteError(_mapDeletionException(e)));
     }
