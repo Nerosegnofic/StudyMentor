@@ -32,11 +32,18 @@ class StudentLeaderboard extends StatefulWidget {
   final String fullName;
   final String parentUid;
 
+  /// True when this tab is the currently selected one in the parent
+  /// [IndexedStack]. Loading is deferred until the first time [isActive]
+  /// becomes true, which guarantees the Firebase auth token has had time to
+  /// propagate after login before any DataConnect queries are fired.
+  final bool isActive;
+
   const StudentLeaderboard({
     super.key,
     required this.uid,
     required this.fullName,
     required this.parentUid,
+    required this.isActive,
   });
 
   @override
@@ -52,33 +59,55 @@ class _StudentLeaderboardState extends State<StudentLeaderboard> {
   List<_LeaderboardEntry> _siblingEntries = [];
   List<_LeaderboardEntry> _friendsEntries = [];
 
-  bool _loading = true;
+  bool _loading = false;
   String? _error;
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  /// Tracks whether we have ever successfully triggered a load. Used to
+  /// ensure the first activation always kicks off a fetch.
+  bool _hasLoadedOnce = false;
+
+  /// Incremented on every new _load() call. Each async execution captures its
+  /// own generation number so that a slow, stale load can never overwrite the
+  /// result of a newer one (e.g. when parentUid arrives mid-flight).
+  int _loadGeneration = 0;
+
+  // initState intentionally does NOT call _load(). The widget is inside an
+  // IndexedStack and is therefore built immediately at login — before the
+  // Firebase auth token has fully propagated. Loading is deferred to the
+  // first time isActive becomes true (see didUpdateWidget).
 
   @override
   void didUpdateWidget(StudentLeaderboard old) {
     super.didUpdateWidget(old);
-    // Reload when parentUid becomes available (initially empty).
-    if (old.parentUid != widget.parentUid && widget.parentUid.isNotEmpty) {
+
+    final justBecameActive = !old.isActive && widget.isActive;
+    final parentUidArrived =
+        old.parentUid != widget.parentUid && widget.parentUid.isNotEmpty;
+
+    if (justBecameActive && !_hasLoadedOnce) {
+      // First time user opens this tab — load everything.
+      _load();
+      return;
+    }
+
+    if (parentUidArrived && widget.isActive) {
+      // parentUid resolved after the first load; reload to include sibling data.
       _load();
     }
   }
 
   Future<void> _load() async {
+    _hasLoadedOnce = true;
+    final generation = ++_loadGeneration;
+
     setState(() {
       _loading = true;
       _error = null;
     });
+
     try {
       final provider = DataConnectProvider();
 
-      // Always load global; load siblings only if parentUid is available.
       final futures = <Future>[
         provider.getWeeklyLeaderboard(),
         provider.getFriendsForStudent(widget.uid),
@@ -87,6 +116,9 @@ class _StudentLeaderboardState extends State<StudentLeaderboard> {
       ];
 
       final results = await Future.wait(futures);
+
+      // Discard result if a newer load has already been started.
+      if (generation != _loadGeneration) return;
 
       final globalRaw = results[0] as List<Map<String, dynamic>>;
       final friendsRaw = results[1] as List<Map<String, dynamic>>;
@@ -134,8 +166,7 @@ class _StudentLeaderboardState extends State<StudentLeaderboard> {
               ),
             )
             .toList();
-        if (selfEntry != null &&
-            !friendsList.any((e) => e.uid == widget.uid)) {
+        if (selfEntry != null && !friendsList.any((e) => e.uid == widget.uid)) {
           friendsList.add(selfEntry);
         }
         _friendsEntries = friendsList;
@@ -155,6 +186,7 @@ class _StudentLeaderboardState extends State<StudentLeaderboard> {
         _loading = false;
       });
     } catch (e) {
+      if (generation != _loadGeneration) return;
       setState(() {
         _loading = false;
         _error = e.toString();
@@ -323,9 +355,7 @@ class _StudentLeaderboardState extends State<StudentLeaderboard> {
           color: selected ? const Color(0xFFE8EDFF) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected
-                ? const Color(0xFF4A6CF7)
-                : Colors.grey.shade300,
+            color: selected ? const Color(0xFF4A6CF7) : Colors.grey.shade300,
           ),
         ),
         child: Row(
@@ -687,6 +717,10 @@ class _StudentLeaderboardState extends State<StudentLeaderboard> {
   }
 
   Widget _buildEmpty() {
+    // If we haven't loaded yet (user hasn't opened this tab), show the
+    // skeleton rather than a flash of empty content.
+    if (!_hasLoadedOnce) return _buildSkeleton();
+
     final label = switch (_mode) {
       _LeaderboardMode.siblings => 'No siblings to compare yet.',
       _LeaderboardMode.friends => 'Add friends to see them here.',
@@ -698,7 +732,11 @@ class _StudentLeaderboardState extends State<StudentLeaderboard> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.leaderboard_outlined, size: 56, color: Colors.grey.shade300),
+            Icon(
+              Icons.leaderboard_outlined,
+              size: 56,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 16),
             Text(
               label,

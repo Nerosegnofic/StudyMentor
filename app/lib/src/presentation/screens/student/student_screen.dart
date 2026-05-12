@@ -163,6 +163,10 @@ class _StudentScreenState extends State<StudentScreen>
                           uid: widget.uid,
                           fullName: widget.fullName,
                           parentUid: _parentUid,
+                          // Only considered active when this tab is selected.
+                          // Prevents firing DataConnect queries at login before
+                          // the auth token has fully propagated.
+                          isActive: _selectedIndex == 2,
                         ),
                         StudentFriends(
                           uid: widget.uid,
