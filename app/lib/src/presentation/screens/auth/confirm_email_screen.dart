@@ -25,10 +25,20 @@ class ConfirmEmailScreen extends StatelessWidget {
               context,
             ).pushNamedAndRemoveUntil('/', (route) => false);
           }
+          if (state is AuthEmailUnverified) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Email is not verified yet.')),
+            );
+          }
+          if (state is EmailVerificationSent) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Email verification link sent!')),
+            );
+          }
           if (state is EmailVerificationError) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            ).showSnackBar(const SnackBar(content: Text('An error occurred')));
           }
         },
         builder: (context, state) {

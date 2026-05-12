@@ -249,3 +249,10 @@ class ParentAccountDeleteError extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+class EmailVerificationSent extends AuthState {
+  final String email;
+  EmailVerificationSent(this.email);
+  @override
+  List<Object?> get props => [email];
+}

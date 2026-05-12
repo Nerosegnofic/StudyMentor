@@ -122,10 +122,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SendEmailVerificationRequested event,
     Emitter<AuthState> emit,
   ) async {
+    emit(AuthLoading()); // ← new
     final email = (await repository.getUserProfile())?.email ?? '';
     try {
       await repository.sendEmailVerification();
-      emit(AuthEmailUnverified(email));
+      emit(EmailVerificationSent(email));
     } catch (e) {
       emit(EmailVerificationError(_mapException(e), email));
     }
