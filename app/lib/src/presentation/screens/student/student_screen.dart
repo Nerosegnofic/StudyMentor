@@ -124,7 +124,7 @@ class _StudentScreenState extends State<StudentScreen>
       // The dialog manages its own dismissibility via PopScope(canPop:
       // !isLoading), so barrierDismissible can stay true for the
       // non-loading state.
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (_, setDialogState) {
           _dialogSetState = setDialogState;
