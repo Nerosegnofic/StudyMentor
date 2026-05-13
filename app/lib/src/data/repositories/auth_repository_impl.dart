@@ -191,8 +191,12 @@ class AuthRepositoryImpl implements AuthRepository {
       parentEmail,
       parentPassword,
     );
+    // Return false for both wrong-password (null UID) and credentials that
+    // belong to a different account (UID mismatch). Both are treated as
+    // verification failures — no exception is thrown — so the BLoC always
+    // takes the same code path and reliably shows the error in the dialog.
     if (authenticatedUid == null) return false;
-    if (authenticatedUid != linkedParentUid) throw Exception('parent-mismatch');
+    if (authenticatedUid != linkedParentUid) return false;
     return true;
   }
 

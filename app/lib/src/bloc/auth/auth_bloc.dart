@@ -262,6 +262,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await repository.signOut();
         emit(AuthUnauthenticated());
       } else {
+        // Emit AuthIdle first to guarantee a state transition even when the
+        // previous state was already ParentVerificationFailed with identical
+        // props. Without this, Equatable would consider the state unchanged
+        // and BlocListener would not fire, leaving the dialog permanently
+        // dismissed after a repeated failure.
+        emit(AuthIdle());
         emit(
           ParentVerificationFailed(
             message: 'Invalid parent credentials. Logout denied.',
@@ -270,6 +276,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       }
     } catch (e) {
+      emit(AuthIdle());
       emit(
         ParentVerificationFailed(
           message: _mapParentVerificationException(e),
