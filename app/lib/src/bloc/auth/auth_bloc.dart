@@ -551,7 +551,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // All auth failures — wrong password, unknown email, invalid credential,
     // malformed data, expired tokens, etc. — return the same generic message
     // so that no information about account existence is leaked to the UI.
-    return 'The supplied auth credential is incorrect, malformed, or has expired.';
+    return 'Invalid email or password. Please try again.';
   }
 
   /// Registration mapper — used for parent sign-up and student creation.

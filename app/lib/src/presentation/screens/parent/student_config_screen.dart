@@ -514,7 +514,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
 
     await showDialog<void>(
       context: context,
-      barrierDismissible: true,
+      // barrierDismissible defaults to false — the Cancel button covers
+      // intentional dismissal, and we must not allow tap-outside to escape
+      // while deletion is in flight.
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<AuthBloc>(),
         child: _DeleteStudentDialog(
@@ -622,151 +624,160 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is StudentDeleteLoading) {
-          setState(() => _isLoading = true);
-        } else if (state is StudentDeleted &&
-            state.studentUid == widget.student.uid) {
-          // Success — close the dialog. The screen's BlocListener handles
-          // popping StudentConfigScreen itself.
-          Navigator.of(context).pop();
-        } else if (state is StudentDeleteError) {
-          final isWrongPassword = state.message.contains('Invalid credentials');
-          setState(() {
-            _isLoading = false;
-            _serverError = isWrongPassword
-                ? 'Incorrect password. Please try again.'
-                : state.message;
-          });
-        }
-      },
-      child: AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.delete_forever_outlined,
-                color: Color(0xFFD32F2F),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Delete Student',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    // PopScope prevents the back button / predictive-back gesture from
+    // dismissing the dialog while deletion is in flight.
+    return PopScope(
+      canPop: !_isLoading,
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is StudentDeleteLoading) {
+            setState(() => _isLoading = true);
+          } else if (state is StudentDeleted &&
+              state.studentUid == widget.student.uid) {
+            // Success — close the dialog. The screen's BlocListener handles
+            // popping StudentConfigScreen itself.
+            Navigator.of(context).pop();
+          } else if (state is StudentDeleteError) {
+            final isWrongPassword = state.message.contains(
+              'Invalid credentials',
+            );
+            setState(() {
+              _isLoading = false;
+              _serverError = isWrongPassword
+                  ? 'Incorrect password. Please try again.'
+                  : state.message;
+            });
+          }
+        },
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
             children: [
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF333333),
-                    height: 1.5,
-                  ),
-                  children: [
-                    const TextSpan(text: 'This will permanently delete '),
-                    TextSpan(
-                      text: widget.student.fullName,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const TextSpan(
-                      text:
-                          '\'s account — progress, items, friends, and settings. '
-                          'This cannot be undone.',
-                    ),
-                  ],
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.delete_forever_outlined,
+                  color: Color(0xFFD32F2F),
+                  size: 20,
                 ),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordCtl,
-                obscureText: _obscurePassword,
-                enabled: !_isLoading,
-                onChanged: (_) {
-                  if (_submitted) setState(() => _serverError = null);
-                },
-                onSubmitted: (_) {
-                  if (!_isLoading) _submit();
-                },
-                decoration: InputDecoration(
-                  labelText: 'Student\'s Password',
-                  hintText:
-                      'Password you created for '
-                      '${widget.student.fullName.split(' ').first}',
-                  hintStyle: const TextStyle(fontSize: 12),
-                  errorText: _passwordError,
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD32F2F),
-                      width: 1.5,
-                    ),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      size: 18,
-                      color: Colors.grey,
-                    ),
-                    onPressed: _isLoading
-                        ? null
-                        : () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
-                  ),
-                ),
+              const SizedBox(width: 12),
+              const Text(
+                'Delete Student',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
             ],
           ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF666666)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF333333),
+                      height: 1.5,
+                    ),
+                    children: [
+                      const TextSpan(text: 'This will permanently delete '),
+                      TextSpan(
+                        text: widget.student.fullName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const TextSpan(
+                        text:
+                            '\'s account — progress, items, friends, and settings. '
+                            'This cannot be undone.',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passwordCtl,
+                  obscureText: _obscurePassword,
+                  enabled: !_isLoading,
+                  onChanged: (_) {
+                    if (_submitted) setState(() => _serverError = null);
+                  },
+                  onSubmitted: (_) {
+                    if (!_isLoading) _submit();
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Student\'s Password',
+                    hintText:
+                        'Password you created for '
+                        '${widget.student.fullName.split(' ').first}',
+                    hintStyle: const TextStyle(fontSize: 12),
+                    errorText: _passwordError,
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD32F2F),
+                        width: 1.5,
+                      ),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD32F2F),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            TextButton(
+              onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFF666666)),
               ),
             ),
-            onPressed: _isLoading ? null : _submit,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text('Delete Permanently'),
-          ),
-        ],
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: _isLoading ? null : _submit,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Delete Permanently'),
+            ),
+          ],
+        ),
       ),
     );
   }
