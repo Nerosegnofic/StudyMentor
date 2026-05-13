@@ -31,6 +31,21 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
   final _passwordCtl = TextEditingController();
   bool _obscurePassword = true;
 
+  // Mirrors widget.errorMessage into local state so the error can be cleared
+  // immediately when the user starts retyping, matching the behaviour of the
+  // other password-confirmation dialogs in the app.
+  String? _serverError;
+
+  @override
+  void didUpdateWidget(ParentVerificationDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Propagate a new incoming error into local state.
+    if (widget.errorMessage != oldWidget.errorMessage &&
+        widget.errorMessage != null) {
+      setState(() => _serverError = widget.errorMessage);
+    }
+  }
+
   @override
   void dispose() {
     _emailCtl.dispose();
@@ -64,36 +79,6 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                   style: TextStyle(fontSize: 14),
                 ),
                 const SizedBox(height: 16),
-                if (widget.errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: Colors.red.shade700,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.errorMessage!,
-                            style: TextStyle(
-                              color: Colors.red.shade700,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
                 TextFormField(
                   controller: _emailCtl,
                   enabled: !widget.isLoading,
@@ -110,9 +95,19 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                 TextFormField(
                   controller: _passwordCtl,
                   enabled: !widget.isLoading,
+                  // Clear the server error as soon as the user starts
+                  // correcting their password, matching the behaviour of
+                  // _ParentDeletePasswordDialog and the other dialogs.
+                  onChanged: (_) {
+                    if (_serverError != null) {
+                      setState(() => _serverError = null);
+                    }
+                  },
                   decoration: InputDecoration(
                     labelText: 'Parent\'s Password',
                     prefixIcon: const Icon(Icons.lock_outline),
+                    // Inline field-level error shown in red beneath the field.
+                    errorText: _serverError,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
