@@ -29,7 +29,6 @@ class _ParentSettingsState extends State<ParentSettings> {
 
   bool _isSaving = false;
   bool _isDirty = false;
-  bool _isDeletingAccount = false;
 
   // Baselines for dirty detection.
   String _originalFullName = '';
@@ -145,6 +144,14 @@ class _ParentSettingsState extends State<ParentSettings> {
   }
 
   // ── delete account ──────────────────────────────────────────────────────────
+  //
+  // Two-step flow:
+  //   1. Warning dialog (unchanged) — asks the user to confirm they understand
+  //      all student accounts must be deleted first.
+  //   2. _ParentDeletePasswordDialog — a self-contained StatefulWidget that
+  //      dispatches DeleteParentAccountRequested, shows a spinner while the
+  //      request is in flight, surfaces auth errors inline, and only closes
+  //      when the deletion succeeds or the user cancels.
 
   Future<void> _confirmDeleteAccount() async {
     // Step 1: Warn user they must delete all children first.
@@ -172,56 +179,14 @@ class _ParentSettingsState extends State<ParentSettings> {
     );
     if (proceed != true || !mounted) return;
 
-    // Step 2: Ask for current password to re-authenticate.
-    final password = await _showPasswordConfirmDialog();
-    if (password == null || password.isEmpty || !mounted) return;
-
-    context.read<AuthBloc>().add(
-      DeleteParentAccountRequested(currentPassword: password),
-    );
-  }
-
-  Future<String?> _showPasswordConfirmDialog() async {
-    final passCtl = TextEditingController();
-    bool obscure = true;
-
-    return await showDialog<String>(
+    // Step 2: Password confirmation dialog — self-contained, stays open on
+    // error, closes automatically on ParentAccountDeleted.
+    await showDialog<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: const Text('Confirm Your Password'),
-          content: TextField(
-            controller: passCtl,
-            obscureText: obscure,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: 'Current Password',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  obscure
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                ),
-                onPressed: () => setS(() => obscure = !obscure),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(null),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(passCtl.text),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-              ),
-              child: const Text('Delete Account'),
-            ),
-          ],
-        ),
+      barrierDismissible: true,
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<AuthBloc>(),
+        child: const _ParentDeletePasswordDialog(),
       ),
     );
   }
@@ -253,19 +218,10 @@ class _ParentSettingsState extends State<ParentSettings> {
               backgroundColor: Colors.red.shade700,
             ),
           );
-        } else if (state is ParentAccountDeleteLoading) {
-          setState(() => _isDeletingAccount = true);
-        } else if (state is ParentAccountDeleted) {
-          // AuthUnauthenticated follows immediately — no extra navigation needed.
-        } else if (state is ParentAccountDeleteError) {
-          setState(() => _isDeletingAccount = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
         }
+        // ParentAccountDeleteLoading, ParentAccountDeleted, and
+        // ParentAccountDeleteError are handled entirely inside
+        // _ParentDeletePasswordDialog — no screen-level reaction needed.
       },
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -548,8 +504,7 @@ class _ParentSettingsState extends State<ParentSettings> {
     final isLoadingChildren = _linkedChildCount == null;
     final hasLinkedChildren =
         _linkedChildCount != null && _linkedChildCount! > 0;
-    final canDelete =
-        !isLoadingChildren && !hasLinkedChildren && !_isDeletingAccount;
+    final canDelete = !isLoadingChildren && !hasLinkedChildren;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -599,22 +554,18 @@ class _ParentSettingsState extends State<ParentSettings> {
               SizedBox(
                 width: double.infinity,
                 child: Tooltip(
-                  // Surface a short tooltip on long-press for accessibility,
-                  // matching the inline notice copy when children are present.
                   message: hasLinkedChildren
                       ? 'Remove all linked children before deleting your account.'
                       : '',
                   child: OutlinedButton.icon(
                     onPressed: canDelete ? _confirmDeleteAccount : null,
-                    icon: _isDeletingAccount || isLoadingChildren
+                    icon: isLoadingChildren
                         ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: canDelete
-                                  ? Colors.red.shade600
-                                  : Colors.grey.shade400,
+                              color: Colors.grey.shade400,
                             ),
                           )
                         : Icon(
@@ -733,6 +684,197 @@ class _ParentSettingsState extends State<ParentSettings> {
         color: Colors.grey.shade500,
       ),
       onPressed: onToggle,
+    );
+  }
+}
+
+// ── _ParentDeletePasswordDialog ───────────────────────────────────────────────
+//
+// Self-contained password-confirmation dialog for parent account deletion.
+//
+// Lifecycle:
+//   • "Delete Account" pressed        → dispatches DeleteParentAccountRequested,
+//                                       shows an inline spinner, disables buttons.
+//   • ParentAccountDeleteLoading      → spinner visible, buttons disabled.
+//   • ParentAccountDeleted            → pops itself; AuthUnauthenticated follows
+//                                       and the root navigator handles sign-out.
+//   • ParentAccountDeleteError        → stops spinner, shows the error message
+//                                       inline as the field's errorText; dialog
+//                                       remains open for the user to correct.
+//   • "Cancel" pressed / tap outside  → pops normally (only when not loading).
+
+class _ParentDeletePasswordDialog extends StatefulWidget {
+  const _ParentDeletePasswordDialog();
+
+  @override
+  State<_ParentDeletePasswordDialog> createState() =>
+      _ParentDeletePasswordDialogState();
+}
+
+class _ParentDeletePasswordDialogState
+    extends State<_ParentDeletePasswordDialog> {
+  final _passCtl = TextEditingController();
+  bool _obscure = true;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _passCtl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final password = _passCtl.text.trim();
+    if (password.isEmpty) {
+      setState(() => _errorMessage = 'Please enter your current password.');
+      return;
+    }
+    setState(() => _errorMessage = null);
+    context.read<AuthBloc>().add(
+      DeleteParentAccountRequested(currentPassword: password),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is ParentAccountDeleteLoading) {
+          setState(() => _isLoading = true);
+        } else if (state is ParentAccountDeleted) {
+          // Close the dialog. AuthUnauthenticated follows immediately and the
+          // root navigator redirects to the login screen — no extra navigation
+          // needed here.
+          Navigator.of(context).pop();
+        } else if (state is ParentAccountDeleteError) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = state.message;
+          });
+        }
+      },
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.lock_outline,
+                color: Colors.red.shade600,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Confirm Your Password',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter your current password to permanently delete your account. This cannot be undone.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passCtl,
+                obscureText: _obscure,
+                autofocus: true,
+                enabled: !_isLoading,
+                onChanged: (_) {
+                  if (_errorMessage != null)
+                    setState(() => _errorMessage = null);
+                },
+                onSubmitted: (_) {
+                  if (!_isLoading) _submit();
+                },
+                decoration: InputDecoration(
+                  labelText: 'Current Password',
+                  errorText: _errorMessage,
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: Colors.red.shade600,
+                      width: 1.5,
+                    ),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Colors.red.shade400),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: Colors.red.shade600,
+                      width: 1.5,
+                    ),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscure
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 18,
+                      color: Colors.grey.shade500,
+                    ),
+                    onPressed: _isLoading
+                        ? null
+                        : () => setState(() => _obscure = !_obscure),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          TextButton(
+            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF666666)),
+            ),
+          ),
+          FilledButton(
+            onPressed: _isLoading ? null : _submit,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Delete Account'),
+          ),
+        ],
+      ),
     );
   }
 }
