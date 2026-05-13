@@ -55,8 +55,11 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline,
-                          color: Colors.red.shade700, size: 20),
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red.shade700,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -114,10 +117,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              widget.onSubmit(
-                _emailCtl.text.trim(),
-                _passwordCtl.text.trim(),
-              );
+              widget.onSubmit(_emailCtl.text.trim(), _passwordCtl.text.trim());
             }
           },
           child: const Text('Verify & Logout'),
