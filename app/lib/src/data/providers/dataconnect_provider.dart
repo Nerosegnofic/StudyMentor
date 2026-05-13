@@ -27,7 +27,19 @@ class DataConnectProvider {
     await _connector.insertParent().execute();
   }
 
-  // ── CHANGED: added username parameter ─────────────────────────────────────
+  // Throws Exception('username-already-in-use') if the username is taken.
+  // Kept separate from createStudentProfile so auth_repository_impl.dart can
+  // call it BEFORE firebase.signUp() — ensuring nothing is written to Firebase
+  // Auth or the database when the username check fails.
+  Future<void> checkUsernameAvailable(String username) async {
+    final existing = await _connector
+        .getStudentByUsername(username: username)
+        .execute();
+    if (existing.data.students.isNotEmpty) {
+      throw Exception('username-already-in-use');
+    }
+  }
+
   Future<void> createStudentProfile({
     required String parentUid,
     required String username,
@@ -66,7 +78,7 @@ class DataConnectProvider {
         .map(
           (s) => {
             'uid': s.uid,
-            'username': s.username, // ── ADDED ────────────────────────────────
+            'username': s.username,
             'full_name': s.user.fullName,
             'email': s.user.email,
             'grade_level': s.gradeLevel,
@@ -223,14 +235,13 @@ class DataConnectProvider {
 
   // ── Student Profile ───────────────────────────────────────────────────────
 
-  // ── CHANGED: added username to returned map ───────────────────────────────
   Future<Map<String, dynamic>> getStudentProfile(String uid) async {
     final result = await _connector.getStudentProfile(uid: uid).execute();
     final s = result.data.student;
     if (s == null) throw Exception('Student not found');
     return {
       'uid': s.uid,
-      'username': s.username, // ── ADDED ──────────────────────────────────────
+      'username': s.username,
       'friend_code': s.friendCode,
       'total_xp': s.totalXp,
       'total_coins': s.totalCoins,
@@ -277,7 +288,6 @@ class DataConnectProvider {
 
   // ── Leaderboard ───────────────────────────────────────────────────────────
 
-  // ── CHANGED: s.user.fullName → s.username (user block removed from query) ─
   Future<List<Map<String, dynamic>>> getWeeklyLeaderboard() async {
     final result = await _connector.getWeeklyLeaderboard().execute();
     return result.data.students.map((s) {
@@ -289,7 +299,7 @@ class DataConnectProvider {
           : null;
       return {
         'uid': s.uid,
-        'username': s.username, // ── CHANGED: was s.user.fullName ─────────────
+        'username': s.username,
         'weekly_xp': s.weeklyXp ?? 0,
         'total_xp': s.totalXp ?? 0,
         'last_active_at': lastActive,
@@ -303,7 +313,6 @@ class DataConnectProvider {
 
   // ── Friends ───────────────────────────────────────────────────────────────
 
-  // ── CHANGED: added username to returned map ───────────────────────────────
   Future<List<Map<String, dynamic>>> getFriendsForStudent(
     String studentUid,
   ) async {
@@ -320,7 +329,7 @@ class DataConnectProvider {
       return {
         'friendship_id': f.id,
         'friend_uid': f.friendUid,
-        'username': f.friend.username, // ── ADDED ────────────────────────────
+        'username': f.friend.username,
         'full_name': f.friend.user.fullName,
         'total_xp': f.friend.totalXp ?? 0,
         'weekly_xp': f.friend.weeklyXp ?? 0,
@@ -329,7 +338,6 @@ class DataConnectProvider {
     }).toList();
   }
 
-  // ── CHANGED: added username to returned map ───────────────────────────────
   Future<Map<String, dynamic>?> getStudentByFriendCode(
     String friendCode,
   ) async {
@@ -340,7 +348,7 @@ class DataConnectProvider {
     final s = result.data.students.first;
     return {
       'uid': s.uid,
-      'username': s.username, // ── ADDED ──────────────────────────────────────
+      'username': s.username,
       'full_name': s.user.fullName,
       'friend_code': s.friendCode,
     };
@@ -545,7 +553,6 @@ class DataConnectProvider {
   // ── Student Account Deletion (parent-side) ────────────────────────────────
 
   Future<void> deleteStudentAllData(String studentUid) async {
-    // Delete in the correct order (dependents before parents).
     await Future.wait([
       _connector
           .deleteAllOwnedItemsForStudent(studentUid: studentUid)
@@ -553,9 +560,7 @@ class DataConnectProvider {
       _connector.deleteStudentAvatar(studentUid: studentUid).execute(),
       _connector.deleteStudentSettings(studentUid: studentUid).execute(),
       _connector.deleteStudentConfig(studentUid: studentUid).execute(),
-      _connector
-          .deleteAllAppRulesForStudent(studentUid: studentUid)
-          .execute(),
+      _connector.deleteAllAppRulesForStudent(studentUid: studentUid).execute(),
       _connector
           .deleteAllInstalledAppsForStudent(studentUid: studentUid)
           .execute(),
@@ -566,7 +571,6 @@ class DataConnectProvider {
           .deleteAllFriendshipsForStudent(studentUid: studentUid)
           .execute(),
     ]);
-    // Delete the student and user rows last.
     await _connector.deleteStudentRecord(uid: studentUid).execute();
     await _connector.deleteUserRecord(uid: studentUid).execute();
   }
@@ -608,8 +612,9 @@ class DataConnectProvider {
 
   // ── Garden System ─────────────────────────────────────────────────────────
 
-  /// Returns all [SubjectProgressModel]s for [studentUid].
-  Future<List<SubjectProgressModel>> getAllSubjectProgress(String studentUid) async {
+  Future<List<SubjectProgressModel>> getAllSubjectProgress(
+    String studentUid,
+  ) async {
     final result = await _connector
         .getAllSubjectProgress(studentUid: studentUid)
         .execute();
@@ -619,13 +624,14 @@ class DataConnectProvider {
         subjectKey: r.subjectKey,
         totalXp: r.totalXp,
         level: r.level,
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(r.updatedAt.seconds * 1000, isUtc: true),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(
+          r.updatedAt.seconds * 1000,
+          isUtc: true,
+        ),
       );
     }).toList();
   }
 
-  /// Returns placeholder [SkillProgressModel]s for one subject based on the local catalog.
-  /// Skill progress is not persisted to the database — all counters start at zero.
   Future<List<SkillProgressModel>> getSkillsForSubject({
     required String studentUid,
     required String subjectKey,
@@ -633,15 +639,16 @@ class DataConnectProvider {
     final subject = SubjectCatalog.byKey(subjectKey);
     if (subject == null) return [];
     return subject.skillKeys
-        .map((key) => SkillProgressModel.empty(
-              studentUid: studentUid,
-              subjectKey: subjectKey,
-              skillKey: key,
-            ))
+        .map(
+          (key) => SkillProgressModel.empty(
+            studentUid: studentUid,
+            subjectKey: subjectKey,
+            skillKey: key,
+          ),
+        )
         .toList();
   }
 
-  /// Upsert (create or update) subject XP and level.
   Future<void> upsertSubjectProgress({
     required String studentUid,
     required String subjectKey,
@@ -658,7 +665,6 @@ class DataConnectProvider {
         .execute();
   }
 
-  /// Skill progress is not persisted to the database — this is intentionally a no-op.
   Future<void> upsertSkillProgress({
     required String studentUid,
     required String subjectKey,
@@ -668,4 +674,3 @@ class DataConnectProvider {
     required int totalAttempts,
   }) async {}
 }
-

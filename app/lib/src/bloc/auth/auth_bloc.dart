@@ -91,7 +91,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(AuthEmailUnverified(user.email));
     } catch (e) {
-      emit(AuthError(_mapException(e)));
+      emit(AuthError(_mapRegistrationException(e)));
     }
   }
 
@@ -192,7 +192,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(StudentCreated());
       emit(AuthAuthenticated(parent));
     } catch (e) {
-      emit(AuthError(_mapException(e)));
+      emit(AuthError(_mapRegistrationException(e)));
     }
   }
 
@@ -532,6 +532,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   // ── Error mappers ─────────────────────────────────────────────────────────
 
+  /// Generic mapper — used for login and other non-registration flows.
+  /// Intentionally returns the same message for all auth failures so that
+  /// no information about account existence is leaked to the UI.
   String _mapException(dynamic e) {
     final msg = e.toString();
     if (msg.contains('weak-password')) return 'Password is too weak.';
@@ -542,6 +545,41 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // malformed data, expired tokens, etc. — return the same generic message
     // so that no information about account existence is leaked to the UI.
     return 'The supplied auth credential is incorrect, malformed, or has expired.';
+  }
+
+  /// Registration mapper — used for parent sign-up and student creation.
+  /// Unlike [_mapException], this surfaces specific, actionable messages
+  /// because leaking "email already in use" is acceptable (and helpful)
+  /// in a registration context.
+  String _mapRegistrationException(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('email-already-in-use')) {
+      return 'That email address is already registered. Please use a different one.';
+    }
+    if (msg.contains('weak-password')) {
+      return 'Password is too weak. Please use at least 6 characters.';
+    }
+    if (msg.contains('invalid-email')) {
+      return 'That email address doesn\'t look right. Please check it.';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    if (msg.contains('session expired') || msg.contains('Session expired')) {
+      return 'Session expired. Please log out and log in again.';
+    }
+    // Username uniqueness — matches exceptions thrown by DataConnect /
+    // the repository when a duplicate username is detected. The repository
+    // should throw Exception('username-already-in-use') for this case.
+    if (msg.contains('username-already-in-use') ||
+        (msg.contains('username') && msg.contains('already'))) {
+      return 'That username is already taken. Please choose a different one.';
+    }
+    if (msg.contains('too-many-requests') ||
+        msg.contains('too_many_requests')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    return 'Registration failed. Please try again.';
   }
 
   String _mapParentVerificationException(dynamic e) {
