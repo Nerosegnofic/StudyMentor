@@ -349,15 +349,11 @@ class _ParentStudentsState extends State<ParentStudents> {
             _activeDeleteDialog!.showServerError(
               'Incorrect password. Please try again.',
             );
-          } else {
-            // Dialog already dismissed or non-password error — fall back to
-            // a snackbar.
-            final message = isWrongPassword
-                ? 'Incorrect password. Please enter the password you created for this student.'
-                : state.message;
+          } else if (!isWrongPassword) {
+            // Non-password error — fall back to a snackbar.
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(message),
+                content: Text(state.message),
                 backgroundColor: const Color(0xFFD32F2F),
                 behavior: SnackBarBehavior.floating,
                 margin: const EdgeInsets.all(16),
@@ -367,6 +363,8 @@ class _ParentStudentsState extends State<ParentStudents> {
               ),
             );
           }
+          // If isWrongPassword && _activeDeleteDialog == null, the dialog was
+          // already dismissed — silently swallow the error; no message shown.
         }
 
         if (state is AuthError) {

@@ -84,6 +84,8 @@ part 'delete_all_installed_apps_for_student.dart';
 
 part 'get_student_profile.dart';
 
+part 'get_student_by_username.dart';
+
 part 'get_weekly_leaderboard.dart';
 
 part 'get_student_by_friend_code.dart';
@@ -385,6 +387,11 @@ class ExampleConnector {
   
   GetStudentProfileVariablesBuilder getStudentProfile ({required String uid, }) {
     return GetStudentProfileVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetStudentByUsernameVariablesBuilder getStudentByUsername ({required String username, }) {
+    return GetStudentByUsernameVariablesBuilder(dataConnect, username: username,);
   }
   
   

@@ -85,6 +85,18 @@ query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Stude
   }
 }
 
+# ── Username Uniqueness Check ─────────────────────────────────────────────────
+
+# Used by dataconnect_provider.dart before InsertStudent to detect duplicate
+# usernames before the @unique constraint on the Student table rejects the
+# insert with an opaque gRPC error. Returns at most 1 row — we only need to
+# know whether any student already holds this username.
+query GetStudentByUsername($username: String!) @auth(level: USER, insecureReason: "Username lookup is used server-side during student registration.") {
+  students(where: { username: { eq: $username } }, limit: 1) {
+    uid
+  }
+}
+
 # ── Leaderboard ───────────────────────────────────────────────────────────────
 
 # ── CHANGED: replaced user { fullName } with username (leaderboard shows username) ──

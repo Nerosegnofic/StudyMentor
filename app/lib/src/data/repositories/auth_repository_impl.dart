@@ -89,6 +89,13 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
+    // ── Username check FIRST — before touching Firebase Auth or the database.
+    // This ensures nothing is partially created when the username is taken.
+    // checkUsernameAvailable throws Exception('username-already-in-use') if
+    // the username already exists, which _mapRegistrationException in
+    // AuthBloc surfaces as a friendly message.
+    await dataConnect.checkUsernameAvailable(username);
+
     try {
       await firebase.signUp(email, password);
       await dataConnect.createUserProfile(
@@ -110,16 +117,14 @@ class AuthRepositoryImpl implements AuthRepository {
       await firebase.signOut();
       await firebase.signInWithPassword(parentEmail, parentPassword);
     } catch (e) {
-      // Registration failed at some point — always restore the parent session.
-      // firebase.signUp() displaces the parent even when it throws, so this
-      // guard is unconditional.
+      // Registration failed after signUp() displaced the parent session.
+      // Always attempt to restore it, then rethrow so AuthBloc can surface
+      // the error. The username-already-in-use check above guarantees this
+      // block is never reached for that specific case.
       try {
         await firebase.signOut();
         await firebase.signInWithPassword(parentEmail, parentPassword);
-      } catch (_) {
-        // If we can't restore the session, rethrow the original error and let
-        // the BLoC surface it. The root navigator will handle the unauth state.
-      }
+      } catch (_) {}
       rethrow;
     }
 
@@ -306,24 +311,16 @@ class AuthRepositoryImpl implements AuthRepository {
 
   // ── Student Deletion ──────────────────────────────────────────────────────
 
-  // ── CHANGED: Auth account is deleted first via the secondary Firebase app
-  // (same pattern as updateStudentCredentials). The DB cleanup runs after,
-  // so if Auth deletion fails the whole operation surfaces the error cleanly
-  // and nothing is partially removed.
   @override
   Future<void> deleteStudent({
     required String studentUid,
     required String studentEmail,
     required String studentPassword,
   }) async {
-    // Step 1: delete the Firebase Auth account via the secondary app.
-    // The parent's main session is never touched.
     await firebase.deleteStudentAuthAccount(
       studentEmail: studentEmail,
       studentPassword: studentPassword,
     );
-
-    // Step 2: wipe all database records now that Auth is gone.
     await dataConnect.deleteStudentAllData(studentUid);
   }
 
