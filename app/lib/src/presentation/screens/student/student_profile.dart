@@ -98,20 +98,38 @@ class _StudentProfileState extends State<StudentProfile> {
       width: double.infinity,
       padding: const EdgeInsets.only(top: 28, bottom: 28),
       decoration: const BoxDecoration(color: Color(0xFFF5F7FF)),
-      child: Column(
+      child: Stack(
         children: [
-          _buildAvatarWithBadge(),
-          const SizedBox(height: 14),
-          Text(
-            widget.fullName,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A2E),
+          Center(
+            child: Column(
+              children: [
+                _buildAvatarWithBadge(),
+                const SizedBox(height: 14),
+                Text(
+                  widget.fullName,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildRankPill(),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          _buildRankPill(),
+          Positioned(
+            top: 0,
+            left: 8,
+            child: SafeArea(
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                color: const Color(0xFF1A1A2E),
+                onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Back',
+              ),
+            ),
+          ),
         ],
       ),
     );
