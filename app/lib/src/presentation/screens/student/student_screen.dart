@@ -37,6 +37,24 @@ class _StudentScreenState extends State<StudentScreen>
   String _parentUid = '';
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
+  // ── Verification dialog state ─────────────────────────────────────────────
+  //
+  // Rather than closing and reopening the dialog on each result, we keep it
+  // open for the entire verification lifecycle. StatefulBuilder gives us a
+  // setDialogState callback that can rebuild the dialog's contents in-place
+  // (loading spinner → error message → closed) without ever dismissing it.
+  //
+  // The dialog is only closed in two situations:
+  //   • The user taps Cancel (dialog pops itself).
+  //   • Authentication succeeds and pushNamedAndRemoveUntil removes all routes.
+  //
+  // _dialogSetState is non-null while the dialog is on screen and is cleared
+  // in the whenComplete callback so stale updates are never applied after the
+  // dialog has been dismissed.
+  StateSetter? _dialogSetState;
+  bool _dialogIsLoading = false;
+  String? _dialogError;
+
   @override
   void initState() {
     super.initState();
@@ -95,24 +113,54 @@ class _StudentScreenState extends State<StudentScreen>
     super.dispose();
   }
 
-  void _showVerificationDialog({String? errorMessage}) {
+  // Opens the verification dialog and stores a StateSetter reference so the
+  // BLoC listener can update its contents in-place without closing it.
+  void _showVerificationDialog() {
+    _dialogIsLoading = false;
+    _dialogError = null;
+
     showDialog(
       context: context,
+      // The dialog manages its own dismissibility via PopScope(canPop:
+      // !isLoading), so barrierDismissible can stay true for the
+      // non-loading state.
       barrierDismissible: true,
-      builder: (dialogContext) => ParentVerificationDialog(
-        errorMessage: errorMessage,
-        onSubmit: (email, password) {
-          Navigator.of(dialogContext).pop();
-          context.read<AuthBloc>().add(
-            VerifyParentAndLogoutRequested(
-              studentUid: widget.uid,
-              parentEmail: email,
-              parentPassword: password,
-            ),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (_, setDialogState) {
+          _dialogSetState = setDialogState;
+          return ParentVerificationDialog(
+            errorMessage: _dialogError,
+            isLoading: _dialogIsLoading,
+            onSubmit: (email, password) {
+              // Show the loading state immediately — do NOT pop the dialog.
+              // The dialog stays open until the BLoC emits a result.
+              setDialogState(() => _dialogIsLoading = true);
+              context.read<AuthBloc>().add(
+                VerifyParentAndLogoutRequested(
+                  studentUid: widget.uid,
+                  parentEmail: email,
+                  parentPassword: password,
+                ),
+              );
+            },
           );
         },
       ),
-    );
+    ).whenComplete(() {
+      // Clear the setter once the dialog is off the screen so that a
+      // belated BLoC state change can never call into a disposed widget.
+      _dialogSetState = null;
+    });
+  }
+
+  // Called by the BLoC listener when verification fails. Updates the dialog
+  // in-place: stops the loading spinner and shows the error message. The
+  // dialog remains open so the user can correct their credentials and retry.
+  void _updateDialogWithError(String message) {
+    _dialogSetState?.call(() {
+      _dialogIsLoading = false;
+      _dialogError = message;
+    });
   }
 
   @override
@@ -137,9 +185,15 @@ class _StudentScreenState extends State<StudentScreen>
               _showVerificationDialog();
             }
             if (state is ParentVerificationFailed) {
-              _showVerificationDialog(errorMessage: state.message);
+              // Update the already-open dialog instead of closing and
+              // reopening it. The loading spinner is replaced with the
+              // error banner so the user can try again without disruption.
+              _updateDialogWithError(state.message);
             }
             if (state is AuthUnauthenticated) {
+              // pushNamedAndRemoveUntil removes all routes — including the
+              // verification dialog — so no explicit Navigator.pop() is
+              // needed here.
               Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
             }
           },
