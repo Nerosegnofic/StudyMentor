@@ -76,11 +76,16 @@ class _ParentStudentsState extends State<ParentStudents> {
   // shows a loading spinner while the request is in flight, surfaces errors
   // inline, and pops itself only when StudentDeleted fires. The parent screen
   // no longer needs to track deletion state or push errors into the dialog.
+  //
+  // barrierDismissible is set to false so that tapping outside can never
+  // silently dismiss the dialog — the Cancel button (disabled while loading)
+  // is the only intentional exit. PopScope inside the dialog additionally
+  // blocks the system back gesture while deletion is in flight.
 
   Future<void> _confirmAndDeleteStudent(StudentModel student) async {
     await showDialog<void>(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<AuthBloc>(),
         child: _DeleteConfirmationDialog(
@@ -335,7 +340,11 @@ class _ParentStudentsState extends State<ParentStudents> {
 //   • StudentDeleteError received   → stops spinner, shows error message
 //                                     inline beneath the password field;
 //                                     dialog remains open for correction.
-//   • "Cancel" pressed / tap outside → pops normally (only when not loading).
+//   • "Cancel" pressed              → pops normally (only when not loading).
+//   • Back gesture / tap outside    → blocked while loading via PopScope;
+//                                     barrierDismissible is always false so
+//                                     tapping the scrim never silently closes
+//                                     the dialog.
 
 class _DeleteConfirmationDialog extends StatefulWidget {
   final StudentModel student;
@@ -415,167 +424,176 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
           });
         }
       },
-      child: AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.delete_forever_outlined,
-                color: Color(0xFFD32F2F),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Delete Student',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      // PopScope blocks the system back gesture/button while deletion is in
+      // flight. Combined with barrierDismissible: false on showDialog, this
+      // guarantees the dialog cannot be dismissed by any means other than the
+      // Cancel button (which is itself disabled while loading).
+      child: PopScope(
+        canPop: !_isLoading,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
             children: [
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF333333),
-                    height: 1.5,
-                  ),
-                  children: [
-                    const TextSpan(
-                      text: 'You are about to permanently delete ',
-                    ),
-                    TextSpan(
-                      text: widget.student.fullName,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const TextSpan(
-                      text:
-                          '\'s account. This will remove all of their data and cannot be undone.',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E0),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFFFB74D)),
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 1),
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        size: 15,
-                        color: Color(0xFFF57C00),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '$_firstName\'s login credentials, progress, settings, '
-                        'and friends list will all be permanently deleted.',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFE65100),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: const Icon(
+                  Icons.delete_forever_outlined,
+                  color: Color(0xFFD32F2F),
+                  size: 20,
                 ),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                enabled: !_isLoading,
-                onChanged: (_) {
-                  if (_submitted) setState(() => _serverError = null);
-                },
-                onSubmitted: (_) {
-                  if (!_isLoading) _submit();
-                },
-                decoration: InputDecoration(
-                  labelText: 'Student\'s password',
-                  hintText: 'Password you created for $_firstName',
-                  hintStyle: const TextStyle(fontSize: 12),
-                  errorText: _passwordError,
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD32F2F),
-                      width: 1.5,
-                    ),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      size: 18,
-                      color: Colors.grey,
-                    ),
-                    onPressed: _isLoading
-                        ? null
-                        : () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
-                  ),
-                ),
+              const SizedBox(width: 12),
+              const Text(
+                'Delete Student',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
             ],
           ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF666666)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF333333),
+                      height: 1.5,
+                    ),
+                    children: [
+                      const TextSpan(
+                        text: 'You are about to permanently delete ',
+                      ),
+                      TextSpan(
+                        text: widget.student.fullName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const TextSpan(
+                        text:
+                            '\'s account. This will remove all of their data and cannot be undone.',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFFB74D)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 1),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 15,
+                          color: Color(0xFFF57C00),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '$_firstName\'s login credentials, progress, settings, '
+                          'and friends list will all be permanently deleted.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFE65100),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  enabled: !_isLoading,
+                  onChanged: (_) {
+                    if (_submitted) setState(() => _serverError = null);
+                  },
+                  onSubmitted: (_) {
+                    if (!_isLoading) _submit();
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Student\'s password',
+                    hintText: 'Password you created for $_firstName',
+                    hintStyle: const TextStyle(fontSize: 12),
+                    errorText: _passwordError,
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD32F2F),
+                        width: 1.5,
+                      ),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD32F2F),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            TextButton(
+              onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFF666666)),
               ),
             ),
-            onPressed: _isLoading ? null : _submit,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text('Delete Permanently'),
-          ),
-        ],
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: _isLoading ? null : _submit,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Delete Permanently'),
+            ),
+          ],
+        ),
       ),
     );
   }

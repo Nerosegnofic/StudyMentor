@@ -38,7 +38,7 @@ class ConfirmEmailScreen extends StatelessWidget {
           if (state is EmailVerificationError) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(const SnackBar(content: Text('An error occurred')));
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {

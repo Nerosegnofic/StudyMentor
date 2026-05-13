@@ -91,9 +91,12 @@ query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Stude
 # usernames before the @unique constraint on the Student table rejects the
 # insert with an opaque gRPC error. Returns at most 1 row — we only need to
 # know whether any student already holds this username.
-query GetStudentByUsername($username: String!) @auth(level: USER, insecureReason: "Username lookup is used server-side during student registration.") {
+# ── CHANGED: returns `username` (already known to caller) instead of `uid`
+#    to avoid exposing identifiers purely for an existence check. insecureReason
+#    corrected to reflect client-side usage during student registration. ────────
+query GetStudentByUsername($username: String!) @auth(level: USER, insecureReason: "Username uniqueness is checked client-side during student registration; no identifier is exposed beyond the username the caller already holds.") {
   students(where: { username: { eq: $username } }, limit: 1) {
-    uid
+    username
   }
 }
 

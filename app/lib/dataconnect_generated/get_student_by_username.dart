@@ -19,10 +19,10 @@ class GetStudentByUsernameVariablesBuilder {
 
 @immutable
 class GetStudentByUsernameStudents {
-  final String uid;
+  final String username;
   GetStudentByUsernameStudents.fromJson(dynamic json):
   
-  uid = nativeFromJson<String>(json['uid']);
+  username = nativeFromJson<String>(json['username']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -33,21 +33,21 @@ class GetStudentByUsernameStudents {
     }
 
     final GetStudentByUsernameStudents otherTyped = other as GetStudentByUsernameStudents;
-    return uid == otherTyped.uid;
+    return username == otherTyped.username;
     
   }
   @override
-  int get hashCode => uid.hashCode;
+  int get hashCode => username.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['uid'] = nativeToJson<String>(uid);
+    json['username'] = nativeToJson<String>(username);
     return json;
   }
 
   GetStudentByUsernameStudents({
-    required this.uid,
+    required this.username,
   });
 }
 
