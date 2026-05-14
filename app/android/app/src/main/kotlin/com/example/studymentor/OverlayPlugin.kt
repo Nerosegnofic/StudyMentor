@@ -117,7 +117,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 }
                 val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 30
                 activity.runOnUiThread {
-                    // Hide the usage timer — the full-screen overlay takes over.
                     removeUsageTimer()
                     showOrUpdateOverlay(remainingSeconds)
                     result.success(null)
@@ -139,7 +138,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 }
             }
 
-            // ── Usage timer (small draggable widget) ──────────────────────────
+            // ── Usage timer ─────────────────────────────────────────────────
 
             "showUsageTimer" -> {
                 if (!Settings.canDrawOverlays(activity)) {
@@ -250,12 +249,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Called by the accessibility service when the user navigates to the
-    // launcher or a non-monitored app — dismisses the overlay if visible.
-    // Safe to call from any thread; idempotent (overlayView null-check guards).
-    // ─────────────────────────────────────────────────────────────────────────
-
     fun dismissOverlay() {
         mainHandler.post {
             if (overlayView == null) return@post
@@ -265,20 +258,11 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Called by the accessibility service when it intercepts a monitored app.
-    // Notifies Dart so the overlay re-appears with the remaining time.
-    // ─────────────────────────────────────────────────────────────────────────
-
     fun notifyMonitoredAppIntercepted(packageName: String?) {
         mainHandler.post {
             overlayChannel?.invokeMethod("onMonitoredAppIntercepted", packageName)
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Audio focus — silences YouTube / TikTok when overlay appears
-    // ─────────────────────────────────────────────────────────────────────────
 
     private fun requestAudioFocus() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -286,11 +270,13 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build()
+
             val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                 .setAudioAttributes(attrs)
                 .setAcceptsDelayedFocusGain(false)
                 .setOnAudioFocusChangeListener { }
                 .build()
+
             audioFocusRequest = req
             audioManager?.requestAudioFocus(req)
         } else {
@@ -314,7 +300,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Full-screen cooldown overlay — creation & update
+    // Full-screen overlay
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun showOrUpdateOverlay(remainingSeconds: Int) {
@@ -350,10 +336,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         updateCountdownDisplay(remainingSeconds)
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Full-screen overlay view hierarchy
-    // ─────────────────────────────────────────────────────────────────────────
-
     private fun buildRootView(): FrameLayout {
         val root = object : FrameLayout(activity) {
 
@@ -361,19 +343,19 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
             override fun dispatchKeyEvent(event: KeyEvent): Boolean {
                 if (event.action != KeyEvent.ACTION_DOWN) return true
+
                 if (event.keyCode == KeyEvent.KEYCODE_BACK) {
-                    // Navigate to home first so the monitored app underneath
-                    // doesn't immediately re-trigger the overlay when dismissed.
                     StudyMentorAccessibilityService.justIntercepted = true
                     StudyMentorAccessibilityService.instance?.performGlobalAction(
                         android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
                     )
                     dismissOverlay()
                 }
+
                 return true
             }
         }.apply {
-            setBackgroundColor(Color.parseColor("#FF000000"))
+            setBackgroundColor(Color.BLACK)
             isFocusable = true
             isFocusableInTouchMode = true
         }
@@ -387,12 +369,13 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             )
         }
 
-        // Mascot circle
         val mascotCircle = TextView(activity).apply {
             val size = dpToPx(120)
+
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
+
             setBackgroundColor(Color.parseColor("#5C6BC0"))
             textSize = 48f
             gravity = Gravity.CENTER
@@ -400,31 +383,30 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             setTextColor(Color.WHITE)
         }
 
-        // Title
         val titleText = TextView(activity).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dpToPx(24) }
+
             text = "Take a Break!"
             textSize = 28f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
         }
 
-        // Subtitle
         val subtitleText = TextView(activity).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dpToPx(8) }
+
             text = "You have been using this app for too long"
             textSize = 16f
             setTextColor(Color.parseColor("#B0B0B0"))
             gravity = Gravity.CENTER
         }
 
-        // Countdown
         countdownText = TextView(activity).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -433,18 +415,19 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 gravity = Gravity.CENTER_HORIZONTAL
                 topMargin = dpToPx(32)
             }
-            text = "00:30"
+
+            text = "00:00"
             textSize = 56f
             setTextColor(Color.parseColor("#5C6BC0"))
             gravity = Gravity.CENTER
         }
 
-        // Hint
         val timerLabel = TextView(activity).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dpToPx(8) }
+
             text = "You may press home or back"
             textSize = 13f
             setTextColor(Color.parseColor("#808080"))
@@ -456,24 +439,18 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         center.addView(subtitleText)
         center.addView(countdownText)
         center.addView(timerLabel)
+
         root.addView(center)
+
         return root
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Full-screen overlay removal
-    // ─────────────────────────────────────────────────────────────────────────
-
     private fun removeOverlay() {
         overlayView?.let { windowManager?.removeView(it) }
-        overlayView   = null
+        overlayView = null
         countdownText = null
         releaseAudioFocus()
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Full-screen countdown display
-    // ─────────────────────────────────────────────────────────────────────────
 
     private fun updateCountdownDisplay(remainingSeconds: Int) {
         val mins = remainingSeconds / 60
@@ -482,12 +459,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Draggable usage timer — creation & update
-    //
-    // This is a small floating pill that sits on top of the restricted app and
-    // shows how many minutes/seconds of usage the student has left before the
-    // full cooldown overlay appears. It does NOT intercept touches so the app
-    // underneath remains fully interactive.
+    // Small draggable timer overlay
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun showOrUpdateUsageTimer(remainingSeconds: Int) {
@@ -496,7 +468,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             return
         }
 
-        // Lazily initialise the shared WindowManager reference.
         if (windowManager == null) {
             windowManager = activity.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         }
@@ -507,154 +478,99 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             @Suppress("DEPRECATION")
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
 
-        // Position the pill in the top-right corner, below the status bar.
         val displayMetrics = activity.resources.displayMetrics
-        val screenWidth    = displayMetrics.widthPixels
+        val screenWidth = displayMetrics.widthPixels
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
-            // FLAG_NOT_FOCUSABLE:     hardware keys & back button go to the app,
-            //                         not to this window.
-            // FLAG_NOT_TOUCH_MODAL:   touches outside the widget's bounds pass
-            //                         through to the window below.
-            // FLAG_WATCH_OUTSIDE_TOUCH not needed — we only need the widget itself.
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                     or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            // Start near the top-right; will be clamped automatically when the
-            // view is measured. Approximate initial width is 130dp.
-            x = screenWidth - dpToPx(146)
-            y = dpToPx(72) // just below the status bar
+            x = screenWidth - dpToPx(170)
+            y = dpToPx(72)
         }
 
         usageTimerParams = params
 
         val timerView = buildUsageTimerView(params)
         usageTimerView = timerView
+
         windowManager?.addView(timerView, params)
+
         updateUsageTimerDisplay(remainingSeconds)
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Draggable usage timer view hierarchy
-    // ─────────────────────────────────────────────────────────────────────────
-
     private fun buildUsageTimerView(params: WindowManager.LayoutParams): FrameLayout {
 
-        // Track drag state
-        var dragStartParamX  = 0
-        var dragStartParamY  = 0
-        var dragStartTouchX  = 0f
-        var dragStartTouchY  = 0f
-        var isDragging       = false
-        val DRAG_THRESHOLD   = dpToPx(4)
+        var dragStartParamX = 0
+        var dragStartParamY = 0
+        var dragStartTouchX = 0f
+        var dragStartTouchY = 0f
+        var isDragging = false
+        var velocityTracker: android.view.VelocityTracker? = null
 
-        // ── Container ──────────────────────────────────────────────────────
+        val DRAG_THRESHOLD = dpToPx(4)
+        // Fling faster than this (dp/s) in any direction triggers dismiss
+        val FLING_VELOCITY_DP = 800f
+        val FLING_VELOCITY_PX = FLING_VELOCITY_DP * activity.resources.displayMetrics.density
+        // Or drag the view this far past any edge (dp) to trigger dismiss
+        val EDGE_DISMISS_DP = dpToPx(60)
+
+        // ── Minimal container: just enough padding to frame the digits ────────
         val container = FrameLayout(activity).apply {
-            setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10))
-            // Rounded pill background — semi-transparent dark indigo
+            setPadding(dpToPx(6), dpToPx(3), dpToPx(6), dpToPx(3))
+
             background = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(24).toFloat()
-                setColor(Color.parseColor("#E6151530"))  // ~90 % opaque dark navy
-                setStroke(dpToPx(1), Color.parseColor("#665C6BC0")) // subtle indigo border
+                cornerRadius = dpToPx(6).toFloat()
+                setColor(Color.parseColor("#CC000000"))
             }
+
             elevation = dpToPx(6).toFloat()
         }
 
-        // ── Inner column ───────────────────────────────────────────────────
-        val column = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity     = Gravity.CENTER_HORIZONTAL
+        usageTimerText = TextView(activity).apply {
+            text = "00:00:00"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
             )
         }
 
-        // Label row  (⏱ icon + "time left")
-        val labelRow = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity     = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            )
-        }
+        container.addView(usageTimerText)
 
-        val clockIcon = TextView(activity).apply {
-            text     = "⏱"
-            textSize = 11f
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            )
-        }
-
-        val labelText = TextView(activity).apply {
-            text      = "time left"
-            textSize  = 10f
-            setTextColor(Color.parseColor("#99B0BEC5")) // muted blue-grey
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { leftMargin = dpToPx(3) }
-        }
-
-        labelRow.addView(clockIcon)
-        labelRow.addView(labelText)
-
-        // Countdown text
-        usageTimerText = TextView(activity).apply {
-            text      = "00:00"
-            textSize  = 22f
-            setTextColor(Color.WHITE)
-            gravity   = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dpToPx(1) }
-        }
-
-        // Drag hint (shown below the countdown)
-        val dragHint = TextView(activity).apply {
-            text      = "⠿ drag me"
-            textSize  = 8.5f
-            setTextColor(Color.parseColor("#55B0BEC5"))
-            gravity   = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dpToPx(1) }
-        }
-
-        column.addView(labelRow)
-        column.addView(usageTimerText)
-        column.addView(dragHint)
-        container.addView(column)
-
-        // ── Drag touch listener ────────────────────────────────────────────
-        // Uses ACTION_DOWN / ACTION_MOVE / ACTION_UP to implement free drag.
-        // The touch is consumed on ACTION_MOVE only when a real drag is detected
-        // (beyond DRAG_THRESHOLD), so accidental micro-touches don't move it.
         container.setOnTouchListener { _, event ->
+
             val currentParams = usageTimerParams ?: return@setOnTouchListener false
+            val metrics = activity.resources.displayMetrics
 
             when (event.action) {
+
                 MotionEvent.ACTION_DOWN -> {
-                    dragStartParamX  = currentParams.x
-                    dragStartParamY  = currentParams.y
-                    dragStartTouchX  = event.rawX
-                    dragStartTouchY  = event.rawY
-                    isDragging       = false
+                    dragStartParamX = currentParams.x
+                    dragStartParamY = currentParams.y
+                    dragStartTouchX = event.rawX
+                    dragStartTouchY = event.rawY
+                    isDragging = false
+
+                    velocityTracker?.recycle()
+                    velocityTracker = android.view.VelocityTracker.obtain()
+                    velocityTracker?.addMovement(event)
                     true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
+                    velocityTracker?.addMovement(event)
+
                     val dx = (event.rawX - dragStartTouchX).toInt()
                     val dy = (event.rawY - dragStartTouchY).toInt()
 
@@ -666,16 +582,10 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                         }
                     }
 
-                    currentParams.x = (dragStartParamX + dx)
-                        .coerceAtLeast(0)
-                        .coerceAtMost(
-                            activity.resources.displayMetrics.widthPixels - dpToPx(130)
-                        )
-                    currentParams.y = (dragStartParamY + dy)
-                        .coerceAtLeast(0)
-                        .coerceAtMost(
-                            activity.resources.displayMetrics.heightPixels - dpToPx(80)
-                        )
+                    // Allow dragging freely past edges (no coerce) so the
+                    // view can be flung off-screen
+                    currentParams.x = dragStartParamX + dx
+                    currentParams.y = dragStartParamY + dy
 
                     try {
                         windowManager?.updateViewLayout(usageTimerView, currentParams)
@@ -684,7 +594,47 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                     true
                 }
 
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                MotionEvent.ACTION_UP -> {
+                    velocityTracker?.addMovement(event)
+                    velocityTracker?.computeCurrentVelocity(1000) // px/s
+
+                    val vx = velocityTracker?.xVelocity ?: 0f
+                    val vy = velocityTracker?.yVelocity ?: 0f
+                    velocityTracker?.recycle()
+                    velocityTracker = null
+
+                    val isFling = Math.abs(vx) > FLING_VELOCITY_PX ||
+                                  Math.abs(vy) > FLING_VELOCITY_PX
+
+                    val isPastEdge = currentParams.x < -EDGE_DISMISS_DP ||
+                                     currentParams.x > metrics.widthPixels + EDGE_DISMISS_DP ||
+                                     currentParams.y < -EDGE_DISMISS_DP ||
+                                     currentParams.y > metrics.heightPixels + EDGE_DISMISS_DP
+
+                    if (isDragging && (isFling || isPastEdge)) {
+                        // Notify Flutter then remove the view
+                        overlayChannel?.invokeMethod("onUsageTimerDismissed", null)
+                        removeUsageTimer()
+                    } else {
+                        // Snap back inside the screen
+                        currentParams.x = currentParams.x
+                            .coerceAtLeast(0)
+                            .coerceAtMost(metrics.widthPixels - dpToPx(100))
+                        currentParams.y = currentParams.y
+                            .coerceAtLeast(0)
+                            .coerceAtMost(metrics.heightPixels - dpToPx(50))
+                        try {
+                            windowManager?.updateViewLayout(usageTimerView, currentParams)
+                        } catch (_: Exception) { }
+                    }
+
+                    isDragging = false
+                    true
+                }
+
+                MotionEvent.ACTION_CANCEL -> {
+                    velocityTracker?.recycle()
+                    velocityTracker = null
                     isDragging = false
                     true
                 }
@@ -696,101 +646,117 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         return container
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Draggable usage timer removal
-    // ─────────────────────────────────────────────────────────────────────────
-
     private fun removeUsageTimer() {
         usageTimerView?.let {
-            try { windowManager?.removeView(it) } catch (_: Exception) { }
+            try {
+                windowManager?.removeView(it)
+            } catch (_: Exception) { }
         }
-        usageTimerView   = null
-        usageTimerText   = null
+
+        usageTimerView = null
+        usageTimerText = null
         usageTimerParams = null
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Usage timer display update
-    // ─────────────────────────────────────────────────────────────────────────
-
     private fun updateUsageTimerDisplay(remainingSeconds: Int) {
-        val mins = remainingSeconds / 60
+
+        val hours = remainingSeconds / 3600
+        val mins = (remainingSeconds % 3600) / 60
         val secs = remainingSeconds % 60
-        usageTimerText?.text = String.format("%02d:%02d", mins, secs)
+
+        usageTimerText?.text =
+            String.format("%02d:%02d:%02d", hours, mins, secs)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Usage-stats helpers
+    // Helpers
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun getForegroundPackage(): String? {
+
         val usageManager = activity.getSystemService(Context.USAGE_STATS_SERVICE)
             as? android.app.usage.UsageStatsManager ?: return null
+
         val now = System.currentTimeMillis()
-        // Use MOVE_TO_FOREGROUND events — unlike lastTimeUsed, these only fire
-        // when an Activity actually comes to the screen, so YouTube's background
-        // media session cannot falsely keep it registered as "foreground".
+
         val events = usageManager.queryEvents(now - 300_000L, now)
+
         var lastPackage: String? = null
         var lastTime = 0L
+
         val event = android.app.usage.UsageEvents.Event()
+
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
-            if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND
-                && event.timeStamp > lastTime
+
+            if (
+                event.eventType ==
+                android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND &&
+                event.timeStamp > lastTime
             ) {
-                lastTime    = event.timeStamp
+                lastTime = event.timeStamp
                 lastPackage = event.packageName
             }
         }
+
         return lastPackage
     }
 
     private fun hasUsageStatsPermission(): Boolean {
-        val appOps = activity.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(),
-                activity.packageName,
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(),
-                activity.packageName,
-            )
-        }
+
+        val appOps = activity.getSystemService(Context.APP_OPS_SERVICE)
+                as AppOpsManager
+
+        val mode =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                appOps.unsafeCheckOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    activity.packageName,
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                appOps.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    activity.packageName,
+                )
+            }
+
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
     private fun isAccessibilityEnabled(): Boolean {
+
         val prefString = Settings.Secure.getString(
             activity.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
         ) ?: return false
 
-        val pkg        = activity.packageName
-        val fullClass  = StudyMentorAccessibilityService::class.java.name
+        val pkg = activity.packageName
+        val fullClass = StudyMentorAccessibilityService::class.java.name
         val shortClass = ".${StudyMentorAccessibilityService::class.java.simpleName}"
 
         val splitter = android.text.TextUtils.SimpleStringSplitter(':')
         splitter.setString(prefString)
+
         while (splitter.hasNext()) {
+
             val entry = splitter.next()
             val slash = entry.indexOf('/')
+
             if (slash < 0) continue
             if (entry.substring(0, slash) != pkg) continue
+
             val cls = entry.substring(slash + 1)
-            if (cls == fullClass || cls == shortClass) return true
+
+            if (cls == fullClass || cls == shortClass) {
+                return true
+            }
         }
+
         return false
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Utilities
-    // ─────────────────────────────────────────────────────────────────────────
 
     private fun dpToPx(dp: Int): Int =
         (dp * activity.resources.displayMetrics.density).toInt()
