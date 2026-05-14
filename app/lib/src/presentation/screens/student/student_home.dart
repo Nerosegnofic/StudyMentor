@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -42,14 +43,35 @@ class _StudentHomeState extends State<StudentHome> {
   // Last known garden data — persists across BLoC state changes.
   Map<String, SubjectProgressModel> _gardenCache = {};
 
+  // ── Screen-time live refresh ───────────────────────────────────────────────
+  // Ticks every second so the usage bar and cooldown countdown stay live.
+  Timer? _usageTicker;
+
   @override
   void initState() {
     super.initState();
-    context.read<AuthBloc>().add(LoadParentNameRequested(studentUid: widget.uid));
-    context.read<AuthBloc>().add(LoadStudentAppConfigRequested(studentUid: widget.uid));
-    context.read<AuthBloc>().add(SyncInstalledAppsRequested(studentUid: widget.uid));
+    context.read<AuthBloc>().add(
+      LoadParentNameRequested(studentUid: widget.uid),
+    );
+    context.read<AuthBloc>().add(
+      LoadStudentAppConfigRequested(studentUid: widget.uid),
+    );
+    context.read<AuthBloc>().add(
+      SyncInstalledAppsRequested(studentUid: widget.uid),
+    );
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
     _loadStreakAndRank();
+
+    // Refresh usage UI every second from MascotOverlayService.
+    _usageTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _usageTicker?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadStreakAndRank() async {
@@ -82,8 +104,12 @@ class _StudentHomeState extends State<StudentHome> {
       _parentFullName = null;
       _rulesLoading = true;
     });
-    context.read<AuthBloc>().add(LoadParentNameRequested(studentUid: widget.uid));
-    context.read<AuthBloc>().add(LoadStudentAppConfigRequested(studentUid: widget.uid));
+    context.read<AuthBloc>().add(
+      LoadParentNameRequested(studentUid: widget.uid),
+    );
+    context.read<AuthBloc>().add(
+      LoadStudentAppConfigRequested(studentUid: widget.uid),
+    );
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
     _loadStreakAndRank();
   }
@@ -146,14 +172,13 @@ class _StudentHomeState extends State<StudentHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Garden area — bg #F8FAF6 (matches React scroll area) ──────
+              // ── Garden area ───────────────────────────────────────────────
               Container(
                 color: const Color(0xFFF8FAF6),
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Welcome header
                     RichText(
                       text: TextSpan(
                         style: const TextStyle(
@@ -164,7 +189,8 @@ class _StudentHomeState extends State<StudentHome> {
                         ),
                         children: [
                           TextSpan(
-                            text: 'Welcome back, ${widget.fullName.split(' ').first}! ',
+                            text:
+                                'Welcome back, ${widget.fullName.split(' ').first}! ',
                           ),
                           const TextSpan(text: '☀️'),
                         ],
@@ -173,25 +199,22 @@ class _StudentHomeState extends State<StudentHome> {
                     const SizedBox(height: 2),
                     Text(
                       'Your garden is growing beautifully!',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade500,
+                      ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Atmospheric garden
                     _buildGardenArea(),
                     const SizedBox(height: 16),
-
-                    // Owl mascot
                     _buildOwlSection(),
                     const SizedBox(height: 16),
-
-                    // Quick stats
                     _buildQuickStats(),
                   ],
                 ),
               ),
 
-              // ── Parent + App rules ────────────────────────────────────────
+              // ── Parent + App rules ─────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Column(
@@ -210,7 +233,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── Atmospheric garden with 3 plants ───────────────────────────────────────
+  // ── Atmospheric garden ──────────────────────────────────────────────────────
 
   Widget _buildGardenArea() {
     return BlocBuilder<GardenBloc, GardenState>(
@@ -220,9 +243,7 @@ class _StudentHomeState extends State<StudentHome> {
           return _gardenShell(
             child: const SizedBox(
               height: 180,
-              child: Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
           );
         }
@@ -240,10 +261,7 @@ class _StudentHomeState extends State<StudentHome> {
           );
         }
 
-        // First 3 subjects: Math (tree), Science (flower), History (bush)
         final subjects = SubjectCatalog.all.take(3).toList();
-
-        // Soil area — plants bottom-aligned (matches React items-end)
         return _gardenShell(
           child: Container(
             decoration: const BoxDecoration(
@@ -260,7 +278,8 @@ class _StudentHomeState extends State<StudentHome> {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: subjects.map((subject) {
-                final progress = _gardenCache[subject.key] ??
+                final progress =
+                    _gardenCache[subject.key] ??
                     SubjectProgressModel.empty(widget.uid, subject.key);
                 return Expanded(
                   child: GardenSubjectCard(
@@ -277,8 +296,6 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  /// Garden card shell — sky + progress strip + grass + soil.
-  /// Matches the React HomeScreen garden exactly.
   Widget _gardenShell({required Widget child}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -287,12 +304,10 @@ class _StudentHomeState extends State<StudentHome> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Sky zone (sun + cloud) ──────────────────────────────────
             SizedBox(
               height: 88,
               child: Stack(
                 children: [
-                  // Sun — solid amber circle with soft glow
                   Positioned(
                     top: 20,
                     left: 22,
@@ -304,7 +319,9 @@ class _StudentHomeState extends State<StudentHome> {
                         color: const Color(0xFFFFD426),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFFC107).withValues(alpha: 0.40),
+                            color: const Color(
+                              0xFFFFC107,
+                            ).withValues(alpha: 0.40),
                             blurRadius: 14,
                             spreadRadius: 3,
                           ),
@@ -312,8 +329,6 @@ class _StudentHomeState extends State<StudentHome> {
                       ),
                     ),
                   ),
-
-                  // Cloud — three overlapping white circles (right side)
                   Positioned(
                     top: 22,
                     right: 28,
@@ -322,7 +337,6 @@ class _StudentHomeState extends State<StudentHome> {
                       height: 38,
                       child: Stack(
                         children: [
-                          // Base pill
                           Positioned(
                             bottom: 0,
                             left: 0,
@@ -335,7 +349,6 @@ class _StudentHomeState extends State<StudentHome> {
                               ),
                             ),
                           ),
-                          // Left bubble
                           Positioned(
                             top: 0,
                             left: 12,
@@ -348,7 +361,6 @@ class _StudentHomeState extends State<StudentHome> {
                               ),
                             ),
                           ),
-                          // Right bubble
                           Positioned(
                             top: 4,
                             left: 35,
@@ -368,8 +380,6 @@ class _StudentHomeState extends State<StudentHome> {
                 ],
               ),
             ),
-
-            // ── Garden progress strip ───────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ClipRRect(
@@ -385,8 +395,6 @@ class _StudentHomeState extends State<StudentHome> {
               ),
             ),
             const SizedBox(height: 6),
-
-            // ── Grass strip ─────────────────────────────────────────────
             Container(
               height: 10,
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -395,8 +403,6 @@ class _StudentHomeState extends State<StudentHome> {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
               ),
             ),
-
-            // ── Soil + plants ───────────────────────────────────────────
             child,
           ],
         ),
@@ -404,7 +410,6 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  /// Average progress across all loaded subjects (0.0 – 1.0).
   double _overallGardenProgress() {
     if (_gardenCache.isEmpty) return 0.0;
     double total = 0;
@@ -434,7 +439,6 @@ class _StudentHomeState extends State<StudentHome> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Owl illustration — matches the React SVG
           SizedBox(
             width: 52,
             height: 52,
@@ -446,7 +450,10 @@ class _StudentHomeState extends State<StudentHome> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: const BoxDecoration(
                     color: Color(0xFFF1FBF1),
                     borderRadius: BorderRadius.only(
@@ -486,14 +493,25 @@ class _StudentHomeState extends State<StudentHome> {
       children: [
         Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '0')),
         const SizedBox(width: 10),
-        Expanded(child: _statCard(const Text('🔥', style: TextStyle(fontSize: 22)), 'Streak', streakLabel)),
+        Expanded(
+          child: _statCard(
+            const Text('🔥', style: TextStyle(fontSize: 22)),
+            'Streak',
+            streakLabel,
+          ),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: _statCard(const Text('⭐', style: TextStyle(fontSize: 22)), 'Rank', rankLabel)),
+        Expanded(
+          child: _statCard(
+            const Text('⭐', style: TextStyle(fontSize: 22)),
+            'Rank',
+            rankLabel,
+          ),
+        ),
       ],
     );
   }
 
-  /// Three stacked coloured rectangles — matches the React LessonsIcon SVG.
   Widget _lessonsIcon() {
     return SizedBox(
       width: 28,
@@ -501,9 +519,11 @@ class _StudentHomeState extends State<StudentHome> {
       child: Stack(
         children: [
           Positioned(
-            left: 2, top: 8,
+            left: 2,
+            top: 8,
             child: Container(
-              width: 20, height: 14,
+              width: 20,
+              height: 14,
               decoration: BoxDecoration(
                 color: const Color(0xFF7EC8E3).withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(3),
@@ -511,9 +531,11 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
           Positioned(
-            left: 5, top: 5,
+            left: 5,
+            top: 5,
             child: Container(
-              width: 20, height: 14,
+              width: 20,
+              height: 14,
               decoration: BoxDecoration(
                 color: const Color(0xFFF9A8C9).withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(3),
@@ -521,9 +543,11 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
           Positioned(
-            left: 8, top: 2,
+            left: 8,
+            top: 2,
             child: Container(
-              width: 20, height: 14,
+              width: 20,
+              height: 14,
               decoration: const BoxDecoration(
                 color: Color(0xFFA5D6A7),
                 borderRadius: BorderRadius.all(Radius.circular(3)),
@@ -555,7 +579,10 @@ class _StudentHomeState extends State<StudentHome> {
         children: [
           icon,
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+          ),
           const SizedBox(height: 2),
           Text(
             value,
@@ -642,6 +669,9 @@ class _StudentHomeState extends State<StudentHome> {
         if (!_rulesLoading && _appRules.isEmpty)
           _buildNoRulesPlaceholder()
         else if (!_rulesLoading) ...[
+          // ── Screen-time card (always visible when rules exist) ─────────
+          _buildScreenTimeCard(),
+          const SizedBox(height: 12),
           _buildTimingBanner(),
           const SizedBox(height: 12),
           ..._appRules.map(_buildRuleRow),
@@ -649,6 +679,243 @@ class _StudentHomeState extends State<StudentHome> {
       ],
     );
   }
+
+  // ── Screen-time card ────────────────────────────────────────────────────────
+
+  /// Reads live data from [MascotOverlayService] and renders either:
+  ///   • A usage progress bar with remaining time, or
+  ///   • A cooldown banner with live countdown.
+  Widget _buildScreenTimeCard() {
+    final svc = MascotOverlayService.instance;
+    final thresholdSeconds =
+        (_config.usageHours * 3600) + (_config.usageMinutes * 60);
+
+    if (svc.isBlocked) {
+      return _buildCooldownBanner(svc.remainingSeconds);
+    }
+
+    // Not blocked — show remaining usage time.
+    return _buildUsageBar(
+      usedSeconds: svc.totalUsageSeconds,
+      totalSeconds: thresholdSeconds,
+    );
+  }
+
+  /// Animated progress bar showing used vs allowed screen time.
+  Widget _buildUsageBar({required int usedSeconds, required int totalSeconds}) {
+    // Guard against zero-limit config (no usage limit set).
+    if (totalSeconds <= 0) return const SizedBox.shrink();
+
+    final remaining = (totalSeconds - usedSeconds).clamp(0, totalSeconds);
+    final fraction = (usedSeconds / totalSeconds).clamp(0.0, 1.0);
+
+    // Color shifts: green → amber → red as usage fills up.
+    final Color barColor;
+    if (fraction < 0.6) {
+      barColor = const Color(0xFF34A853); // green
+    } else if (fraction < 0.85) {
+      barColor = const Color(0xFFFFA726); // amber
+    } else {
+      barColor = const Color(0xFFEF5350); // red
+    }
+
+    final Color bgColor = barColor.withValues(alpha: 0.10);
+
+    final remainingLabel = _formatDurationFromSeconds(remaining);
+    final totalLabel = _formatDurationFromSeconds(totalSeconds);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.timer_outlined, size: 16, color: barColor),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Screen Time',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const Spacer(),
+              // Remaining time badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '$remainingLabel left',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: barColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 8,
+              backgroundColor: Colors.grey.shade100,
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Used / total label
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Used: ${_formatDurationFromSeconds(usedSeconds)}',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              ),
+              Text(
+                'Limit: $totalLabel',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Cooldown banner shown when the student has hit their limit.
+  Widget _buildCooldownBanner(int remainingSeconds) {
+    final cooldownLabel = _formatDurationFromSeconds(remainingSeconds);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        // Warm amber gradient — firm but not alarming
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF3E0), Color(0xFFFFF8F0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFA726).withValues(alpha: 0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFA726).withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Lock icon in circle
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFA726).withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.lock_clock_outlined,
+              color: Color(0xFFF57C00),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+
+          // Text block
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "You're on cooldown! 😴",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFE65100),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  "Apps will unlock again soon. Time to study! 📚",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange.shade800,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // Live countdown pill
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                cooldownLabel,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFF57C00),
+                  letterSpacing: -0.5,
+                ),
+              ),
+              Text(
+                'remaining',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.orange.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Timing banner (usage + cooldown pills) ──────────────────────────────────
 
   Widget _buildTimingBanner() {
     return Container(
@@ -680,7 +947,10 @@ class _StudentHomeState extends State<StudentHome> {
           const SizedBox(width: 6),
           _buildPill(
             icon: Icons.hourglass_bottom_outlined,
-            label: _formatDuration(_config.cooldownHours, _config.cooldownMinutes),
+            label: _formatDuration(
+              _config.cooldownHours,
+              _config.cooldownMinutes,
+            ),
             color: const Color(0xFFFF9800),
             bg: const Color(0xFFFFF8E1),
           ),
@@ -700,11 +970,19 @@ class _StudentHomeState extends State<StudentHome> {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.app_settings_alt_outlined, size: 36, color: Colors.grey.shade400),
+            Icon(
+              Icons.app_settings_alt_outlined,
+              size: 36,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 10),
             Text(
               'No app rules set yet.',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -736,7 +1014,10 @@ class _StudentHomeState extends State<StudentHome> {
       ),
       child: Row(
         children: [
-          _AppIcon(iconBase64: _iconCache[rule.packageName], label: rule.appLabel),
+          _AppIcon(
+            iconBase64: _iconCache[rule.packageName],
+            label: rule.appLabel,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -744,7 +1025,10 @@ class _StudentHomeState extends State<StudentHome> {
               children: [
                 Text(
                   rule.appLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
                 ),
                 Text(
                   rule.packageName,
@@ -759,11 +1043,29 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
   String _formatDuration(int hours, int minutes) {
     if (hours == 0 && minutes == 0) return '0m';
     if (hours == 0) return '${minutes}m';
     if (minutes == 0) return '${hours}h';
     return '${hours}h ${minutes}m';
+  }
+
+  /// Formats a raw second count into a human-readable duration string.
+  /// e.g. 3725 → "1h 2m", 95 → "1m 35s", 45 → "45s"
+  String _formatDurationFromSeconds(int seconds) {
+    if (seconds <= 0) return '0s';
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    final s = seconds % 60;
+    if (h > 0) {
+      return m > 0 ? '${h}h ${m}m' : '${h}h';
+    }
+    if (m > 0) {
+      return s > 0 ? '${m}m ${s}s' : '${m}m';
+    }
+    return '${s}s';
   }
 
   Widget _buildPill({
@@ -774,7 +1076,10 @@ class _StudentHomeState extends State<StudentHome> {
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -782,7 +1087,11 @@ class _StudentHomeState extends State<StudentHome> {
           const SizedBox(width: 3),
           Text(
             label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -793,9 +1102,7 @@ class _StudentHomeState extends State<StudentHome> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: context.read<GardenBloc>()),
-          ],
+          providers: [BlocProvider.value(value: context.read<GardenBloc>())],
           child: SubjectDetailScreen(
             studentUid: widget.uid,
             subjectKey: subjectKey,
@@ -806,24 +1113,21 @@ class _StudentHomeState extends State<StudentHome> {
   }
 }
 
-// ── Owl CustomPainter — matches the React SVG (60 × 60 viewport) ──────────────
+// ── Owl CustomPainter ──────────────────────────────────────────────────────────
 
 class _OwlPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Scale from SVG 60×60 to Flutter canvas (52×52)
     final s = size.width / 60.0;
     canvas.scale(s);
 
     Paint p(Color c) => Paint()..color = c;
 
-    // Body
     canvas.drawOval(
       Rect.fromCenter(center: const Offset(30, 35), width: 40, height: 46),
       p(const Color(0xFF8D6E63)),
     );
 
-    // Left wing: rotate(-20°) around (15, 35)
     canvas.save();
     canvas.translate(15, 35);
     canvas.rotate(-20 * math.pi / 180);
@@ -833,7 +1137,6 @@ class _OwlPainter extends CustomPainter {
     );
     canvas.restore();
 
-    // Right wing: rotate(20°) around (45, 35)
     canvas.save();
     canvas.translate(45, 35);
     canvas.rotate(20 * math.pi / 180);
@@ -843,22 +1146,14 @@ class _OwlPainter extends CustomPainter {
     );
     canvas.restore();
 
-    // Head
     canvas.drawCircle(const Offset(30, 22), 16, p(const Color(0xFFA1887F)));
-
-    // Eye whites
     canvas.drawCircle(const Offset(24, 20), 6, p(Colors.white));
     canvas.drawCircle(const Offset(36, 20), 6, p(Colors.white));
-
-    // Pupils
     canvas.drawCircle(const Offset(25, 20), 3, p(const Color(0xFF3E2723)));
     canvas.drawCircle(const Offset(37, 20), 3, p(const Color(0xFF3E2723)));
-
-    // Eye highlights
     canvas.drawCircle(const Offset(26, 19), 1.5, p(Colors.white));
     canvas.drawCircle(const Offset(38, 19), 1.5, p(Colors.white));
 
-    // Beak
     final beak = Path()
       ..moveTo(30, 24)
       ..lineTo(27, 28)
@@ -866,7 +1161,6 @@ class _OwlPainter extends CustomPainter {
       ..close();
     canvas.drawPath(beak, p(const Color(0xFFFF9800)));
 
-    // Left ear tuft
     final leftEar = Path()
       ..moveTo(20, 12)
       ..lineTo(18, 6)
@@ -874,7 +1168,6 @@ class _OwlPainter extends CustomPainter {
       ..close();
     canvas.drawPath(leftEar, p(const Color(0xFF8D6E63)));
 
-    // Right ear tuft
     final rightEar = Path()
       ..moveTo(40, 12)
       ..lineTo(42, 6)
@@ -882,7 +1175,6 @@ class _OwlPainter extends CustomPainter {
       ..close();
     canvas.drawPath(rightEar, p(const Color(0xFF8D6E63)));
 
-    // Tummy
     canvas.drawOval(
       Rect.fromCenter(center: const Offset(30, 38), width: 24, height: 28),
       p(const Color(0xFFBCAAA4)),
@@ -903,7 +1195,6 @@ class _AppIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final avatar = _buildAvatar();
     return Container(
       width: 44,
       height: 44,
@@ -912,7 +1203,7 @@ class _AppIcon extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: const Color(0xFF6DBF5E), width: 2),
       ),
-      child: avatar,
+      child: _buildAvatar(),
     );
   }
 
