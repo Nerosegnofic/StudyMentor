@@ -479,8 +479,9 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
 
         val displayMetrics = activity.resources.displayMetrics
-        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
 
+        // ── Default position: bottom-left corner ──────────────────────────────
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -490,8 +491,8 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = screenWidth - dpToPx(170)
-            y = dpToPx(72)
+            x = dpToPx(16)
+            y = screenHeight - dpToPx(120)
         }
 
         usageTimerParams = params
