@@ -22,6 +22,7 @@ class MascotOverlayService {
   bool _running = false;
   bool _isBlocked = false;
   bool _overlayVisible = false;
+  bool _usageTimerVisible = false;
   MascotState _mascotState = MascotState.idle;
 
   // ── Countdown ──────────────────────────────────────────────────────────────
@@ -73,12 +74,15 @@ class MascotOverlayService {
     _running = false;
     _pollTimer?.cancel();
     _countdownTimer?.cancel();
+    await _hideUsageTimerNative();
     await _hideOverlayNative();
     await _resetAccessibilityState();
     _isBlocked = false;
     _overlayVisible = false;
+    _usageTimerVisible = false;
     _remainingSeconds = 0;
     _totalUsageSeconds = 0;
+    _currentMonitoredPackage = null;
     debugPrint('[MascotOverlayService] Stopped.');
   }
 
@@ -110,6 +114,7 @@ class MascotOverlayService {
   bool get isRunning => _running;
   bool get isBlocked => _isBlocked;
   bool get isOverlayVisible => _overlayVisible;
+  bool get isUsageTimerVisible => _usageTimerVisible;
   int get remainingSeconds => _remainingSeconds;
   int get totalUsageSeconds => _totalUsageSeconds;
   MascotState get currentState => _mascotState;
@@ -128,6 +133,7 @@ class MascotOverlayService {
             'countdown continues ($_remainingSeconds s remaining).',
           );
         }
+        break;
 
       case 'onMonitoredAppIntercepted':
         // Accessibility service blocked a monitored app during the cooldown.
@@ -139,6 +145,7 @@ class MascotOverlayService {
           );
           await _showOverlayNative(remainingSeconds: _remainingSeconds);
         }
+        break;
     }
   }
 
@@ -155,6 +162,7 @@ class MascotOverlayService {
       'Starting cooldown: $_remainingSeconds s.',
     );
 
+    await _hideUsageTimerNative();
     await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
     await _showOverlayNative(remainingSeconds: _remainingSeconds);
 
@@ -186,6 +194,7 @@ class MascotOverlayService {
     _currentMonitoredPackage = null;
     _mascotState = MascotState.idle;
 
+    await _hideUsageTimerNative();
     await _hideOverlayNative();
     await _resetAccessibilityState();
     debugPrint('[MascotOverlayService] Cooldown ended — student is free.');
@@ -195,6 +204,7 @@ class MascotOverlayService {
 
   Future<void> _showOverlayNative({required int remainingSeconds}) async {
     _overlayVisible = true;
+    _usageTimerVisible = false;
     try {
       await _overlayChannel.invokeMethod('showOverlay', {
         'remainingSeconds': remainingSeconds,
@@ -214,6 +224,36 @@ class MascotOverlayService {
     }
   }
 
+  Future<void> _showOrUpdateUsageTimerNative({
+    required int remainingSeconds,
+  }) async {
+    try {
+      if (_usageTimerVisible) {
+        await _overlayChannel.invokeMethod('updateUsageTimer', {
+          'remainingSeconds': remainingSeconds,
+        });
+      } else {
+        await _overlayChannel.invokeMethod('showUsageTimer', {
+          'remainingSeconds': remainingSeconds,
+        });
+        _usageTimerVisible = true;
+      }
+    } on PlatformException catch (e) {
+      _usageTimerVisible = false;
+      debugPrint('[MascotOverlayService] usage timer error: ${e.message}');
+    }
+  }
+
+  Future<void> _hideUsageTimerNative() async {
+    if (!_usageTimerVisible) return;
+    _usageTimerVisible = false;
+    try {
+      await _overlayChannel.invokeMethod('hideUsageTimer');
+    } on PlatformException catch (e) {
+      debugPrint('[MascotOverlayService] hideUsageTimer error: ${e.message}');
+    }
+  }
+
   // ── Polling ────────────────────────────────────────────────────────────────
 
   Future<void> _poll() async {
@@ -222,11 +262,17 @@ class MascotOverlayService {
       final foreground = await _usageChannel.invokeMethod<String>(
         'getForegroundApp',
       );
-      if (foreground == null) return;
+
+      if (foreground == null) {
+        await _hideUsageTimerNative();
+        _currentMonitoredPackage = null;
+        return;
+      }
 
       if (_isBlocked) {
         // Fallback: if poll still sees a monitored app while overlay is hidden,
         // re-show it (primary path is via AccessibilityService).
+        await _hideUsageTimerNative();
         if (_monitoredPackages.contains(foreground) && !_overlayVisible) {
           debugPrint(
             '[MascotOverlayService] Poll fallback: monitored app in foreground '
@@ -238,8 +284,9 @@ class MascotOverlayService {
       }
 
       if (!_monitoredPackages.contains(foreground)) {
-        // Not a restricted app — stop tracking but keep the shared counter.
+        // Not a restricted app — stop tracking and hide the usage timer.
         _currentMonitoredPackage = null;
+        await _hideUsageTimerNative();
         return;
       }
 
@@ -250,11 +297,17 @@ class MascotOverlayService {
 
       final thresholdSeconds =
           (_config.usageHours * 3600) + (_config.usageMinutes * 60);
+      final remainingToBlock = (thresholdSeconds - _totalUsageSeconds).clamp(
+        0,
+        thresholdSeconds,
+      );
 
       debugPrint(
         '[MascotOverlayService] Restricted app in foreground: $foreground — '
         'shared usage: ${_totalUsageSeconds}s / ${thresholdSeconds}s',
       );
+
+      await _showOrUpdateUsageTimerNative(remainingSeconds: remainingToBlock);
 
       if (_totalUsageSeconds >= thresholdSeconds) {
         await _startWarning();
