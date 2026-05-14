@@ -37,11 +37,13 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
             ).pushNamedAndRemoveUntil('/', (route) => false);
           }
           if (state is AuthError) {
-            _passCtl.clear();
-            _confirmCtl.clear();
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            if (ModalRoute.of(context)?.isCurrent ?? false) {
+              _passCtl.clear();
+              _confirmCtl.clear();
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
+            }
           }
         },
         builder: (context, state) {

@@ -122,13 +122,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SendEmailVerificationRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading()); // ← new
-    final email = (await repository.getUserProfile())?.email ?? '';
+    emit(AuthLoading());
     try {
+      final email = (await repository.getUserProfile())?.email ?? '';
       await repository.sendEmailVerification();
       emit(EmailVerificationSent(email));
     } catch (e) {
-      emit(EmailVerificationError(_mapException(e), email));
+      final email = (await repository.getUserProfile())?.email ?? '';
+      emit(EmailVerificationError(_mapEmailVerificationException(e), email));
     }
   }
 
@@ -641,5 +642,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
     // Never surface raw exception details for a deletion failure.
     return 'Unable to delete account. Please try again.';
+  }
+
+  /// Mapper for email verification errors. Distinct from [_mapException] so
+  /// that verification failures never show the login-specific
+  /// "Invalid email or password" message.
+  String _mapEmailVerificationException(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    if (msg.contains('too-many-requests') ||
+        msg.contains('too_many_requests')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    if (msg.contains('user-not-found') || msg.contains('no-current-user')) {
+      return 'No signed-in account found. Please log in again.';
+    }
+    return 'Could not send verification email. Please try again.';
   }
 }

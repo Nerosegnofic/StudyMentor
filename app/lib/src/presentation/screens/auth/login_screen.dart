@@ -44,10 +44,12 @@ class _LoginScreenState extends State<LoginScreen> {
               ).pushNamedAndRemoveUntil('/', (route) => false);
             }
             if (state is AuthError) {
-              _passCtl.clear();
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
+              if (ModalRoute.of(context)?.isCurrent ?? false) {
+                _passCtl.clear();
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(state.message)));
+              }
             }
           },
           builder: (context, state) {
