@@ -40,7 +40,19 @@ class MascotOverlayService {
   // ── Config ─────────────────────────────────────────────────────────────────
   Set<String> _monitoredPackages = {};
   StudentConfigModel _config = const StudentConfigModel();
-  String? _currentMonitoredPackage; // for debug/logging purposes only
+  String? _currentMonitoredPackage; // tracks foreground restricted app
+
+  // ── Per-app timer dismissal state ─────────────────────────────────────────
+  // When the user drags the usage timer away, we record which package they
+  // dismissed it for. The timer will not reappear while that same app remains
+  // in the foreground. It resets when the user fully exits and relaunches the
+  // app (i.e. when foreground changes away from it, then back to it, or when
+  // a different restricted app is foregrounded).
+  String? _timerDismissedForPackage;
+
+  // Tracks whether we were inside a restricted app on the previous poll tick.
+  // Used to detect a genuine "exit + re-entry" cycle.
+  String? _previousRestrictedForeground;
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -83,6 +95,8 @@ class MascotOverlayService {
     _remainingSeconds = 0;
     _totalUsageSeconds = 0;
     _currentMonitoredPackage = null;
+    _timerDismissedForPackage = null;
+    _previousRestrictedForeground = null;
     debugPrint('[MascotOverlayService] Stopped.');
   }
 
@@ -146,6 +160,20 @@ class MascotOverlayService {
           await _showOverlayNative(remainingSeconds: _remainingSeconds);
         }
         break;
+
+      case 'onUsageTimerDismissed':
+        // User dragged the timer off-screen — record which app it was for so
+        // we suppress the timer for the remainder of this app session.
+        final dismissedPackage = _currentMonitoredPackage;
+        if (dismissedPackage != null) {
+          _timerDismissedForPackage = dismissedPackage;
+          debugPrint(
+            '[MascotOverlayService] Usage timer dismissed by user for '
+            '$dismissedPackage — suppressed until app is re-opened.',
+          );
+        }
+        _usageTimerVisible = false;
+        break;
     }
   }
 
@@ -161,6 +189,10 @@ class MascotOverlayService {
       'total usage: ${_totalUsageSeconds}s. '
       'Starting cooldown: $_remainingSeconds s.',
     );
+
+    // Clear any dismissal state — cooldown overlay takes full precedence.
+    _timerDismissedForPackage = null;
+    _previousRestrictedForeground = null;
 
     await _hideUsageTimerNative();
     await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
@@ -192,6 +224,8 @@ class MascotOverlayService {
     _remainingSeconds = 0;
     _totalUsageSeconds = 0; // reset the shared counter after cooldown
     _currentMonitoredPackage = null;
+    _timerDismissedForPackage = null;
+    _previousRestrictedForeground = null;
     _mascotState = MascotState.idle;
 
     await _hideUsageTimerNative();
@@ -263,6 +297,36 @@ class MascotOverlayService {
         'getForegroundApp',
       );
 
+      // ── Track restricted-app exit so we can reset the dismissal state ──────
+      // If the previous tick was inside a restricted app and this tick is not
+      // (or is a *different* restricted app), the user has left that app.
+      // When they return to it later it should be treated as a fresh session.
+      final previousWasRestricted =
+          _previousRestrictedForeground != null &&
+          _monitoredPackages.contains(_previousRestrictedForeground!);
+
+      final currentIsRestricted =
+          foreground != null && _monitoredPackages.contains(foreground);
+
+      if (previousWasRestricted) {
+        if (!currentIsRestricted ||
+            foreground != _previousRestrictedForeground) {
+          // User exited (or switched away from) the previously tracked
+          // restricted app — clear its dismissal lock so the timer reappears
+          // if they re-open it.
+          if (_timerDismissedForPackage == _previousRestrictedForeground) {
+            debugPrint(
+              '[MascotOverlayService] User left $_previousRestrictedForeground '
+              '— dismissal state cleared.',
+            );
+            _timerDismissedForPackage = null;
+          }
+        }
+      }
+
+      // Update previous-restricted tracker.
+      _previousRestrictedForeground = currentIsRestricted ? foreground : null;
+
       if (foreground == null) {
         await _hideUsageTimerNative();
         _currentMonitoredPackage = null;
@@ -306,6 +370,21 @@ class MascotOverlayService {
         '[MascotOverlayService] Restricted app in foreground: $foreground — '
         'shared usage: ${_totalUsageSeconds}s / ${thresholdSeconds}s',
       );
+
+      // ── Respect per-app timer dismissal ────────────────────────────────
+      // Only suppress when the dismissed package matches the *current* app.
+      // A different restricted app always gets its own fresh timer.
+      if (_timerDismissedForPackage == foreground) {
+        debugPrint(
+          '[MascotOverlayService] Timer suppressed for $foreground '
+          '(dismissed by user this session).',
+        );
+        // Still accumulate usage and trigger cooldown if limit is hit.
+        if (_totalUsageSeconds >= thresholdSeconds) {
+          await _startWarning();
+        }
+        return;
+      }
 
       await _showOrUpdateUsageTimerNative(remainingSeconds: remainingToBlock);
 
