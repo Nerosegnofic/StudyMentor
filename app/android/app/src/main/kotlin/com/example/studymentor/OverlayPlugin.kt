@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -38,10 +39,15 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         @Volatile var instance: OverlayPlugin? = null
     }
 
-    // ── View references ───────────────────────────────────────────────────────
+    // ── Full-screen cooldown overlay ──────────────────────────────────────────
     private var overlayView: FrameLayout? = null
     private var windowManager: WindowManager? = null
     private var countdownText: TextView? = null
+
+    // ── Draggable usage timer overlay ─────────────────────────────────────────
+    private var usageTimerView: FrameLayout? = null
+    private var usageTimerText: TextView? = null
+    private var usageTimerParams: WindowManager.LayoutParams? = null
 
     // ── Channel & audio ───────────────────────────────────────────────────────
     private var overlayChannel: MethodChannel? = null
@@ -111,6 +117,8 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 }
                 val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 30
                 activity.runOnUiThread {
+                    // Hide the usage timer — the full-screen overlay takes over.
+                    removeUsageTimer()
                     showOrUpdateOverlay(remainingSeconds)
                     result.success(null)
                 }
@@ -127,6 +135,39 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 val remaining = call.argument<Int>("remainingSeconds") ?: 0
                 activity.runOnUiThread {
                     updateCountdownDisplay(remaining)
+                    result.success(null)
+                }
+            }
+
+            // ── Usage timer (small draggable widget) ──────────────────────────
+
+            "showUsageTimer" -> {
+                if (!Settings.canDrawOverlays(activity)) {
+                    result.error("NO_PERMISSION", "SYSTEM_ALERT_WINDOW not granted", null)
+                    return
+                }
+                val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
+                activity.runOnUiThread {
+                    showOrUpdateUsageTimer(remainingSeconds)
+                    result.success(null)
+                }
+            }
+
+            "hideUsageTimer" -> {
+                activity.runOnUiThread {
+                    removeUsageTimer()
+                    result.success(null)
+                }
+            }
+
+            "updateUsageTimer" -> {
+                val remaining = call.argument<Int>("remainingSeconds") ?: 0
+                activity.runOnUiThread {
+                    if (usageTimerView != null) {
+                        updateUsageTimerDisplay(remaining)
+                    } else {
+                        showOrUpdateUsageTimer(remaining)
+                    }
                     result.success(null)
                 }
             }
@@ -273,7 +314,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Overlay window — creation & update
+    // Full-screen cooldown overlay — creation & update
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun showOrUpdateOverlay(remainingSeconds: Int) {
@@ -310,7 +351,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Overlay view hierarchy
+    // Full-screen overlay view hierarchy
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun buildRootView(): FrameLayout {
@@ -420,7 +461,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Overlay removal
+    // Full-screen overlay removal
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun removeOverlay() {
@@ -431,13 +472,251 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Countdown display
+    // Full-screen countdown display
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun updateCountdownDisplay(remainingSeconds: Int) {
         val mins = remainingSeconds / 60
         val secs = remainingSeconds % 60
         countdownText?.text = String.format("%02d:%02d", mins, secs)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Draggable usage timer — creation & update
+    //
+    // This is a small floating pill that sits on top of the restricted app and
+    // shows how many minutes/seconds of usage the student has left before the
+    // full cooldown overlay appears. It does NOT intercept touches so the app
+    // underneath remains fully interactive.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun showOrUpdateUsageTimer(remainingSeconds: Int) {
+        if (usageTimerView != null) {
+            updateUsageTimerDisplay(remainingSeconds)
+            return
+        }
+
+        // Lazily initialise the shared WindowManager reference.
+        if (windowManager == null) {
+            windowManager = activity.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        }
+
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        else
+            @Suppress("DEPRECATION")
+            WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
+
+        // Position the pill in the top-right corner, below the status bar.
+        val displayMetrics = activity.resources.displayMetrics
+        val screenWidth    = displayMetrics.widthPixels
+
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            type,
+            // FLAG_NOT_FOCUSABLE:     hardware keys & back button go to the app,
+            //                         not to this window.
+            // FLAG_NOT_TOUCH_MODAL:   touches outside the widget's bounds pass
+            //                         through to the window below.
+            // FLAG_WATCH_OUTSIDE_TOUCH not needed — we only need the widget itself.
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                    or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            // Start near the top-right; will be clamped automatically when the
+            // view is measured. Approximate initial width is 130dp.
+            x = screenWidth - dpToPx(146)
+            y = dpToPx(72) // just below the status bar
+        }
+
+        usageTimerParams = params
+
+        val timerView = buildUsageTimerView(params)
+        usageTimerView = timerView
+        windowManager?.addView(timerView, params)
+        updateUsageTimerDisplay(remainingSeconds)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Draggable usage timer view hierarchy
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun buildUsageTimerView(params: WindowManager.LayoutParams): FrameLayout {
+
+        // Track drag state
+        var dragStartParamX  = 0
+        var dragStartParamY  = 0
+        var dragStartTouchX  = 0f
+        var dragStartTouchY  = 0f
+        var isDragging       = false
+        val DRAG_THRESHOLD   = dpToPx(4)
+
+        // ── Container ──────────────────────────────────────────────────────
+        val container = FrameLayout(activity).apply {
+            setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10))
+            // Rounded pill background — semi-transparent dark indigo
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dpToPx(24).toFloat()
+                setColor(Color.parseColor("#E6151530"))  // ~90 % opaque dark navy
+                setStroke(dpToPx(1), Color.parseColor("#665C6BC0")) // subtle indigo border
+            }
+            elevation = dpToPx(6).toFloat()
+        }
+
+        // ── Inner column ───────────────────────────────────────────────────
+        val column = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity     = Gravity.CENTER_HORIZONTAL
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+            )
+        }
+
+        // Label row  (⏱ icon + "time left")
+        val labelRow = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity     = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+        }
+
+        val clockIcon = TextView(activity).apply {
+            text     = "⏱"
+            textSize = 11f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+        }
+
+        val labelText = TextView(activity).apply {
+            text      = "time left"
+            textSize  = 10f
+            setTextColor(Color.parseColor("#99B0BEC5")) // muted blue-grey
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { leftMargin = dpToPx(3) }
+        }
+
+        labelRow.addView(clockIcon)
+        labelRow.addView(labelText)
+
+        // Countdown text
+        usageTimerText = TextView(activity).apply {
+            text      = "00:00"
+            textSize  = 22f
+            setTextColor(Color.WHITE)
+            gravity   = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dpToPx(1) }
+        }
+
+        // Drag hint (shown below the countdown)
+        val dragHint = TextView(activity).apply {
+            text      = "⠿ drag me"
+            textSize  = 8.5f
+            setTextColor(Color.parseColor("#55B0BEC5"))
+            gravity   = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dpToPx(1) }
+        }
+
+        column.addView(labelRow)
+        column.addView(usageTimerText)
+        column.addView(dragHint)
+        container.addView(column)
+
+        // ── Drag touch listener ────────────────────────────────────────────
+        // Uses ACTION_DOWN / ACTION_MOVE / ACTION_UP to implement free drag.
+        // The touch is consumed on ACTION_MOVE only when a real drag is detected
+        // (beyond DRAG_THRESHOLD), so accidental micro-touches don't move it.
+        container.setOnTouchListener { _, event ->
+            val currentParams = usageTimerParams ?: return@setOnTouchListener false
+
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    dragStartParamX  = currentParams.x
+                    dragStartParamY  = currentParams.y
+                    dragStartTouchX  = event.rawX
+                    dragStartTouchY  = event.rawY
+                    isDragging       = false
+                    true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = (event.rawX - dragStartTouchX).toInt()
+                    val dy = (event.rawY - dragStartTouchY).toInt()
+
+                    if (!isDragging) {
+                        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+                            isDragging = true
+                        } else {
+                            return@setOnTouchListener true
+                        }
+                    }
+
+                    currentParams.x = (dragStartParamX + dx)
+                        .coerceAtLeast(0)
+                        .coerceAtMost(
+                            activity.resources.displayMetrics.widthPixels - dpToPx(130)
+                        )
+                    currentParams.y = (dragStartParamY + dy)
+                        .coerceAtLeast(0)
+                        .coerceAtMost(
+                            activity.resources.displayMetrics.heightPixels - dpToPx(80)
+                        )
+
+                    try {
+                        windowManager?.updateViewLayout(usageTimerView, currentParams)
+                    } catch (_: Exception) { }
+
+                    true
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    isDragging = false
+                    true
+                }
+
+                else -> false
+            }
+        }
+
+        return container
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Draggable usage timer removal
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun removeUsageTimer() {
+        usageTimerView?.let {
+            try { windowManager?.removeView(it) } catch (_: Exception) { }
+        }
+        usageTimerView   = null
+        usageTimerText   = null
+        usageTimerParams = null
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Usage timer display update
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun updateUsageTimerDisplay(remainingSeconds: Int) {
+        val mins = remainingSeconds / 60
+        val secs = remainingSeconds % 60
+        usageTimerText?.text = String.format("%02d:%02d", mins, secs)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -496,8 +775,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         val fullClass  = StudyMentorAccessibilityService::class.java.name
         val shortClass = ".${StudyMentorAccessibilityService::class.java.simpleName}"
 
-        // TextUtils.SimpleStringSplitter is exactly what the Android framework uses
-        // internally — handles the colon-separated list correctly on all API levels.
         val splitter = android.text.TextUtils.SimpleStringSplitter(':')
         splitter.setString(prefString)
         while (splitter.hasNext()) {
@@ -506,7 +783,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             if (slash < 0) continue
             if (entry.substring(0, slash) != pkg) continue
             val cls = entry.substring(slash + 1)
-            // Match both formats: full name and short name (.ClassName)
             if (cls == fullClass || cls == shortClass) return true
         }
         return false
