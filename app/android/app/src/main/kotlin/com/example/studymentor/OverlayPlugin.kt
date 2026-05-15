@@ -173,6 +173,14 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
             "updateState" -> result.success(null)
 
+            "bringAppToForeground" -> {
+                val intent = Intent(activity, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                }
+                activity.startActivity(intent)
+                result.success(null)
+            }
+
             else -> result.notImplemented()
         }
     }

@@ -168,13 +168,15 @@ class MascotOverlayService {
 
       case 'onMonitoredAppIntercepted':
         // Accessibility service blocked a monitored app during the cooldown.
-        // Re-show the overlay with the remaining countdown time.
-        if (_isBlocked && !_overlayVisible) {
+        // Bring Flutter app (quiz screen) back to the foreground.
+        if (_isBlocked) {
           debugPrint(
             '[MascotOverlayService] Monitored app intercepted — '
-            're-showing overlay.',
+            'bringing Flutter quiz screen to foreground.',
           );
-          await _showOverlayNative(remainingSeconds: _remainingSeconds);
+          try {
+            await _overlayChannel.invokeMethod('bringAppToForeground');
+          } catch (_) {}
         }
         break;
 
@@ -220,20 +222,18 @@ class MascotOverlayService {
 
     await _hideUsageTimerNative();
     await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
-    await _showOverlayNative(remainingSeconds: _remainingSeconds);
+    
+    // Omit overlay: bring Flutter app to the front directly and start quiz
+    try {
+      await _overlayChannel.invokeMethod('bringAppToForeground');
+    } catch (_) {}
+    
+    _quizController.add(null);
 
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       _remainingSeconds--;
       debugPrint('[MascotOverlayService] Countdown: $_remainingSeconds s');
-
-      if (_overlayVisible) {
-        try {
-          await _overlayChannel.invokeMethod('updateCountdown', {
-            'remainingSeconds': _remainingSeconds,
-          });
-        } catch (_) {}
-      }
 
       if (_remainingSeconds <= 0) {
         timer.cancel();
@@ -359,14 +359,16 @@ class MascotOverlayService {
 
       if (_isBlocked) {
         // Fallback: if poll still sees a monitored app while overlay is hidden,
-        // re-show it (primary path is via AccessibilityService).
+        // bring Flutter app (quiz screen) back to foreground.
         await _hideUsageTimerNative();
-        if (_monitoredPackages.contains(foreground) && !_overlayVisible) {
+        if (_monitoredPackages.contains(foreground)) {
           debugPrint(
             '[MascotOverlayService] Poll fallback: monitored app in foreground '
-            '— re-showing overlay.',
+            '— bringing Flutter quiz screen to foreground.',
           );
-          await _showOverlayNative(remainingSeconds: _remainingSeconds);
+          try {
+            await _overlayChannel.invokeMethod('bringAppToForeground');
+          } catch (_) {}
         }
         return;
       }

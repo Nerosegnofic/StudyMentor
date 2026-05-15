@@ -99,7 +99,7 @@ class _AutoStartPanel extends StatelessWidget {
             const Icon(Icons.auto_awesome_rounded, size: 80, color: Color(0xFF4A6CF7)),
             const SizedBox(height: 24),
             const Text(
-              'Time to Practice!',
+              'Time for Quiz',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 26,
