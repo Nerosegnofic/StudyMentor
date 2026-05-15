@@ -22,12 +22,6 @@ class StudentNavigationBar extends StatelessWidget {
           selectedIcon: Icon(Icons.home),
           label: 'Home',
         ),
-        // Documents Navigation Destination (will be removed in the future)
-        NavigationDestination(
-          icon: Icon(Icons.upload_file_outlined),
-          selectedIcon: Icon(Icons.upload_file),
-          label: 'Docs',
-        ),
         NavigationDestination(
           icon: Icon(Icons.store_outlined),
           selectedIcon: Icon(Icons.store),

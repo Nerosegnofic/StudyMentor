@@ -151,14 +151,23 @@ class QuizSubmissionResponse {
 ///
 /// Usage:
 /// ```dart
-/// final repo = AiEngineRepository(baseUrl: 'http://10.0.2.2:8000');
-/// final quiz = await repo.generateQuiz(GenerateQuizRequest(totalQuestions: 5));
+/// final quiz = await AiEngineRepository.instance
+///     .generateQuiz(GenerateQuizRequest(totalQuestions: 5));
 /// ```
 class AiEngineRepository {
   /// Base URL of the AI Engine.
   /// - Android emulator → `http://10.0.2.2:8000`
   /// - iOS simulator   → `http://127.0.0.1:8000`
   /// - Physical device → your machine's LAN IP, e.g. `http://192.168.x.x:8000`
+  ///
+  /// Change this single constant when switching environments.
+  static const String defaultBaseUrl = 'http://192.168.100.18:8000';
+
+  /// Lazy singleton — created on first access, reused everywhere.
+  static final AiEngineRepository instance = AiEngineRepository(
+    baseUrl: defaultBaseUrl,
+  );
+
   final String baseUrl;
   final FirebaseAuth _auth;
 

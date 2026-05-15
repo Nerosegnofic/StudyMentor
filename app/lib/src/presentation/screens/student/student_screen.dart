@@ -6,7 +6,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/shop/shop_bloc.dart';
-import '../../../bloc/document/document_upload_bloc.dart';
+
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../domain/models/avatar_config.dart';
@@ -18,7 +18,7 @@ import '../../../services/installed_apps_service.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
-import 'student_documents.dart';
+
 import 'student_shop.dart';
 import 'student_leaderboard.dart';
 import 'student_friends.dart';
@@ -55,7 +55,6 @@ class _StudentScreenState extends State<StudentScreen>
 
   static const List<String> _titles = [
     'Home',
-    'Documents',
     'Shop',
     'Leaderboard',
     'Friends',
@@ -215,9 +214,6 @@ class _StudentScreenState extends State<StudentScreen>
       providers: [
         BlocProvider<ShopBloc>(create: (_) => ShopBloc()),
         BlocProvider<GardenBloc>(create: (_) => GardenBloc()),
-        BlocProvider<DocumentUploadBloc>(
-          create: (_) => DocumentUploadBloc(repository: _aiRepo),
-        ),
       ],
       child: PopScope(
         canPop: false,
@@ -257,7 +253,6 @@ class _StudentScreenState extends State<StudentScreen>
                       index: _selectedIndex,
                       children: [
                         StudentHome(fullName: widget.fullName, uid: widget.uid),
-                        const StudentDocumentUploadScreen(),
                         StudentShop(
                           uid: widget.uid,
                           coins: _coins,
@@ -270,7 +265,7 @@ class _StudentScreenState extends State<StudentScreen>
                           // Only considered active when this tab is selected.
                           // Prevents firing DataConnect queries at login before
                           // the auth token has fully propagated.
-                          isActive: _selectedIndex == 3,
+                          isActive: _selectedIndex == 2,
                         ),
                         StudentFriends(
                           uid: widget.uid,
@@ -281,7 +276,6 @@ class _StudentScreenState extends State<StudentScreen>
                   ),
                 ],
               ),
-            ),
             ),
             bottomNavigationBar: StudentNavigationBar(
               currentIndex: _selectedIndex,

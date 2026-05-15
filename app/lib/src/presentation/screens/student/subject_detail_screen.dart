@@ -9,7 +9,9 @@ import '../../../domain/models/subject_progress_model.dart';
 import '../../../services/mastery_service.dart';
 import '../../../utils/growth_stage_utils.dart';
 import '../../../utils/subject_xp_engine.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../widgets/plant_widget.dart';
+import 'student_quiz.dart';
 
 /// Full detail page for a single subject — plant, XP, skills, strengths/weaknesses.
 /// "Recent Performance" and charts are intentionally excluded from this version.
@@ -276,11 +278,14 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             height: 52,
             child: ElevatedButton.icon(
               onPressed: () {
-                // TODO: hook up to quiz navigation when quiz module is ready
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Starting ${subject.name} practice...'),
-                    backgroundColor: subject.primaryColor,
+                // Navigate to the quiz overlay without a specific subject ID.
+                // The backend will auto-select based on BKT mastery data.
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    fullscreenDialog: true,
+                    builder: (_) => QuizOverlayPage(
+                      repository: AiEngineRepository.instance,
+                    ),
                   ),
                 );
               },

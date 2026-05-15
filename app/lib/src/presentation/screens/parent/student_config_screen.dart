@@ -9,6 +9,9 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
+import '../../../bloc/document/document_upload_bloc.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
+import '../student/student_documents.dart';
 import 'parent_student_settings_screen.dart';
 
 class StudentConfigScreen extends StatefulWidget {
@@ -380,33 +383,46 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   Widget _buildQuickActions() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: _QuickActionButton(
-              icon: Icons.manage_accounts_outlined,
-              label: 'Edit Profile',
-              color: const Color(0xFF1E88E5),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: context.read<AuthBloc>(),
-                    child: ParentStudentSettingsScreen(student: widget.student),
+          // ── Row 1: profile actions ─────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionButton(
+                  icon: Icons.manage_accounts_outlined,
+                  label: 'Edit Profile',
+                  color: const Color(0xFF1E88E5),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<AuthBloc>(),
+                        child: ParentStudentSettingsScreen(student: widget.student),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuickActionButton(
+                  icon: Icons.delete_outline_rounded,
+                  label: 'Delete Account',
+                  color: Colors.red.shade600,
+                  isDestructive: true,
+                  onTap: _confirmDeleteStudent,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _QuickActionButton(
-              icon: Icons.delete_outline_rounded,
-              label: 'Delete Account',
-              color: Colors.red.shade600,
-              isDestructive: true,
-              onTap: _confirmDeleteStudent,
-            ),
+          const SizedBox(height: 8),
+          // ── Row 2: document upload ─────────────────────────────────────
+          _QuickActionButton(
+            icon: Icons.upload_file_outlined,
+            label: 'Upload Curriculum Docs',
+            color: const Color(0xFF43A047),
+            onTap: _openDocumentUpload,
           ),
         ],
       ),
@@ -497,6 +513,35 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       itemCount: _rules.length,
       itemBuilder: (ctx, i) =>
           _AppRuleCard(rule: _rules[i], onRemove: () => _removeRule(i)),
+    );
+  }
+
+  // ── document upload ────────────────────────────────────────────────────────
+  //
+  // Opens the document upload screen with its own DocumentUploadBloc so the
+  // parent can upload curriculum PDFs on behalf of the student.
+
+  static const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
+
+  void _openDocumentUpload() {
+    final repo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) => DocumentUploadBloc(repository: repo),
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF5F7FF),
+            appBar: AppBar(
+              title: const Text(
+                'Upload Curriculum',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+            body: const StudentDocumentUploadScreen(),
+          ),
+        ),
+      ),
     );
   }
 
