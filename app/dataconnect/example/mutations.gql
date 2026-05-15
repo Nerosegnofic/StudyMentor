@@ -318,3 +318,21 @@ mutation UpsertStudentConfig(
     }
   )
 }
+
+# ── Garden System ─────────────────────────────────────────────────────────────
+
+mutation UpsertSubjectProgress(
+  $studentUid: String!
+  $subjectKey: String!
+  $totalXp: Int!
+  $level: Int!
+) @auth(level: USER, insecureReason: "Student updates their own progress by passing their UID.") {
+  subjectProgress_upsert(
+    data: {
+      studentUid: $studentUid
+      subjectKey: $subjectKey
+      totalXp: $totalXp
+      level: $level
+    }
+  )
+}

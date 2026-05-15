@@ -8,6 +8,9 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/shop/shop_bloc.dart';
 import '../../../bloc/document/document_upload_bloc.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../bloc/garden/garden_bloc.dart';
+import '../../../domain/models/avatar_config.dart';
+import '../../widgets/avatar_widget.dart';
 import '../../widgets/parent_verification_dialog.dart';
 import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
@@ -39,8 +42,10 @@ class _StudentScreenState extends State<StudentScreen>
     with WidgetsBindingObserver {
   int _selectedIndex = 0;
   int _coins = 0;
+  int _xp = 0;
   int _level = 1;
   String _parentUid = '';
+  AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
@@ -54,8 +59,25 @@ class _StudentScreenState extends State<StudentScreen>
     'Shop',
     'Leaderboard',
     'Friends',
-    'Profile',
   ];
+
+  // ── Verification dialog state ─────────────────────────────────────────────
+  //
+  // Rather than closing and reopening the dialog on each result, we keep it
+  // open for the entire verification lifecycle. StatefulBuilder gives us a
+  // setDialogState callback that can rebuild the dialog's contents in-place
+  // (loading spinner → error message → closed) without ever dismissing it.
+  //
+  // The dialog is only closed in two situations:
+  //   • The user taps Cancel (dialog pops itself).
+  //   • Authentication succeeds and pushNamedAndRemoveUntil removes all routes.
+  //
+  // _dialogSetState is non-null while the dialog is on screen and is cleared
+  // in the whenComplete callback so stale updates are never applied after the
+  // dialog has been dismissed.
+  StateSetter? _dialogSetState;
+  bool _dialogIsLoading = false;
+  String? _dialogError;
 
   @override
   void initState() {
@@ -83,14 +105,21 @@ class _StudentScreenState extends State<StudentScreen>
       final results = await Future.wait([
         provider.getStudentProfile(widget.uid),
         provider.getParentUidForStudent(widget.uid),
+        provider.getStudentAvatar(widget.uid),
       ]);
       if (mounted) {
         final profile = results[0] as Map<String, dynamic>;
+        final avatarMap = results[2];
         setState(() {
           _coins = (profile['total_coins'] as int?) ?? 0;
-          final xp = (profile['total_xp'] as int?) ?? 0;
-          _level = (xp ~/ 500) + 1;
+          _xp = (profile['total_xp'] as int?) ?? 0;
+          _level = (_xp ~/ 500) + 1;
           _parentUid = results[1] as String;
+          if (avatarMap != null) {
+            _avatarConfig = AvatarConfig.fromMap(
+              avatarMap as Map<String, dynamic>,
+            );
+          }
         });
       }
     } catch (_) {}
@@ -131,24 +160,53 @@ class _StudentScreenState extends State<StudentScreen>
 
   // ── Verification dialog ───────────────────────────────────────────────────
 
-  void _showVerificationDialog({String? errorMessage}) {
+  // Opens the verification dialog and stores a StateSetter reference so the
+  // BLoC listener can update its contents in-place without closing it.
+  void _showVerificationDialog() {
+    _dialogIsLoading = false;
+    _dialogError = null;
     showDialog(
       context: context,
+      // Keep barrier taps disabled for the entire dialog lifecycle so the
+      // dialog cannot be dismissed by tapping outside it, including when it
+      // is not loading.
       barrierDismissible: false,
-      builder: (dialogContext) => ParentVerificationDialog(
-        errorMessage: errorMessage,
-        onSubmit: (email, password) {
-          Navigator.of(dialogContext).pop();
-          context.read<AuthBloc>().add(
-            VerifyParentAndLogoutRequested(
-              studentUid: widget.uid,
-              parentEmail: email,
-              parentPassword: password,
-            ),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (_, setDialogState) {
+          _dialogSetState = setDialogState;
+          return ParentVerificationDialog(
+            errorMessage: _dialogError,
+            isLoading: _dialogIsLoading,
+            onSubmit: (email, password) {
+              // Show the loading state immediately — do NOT pop the dialog.
+              // The dialog stays open until the BLoC emits a result.
+              setDialogState(() => _dialogIsLoading = true);
+              context.read<AuthBloc>().add(
+                VerifyParentAndLogoutRequested(
+                  studentUid: widget.uid,
+                  parentEmail: email,
+                  parentPassword: password,
+                ),
+              );
+            },
           );
         },
       ),
-    );
+    ).whenComplete(() {
+      // Clear the setter once the dialog is off the screen so that a
+      // belated BLoC state change can never call into a disposed widget.
+      _dialogSetState = null;
+    });
+  }
+
+  // Called by the BLoC listener when verification fails. Updates the dialog
+  // in-place: stops the loading spinner and shows the error message. The
+  // dialog remains open so the user can correct their credentials and retry.
+  void _updateDialogWithError(String message) {
+    _dialogSetState?.call(() {
+      _dialogIsLoading = false;
+      _dialogError = message;
+    });
   }
 
   @override
@@ -156,6 +214,7 @@ class _StudentScreenState extends State<StudentScreen>
     return MultiBlocProvider(
       providers: [
         BlocProvider<ShopBloc>(create: (_) => ShopBloc()),
+        BlocProvider<GardenBloc>(create: (_) => GardenBloc()),
         BlocProvider<DocumentUploadBloc>(
           create: (_) => DocumentUploadBloc(repository: _aiRepo),
         ),
@@ -175,86 +234,54 @@ class _StudentScreenState extends State<StudentScreen>
               _showVerificationDialog();
             }
             if (state is ParentVerificationFailed) {
-              _showVerificationDialog(errorMessage: state.message);
+              // Update the already-open dialog instead of closing and
+              // reopening it. The loading spinner is replaced with the
+              // error banner so the user can try again without disruption.
+              _updateDialogWithError(state.message);
+            }
+            if (state is AuthUnauthenticated) {
+              // pushNamedAndRemoveUntil removes all routes — including the
+              // verification dialog — so no explicit Navigator.pop() is
+              // needed here.
+              Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
             }
           },
           child: Scaffold(
-            backgroundColor: const Color(0xFFF5F7FF),
-            appBar: AppBar(
-              title: Text(
-                _selectedIndex == 0
-                    ? 'Welcome, ${widget.fullName}'
-                    : _titles[_selectedIndex],
-              ),
-              automaticallyImplyLeading: false,
-              actions: [
-                // Coin balance in app bar when on shop tab (index 2)
-                if (_selectedIndex == 2)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+            backgroundColor: const Color(0xFFF5F7FA),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Builder(builder: (ctx) => _buildTopNav(ctx)),
+                  Expanded(
+                    child: IndexedStack(
+                      index: _selectedIndex,
+                      children: [
+                        StudentHome(fullName: widget.fullName, uid: widget.uid),
+                        const StudentDocumentUploadScreen(),
+                        StudentShop(
+                          uid: widget.uid,
+                          coins: _coins,
+                          level: _level,
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF8E1),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFFFCA28)),
+                        StudentLeaderboard(
+                          uid: widget.uid,
+                          fullName: widget.fullName,
+                          parentUid: _parentUid,
+                          // Only considered active when this tab is selected.
+                          // Prevents firing DataConnect queries at login before
+                          // the auth token has fully propagated.
+                          isActive: _selectedIndex == 3,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🪙', style: TextStyle(fontSize: 14)),
-                            const SizedBox(width: 4),
-                            Text(
-                              '$_coins',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFF57F17),
-                              ),
-                            ),
-                          ],
+                        StudentFriends(
+                          uid: widget.uid,
+                          fullName: widget.fullName,
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                // Debug-only: simulate the mascot overlay triggering a quiz.
-                if (kDebugMode)
-                  IconButton(
-                    icon: const Text('🧪', style: TextStyle(fontSize: 18)),
-                    tooltip: 'Simulate quiz trigger (debug)',
-                    onPressed: () =>
-                        MascotOverlayService.instance.triggerQuizForTesting(),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: () {
-                    context.read<AuthBloc>().add(
-                      StudentLogoutVerificationRequested(
-                        studentUid: widget.uid,
-                      ),
-                    );
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
-            body: IndexedStack(
-              index: _selectedIndex,
-              children: [
-                StudentHome(fullName: widget.fullName, uid: widget.uid),
-                const StudentDocumentUploadScreen(),
-                StudentShop(uid: widget.uid, coins: _coins, level: _level),
-                StudentLeaderboard(
-                  uid: widget.uid,
-                  fullName: widget.fullName,
-                  parentUid: _parentUid,
-                ),
-                StudentFriends(uid: widget.uid, fullName: widget.fullName),
-                StudentProfile(fullName: widget.fullName, uid: widget.uid),
-              ],
             ),
             bottomNavigationBar: StudentNavigationBar(
               currentIndex: _selectedIndex,
@@ -264,5 +291,145 @@ class _StudentScreenState extends State<StudentScreen>
         ),
       ),
     );
+  }
+
+  // ── Custom top navigation bar ──────────────────────────────────────────────
+
+  Widget _buildTopNav(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        children: [
+          // Avatar — tap to open profile page
+          GestureDetector(
+            onTap: () {
+              final shopBloc = context.read<ShopBloc>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: shopBloc,
+                    child: Scaffold(
+                      body: SafeArea(
+                        child: StudentProfile(
+                          fullName: widget.fullName,
+                          uid: widget.uid,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ).then((_) {
+                if (mounted) _loadCoinsAndLevel();
+              });
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF4CAF50), width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4CAF50).withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: AvatarWidget(config: _avatarConfig, size: 43),
+              ),
+            ),
+          ),
+          const Spacer(),
+          // XP pill
+          _navPill(
+            icon: Icons.star_rounded,
+            iconColor: const Color(0xFFFFC107),
+            label: _formatNum(_xp),
+          ),
+          const SizedBox(width: 8),
+          // Coins pill
+          _navPill(
+            icon: Icons.monetization_on_rounded,
+            iconColor: const Color(0xFFFFA000),
+            label: _formatNum(_coins),
+          ),
+          const SizedBox(width: 6),
+          // Bell with green dot
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Color(0xFF757575),
+                  size: 24,
+                ),
+                onPressed: () {},
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _navPill({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFE082)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: iconColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFE6A800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatNum(int n) {
+    if (n >= 1000) {
+      final s = n.toString();
+      final thousands = s.substring(0, s.length - 3);
+      final remainder = s.substring(s.length - 3);
+      return '$thousands,$remainder';
+    }
+    return '$n';
   }
 }

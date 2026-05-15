@@ -14,6 +14,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({required this.repository}) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
+    on<ResetAuthState>(_onResetAuthState);
     on<RegisterRequested>(_onRegister);
     on<LoginRequested>(_onLogin);
     on<LogoutRequested>(_onLogout);
@@ -57,6 +58,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  /// Restores the authenticated state after a sub-flow (e.g. AddStudentScreen)
+  /// is cancelled or dismissed without completing. Prevents the BLoC from
+  /// staying stuck in AuthLoading or AuthError and causing RootPage to show
+  /// a spinner when the parent navigates back.
+  Future<void> _onResetAuthState(
+    ResetAuthState event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final profile = await repository.getUserProfile();
+      if (profile != null) {
+        emit(AuthAuthenticated(profile));
+      } else {
+        emit(AuthUnauthenticated());
+      }
+    } catch (e) {
+      emit(AuthUnauthenticated());
+    }
+  }
+
   Future<void> _onRegister(
     RegisterRequested event,
     Emitter<AuthState> emit,
@@ -70,7 +91,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(AuthEmailUnverified(user.email));
     } catch (e) {
-      emit(AuthError(_mapException(e)));
+      emit(AuthError(_mapRegistrationException(e)));
     }
   }
 
@@ -101,12 +122,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SendEmailVerificationRequested event,
     Emitter<AuthState> emit,
   ) async {
-    final email = (await repository.getUserProfile())?.email ?? '';
+    emit(AuthLoading());
     try {
+      final email = (await repository.getUserProfile())?.email ?? '';
       await repository.sendEmailVerification();
-      emit(AuthEmailUnverified(email));
+      emit(EmailVerificationSent(email));
     } catch (e) {
-      emit(EmailVerificationError(_mapException(e), email));
+      final email = (await repository.getUserProfile())?.email ?? '';
+      emit(EmailVerificationError(_mapEmailVerificationException(e), email));
     }
   }
 
@@ -153,7 +176,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ── CHANGED: forward username to repository ───────────────────────────────
   Future<void> _onCreateStudent(
     CreateStudentRequested event,
     Emitter<AuthState> emit,
@@ -166,12 +188,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         parentUid: event.parentUid,
         gradeLevel: event.gradeLevel,
-        username: event.username, // ── ADDED ─────────────────────────────────
+        username: event.username,
       );
       emit(StudentCreated());
       emit(AuthAuthenticated(parent));
     } catch (e) {
-      emit(AuthError(_mapException(e)));
+      emit(AuthError(_mapRegistrationException(e)));
     }
   }
 
@@ -223,6 +245,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     StudentLogoutVerificationRequested event,
     Emitter<AuthState> emit,
   ) async {
+    emit(AuthIdle());
     emit(StudentLogoutVerificationRequired(studentUid: event.studentUid));
   }
 
@@ -240,6 +263,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await repository.signOut();
         emit(AuthUnauthenticated());
       } else {
+        // Emit AuthIdle first to guarantee a state transition even when the
+        // previous state was already ParentVerificationFailed with identical
+        // props. Without this, Equatable would consider the state unchanged
+        // and BlocListener would not fire, leaving the dialog permanently
+        // dismissed after a repeated failure.
+        emit(AuthIdle());
         emit(
           ParentVerificationFailed(
             message: 'Invalid parent credentials. Logout denied.',
@@ -248,6 +277,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       }
     } catch (e) {
+      emit(AuthIdle());
       emit(
         ParentVerificationFailed(
           message: _mapParentVerificationException(e),
@@ -265,13 +295,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final updatedUser = await repository.updateProfile(
         newFullName: event.newFullName,
-        newEmail: event.newEmail, // ── ADDED ────────────────────────
+        newEmail: event.newEmail,
         currentPassword: event.currentPassword,
         newPassword: event.newPassword,
       );
 
-      // If an email change was requested, tell the UI to show the
-      // "check your inbox" banner before moving to AuthAuthenticated.
       if (event.newEmail != null && event.newEmail!.isNotEmpty) {
         emit(EmailUpdateVerificationSent(event.newEmail!));
       }
@@ -411,21 +439,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ── Student Deletion ─────────────────────────────────────────────────────
+  // ── Student Deletion ──────────────────────────────────────────────────────
 
+  // Uses _mapDeletionException instead of the generic _mapException so that:
+  // (a) wrong-password errors are reliably caught across Firebase SDK versions
+  //     (both the legacy 'wrong-password' code and the newer 'invalid-credential'
+  //     / 'INVALID_LOGIN_CREDENTIALS' codes are matched), and
+  // (b) unexpected failures never surface raw internal error strings to the UI.
   Future<void> _onDeleteStudent(
     DeleteStudentRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(StudentDeleteLoading());
     try {
-      await repository.deleteStudent(event.studentUid);
-      // Reload students list for parent.
-      final students = await repository.getStudentsByParent(event.parentUid);
+      await repository.deleteStudent(
+        studentUid: event.studentUid,
+        studentEmail: event.studentEmail,
+        studentPassword: event.studentPassword,
+      );
+      // Only emit StudentDeleted. ParentStudents sets _isLoading = true on
+      // this state and immediately fires LoadStudentsRequested, which will
+      // produce the authoritative StudentsLoaded. Emitting StudentsLoaded
+      // here raced against that — the (possibly empty) list arrived and
+      // cleared _isLoading before the fresh fetch completed, causing the
+      // "No students" empty state to flash.
       emit(StudentDeleted(studentUid: event.studentUid));
-      emit(StudentsLoaded(students));
     } catch (e) {
-      emit(StudentDeleteError(_mapException(e)));
+      emit(StudentDeleteError(_mapDeletionException(e)));
     }
   }
 
@@ -500,30 +540,62 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   // ── Error mappers ─────────────────────────────────────────────────────────
 
+  /// Generic mapper — used for login and other non-registration flows.
+  /// Intentionally returns the same message for all auth failures so that
+  /// no information about account existence is leaked to the UI.
   String _mapException(dynamic e) {
     final msg = e.toString();
-    if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
-      return 'Invalid credentials.';
-    }
     if (msg.contains('weak-password')) return 'Password is too weak.';
     if (msg.contains('network-request-failed')) {
       return 'Network error. Check your connection.';
     }
-    return 'Authentication error: $msg';
+    // All auth failures — wrong password, unknown email, invalid credential,
+    // malformed data, expired tokens, etc. — return the same generic message
+    // so that no information about account existence is leaked to the UI.
+    return 'Invalid email or password. Please try again.';
   }
 
-  String _mapParentVerificationException(dynamic e) {
+  /// Registration mapper — used for parent sign-up and student creation.
+  /// Unlike [_mapException], this surfaces specific, actionable messages
+  /// because leaking "email already in use" is acceptable (and helpful)
+  /// in a registration context.
+  String _mapRegistrationException(dynamic e) {
     final msg = e.toString();
-    if (msg.contains('wrong-password') || msg.contains('user-not-found')) {
-      return 'Invalid parent credentials. Logout denied.';
+    if (msg.contains('email-already-in-use')) {
+      return 'That email address is already registered. Please use a different one.';
+    }
+    if (msg.contains('weak-password')) {
+      return 'Password is too weak. Please use at least 6 characters.';
+    }
+    if (msg.contains('invalid-email')) {
+      return 'That email address doesn\'t look right. Please check it.';
     }
     if (msg.contains('network-request-failed')) {
       return 'Network error. Check your connection and try again.';
     }
-    if (msg.contains('parent-mismatch')) {
-      return 'These credentials do not belong to your linked parent.';
+    if (msg.contains('session expired') || msg.contains('Session expired')) {
+      return 'Session expired. Please log out and log in again.';
     }
-    return 'Verification failed: $msg';
+    // Username uniqueness — matches exceptions thrown by DataConnect /
+    // the repository when a duplicate username is detected. The repository
+    // should throw Exception('username-already-in-use') for this case.
+    if (msg.contains('username-already-in-use') ||
+        (msg.contains('username') && msg.contains('already'))) {
+      return 'That username is already taken. Please choose a different one.';
+    }
+    if (msg.contains('too-many-requests') ||
+        msg.contains('too_many_requests')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    return 'Registration failed. Please try again.';
+  }
+
+  String _mapParentVerificationException(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    return 'Invalid parent credentials. Logout denied.';
   }
 
   String _mapProfileUpdateException(dynamic e) {
@@ -546,5 +618,47 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return 'That email address is already in use by another account.';
     }
     return 'Update failed: $msg';
+  }
+
+  // Dedicated mapper for student deletion errors. Handles both the legacy
+  // Firebase 'wrong-password' error code and the newer 'invalid-credential' /
+  // 'INVALID_LOGIN_CREDENTIALS' codes introduced in recent SDK versions, so a
+  // bad password always produces the 'Invalid credentials' sentinel that
+  // parent_students.dart checks for. All unexpected failures produce a generic
+  // message so internal details are never exposed to the UI.
+  String _mapDeletionException(dynamic e) {
+    final msg = e.toString().toLowerCase();
+    if (msg.contains('wrong-password') ||
+        msg.contains('invalid-credential') ||
+        msg.contains('invalid_login_credentials') ||
+        msg.contains('user-not-found') ||
+        msg.contains('invalid-email')) {
+      // Must contain 'Invalid credentials' — matched by the contains() check
+      // in parent_students.dart to show the friendly wrong-password message.
+      return 'Invalid credentials';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    // Never surface raw exception details for a deletion failure.
+    return 'Unable to delete account. Please try again.';
+  }
+
+  /// Mapper for email verification errors. Distinct from [_mapException] so
+  /// that verification failures never show the login-specific
+  /// "Invalid email or password" message.
+  String _mapEmailVerificationException(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    if (msg.contains('too-many-requests') ||
+        msg.contains('too_many_requests')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    if (msg.contains('user-not-found') || msg.contains('no-current-user')) {
+      return 'No signed-in account found. Please log in again.';
+    }
+    return 'Could not send verification email. Please try again.';
   }
 }

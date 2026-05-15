@@ -656,7 +656,7 @@ class _ItemCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  _buildButton(),
+                  _buildButton(context),
                 ],
               ),
             ),
@@ -666,7 +666,7 @@ class _ItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildButton() {
+  Widget _buildButton(BuildContext context) {
     if (_locked) {
       return _ActionButton(
         label: '🔒 Lv.${item.unlockLevel}',
@@ -679,6 +679,7 @@ class _ItemCard extends StatelessWidget {
         label: _equipped ? '✓ Equipped' : 'Equip',
         color: _equipped ? const Color(0xFF4A6CF7) : Colors.green[600]!,
         enabled: true,
+        onTapCallback: () => _onTap(context),
       );
     }
     if (item.isFree) {
@@ -689,6 +690,7 @@ class _ItemCard extends StatelessWidget {
       label: '🪙 ${item.price}',
       color: _canAfford ? const Color(0xFF4A6CF7) : Colors.grey[400]!,
       enabled: _canAfford,
+      onTapCallback: _canAfford ? () => _onTap(context) : null,
     );
   }
 
@@ -716,9 +718,14 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final Color color;
   final bool enabled;
+  final VoidCallback? onTapCallback;
 
-  const _ActionButton(
-      {required this.label, required this.color, required this.enabled});
+  const _ActionButton({
+    required this.label,
+    required this.color,
+    required this.enabled,
+    this.onTapCallback,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -726,7 +733,7 @@ class _ActionButton extends StatelessWidget {
       width: double.infinity,
       height: 30,
       child: ElevatedButton(
-        onPressed: enabled ? () {} : null,
+        onPressed: enabled ? onTapCallback : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           disabledBackgroundColor: color.withOpacity(0.5),

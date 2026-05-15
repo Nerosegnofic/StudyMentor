@@ -9,7 +9,6 @@ import '../../../utils/student_rank_utils.dart';
 import '../../widgets/avatar_widget.dart';
 import 'student_avatar_customization.dart';
 import 'student_settings.dart';
-import 'student_help_center.dart';
 
 class StudentProfile extends StatefulWidget {
   final String fullName;
@@ -99,20 +98,38 @@ class _StudentProfileState extends State<StudentProfile> {
       width: double.infinity,
       padding: const EdgeInsets.only(top: 28, bottom: 28),
       decoration: const BoxDecoration(color: Color(0xFFF5F7FF)),
-      child: Column(
+      child: Stack(
         children: [
-          _buildAvatarWithBadge(),
-          const SizedBox(height: 14),
-          Text(
-            widget.fullName,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A2E),
+          Center(
+            child: Column(
+              children: [
+                _buildAvatarWithBadge(),
+                const SizedBox(height: 14),
+                Text(
+                  widget.fullName,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildRankPill(),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          _buildRankPill(),
+          Positioned(
+            top: 0,
+            left: 8,
+            child: SafeArea(
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                color: const Color(0xFF1A1A2E),
+                onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Back',
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -408,39 +425,18 @@ class _StudentProfileState extends State<StudentProfile> {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              _buildSettingsRow(
-                icon: Icons.settings_outlined,
-                iconBg: const Color(0xFFE3F2FD),
-                iconColor: const Color(0xFF1E88E5),
-                title: 'App Settings',
-                subtitle: 'Notifications, Sound',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => StudentSettings(uid: widget.uid),
-                  ),
-                ),
+          child: _buildSettingsRow(
+            icon: Icons.settings_outlined,
+            iconBg: const Color(0xFFE3F2FD),
+            iconColor: const Color(0xFF1E88E5),
+            title: 'App Settings',
+            subtitle: 'Notifications, Sound',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => StudentSettings(uid: widget.uid),
               ),
-              Divider(height: 1, indent: 60, color: Colors.grey.shade100),
-              _buildSettingsRow(
-                icon: Icons.help_outline,
-                iconBg: const Color(0xFFE3F2FD),
-                iconColor: const Color(0xFF1E88E5),
-                title: 'Help & Support',
-                subtitle: 'Get help or report issues',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => StudentHelpCenter(
-                      uid: widget.uid,
-                      fullName: widget.fullName,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ],
@@ -512,11 +508,11 @@ class _StudentProfileState extends State<StudentProfile> {
         label: const Text('Log Out'),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          side: BorderSide(color: Colors.grey.shade300),
+          side: const BorderSide(color: Color(0xFFEF5350)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          foregroundColor: Colors.grey.shade700,
+          foregroundColor: const Color(0xFFEF5350),
           backgroundColor: Colors.white,
         ),
       ),

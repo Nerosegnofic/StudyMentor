@@ -37,12 +37,9 @@ abstract class AuthRepository {
   });
   Future<void> markEmailVerifiedInDatabase(String uid);
 
-  /// Updates the current user's profile.
-  /// [newEmail] triggers a verification email to the new address via Firebase.
-  /// The DB row is updated immediately; Auth reflects it after verification.
   Future<UserModel> updateProfile({
     String? newFullName,
-    String? newEmail, // ── ADDED ────────────────────────────────────
+    String? newEmail,
     String? currentPassword,
     String? newPassword,
   });
@@ -60,15 +57,21 @@ abstract class AuthRepository {
     required StudentConfigModel config,
   });
 
-  Future<void> deleteStudent(String studentUid);
+  // ── CHANGED: studentEmail + studentPassword added so the implementation
+  // can sign in as the student via a secondary Firebase app and delete their
+  // Auth account before wiping the database records.
+  Future<void> deleteStudent({
+    required String studentUid,
+    required String studentEmail,
+    required String studentPassword,
+  });
+
   Future<void> updateStudentFullName({
     required String studentUid,
     required String fullName,
   });
   Future<void> deleteParentAccount({required String currentPassword});
 
-  /// Updates a student's account from the parent side.
-  /// Returns pendingEmail if a verification email was sent, otherwise null.
   Future<String?> updateStudentProfile({
     required String studentUid,
     required String studentEmail,

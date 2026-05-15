@@ -266,6 +266,55 @@ ref.subscribe(...);
 ```
 
 
+### GetStudentByUsername
+#### Required Arguments
+```dart
+String username = ...;
+ExampleConnector.instance.getStudentByUsername(
+  username: username,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetStudentByUsernameData, GetStudentByUsernameVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getStudentByUsername(
+  username: username,
+);
+GetStudentByUsernameData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String username = ...;
+
+final ref = ExampleConnector.instance.getStudentByUsername(
+  username: username,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
 ### GetWeeklyLeaderboard
 #### Required Arguments
 ```dart
@@ -741,6 +790,55 @@ String parentUid = ...;
 
 final ref = ExampleConnector.instance.getSiblingLeaderboard(
   parentUid: parentUid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
+### GetAllSubjectProgress
+#### Required Arguments
+```dart
+String studentUid = ...;
+ExampleConnector.instance.getAllSubjectProgress(
+  studentUid: studentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetAllSubjectProgressData, GetAllSubjectProgressVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getAllSubjectProgress(
+  studentUid: studentUid,
+);
+GetAllSubjectProgressData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+
+final ref = ExampleConnector.instance.getAllSubjectProgress(
+  studentUid: studentUid,
 ).ref();
 ref.execute();
 
@@ -2295,6 +2393,63 @@ final ref = ExampleConnector.instance.upsertStudentConfig(
   usageMinutes: usageMinutes,
   cooldownHours: cooldownHours,
   cooldownMinutes: cooldownMinutes,
+).ref();
+ref.execute();
+```
+
+
+### UpsertSubjectProgress
+#### Required Arguments
+```dart
+String studentUid = ...;
+String subjectKey = ...;
+int totalXp = ...;
+int level = ...;
+ExampleConnector.instance.upsertSubjectProgress(
+  studentUid: studentUid,
+  subjectKey: subjectKey,
+  totalXp: totalXp,
+  level: level,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<UpsertSubjectProgressData, UpsertSubjectProgressVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.upsertSubjectProgress(
+  studentUid: studentUid,
+  subjectKey: subjectKey,
+  totalXp: totalXp,
+  level: level,
+);
+UpsertSubjectProgressData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String studentUid = ...;
+String subjectKey = ...;
+int totalXp = ...;
+int level = ...;
+
+final ref = ExampleConnector.instance.upsertSubjectProgress(
+  studentUid: studentUid,
+  subjectKey: subjectKey,
+  totalXp: totalXp,
+  level: level,
 ).ref();
 ref.execute();
 ```

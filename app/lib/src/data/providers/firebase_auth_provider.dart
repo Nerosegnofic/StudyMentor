@@ -150,15 +150,35 @@ class FirebaseAuthProvider {
       }
 
       String? pendingEmail;
-      if (newEmail != null &&
-          newEmail.isNotEmpty &&
-          newEmail != studentEmail) {
+      if (newEmail != null && newEmail.isNotEmpty && newEmail != studentEmail) {
         await user.verifyBeforeUpdateEmail(newEmail);
         pendingEmail = newEmail;
       }
 
       return pendingEmail;
     } finally {
+      await secondaryAuth.signOut();
+    }
+  }
+
+  /// Deletes a student's Firebase Auth account using a secondary app instance,
+  /// so the parent's main session is never disturbed.
+  /// Signs in as the student, calls delete(), then signs out of the secondary
+  /// app — identical lifecycle to [updateStudentCredentials].
+  Future<void> deleteStudentAuthAccount({
+    required String studentEmail,
+    required String studentPassword,
+  }) async {
+    final secondaryAuth = await _getSecondaryAuth();
+    try {
+      final cred = await secondaryAuth.signInWithEmailAndPassword(
+        email: studentEmail,
+        password: studentPassword,
+      );
+      await cred.user!.delete();
+    } finally {
+      // Always sign out of the secondary app, even if delete() throws,
+      // so the secondary app isn't left in a signed-in state.
       await secondaryAuth.signOut();
     }
   }

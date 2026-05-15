@@ -24,7 +24,7 @@ class InsertInstalledAppVariablesBuilder {
 class InsertInstalledAppInstalledAppInsert {
   final String id;
   InsertInstalledAppInstalledAppInsert.fromJson(dynamic json):
-
+  
   id = nativeFromJson<String>(json['id']);
   @override
   bool operator ==(Object other) {
@@ -37,11 +37,11 @@ class InsertInstalledAppInstalledAppInsert {
 
     final InsertInstalledAppInstalledAppInsert otherTyped = other as InsertInstalledAppInstalledAppInsert;
     return id == otherTyped.id;
-
+    
   }
   @override
   int get hashCode => id.hashCode;
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -58,7 +58,7 @@ class InsertInstalledAppInstalledAppInsert {
 class InsertInstalledAppData {
   final InsertInstalledAppInstalledAppInsert installedApp_insert;
   InsertInstalledAppData.fromJson(dynamic json):
-
+  
   installedApp_insert = InsertInstalledAppInstalledAppInsert.fromJson(json['installedApp_insert']);
   @override
   bool operator ==(Object other) {
@@ -71,11 +71,11 @@ class InsertInstalledAppData {
 
     final InsertInstalledAppData otherTyped = other as InsertInstalledAppData;
     return installedApp_insert == otherTyped.installedApp_insert;
-
+    
   }
   @override
   int get hashCode => installedApp_insert.hashCode;
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -96,7 +96,7 @@ class InsertInstalledAppVariables {
   final bool isSystemApp;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   InsertInstalledAppVariables.fromJson(Map<String, dynamic> json):
-
+  
   studentUid = nativeFromJson<String>(json['studentUid']),
   packageName = nativeFromJson<String>(json['packageName']),
   appLabel = nativeFromJson<String>(json['appLabel']),
@@ -111,15 +111,15 @@ class InsertInstalledAppVariables {
     }
 
     final InsertInstalledAppVariables otherTyped = other as InsertInstalledAppVariables;
-    return studentUid == otherTyped.studentUid &&
-    packageName == otherTyped.packageName &&
-    appLabel == otherTyped.appLabel &&
+    return studentUid == otherTyped.studentUid && 
+    packageName == otherTyped.packageName && 
+    appLabel == otherTyped.appLabel && 
     isSystemApp == otherTyped.isSystemApp;
-
+    
   }
   @override
   int get hashCode => Object.hashAll([studentUid.hashCode, packageName.hashCode, appLabel.hashCode, isSystemApp.hashCode]);
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -137,3 +137,4 @@ class InsertInstalledAppVariables {
     required this.isSystemApp,
   });
 }
+

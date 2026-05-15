@@ -3,12 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
-import '../../../bloc/auth/auth_state.dart';
 import '../../widgets/parent_navigation_bar.dart';
 import 'add_student_screen.dart';
 import 'parent_dashboard.dart';
 import 'parent_settings.dart';
 import 'parent_students.dart';
+import 'parent_help_center.dart';
 
 class ParentScreen extends StatefulWidget {
   final String fullName;
@@ -24,6 +24,16 @@ class _ParentScreenState extends State<ParentScreen> {
   int _selectedIndex = 1;
 
   void _onTabSelected(int index) {
+    if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              ParentHelpCenter(uid: widget.uid, fullName: widget.fullName),
+        ),
+      );
+      return;
+    }
     setState(() => _selectedIndex = index);
   }
 
@@ -49,47 +59,37 @@ class _ParentScreenState extends State<ParentScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) SystemNavigator.pop();
       },
-      child: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
-          }
-        },
-        child: Scaffold(
-          backgroundColor: const Color(0xFFF5F7FF),
-          appBar: AppBar(
-            title: Text('Welcome, ${widget.fullName}'),
-            automaticallyImplyLeading: false,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () =>
-                    context.read<AuthBloc>().add(LogoutRequested()),
-              ),
-            ],
-          ),
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              ParentDashboard(parentUid: widget.uid),
-              ParentStudents(parentUid: widget.uid),
-              const ParentSettings(),
-            ],
-          ),
-          bottomNavigationBar: ParentNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: _onTabSelected,
-          ),
-          floatingActionButton: _selectedIndex == 1
-              ? FloatingActionButton.extended(
-                  onPressed: _openAddStudentScreen,
-                  icon: const Icon(Icons.person_add_alt_1),
-                  label: const Text('Add Student'),
-                )
-              : null,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FF),
+        appBar: AppBar(
+          title: Text('Welcome, ${widget.fullName}'),
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
+            ),
+          ],
         ),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            ParentDashboard(parentUid: widget.uid),
+            ParentStudents(parentUid: widget.uid),
+            const ParentSettings(),
+          ],
+        ),
+        bottomNavigationBar: ParentNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onTabSelected,
+        ),
+        floatingActionButton: _selectedIndex == 1
+            ? FloatingActionButton.extended(
+                onPressed: _openAddStudentScreen,
+                icon: const Icon(Icons.person_add_alt_1),
+                label: const Text('Add Student'),
+              )
+            : null,
       ),
     );
   }

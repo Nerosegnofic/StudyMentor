@@ -1,8 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
 import 'src/bloc/auth/auth_bloc.dart';
@@ -24,27 +25,21 @@ const _kSyncTaskName = 'installedAppSync';
 const _kSyncTaskTag = 'com.example.studymentor.installedAppSync';
 
 // ── Background callback dispatcher ───────────────────────────────────────────
-// Top-level function — runs in a separate isolate when the app is closed.
-// No widgets, no Bloc, no BuildContext available here.
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     if (taskName != _kSyncTaskName) return true;
 
     try {
-      // 1. Boot Firebase for this isolate.
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      // 2. Check that a student is still signed in.
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return true; // No user — nothing to sync.
+      if (user == null) return true;
 
-      // 3. Fetch apps from PackageManager via MethodChannel.
       final apps = await InstalledAppsService.instance.getFromDevice();
 
-      // 4. Push to DataConnect directly — no Bloc involved.
       final provider = DataConnectProvider();
       await provider.deleteAllInstalledAppsForStudent(user.uid);
       await Future.wait(
@@ -58,12 +53,10 @@ void callbackDispatcher() {
         ),
       );
 
-      // 5. Clear the dirty flag so the resume handler doesn't double-sync.
       await InstalledAppsService.instance.markInventoryClean();
 
       return true;
     } catch (_) {
-      // Returning false tells WorkManager to retry with backoff.
       return false;
     }
   });
@@ -74,12 +67,8 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialise WorkManager with the background callback.
   await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
 
-  // Register the periodic 15-minute background sync.
-  // ExistingWorkPolicy.replace ensures only one task is ever scheduled,
-  // even if main() is called again (e.g. after a hot restart in debug).
   await Workmanager().registerPeriodicTask(
     _kSyncTaskName,
     _kSyncTaskName,
@@ -142,31 +131,24 @@ class RootPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AuthBloc, AuthState>(
-      listenWhen: (prev, curr) => curr is AuthError,
-      listener: (context, state) {
-        if (state is AuthError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
-        }
-      },
+    return BlocBuilder<AuthBloc, AuthState>(
+      // AuthLoading only triggers a root rebuild during the true cold-start
+      // flow (AuthInitial → AuthLoading). Any AuthLoading emitted mid-session
+      // (e.g. during student creation) is ignored here, preventing RootPage
+      // from replacing the parent dashboard with an infinite spinner.
       buildWhen: (prev, curr) =>
           curr is AuthInitial ||
-          (curr is AuthLoading &&
-              prev is! AuthUnauthenticated &&
-              prev is! AuthError) ||
+          (curr is AuthLoading && prev is AuthInitial) ||
           curr is AuthAuthenticated ||
           curr is AuthUnauthenticated ||
-          curr is AuthEmailUnverified ||
-          curr is AuthError,
+          curr is AuthEmailUnverified,
       builder: (context, state) {
         if (state is AuthInitial || state is AuthLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (state is AuthUnauthenticated || state is AuthError) {
+        if (state is AuthUnauthenticated) {
           return const LoginScreen();
         }
         if (state is AuthEmailUnverified) {

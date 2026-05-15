@@ -11,6 +11,8 @@ abstract class AuthEvent extends Equatable {
 
 class AppStarted extends AuthEvent {}
 
+class ResetAuthState extends AuthEvent {}
+
 class RegisterRequested extends AuthEvent {
   final String fullName;
   final String email;
@@ -47,14 +49,13 @@ class PasswordResetRequested extends AuthEvent {
   List<Object?> get props => [email];
 }
 
-// ── CHANGED: added username ───────────────────────────────────────────────────
 class CreateStudentRequested extends AuthEvent {
   final String fullName;
   final String email;
   final String password;
   final String parentUid;
   final int gradeLevel;
-  final String username; // ── ADDED ───────────────────────────────────────────
+  final String username;
 
   CreateStudentRequested({
     required this.fullName,
@@ -62,7 +63,7 @@ class CreateStudentRequested extends AuthEvent {
     required this.password,
     required this.parentUid,
     required this.gradeLevel,
-    required this.username, // ── ADDED ─────────────────────────────────────────
+    required this.username,
   });
 
   @override
@@ -183,12 +184,19 @@ class RefreshStudentDataRequested extends AuthEvent {
   List<Object?> get props => [studentUid];
 }
 
+// ── CHANGED: added studentEmail and studentPassword so the repository can
+// sign in as the student via a secondary Firebase app and delete their
+// Auth account — mirroring the updateStudentCredentials pattern.
 class DeleteStudentRequested extends AuthEvent {
   final String studentUid;
+  final String studentEmail;
+  final String studentPassword;
   final String parentUid;
 
   DeleteStudentRequested({
     required this.studentUid,
+    required this.studentEmail,
+    required this.studentPassword,
     required this.parentUid,
   });
 
@@ -218,15 +226,12 @@ class DeleteParentAccountRequested extends AuthEvent {
   List<Object?> get props => [currentPassword];
 }
 
-/// Updates a student's account info from the parent side.
-/// [currentPassword] is the STUDENT's current password (used to re-auth via
-/// a secondary Firebase app — the parent's session is never touched).
 class UpdateStudentProfileRequested extends AuthEvent {
   final String studentUid;
-  final String studentEmail; // current email, needed to sign in as student
+  final String studentEmail;
   final String? newFullName;
   final String? newEmail;
-  final String? currentPassword; // student's current password
+  final String? currentPassword;
   final String? newPassword;
 
   UpdateStudentProfileRequested({
@@ -239,5 +244,11 @@ class UpdateStudentProfileRequested extends AuthEvent {
   });
 
   @override
-  List<Object?> get props => [studentUid, studentEmail, newFullName, newEmail, newPassword];
+  List<Object?> get props => [
+    studentUid,
+    studentEmail,
+    newFullName,
+    newEmail,
+    newPassword,
+  ];
 }

@@ -85,6 +85,21 @@ query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Stude
   }
 }
 
+# ── Username Uniqueness Check ─────────────────────────────────────────────────
+
+# Used by dataconnect_provider.dart before InsertStudent to detect duplicate
+# usernames before the @unique constraint on the Student table rejects the
+# insert with an opaque gRPC error. Returns at most 1 row — we only need to
+# know whether any student already holds this username.
+# ── CHANGED: returns `username` (already known to caller) instead of `uid`
+#    to avoid exposing identifiers purely for an existence check. insecureReason
+#    corrected to reflect client-side usage during student registration. ────────
+query GetStudentByUsername($username: String!) @auth(level: USER, insecureReason: "Username uniqueness is checked client-side during student registration; no identifier is exposed beyond the username the caller already holds.") {
+  students(where: { username: { eq: $username } }, limit: 1) {
+    username
+  }
+}
+
 # ── Leaderboard ───────────────────────────────────────────────────────────────
 
 # ── CHANGED: replaced user { fullName } with username (leaderboard shows username) ──
@@ -226,5 +241,17 @@ query GetSiblingLeaderboard($parentUid: String!) @auth(level: USER, insecureReas
     weeklyXp
     totalXp
     lastActiveAt
+  }
+}
+
+# ── Garden System ─────────────────────────────────────────────────────────────
+
+query GetAllSubjectProgress($studentUid: String!) @auth(level: USER, insecureReason: "Student queries their own progress by passing their UID.") {
+  subjectProgresses(where: { studentUid: { eq: $studentUid } }) {
+    studentUid
+    subjectKey
+    totalXp
+    level
+    updatedAt
   }
 }

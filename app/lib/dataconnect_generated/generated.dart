@@ -68,6 +68,8 @@ part 'delete_parent_record.dart';
 
 part 'upsert_student_config.dart';
 
+part 'upsert_subject_progress.dart';
+
 part 'get_user_by_uid.dart';
 
 part 'get_students_by_parent.dart';
@@ -81,6 +83,8 @@ part 'insert_installed_app.dart';
 part 'delete_all_installed_apps_for_student.dart';
 
 part 'get_student_profile.dart';
+
+part 'get_student_by_username.dart';
 
 part 'get_weekly_leaderboard.dart';
 
@@ -101,6 +105,8 @@ part 'get_student_avatar.dart';
 part 'get_app_config_for_student.dart';
 
 part 'get_sibling_leaderboard.dart';
+
+part 'get_all_subject_progress.dart';
 
 
 
@@ -344,6 +350,11 @@ class ExampleConnector {
   }
   
   
+  UpsertSubjectProgressVariablesBuilder upsertSubjectProgress ({required String studentUid, required String subjectKey, required int totalXp, required int level, }) {
+    return UpsertSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,subjectKey: subjectKey,totalXp: totalXp,level: level,);
+  }
+  
+  
   GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
     return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
   }
@@ -376,6 +387,11 @@ class ExampleConnector {
   
   GetStudentProfileVariablesBuilder getStudentProfile ({required String uid, }) {
     return GetStudentProfileVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetStudentByUsernameVariablesBuilder getStudentByUsername ({required String username, }) {
+    return GetStudentByUsernameVariablesBuilder(dataConnect, username: username,);
   }
   
   
@@ -426,6 +442,11 @@ class ExampleConnector {
   
   GetSiblingLeaderboardVariablesBuilder getSiblingLeaderboard ({required String parentUid, }) {
     return GetSiblingLeaderboardVariablesBuilder(dataConnect, parentUid: parentUid,);
+  }
+  
+  
+  GetAllSubjectProgressVariablesBuilder getAllSubjectProgress ({required String studentUid, }) {
+    return GetAllSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,);
   }
   
 

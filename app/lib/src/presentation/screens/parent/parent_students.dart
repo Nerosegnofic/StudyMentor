@@ -20,6 +20,7 @@ class ParentStudents extends StatefulWidget {
 class _ParentStudentsState extends State<ParentStudents> {
   List<StudentModel> _students = [];
   bool _isLoading = true;
+
   Timer? _verificationPollTimer;
 
   @override
@@ -53,13 +54,11 @@ class _ParentStudentsState extends State<ParentStudents> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _isLoading = true);
     context.read<AuthBloc>().add(
       LoadStudentsRequested(parentUid: widget.parentUid),
     );
   }
 
-  /// Opens the configuration screen for a verified student.
   Future<void> _openConfigScreen(StudentModel student) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -70,6 +69,34 @@ class _ParentStudentsState extends State<ParentStudents> {
       ),
     );
   }
+
+  // ── Delete flow ────────────────────────────────────────────────────────────
+  //
+  // The dialog is entirely self-contained: it dispatches DeleteStudentRequested,
+  // shows a loading spinner while the request is in flight, surfaces errors
+  // inline, and pops itself only when StudentDeleted fires. The parent screen
+  // no longer needs to track deletion state or push errors into the dialog.
+  //
+  // barrierDismissible is set to false so that tapping outside can never
+  // silently dismiss the dialog — the Cancel button (disabled while loading)
+  // is the only intentional exit. PopScope inside the dialog additionally
+  // blocks the system back gesture while deletion is in flight.
+
+  Future<void> _confirmAndDeleteStudent(StudentModel student) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<AuthBloc>(),
+        child: _DeleteConfirmationDialog(
+          student: student,
+          parentUid: widget.parentUid,
+        ),
+      ),
+    );
+  }
+
+  // ── Empty / banner widgets ─────────────────────────────────────────────────
 
   Widget _buildEmptyState() {
     return SingleChildScrollView(
@@ -161,35 +188,6 @@ class _ParentStudentsState extends State<ParentStudents> {
     );
   }
 
-  Widget _buildStudentList() {
-    final unverifiedStudents = _students
-        .where((s) => !s.isEmailVerified)
-        .toList();
-
-    // Show a hint banner when all students are verified so the parent
-    // knows the cards are now interactive.
-    final allVerified =
-        _students.isNotEmpty && _students.every((s) => s.isEmailVerified);
-
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(top: 12, bottom: 24),
-      children: [
-        if (unverifiedStudents.isNotEmpty)
-          _buildUnverifiedBanner(unverifiedStudents),
-        if (allVerified) _buildTapHintBanner(),
-        for (final student in _students)
-          StudentCard(
-            student: student,
-            // Only verified students get an onTap handler.
-            onTap: student.isEmailVerified
-                ? () => _openConfigScreen(student)
-                : null,
-          ),
-      ],
-    );
-  }
-
   Widget _buildTapHintBanner() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -218,6 +216,70 @@ class _ParentStudentsState extends State<ParentStudents> {
     );
   }
 
+  // ── Delete button rendered beneath each unverified card ───────────────────
+
+  Widget _buildDeleteButton(StudentModel student) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: SizedBox(
+        width: double.infinity,
+        height: 36,
+        child: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFD32F2F),
+            side: const BorderSide(color: Color(0xFFEF9A9A), width: 1),
+            backgroundColor: const Color(0xFFFFF5F5),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
+            padding: EdgeInsets.zero,
+          ),
+          onPressed: () => _confirmAndDeleteStudent(student),
+          icon: const Icon(Icons.delete_outline, size: 15),
+          label: const Text(
+            'Delete Account',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Student list ───────────────────────────────────────────────────────────
+
+  Widget _buildStudentList() {
+    final unverifiedStudents = _students
+        .where((s) => !s.isEmailVerified)
+        .toList();
+
+    final allVerified =
+        _students.isNotEmpty && _students.every((s) => s.isEmailVerified);
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(top: 12, bottom: 24),
+      children: [
+        if (unverifiedStudents.isNotEmpty)
+          _buildUnverifiedBanner(unverifiedStudents),
+        if (allVerified) _buildTapHintBanner(),
+        for (final student in _students) ...[
+          StudentCard(
+            student: student,
+            onTap: student.isEmailVerified
+                ? () => _openConfigScreen(student)
+                : null,
+          ),
+          if (!student.isEmailVerified) _buildDeleteButton(student),
+        ],
+      ],
+    );
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -230,17 +292,308 @@ class _ParentStudentsState extends State<ParentStudents> {
           _startPollingIfNeeded();
         }
 
+        if (state is StudentDeleted) {
+          // Switch to the loading spinner immediately so the empty state never
+          // flashes while the fresh list is being fetched.
+          setState(() => _isLoading = true);
+          context.read<AuthBloc>().add(
+            LoadStudentsRequested(parentUid: widget.parentUid),
+          );
+        }
+
         if (state is AuthError) {
           setState(() => _isLoading = false);
         }
       },
       child: RefreshIndicator(
         onRefresh: _refresh,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _students.isEmpty
-            ? _buildEmptyState()
-            : _buildStudentList(),
+        child: Stack(
+          children: [
+            if (_isLoading)
+              const SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                child: SizedBox(height: 420),
+              )
+            else if (_students.isEmpty)
+              _buildEmptyState()
+            else
+              _buildStudentList(),
+
+            if (_isLoading) const Center(child: CircularProgressIndicator()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── _DeleteConfirmationDialog ─────────────────────────────────────────────────
+//
+// Self-contained deletion dialog for unverified students.
+//
+// Lifecycle:
+//   • "Delete Permanently" pressed  → dispatches DeleteStudentRequested,
+//                                     shows an inline spinner, disables buttons.
+//   • StudentDeleteLoading received → spinner visible, buttons disabled.
+//   • StudentDeleted received       → pops itself; parent BlocListener
+//                                     triggers the list reload.
+//   • StudentDeleteError received   → stops spinner, shows error message
+//                                     inline beneath the password field;
+//                                     dialog remains open for correction.
+//   • "Cancel" pressed              → pops normally (only when not loading).
+//   • Back gesture / tap outside    → blocked while loading via PopScope;
+//                                     barrierDismissible is always false so
+//                                     tapping the scrim never silently closes
+//                                     the dialog.
+
+class _DeleteConfirmationDialog extends StatefulWidget {
+  final StudentModel student;
+  final String parentUid;
+
+  const _DeleteConfirmationDialog({
+    required this.student,
+    required this.parentUid,
+  });
+
+  @override
+  State<_DeleteConfirmationDialog> createState() =>
+      _DeleteConfirmationDialogState();
+}
+
+class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
+  final _passwordController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _submitted = false;
+  bool _isLoading = false;
+  String? _serverError;
+
+  String get _firstName => widget.student.fullName.split(' ').first;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  String? get _passwordError {
+    if (_serverError != null) return _serverError;
+    if (!_submitted) return null;
+    if (_passwordController.text.trim().isEmpty) {
+      return 'Please enter the student\'s password.';
+    }
+    return null;
+  }
+
+  void _submit() {
+    setState(() {
+      _submitted = true;
+      _serverError = null;
+    });
+    final password = _passwordController.text.trim();
+    if (password.isEmpty) return;
+
+    context.read<AuthBloc>().add(
+      DeleteStudentRequested(
+        studentUid: widget.student.uid,
+        studentEmail: widget.student.email,
+        studentPassword: password,
+        parentUid: widget.parentUid,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is StudentDeleteLoading) {
+          setState(() => _isLoading = true);
+        } else if (state is StudentDeleted &&
+            state.studentUid == widget.student.uid) {
+          // Success — close the dialog. The parent screen's BlocListener
+          // will handle the list reload via its own StudentDeleted handler.
+          Navigator.of(context).pop();
+        } else if (state is StudentDeleteError) {
+          final isWrongPassword = state.message.contains('Invalid credentials');
+          setState(() {
+            _isLoading = false;
+            _serverError = isWrongPassword
+                ? 'Incorrect password. Please try again.'
+                : state.message;
+          });
+        }
+      },
+      // PopScope blocks the system back gesture/button while deletion is in
+      // flight. Combined with barrierDismissible: false on showDialog, this
+      // guarantees the dialog cannot be dismissed by any means other than the
+      // Cancel button (which is itself disabled while loading).
+      child: PopScope(
+        canPop: !_isLoading,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.delete_forever_outlined,
+                  color: Color(0xFFD32F2F),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Delete Student',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF333333),
+                      height: 1.5,
+                    ),
+                    children: [
+                      const TextSpan(
+                        text: 'You are about to permanently delete ',
+                      ),
+                      TextSpan(
+                        text: widget.student.fullName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const TextSpan(
+                        text:
+                            '\'s account. This will remove all of their data and cannot be undone.',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFFB74D)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 1),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 15,
+                          color: Color(0xFFF57C00),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '$_firstName\'s login credentials, progress, settings, '
+                          'and friends list will all be permanently deleted.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFE65100),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  enabled: !_isLoading,
+                  onChanged: (_) {
+                    if (_submitted) setState(() => _serverError = null);
+                  },
+                  onSubmitted: (_) {
+                    if (!_isLoading) _submit();
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Student\'s password',
+                    hintText: 'Password you created for $_firstName',
+                    hintStyle: const TextStyle(fontSize: 12),
+                    errorText: _passwordError,
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD32F2F),
+                        width: 1.5,
+                      ),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            TextButton(
+              onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFF666666)),
+              ),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: _isLoading ? null : _submit,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Delete Permanently'),
+            ),
+          ],
+        ),
       ),
     );
   }

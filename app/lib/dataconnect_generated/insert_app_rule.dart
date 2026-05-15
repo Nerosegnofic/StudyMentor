@@ -23,7 +23,7 @@ class InsertAppRuleVariablesBuilder {
 class InsertAppRuleAppRuleInsert {
   final String id;
   InsertAppRuleAppRuleInsert.fromJson(dynamic json):
-
+  
   id = nativeFromJson<String>(json['id']);
   @override
   bool operator ==(Object other) {
@@ -36,11 +36,11 @@ class InsertAppRuleAppRuleInsert {
 
     final InsertAppRuleAppRuleInsert otherTyped = other as InsertAppRuleAppRuleInsert;
     return id == otherTyped.id;
-
+    
   }
   @override
   int get hashCode => id.hashCode;
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -57,7 +57,7 @@ class InsertAppRuleAppRuleInsert {
 class InsertAppRuleData {
   final InsertAppRuleAppRuleInsert appRule_insert;
   InsertAppRuleData.fromJson(dynamic json):
-
+  
   appRule_insert = InsertAppRuleAppRuleInsert.fromJson(json['appRule_insert']);
   @override
   bool operator ==(Object other) {
@@ -70,11 +70,11 @@ class InsertAppRuleData {
 
     final InsertAppRuleData otherTyped = other as InsertAppRuleData;
     return appRule_insert == otherTyped.appRule_insert;
-
+    
   }
   @override
   int get hashCode => appRule_insert.hashCode;
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -94,7 +94,7 @@ class InsertAppRuleVariables {
   final String appLabel;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   InsertAppRuleVariables.fromJson(Map<String, dynamic> json):
-
+  
   studentUid = nativeFromJson<String>(json['studentUid']),
   packageName = nativeFromJson<String>(json['packageName']),
   appLabel = nativeFromJson<String>(json['appLabel']);
@@ -108,14 +108,14 @@ class InsertAppRuleVariables {
     }
 
     final InsertAppRuleVariables otherTyped = other as InsertAppRuleVariables;
-    return studentUid == otherTyped.studentUid &&
-    packageName == otherTyped.packageName &&
+    return studentUid == otherTyped.studentUid && 
+    packageName == otherTyped.packageName && 
     appLabel == otherTyped.appLabel;
-
+    
   }
   @override
   int get hashCode => Object.hashAll([studentUid.hashCode, packageName.hashCode, appLabel.hashCode]);
-
+  
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
@@ -131,3 +131,4 @@ class InsertAppRuleVariables {
     required this.appLabel,
   });
 }
+
