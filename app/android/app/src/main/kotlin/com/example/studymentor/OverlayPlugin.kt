@@ -39,10 +39,17 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         private const val REQUEST_OVERLAY_PERMISSION     = 1001
         private const val REQUEST_USAGE_STATS_PERMISSION = 1002
 
-        // ── Notification constants ────────────────────────────────────────────
+        // ── Silent timer notification ─────────────────────────────────────────
         private const val NOTIF_CHANNEL_ID   = "studymentor_usage_timer"
         private const val NOTIF_CHANNEL_NAME = "Usage Timer"
         private const val NOTIF_ID           = 7001
+
+        // ── Audible threshold alert notifications ─────────────────────────────
+        private const val ALERT_CHANNEL_ID   = "studymentor_usage_alerts"
+        private const val ALERT_CHANNEL_NAME = "Usage Alerts"
+        private const val ALERT_NOTIF_ID_5MIN = 7002
+        private const val ALERT_NOTIF_ID_1MIN = 7003
+        private const val ALERT_NOTIF_ID_10S  = 7004
 
         @Volatile var instance: OverlayPlugin? = null
     }
@@ -52,7 +59,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     private var windowManager: WindowManager? = null
     private var countdownText: TextView? = null
 
-    // ── Notification (replaces draggable timer overlay) ───────────────────────
+    // ── Notifications ─────────────────────────────────────────────────────────
     private var notificationManager: NotificationManager? = null
     private var notifChannelCreated = false
 
@@ -96,26 +103,41 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         audioManager = activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         notificationManager =
             activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        ensureNotificationChannel()
+        ensureNotificationChannels()
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Notification channel (Android 8+)
+    // Notification channels (Android 8+)
     // ─────────────────────────────────────────────────────────────────────────
 
-    private fun ensureNotificationChannel() {
+    private fun ensureNotificationChannels() {
         if (notifChannelCreated) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
+            // Silent, non-dismissible timer channel
+            val timerChannel = NotificationChannel(
                 NOTIF_CHANNEL_ID,
                 NOTIF_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW, // silent — no sound/vibration
+                NotificationManager.IMPORTANCE_LOW,
             ).apply {
                 description = "Shows how much time is left before the usage limit is reached"
                 setShowBadge(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
-            notificationManager?.createNotificationChannel(channel)
+
+            // Audible, dismissible alert channel — cannot be disabled from within the app
+            val alertChannel = NotificationChannel(
+                ALERT_CHANNEL_ID,
+                ALERT_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = "Alerts when the usage limit is almost reached"
+                setShowBadge(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                enableVibration(true)
+            }
+
+            notificationManager?.createNotificationChannel(timerChannel)
+            notificationManager?.createNotificationChannel(alertChannel)
         }
         notifChannelCreated = true
     }
@@ -170,7 +192,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 }
             }
 
-            // ── Usage timer notification ─────────────────────────────────────
+            // ── Silent usage timer notification ──────────────────────────────
 
             "showUsageTimer" -> {
                 val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
@@ -186,6 +208,14 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             "updateUsageTimer" -> {
                 val remaining = call.argument<Int>("remainingSeconds") ?: 0
                 postUsageNotification(remaining)
+                result.success(null)
+            }
+
+            // ── Audible threshold alert notification ─────────────────────────
+
+            "showThresholdAlert" -> {
+                val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
+                postThresholdAlert(remainingSeconds)
                 result.success(null)
             }
 
@@ -208,7 +238,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Usage notification helpers
+    // Silent usage timer notification helpers
     // ─────────────────────────────────────────────────────────────────────────
 
     /** Formats [totalSeconds] as HH:MM:SS. */
@@ -224,12 +254,10 @@ class OverlayPlugin(private val activity: FlutterActivity) {
      * The notification is non-dismissible (ongoing = true) and silent.
      */
     private fun postUsageNotification(remainingSeconds: Int) {
-        ensureNotificationChannel()
+        ensureNotificationChannels()
 
         val timeText = formatHms(remainingSeconds)
 
-        // android.R.drawable.ic_menu_recent_history is a built-in timer/clock
-        // icon available on all API levels without any extra asset.
         val iconRes = android.R.drawable.ic_menu_recent_history
 
         val notification = NotificationCompat.Builder(activity, NOTIF_CHANNEL_ID)
@@ -242,7 +270,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            // Tapping the notification brings the app back to the foreground
             .setContentIntent(
                 android.app.PendingIntent.getActivity(
                     activity,
@@ -266,6 +293,77 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     /** Cancels the usage-timer notification. */
     private fun cancelUsageNotification() {
         notificationManager?.cancel(NOTIF_ID)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Audible threshold alert notification helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Posts a one-shot audible, dismissible notification for a usage threshold.
+     * The correct notification ID and message are chosen based on [remainingSeconds]:
+     *   >= 270 s → 5-minute warning  (ALERT_NOTIF_ID_5MIN)
+     *   >= 45 s  → 1-minute warning  (ALERT_NOTIF_ID_1MIN)
+     *   < 45 s   → 10-second warning (ALERT_NOTIF_ID_10S)
+     *
+     * Using fuzzy bounds here because [remainingSeconds] is a live countdown
+     * and may not land on exactly 300/60/10. The Dart side guards with
+     * _firedThresholds so each logical threshold fires at most once per session.
+     *
+     * Each threshold uses a distinct notification ID so all three can coexist
+     * in the tray simultaneously without replacing one another.
+     */
+    private fun postThresholdAlert(remainingSeconds: Int) {
+        ensureNotificationChannels()
+
+        data class AlertInfo(val notifId: Int, val title: String, val body: String)
+
+        val alert = when {
+            remainingSeconds >= 270 -> AlertInfo(
+                ALERT_NOTIF_ID_5MIN,
+                "5 minutes left ⏳",
+                "You have 5 minutes before your usage limit is reached.",
+            )
+            remainingSeconds >= 45 -> AlertInfo(
+                ALERT_NOTIF_ID_1MIN,
+                "1 minute left ⚠️",
+                "Only 1 minute remaining before your usage is blocked.",
+            )
+            else -> AlertInfo(
+                ALERT_NOTIF_ID_10S,
+                "10 seconds left 🚨",
+                "Your usage limit is almost up!",
+            )
+        }
+
+        val notification = NotificationCompat.Builder(activity, ALERT_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle(alert.title)
+            .setContentText(alert.body)
+            .setOngoing(false)                          // dismissible by the user
+            .setAutoCancel(true)                        // dismissed on tap
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setDefaults(NotificationCompat.DEFAULT_ALL) // sound + vibration
+            .setContentIntent(
+                android.app.PendingIntent.getActivity(
+                    activity,
+                    alert.notifId,                      // unique request code per alert
+                    Intent(activity, MainActivity::class.java).apply {
+                        addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK
+                                or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                                or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                        )
+                    },
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                        or android.app.PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
+            .build()
+
+        notificationManager?.notify(alert.notifId, notification)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
