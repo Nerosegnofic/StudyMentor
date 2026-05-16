@@ -27,8 +27,13 @@ class MascotOverlayService {
   MascotState _mascotState = MascotState.idle;
 
   // ── Countdown ──────────────────────────────────────────────────────────────
-  Timer? _countdownTimer;
+  // No separate timer — the existing _pollTimer drives the countdown so there
+  // is only ever one 1-second tick source and no cancellation races.
   int _remainingSeconds = 0;
+
+  // Guard flag: prevents _startWarning from being entered twice on the same
+  // tick if an awaited call yields and _poll fires again before it finishes.
+  bool _warningStarting = false;
 
   // ── Polling ────────────────────────────────────────────────────────────────
   Timer? _pollTimer;
@@ -95,7 +100,6 @@ class MascotOverlayService {
   Future<void> stop() async {
     _running = false;
     _pollTimer?.cancel();
-    _countdownTimer?.cancel();
     await _hideUsageNotification();
     await _hideOverlayNative();
     await _resetAccessibilityState();
@@ -104,6 +108,7 @@ class MascotOverlayService {
     _usageNotificationVisible = false;
     _remainingSeconds = 0;
     _totalUsageSeconds = 0;
+    _warningStarting = false;
     _firedThresholds.clear();
     _quizController.close();
     debugPrint('[MascotOverlayService] Stopped.');
@@ -176,6 +181,11 @@ class MascotOverlayService {
   // ── Warning phase ──────────────────────────────────────────────────────────
 
   Future<void> _startWarning() async {
+    // Prevent a second _poll tick from entering here while we're still
+    // awaiting native calls — otherwise the countdown gets reset mid-flight.
+    if (_warningStarting) return;
+    _warningStarting = true;
+
     _isBlocked = true;
     _remainingSeconds =
         (_config.cooldownHours * 3600) + (_config.cooldownMinutes * 60);
@@ -195,19 +205,11 @@ class MascotOverlayService {
 
     _quizController.add(null);
 
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      _remainingSeconds--;
-      debugPrint('[MascotOverlayService] Countdown: $_remainingSeconds s');
-      if (_remainingSeconds <= 0) {
-        timer.cancel();
-        await _unblock();
-      }
-    });
+    // Countdown is now driven by _poll() — no separate timer needed.
+    _warningStarting = false;
   }
 
   Future<void> _unblock() async {
-    _countdownTimer?.cancel();
     _isBlocked = false;
     _remainingSeconds = 0;
     _totalUsageSeconds = 0;
@@ -323,6 +325,18 @@ class MascotOverlayService {
 
       if (_isBlocked) {
         await _hideUsageNotification();
+
+        // Drive the cooldown countdown from the existing poll timer so there
+        // is only one tick source and no Timer cancellation races.
+        if (_remainingSeconds > 0) {
+          _remainingSeconds--;
+          debugPrint('[MascotOverlayService] Countdown: $_remainingSeconds s');
+          if (_remainingSeconds <= 0) {
+            await _unblock();
+            return;
+          }
+        }
+
         if (_monitoredPackages.contains(foreground)) {
           debugPrint(
             '[MascotOverlayService] Poll fallback: monitored app in foreground '
