@@ -36,6 +36,11 @@ class MascotOverlayService {
   // ── Shared usage counter ───────────────────────────────────────────────────
   int _totalUsageSeconds = 0;
 
+  // ── Threshold alerts ───────────────────────────────────────────────────────
+  /// Tracks which one-shot alert thresholds (in seconds) have already fired
+  /// this session. Cleared on unblock or stop so they re-arm next session.
+  final Set<int> _firedThresholds = {};
+
   // ── Quiz trigger stream ────────────────────────────────────────────────────
   final StreamController<void> _quizController =
       StreamController<void>.broadcast();
@@ -99,6 +104,7 @@ class MascotOverlayService {
     _usageNotificationVisible = false;
     _remainingSeconds = 0;
     _totalUsageSeconds = 0;
+    _firedThresholds.clear();
     _quizController.close();
     debugPrint('[MascotOverlayService] Stopped.');
   }
@@ -180,7 +186,6 @@ class MascotOverlayService {
       'Starting cooldown: $_remainingSeconds s.',
     );
 
-
     await _hideUsageNotification();
     await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
 
@@ -207,6 +212,7 @@ class MascotOverlayService {
     _remainingSeconds = 0;
     _totalUsageSeconds = 0;
     _mascotState = MascotState.idle;
+    _firedThresholds.clear();
 
     await _hideUsageNotification();
     await _hideOverlayNative();
@@ -269,6 +275,38 @@ class MascotOverlayService {
     }
   }
 
+  // ── Threshold alert helpers ────────────────────────────────────────────────
+
+  /// Fires a one-shot audible alert notification when [remainingToBlock] first
+  /// crosses one of the defined thresholds (300 s, 60 s, 10 s).
+  /// Each threshold fires at most once per session; [_firedThresholds] is
+  /// cleared in [_unblock] and [stop] so alerts re-arm for the next session.
+  Future<void> _maybeFireThresholdAlert(int remainingToBlock) async {
+    const thresholds = [300, 60, 10];
+    for (final threshold in thresholds) {
+      if (!_firedThresholds.contains(threshold) &&
+          remainingToBlock <= threshold &&
+          remainingToBlock > 0) {
+        _firedThresholds.add(threshold);
+        try {
+          await _overlayChannel.invokeMethod('showThresholdAlert', {
+            'remainingSeconds': remainingToBlock,
+          });
+          debugPrint(
+            '[MascotOverlayService] Threshold alert fired: '
+            '${remainingToBlock}s remaining (threshold: ${threshold}s).',
+          );
+        } on PlatformException catch (e) {
+          debugPrint(
+            '[MascotOverlayService] showThresholdAlert error: ${e.message}',
+          );
+        }
+        // Only fire one threshold per tick in case multiple are crossed at once.
+        break;
+      }
+    }
+  }
+
   // ── Polling ────────────────────────────────────────────────────────────────
 
   Future<void> _poll() async {
@@ -317,6 +355,7 @@ class MascotOverlayService {
       );
 
       await _showOrUpdateUsageNotification(remainingSeconds: remainingToBlock);
+      await _maybeFireThresholdAlert(remainingToBlock);
 
       if (_totalUsageSeconds >= thresholdSeconds) {
         await _startWarning();
