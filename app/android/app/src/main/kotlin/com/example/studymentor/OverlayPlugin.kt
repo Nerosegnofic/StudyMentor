@@ -39,17 +39,29 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         private const val REQUEST_OVERLAY_PERMISSION     = 1001
         private const val REQUEST_USAGE_STATS_PERMISSION = 1002
 
-        // ── Silent timer notification ─────────────────────────────────────────
+        // ── Silent usage timer notification ───────────────────────────────────
         private const val NOTIF_CHANNEL_ID   = "studymentor_usage_timer"
         private const val NOTIF_CHANNEL_NAME = "Usage Timer"
         private const val NOTIF_ID           = 7001
 
-        // ── Audible threshold alert notifications ─────────────────────────────
+        // ── Silent cooldown timer notification ────────────────────────────────
+        private const val COOLDOWN_NOTIF_CHANNEL_ID   = "studymentor_cooldown_timer"
+        private const val COOLDOWN_NOTIF_CHANNEL_NAME = "Cooldown Timer"
+        private const val COOLDOWN_NOTIF_ID           = 7005
+
+        // ── Audible threshold alert notifications (usage) ─────────────────────
         private const val ALERT_CHANNEL_ID   = "studymentor_usage_alerts"
         private const val ALERT_CHANNEL_NAME = "Usage Alerts"
         private const val ALERT_NOTIF_ID_5MIN = 7002
         private const val ALERT_NOTIF_ID_1MIN = 7003
         private const val ALERT_NOTIF_ID_10S  = 7004
+
+        // ── Audible threshold alert notifications (cooldown) ──────────────────
+        private const val COOLDOWN_ALERT_CHANNEL_ID   = "studymentor_cooldown_alerts"
+        private const val COOLDOWN_ALERT_CHANNEL_NAME = "Cooldown Alerts"
+        private const val COOLDOWN_ALERT_NOTIF_ID_5MIN = 7006
+        private const val COOLDOWN_ALERT_NOTIF_ID_1MIN = 7007
+        private const val COOLDOWN_ALERT_NOTIF_ID_10S  = 7008
 
         @Volatile var instance: OverlayPlugin? = null
     }
@@ -113,7 +125,8 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     private fun ensureNotificationChannels() {
         if (notifChannelCreated) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Silent, non-dismissible timer channel
+
+            // ── Silent usage timer ────────────────────────────────────────────
             val timerChannel = NotificationChannel(
                 NOTIF_CHANNEL_ID,
                 NOTIF_CHANNEL_NAME,
@@ -124,7 +137,18 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
 
-            // Audible, dismissible alert channel — cannot be disabled from within the app
+            // ── Silent cooldown timer ─────────────────────────────────────────
+            val cooldownTimerChannel = NotificationChannel(
+                COOLDOWN_NOTIF_CHANNEL_ID,
+                COOLDOWN_NOTIF_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply {
+                description = "Shows how much cooldown time remains before apps are unlocked"
+                setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+
+            // ── Audible usage alerts ──────────────────────────────────────────
             val alertChannel = NotificationChannel(
                 ALERT_CHANNEL_ID,
                 ALERT_CHANNEL_NAME,
@@ -136,8 +160,22 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 enableVibration(true)
             }
 
+            // ── Audible cooldown alerts ───────────────────────────────────────
+            val cooldownAlertChannel = NotificationChannel(
+                COOLDOWN_ALERT_CHANNEL_ID,
+                COOLDOWN_ALERT_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = "Alerts when the cooldown period is almost over"
+                setShowBadge(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                enableVibration(true)
+            }
+
             notificationManager?.createNotificationChannel(timerChannel)
+            notificationManager?.createNotificationChannel(cooldownTimerChannel)
             notificationManager?.createNotificationChannel(alertChannel)
+            notificationManager?.createNotificationChannel(cooldownAlertChannel)
         }
         notifChannelCreated = true
     }
@@ -170,7 +208,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 }
                 val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 30
                 activity.runOnUiThread {
-                    // Hide usage notification before showing the full-screen overlay
                     cancelUsageNotification()
                     showOrUpdateOverlay(remainingSeconds)
                     result.success(null)
@@ -211,11 +248,38 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 result.success(null)
             }
 
-            // ── Audible threshold alert notification ─────────────────────────
+            // ── Silent cooldown timer notification ───────────────────────────
+
+            "showCooldownTimer" -> {
+                val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
+                postCooldownNotification(remainingSeconds)
+                result.success(null)
+            }
+
+            "hideCooldownTimer" -> {
+                cancelCooldownNotification()
+                result.success(null)
+            }
+
+            "updateCooldownTimer" -> {
+                val remaining = call.argument<Int>("remainingSeconds") ?: 0
+                postCooldownNotification(remaining)
+                result.success(null)
+            }
+
+            // ── Audible threshold alert notifications (usage) ────────────────
 
             "showThresholdAlert" -> {
                 val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
                 postThresholdAlert(remainingSeconds)
+                result.success(null)
+            }
+
+            // ── Audible threshold alert notifications (cooldown) ─────────────
+
+            "showCooldownThresholdAlert" -> {
+                val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
+                postCooldownThresholdAlert(remainingSeconds)
                 result.success(null)
             }
 
@@ -238,7 +302,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Silent usage timer notification helpers
+    // Shared helpers
     // ─────────────────────────────────────────────────────────────────────────
 
     /** Formats [totalSeconds] as HH:MM:SS. */
@@ -249,70 +313,85 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         return String.format("%02d:%02d:%02d", h, m, s)
     }
 
-    /**
-     * Posts (or updates) the persistent usage-timer notification.
-     * The notification is non-dismissible (ongoing = true) and silent.
-     */
+    private fun mainActivityIntent() = Intent(activity, MainActivity::class.java).apply {
+        addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK
+                or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+        )
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Silent usage timer notification helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
     private fun postUsageNotification(remainingSeconds: Int) {
         ensureNotificationChannels()
-
-        val timeText = formatHms(remainingSeconds)
-
-        val iconRes = android.R.drawable.ic_menu_recent_history
-
         val notification = NotificationCompat.Builder(activity, NOTIF_CHANNEL_ID)
-            .setSmallIcon(iconRes)
+            .setSmallIcon(android.R.drawable.ic_menu_recent_history)
             .setContentTitle("Time remaining")
-            .setContentText(timeText)
-            .setOngoing(true)           // non-dismissible by the user
-            .setOnlyAlertOnce(true)     // no sound/vibration on updates
+            .setContentText(formatHms(remainingSeconds))
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(
                 android.app.PendingIntent.getActivity(
-                    activity,
-                    0,
-                    Intent(activity, MainActivity::class.java).apply {
-                        addFlags(
-                            Intent.FLAG_ACTIVITY_NEW_TASK
-                                or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                                or Intent.FLAG_ACTIVITY_SINGLE_TOP,
-                        )
-                    },
+                    activity, 0, mainActivityIntent(),
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT
                         or android.app.PendingIntent.FLAG_IMMUTABLE,
                 ),
             )
             .build()
-
         notificationManager?.notify(NOTIF_ID, notification)
     }
 
-    /** Cancels the usage-timer notification. */
     private fun cancelUsageNotification() {
         notificationManager?.cancel(NOTIF_ID)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Audible threshold alert notification helpers
+    // Silent cooldown timer notification helpers
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Posts a one-shot audible, dismissible notification for a usage threshold.
-     * The correct notification ID and message are chosen based on [remainingSeconds]:
-     *   >= 270 s → 5-minute warning  (ALERT_NOTIF_ID_5MIN)
-     *   >= 45 s  → 1-minute warning  (ALERT_NOTIF_ID_1MIN)
-     *   < 45 s   → 10-second warning (ALERT_NOTIF_ID_10S)
-     *
-     * Using fuzzy bounds here because [remainingSeconds] is a live countdown
-     * and may not land on exactly 300/60/10. The Dart side guards with
-     * _firedThresholds so each logical threshold fires at most once per session.
-     *
-     * Each threshold uses a distinct notification ID so all three can coexist
-     * in the tray simultaneously without replacing one another.
+     * Posts (or updates) the persistent cooldown-timer notification.
+     * Non-dismissible (ongoing = true), silent, low-priority — mirrors the
+     * usage timer notification but on the COOLDOWN_NOTIF_CHANNEL_ID channel.
      */
+    private fun postCooldownNotification(remainingSeconds: Int) {
+        ensureNotificationChannels()
+        val notification = NotificationCompat.Builder(activity, COOLDOWN_NOTIF_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_menu_recent_history)
+            .setContentTitle("Cooldown — apps locked")
+            .setContentText(formatHms(remainingSeconds))
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(
+                android.app.PendingIntent.getActivity(
+                    activity, 0, mainActivityIntent(),
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                        or android.app.PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
+            .build()
+        notificationManager?.notify(COOLDOWN_NOTIF_ID, notification)
+    }
+
+    private fun cancelCooldownNotification() {
+        notificationManager?.cancel(COOLDOWN_NOTIF_ID)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Audible threshold alert helpers — usage
+    // ─────────────────────────────────────────────────────────────────────────
+
     private fun postThresholdAlert(remainingSeconds: Int) {
         ensureNotificationChannels()
 
@@ -340,23 +419,77 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(alert.title)
             .setContentText(alert.body)
-            .setOngoing(false)                          // dismissible by the user
-            .setAutoCancel(true)                        // dismissed on tap
+            .setOngoing(false)
+            .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setDefaults(NotificationCompat.DEFAULT_ALL) // sound + vibration
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(
                 android.app.PendingIntent.getActivity(
-                    activity,
-                    alert.notifId,                      // unique request code per alert
-                    Intent(activity, MainActivity::class.java).apply {
-                        addFlags(
-                            Intent.FLAG_ACTIVITY_NEW_TASK
-                                or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                                or Intent.FLAG_ACTIVITY_SINGLE_TOP,
-                        )
-                    },
+                    activity, alert.notifId, mainActivityIntent(),
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                        or android.app.PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
+            .build()
+
+        notificationManager?.notify(alert.notifId, notification)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Audible threshold alert helpers — cooldown
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Posts a one-shot audible, dismissible notification when the cooldown
+     * countdown crosses a threshold.
+     *
+     * Thresholds (fuzzy, same logic as usage alerts):
+     *   >= 270 s → 5-minute warning  (COOLDOWN_ALERT_NOTIF_ID_5MIN)
+     *   >= 45 s  → 1-minute warning  (COOLDOWN_ALERT_NOTIF_ID_1MIN)
+     *   < 45 s   → 10-second warning (COOLDOWN_ALERT_NOTIF_ID_10S)
+     *
+     * Uses a dedicated channel (COOLDOWN_ALERT_CHANNEL_ID) so users cannot
+     * disable it independently of regular usage alerts — both are high-priority
+     * and not suppressible from within the app.
+     */
+    private fun postCooldownThresholdAlert(remainingSeconds: Int) {
+        ensureNotificationChannels()
+
+        data class AlertInfo(val notifId: Int, val title: String, val body: String)
+
+        val alert = when {
+            remainingSeconds >= 270 -> AlertInfo(
+                COOLDOWN_ALERT_NOTIF_ID_5MIN,
+                "5 minutes until unlock ⏳",
+                "Your cooldown ends in 5 minutes — get ready to study!",
+            )
+            remainingSeconds >= 45 -> AlertInfo(
+                COOLDOWN_ALERT_NOTIF_ID_1MIN,
+                "1 minute until unlock ⚠️",
+                "Almost there — apps will unlock in 1 minute.",
+            )
+            else -> AlertInfo(
+                COOLDOWN_ALERT_NOTIF_ID_10S,
+                "Apps unlocking soon 🎉",
+                "Your cooldown is ending in 10 seconds!",
+            )
+        }
+
+        val notification = NotificationCompat.Builder(activity, COOLDOWN_ALERT_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(alert.title)
+            .setContentText(alert.body)
+            .setOngoing(false)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setContentIntent(
+                android.app.PendingIntent.getActivity(
+                    activity, alert.notifId, mainActivityIntent(),
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT
                         or android.app.PendingIntent.FLAG_IMMUTABLE,
                 ),
