@@ -1,11 +1,13 @@
 package com.example.studymentor
 
 import android.app.AppOpsManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.drawable.GradientDrawable
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -21,6 +23,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.app.NotificationCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
@@ -36,6 +39,11 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         private const val REQUEST_OVERLAY_PERMISSION     = 1001
         private const val REQUEST_USAGE_STATS_PERMISSION = 1002
 
+        // ── Notification constants ────────────────────────────────────────────
+        private const val NOTIF_CHANNEL_ID   = "studymentor_usage_timer"
+        private const val NOTIF_CHANNEL_NAME = "Usage Timer"
+        private const val NOTIF_ID           = 7001
+
         @Volatile var instance: OverlayPlugin? = null
     }
 
@@ -44,10 +52,9 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     private var windowManager: WindowManager? = null
     private var countdownText: TextView? = null
 
-    // ── Draggable usage timer overlay ─────────────────────────────────────────
-    private var usageTimerView: FrameLayout? = null
-    private var usageTimerText: TextView? = null
-    private var usageTimerParams: WindowManager.LayoutParams? = null
+    // ── Notification (replaces draggable timer overlay) ───────────────────────
+    private var notificationManager: NotificationManager? = null
+    private var notifChannelCreated = false
 
     // ── Channel & audio ───────────────────────────────────────────────────────
     private var overlayChannel: MethodChannel? = null
@@ -87,6 +94,30 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         ).setMethodCallHandler { call, result -> handleAccessibility(call, result) }
 
         audioManager = activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        notificationManager =
+            activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        ensureNotificationChannel()
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Notification channel (Android 8+)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun ensureNotificationChannel() {
+        if (notifChannelCreated) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                NOTIF_CHANNEL_ID,
+                NOTIF_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW, // silent — no sound/vibration
+            ).apply {
+                description = "Shows how much time is left before the usage limit is reached"
+                setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            notificationManager?.createNotificationChannel(channel)
+        }
+        notifChannelCreated = true
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -117,7 +148,8 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 }
                 val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 30
                 activity.runOnUiThread {
-                    removeUsageTimer()
+                    // Hide usage notification before showing the full-screen overlay
+                    cancelUsageNotification()
                     showOrUpdateOverlay(remainingSeconds)
                     result.success(null)
                 }
@@ -138,44 +170,34 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 }
             }
 
-            // ── Usage timer ─────────────────────────────────────────────────
+            // ── Usage timer notification ─────────────────────────────────────
 
             "showUsageTimer" -> {
-                if (!Settings.canDrawOverlays(activity)) {
-                    result.error("NO_PERMISSION", "SYSTEM_ALERT_WINDOW not granted", null)
-                    return
-                }
                 val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
-                activity.runOnUiThread {
-                    showOrUpdateUsageTimer(remainingSeconds)
-                    result.success(null)
-                }
+                postUsageNotification(remainingSeconds)
+                result.success(null)
             }
 
             "hideUsageTimer" -> {
-                activity.runOnUiThread {
-                    removeUsageTimer()
-                    result.success(null)
-                }
+                cancelUsageNotification()
+                result.success(null)
             }
 
             "updateUsageTimer" -> {
                 val remaining = call.argument<Int>("remainingSeconds") ?: 0
-                activity.runOnUiThread {
-                    if (usageTimerView != null) {
-                        updateUsageTimerDisplay(remaining)
-                    } else {
-                        showOrUpdateUsageTimer(remaining)
-                    }
-                    result.success(null)
-                }
+                postUsageNotification(remaining)
+                result.success(null)
             }
 
             "updateState" -> result.success(null)
 
             "bringAppToForeground" -> {
                 val intent = Intent(activity, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK
+                            or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                            or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                    )
                 }
                 activity.startActivity(intent)
                 result.success(null)
@@ -183,6 +205,67 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
             else -> result.notImplemented()
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Usage notification helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Formats [totalSeconds] as HH:MM:SS. */
+    private fun formatHms(totalSeconds: Int): String {
+        val h = totalSeconds / 3600
+        val m = (totalSeconds % 3600) / 60
+        val s = totalSeconds % 60
+        return String.format("%02d:%02d:%02d", h, m, s)
+    }
+
+    /**
+     * Posts (or updates) the persistent usage-timer notification.
+     * The notification is non-dismissible (ongoing = true) and silent.
+     */
+    private fun postUsageNotification(remainingSeconds: Int) {
+        ensureNotificationChannel()
+
+        val timeText = formatHms(remainingSeconds)
+
+        // android.R.drawable.ic_menu_recent_history is a built-in timer/clock
+        // icon available on all API levels without any extra asset.
+        val iconRes = android.R.drawable.ic_menu_recent_history
+
+        val notification = NotificationCompat.Builder(activity, NOTIF_CHANNEL_ID)
+            .setSmallIcon(iconRes)
+            .setContentTitle("Time remaining")
+            .setContentText(timeText)
+            .setOngoing(true)           // non-dismissible by the user
+            .setOnlyAlertOnce(true)     // no sound/vibration on updates
+            .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            // Tapping the notification brings the app back to the foreground
+            .setContentIntent(
+                android.app.PendingIntent.getActivity(
+                    activity,
+                    0,
+                    Intent(activity, MainActivity::class.java).apply {
+                        addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK
+                                or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                                or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                        )
+                    },
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                        or android.app.PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
+            .build()
+
+        notificationManager?.notify(NOTIF_ID, notification)
+    }
+
+    /** Cancels the usage-timer notification. */
+    private fun cancelUsageNotification() {
+        notificationManager?.cancel(NOTIF_ID)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -308,7 +391,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Full-screen overlay
+    // Full-screen overlay (cooldown — unchanged)
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun showOrUpdateOverlay(remainingSeconds: Int) {
@@ -355,7 +438,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 if (event.keyCode == KeyEvent.KEYCODE_BACK) {
                     StudyMentorAccessibilityService.justIntercepted = true
                     StudyMentorAccessibilityService.instance?.performGlobalAction(
-                        android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
+                        android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME,
                     )
                     dismissOverlay()
                 }
@@ -379,11 +462,9 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
         val mascotCircle = TextView(activity).apply {
             val size = dpToPx(120)
-
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
-
             setBackgroundColor(Color.parseColor("#5C6BC0"))
             textSize = 48f
             gravity = Gravity.CENTER
@@ -396,7 +477,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dpToPx(24) }
-
             text = "Take a Break!"
             textSize = 28f
             setTextColor(Color.WHITE)
@@ -408,7 +488,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dpToPx(8) }
-
             text = "You have been using this app for too long"
             textSize = 16f
             setTextColor(Color.parseColor("#B0B0B0"))
@@ -423,7 +502,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 gravity = Gravity.CENTER_HORIZONTAL
                 topMargin = dpToPx(32)
             }
-
             text = "00:00"
             textSize = 56f
             setTextColor(Color.parseColor("#5C6BC0"))
@@ -435,7 +513,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dpToPx(8) }
-
             text = "You may press home or back"
             textSize = 13f
             setTextColor(Color.parseColor("#808080"))
@@ -449,7 +526,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         center.addView(timerLabel)
 
         root.addView(center)
-
         return root
     }
 
@@ -467,227 +543,14 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Small draggable timer overlay
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private fun showOrUpdateUsageTimer(remainingSeconds: Int) {
-        if (usageTimerView != null) {
-            updateUsageTimerDisplay(remainingSeconds)
-            return
-        }
-
-        if (windowManager == null) {
-            windowManager = activity.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        }
-
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        else
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
-
-        val displayMetrics = activity.resources.displayMetrics
-        val screenHeight = displayMetrics.heightPixels
-
-        // ── Default position: bottom-left corner ──────────────────────────────
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            type,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                    or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = dpToPx(16)
-            y = screenHeight - dpToPx(120)
-        }
-
-        usageTimerParams = params
-
-        val timerView = buildUsageTimerView(params)
-        usageTimerView = timerView
-
-        windowManager?.addView(timerView, params)
-
-        updateUsageTimerDisplay(remainingSeconds)
-    }
-
-    private fun buildUsageTimerView(params: WindowManager.LayoutParams): FrameLayout {
-
-        var dragStartParamX = 0
-        var dragStartParamY = 0
-        var dragStartTouchX = 0f
-        var dragStartTouchY = 0f
-        var isDragging = false
-        var velocityTracker: android.view.VelocityTracker? = null
-
-        val DRAG_THRESHOLD = dpToPx(4)
-        // Fling faster than this (dp/s) in any direction triggers dismiss
-        val FLING_VELOCITY_DP = 800f
-        val FLING_VELOCITY_PX = FLING_VELOCITY_DP * activity.resources.displayMetrics.density
-        // Or drag the view this far past any edge (dp) to trigger dismiss
-        val EDGE_DISMISS_DP = dpToPx(60)
-
-        // ── Minimal container: just enough padding to frame the digits ────────
-        val container = FrameLayout(activity).apply {
-            setPadding(dpToPx(6), dpToPx(3), dpToPx(6), dpToPx(3))
-
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(6).toFloat()
-                setColor(Color.parseColor("#CC000000"))
-            }
-
-            elevation = dpToPx(6).toFloat()
-        }
-
-        usageTimerText = TextView(activity).apply {
-            text = "00:00:00"
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            includeFontPadding = false
-
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-            )
-        }
-
-        container.addView(usageTimerText)
-
-        container.setOnTouchListener { _, event ->
-
-            val currentParams = usageTimerParams ?: return@setOnTouchListener false
-            val metrics = activity.resources.displayMetrics
-
-            when (event.action) {
-
-                MotionEvent.ACTION_DOWN -> {
-                    dragStartParamX = currentParams.x
-                    dragStartParamY = currentParams.y
-                    dragStartTouchX = event.rawX
-                    dragStartTouchY = event.rawY
-                    isDragging = false
-
-                    velocityTracker?.recycle()
-                    velocityTracker = android.view.VelocityTracker.obtain()
-                    velocityTracker?.addMovement(event)
-                    true
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    velocityTracker?.addMovement(event)
-
-                    val dx = (event.rawX - dragStartTouchX).toInt()
-                    val dy = (event.rawY - dragStartTouchY).toInt()
-
-                    if (!isDragging) {
-                        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-                            isDragging = true
-                        } else {
-                            return@setOnTouchListener true
-                        }
-                    }
-
-                    // Allow dragging freely past edges (no coerce) so the
-                    // view can be flung off-screen
-                    currentParams.x = dragStartParamX + dx
-                    currentParams.y = dragStartParamY + dy
-
-                    try {
-                        windowManager?.updateViewLayout(usageTimerView, currentParams)
-                    } catch (_: Exception) { }
-
-                    true
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    velocityTracker?.addMovement(event)
-                    velocityTracker?.computeCurrentVelocity(1000) // px/s
-
-                    val vx = velocityTracker?.xVelocity ?: 0f
-                    val vy = velocityTracker?.yVelocity ?: 0f
-                    velocityTracker?.recycle()
-                    velocityTracker = null
-
-                    val isFling = Math.abs(vx) > FLING_VELOCITY_PX ||
-                                  Math.abs(vy) > FLING_VELOCITY_PX
-
-                    val isPastEdge = currentParams.x < -EDGE_DISMISS_DP ||
-                                     currentParams.x > metrics.widthPixels + EDGE_DISMISS_DP ||
-                                     currentParams.y < -EDGE_DISMISS_DP ||
-                                     currentParams.y > metrics.heightPixels + EDGE_DISMISS_DP
-
-                    if (isDragging && (isFling || isPastEdge)) {
-                        // Notify Flutter then remove the view
-                        overlayChannel?.invokeMethod("onUsageTimerDismissed", null)
-                        removeUsageTimer()
-                    } else {
-                        // Snap back inside the screen
-                        currentParams.x = currentParams.x
-                            .coerceAtLeast(0)
-                            .coerceAtMost(metrics.widthPixels - dpToPx(100))
-                        currentParams.y = currentParams.y
-                            .coerceAtLeast(0)
-                            .coerceAtMost(metrics.heightPixels - dpToPx(50))
-                        try {
-                            windowManager?.updateViewLayout(usageTimerView, currentParams)
-                        } catch (_: Exception) { }
-                    }
-
-                    isDragging = false
-                    true
-                }
-
-                MotionEvent.ACTION_CANCEL -> {
-                    velocityTracker?.recycle()
-                    velocityTracker = null
-                    isDragging = false
-                    true
-                }
-
-                else -> false
-            }
-        }
-
-        return container
-    }
-
-    private fun removeUsageTimer() {
-        usageTimerView?.let {
-            try {
-                windowManager?.removeView(it)
-            } catch (_: Exception) { }
-        }
-
-        usageTimerView = null
-        usageTimerText = null
-        usageTimerParams = null
-    }
-
-    private fun updateUsageTimerDisplay(remainingSeconds: Int) {
-
-        val hours = remainingSeconds / 3600
-        val mins = (remainingSeconds % 3600) / 60
-        val secs = remainingSeconds % 60
-
-        usageTimerText?.text =
-            String.format("%02d:%02d:%02d", hours, mins, secs)
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
     // Helpers
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun getForegroundPackage(): String? {
-
         val usageManager = activity.getSystemService(Context.USAGE_STATS_SERVICE)
             as? android.app.usage.UsageStatsManager ?: return null
 
         val now = System.currentTimeMillis()
-
         val events = usageManager.queryEvents(now - 300_000L, now)
 
         var lastPackage: String? = null
@@ -697,10 +560,8 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
-
             if (
-                event.eventType ==
-                android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND &&
+                event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND &&
                 event.timeStamp > lastTime
             ) {
                 lastTime = event.timeStamp
@@ -712,31 +573,25 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     private fun hasUsageStatsPermission(): Boolean {
-
-        val appOps = activity.getSystemService(Context.APP_OPS_SERVICE)
-                as AppOpsManager
-
-        val mode =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                appOps.unsafeCheckOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    android.os.Process.myUid(),
-                    activity.packageName,
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                appOps.checkOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    android.os.Process.myUid(),
-                    activity.packageName,
-                )
-            }
-
+        val appOps = activity.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                activity.packageName,
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                activity.packageName,
+            )
+        }
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
     private fun isAccessibilityEnabled(): Boolean {
-
         val prefString = Settings.Secure.getString(
             activity.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
@@ -750,18 +605,12 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         splitter.setString(prefString)
 
         while (splitter.hasNext()) {
-
             val entry = splitter.next()
             val slash = entry.indexOf('/')
-
             if (slash < 0) continue
             if (entry.substring(0, slash) != pkg) continue
-
             val cls = entry.substring(slash + 1)
-
-            if (cls == fullClass || cls == shortClass) {
-                return true
-            }
+            if (cls == fullClass || cls == shortClass) return true
         }
 
         return false

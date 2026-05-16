@@ -398,7 +398,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                     MaterialPageRoute(
                       builder: (_) => BlocProvider.value(
                         value: context.read<AuthBloc>(),
-                        child: ParentStudentSettingsScreen(student: widget.student),
+                        child: ParentStudentSettingsScreen(
+                          student: widget.student,
+                        ),
                       ),
                     ),
                   ),
