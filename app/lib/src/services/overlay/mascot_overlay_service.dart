@@ -24,6 +24,7 @@ class MascotOverlayService {
   bool _isBlocked = false;
   bool _overlayVisible = false;
   bool _usageNotificationVisible = false;
+  bool _cooldownNotificationVisible = false;
   MascotState _mascotState = MascotState.idle;
 
   // ── Countdown ──────────────────────────────────────────────────────────────
@@ -42,9 +43,13 @@ class MascotOverlayService {
   int _totalUsageSeconds = 0;
 
   // ── Threshold alerts ───────────────────────────────────────────────────────
-  /// Tracks which one-shot alert thresholds (in seconds) have already fired
-  /// this session. Cleared on unblock or stop so they re-arm next session.
+  /// Tracks which one-shot usage alert thresholds (in seconds) have already
+  /// fired this session. Cleared on unblock or stop so they re-arm next session.
   final Set<int> _firedThresholds = {};
+
+  /// Tracks which one-shot cooldown alert thresholds (in seconds) have already
+  /// fired this cooldown session. Cleared on unblock or stop.
+  final Set<int> _firedCooldownThresholds = {};
 
   // ── Quiz trigger stream ────────────────────────────────────────────────────
   final StreamController<void> _quizController =
@@ -61,9 +66,17 @@ class MascotOverlayService {
   // Lazily loaded; null until the first poll that needs it.
   SettingsService? _settingsService;
 
-  Future<bool> _isTimerNotificationEnabled() async {
+  Future<SettingsService> _getSettings() async {
     _settingsService ??= await SettingsService.create();
-    return _settingsService!.timerNotificationEnabled;
+    return _settingsService!;
+  }
+
+  Future<bool> _isTimerNotificationEnabled() async {
+    return (await _getSettings()).timerNotificationEnabled;
+  }
+
+  Future<bool> _isCooldownNotificationEnabled() async {
+    return (await _getSettings()).cooldownNotificationEnabled;
   }
 
   // ── Config ─────────────────────────────────────────────────────────────────
@@ -101,15 +114,18 @@ class MascotOverlayService {
     _running = false;
     _pollTimer?.cancel();
     await _hideUsageNotification();
+    await _hideCooldownNotification();
     await _hideOverlayNative();
     await _resetAccessibilityState();
     _isBlocked = false;
     _overlayVisible = false;
     _usageNotificationVisible = false;
+    _cooldownNotificationVisible = false;
     _remainingSeconds = 0;
     _totalUsageSeconds = 0;
     _warningStarting = false;
     _firedThresholds.clear();
+    _firedCooldownThresholds.clear();
     _quizController.close();
     debugPrint('[MascotOverlayService] Stopped.');
   }
@@ -140,6 +156,7 @@ class MascotOverlayService {
   bool get isBlocked => _isBlocked;
   bool get isOverlayVisible => _overlayVisible;
   bool get isUsageNotificationVisible => _usageNotificationVisible;
+  bool get isCooldownNotificationVisible => _cooldownNotificationVisible;
   int get remainingSeconds => _remainingSeconds;
   int get totalUsageSeconds => _totalUsageSeconds;
   MascotState get currentState => _mascotState;
@@ -181,8 +198,6 @@ class MascotOverlayService {
   // ── Warning phase ──────────────────────────────────────────────────────────
 
   Future<void> _startWarning() async {
-    // Prevent a second _poll tick from entering here while we're still
-    // awaiting native calls — otherwise the countdown gets reset mid-flight.
     if (_warningStarting) return;
     _warningStarting = true;
 
@@ -205,7 +220,6 @@ class MascotOverlayService {
 
     _quizController.add(null);
 
-    // Countdown is now driven by _poll() — no separate timer needed.
     _warningStarting = false;
   }
 
@@ -215,8 +229,10 @@ class MascotOverlayService {
     _totalUsageSeconds = 0;
     _mascotState = MascotState.idle;
     _firedThresholds.clear();
+    _firedCooldownThresholds.clear();
 
     await _hideUsageNotification();
+    await _hideCooldownNotification();
     await _hideOverlayNative();
     await _resetAccessibilityState();
     debugPrint('[MascotOverlayService] Cooldown ended — student is free.');
@@ -235,16 +251,11 @@ class MascotOverlayService {
 
   // ── Usage notification helpers ─────────────────────────────────────────────
 
-  /// Posts or updates the persistent usage-timer notification.
-  /// Reads [SettingsService.timerNotificationEnabled] on every call so that
-  /// toggling the setting takes effect on the very next poll tick — no restart
-  /// required.
   Future<void> _showOrUpdateUsageNotification({
     required int remainingSeconds,
   }) async {
     final enabled = await _isTimerNotificationEnabled();
     if (!enabled) {
-      // Setting was just turned off — cancel immediately if still visible.
       await _hideUsageNotification();
       return;
     }
@@ -277,12 +288,53 @@ class MascotOverlayService {
     }
   }
 
-  // ── Threshold alert helpers ────────────────────────────────────────────────
+  // ── Cooldown notification helpers ──────────────────────────────────────────
 
-  /// Fires a one-shot audible alert notification when [remainingToBlock] first
-  /// crosses one of the defined thresholds (300 s, 60 s, 10 s).
-  /// Each threshold fires at most once per session; [_firedThresholds] is
-  /// cleared in [_unblock] and [stop] so alerts re-arm for the next session.
+  /// Posts or updates the persistent cooldown-timer notification.
+  /// Reads [SettingsService.cooldownNotificationEnabled] on every call so that
+  /// toggling the setting takes effect on the very next poll tick — no restart
+  /// required.
+  Future<void> _showOrUpdateCooldownNotification({
+    required int remainingSeconds,
+  }) async {
+    final enabled = await _isCooldownNotificationEnabled();
+    if (!enabled) {
+      await _hideCooldownNotification();
+      return;
+    }
+
+    try {
+      if (_cooldownNotificationVisible) {
+        await _overlayChannel.invokeMethod('updateCooldownTimer', {
+          'remainingSeconds': remainingSeconds,
+        });
+      } else {
+        await _overlayChannel.invokeMethod('showCooldownTimer', {
+          'remainingSeconds': remainingSeconds,
+        });
+        _cooldownNotificationVisible = true;
+      }
+    } on PlatformException catch (e) {
+      debugPrint(
+        '[MascotOverlayService] cooldown notification error: ${e.message}',
+      );
+    }
+  }
+
+  Future<void> _hideCooldownNotification() async {
+    if (!_cooldownNotificationVisible) return;
+    _cooldownNotificationVisible = false;
+    try {
+      await _overlayChannel.invokeMethod('hideCooldownTimer');
+    } on PlatformException catch (e) {
+      debugPrint(
+        '[MascotOverlayService] hideCooldownTimer error: ${e.message}',
+      );
+    }
+  }
+
+  // ── Threshold alert helpers — usage ───────────────────────────────────────
+
   Future<void> _maybeFireThresholdAlert(int remainingToBlock) async {
     const thresholds = [300, 60, 10];
     for (final threshold in thresholds) {
@@ -295,7 +347,7 @@ class MascotOverlayService {
             'remainingSeconds': remainingToBlock,
           });
           debugPrint(
-            '[MascotOverlayService] Threshold alert fired: '
+            '[MascotOverlayService] Usage threshold alert fired: '
             '${remainingToBlock}s remaining (threshold: ${threshold}s).',
           );
         } on PlatformException catch (e) {
@@ -303,7 +355,37 @@ class MascotOverlayService {
             '[MascotOverlayService] showThresholdAlert error: ${e.message}',
           );
         }
-        // Only fire one threshold per tick in case multiple are crossed at once.
+        break;
+      }
+    }
+  }
+
+  // ── Threshold alert helpers — cooldown ────────────────────────────────────
+
+  /// Fires a one-shot audible alert notification when [remainingCooldown] first
+  /// crosses one of the defined thresholds (300 s, 60 s, 10 s).
+  /// These alerts are ALWAYS fired regardless of the cooldown notification
+  /// toggle — they cannot be disabled from student settings.
+  Future<void> _maybeFireCooldownThresholdAlert(int remainingCooldown) async {
+    const thresholds = [300, 60, 10];
+    for (final threshold in thresholds) {
+      if (!_firedCooldownThresholds.contains(threshold) &&
+          remainingCooldown <= threshold &&
+          remainingCooldown > 0) {
+        _firedCooldownThresholds.add(threshold);
+        try {
+          await _overlayChannel.invokeMethod('showCooldownThresholdAlert', {
+            'remainingSeconds': remainingCooldown,
+          });
+          debugPrint(
+            '[MascotOverlayService] Cooldown threshold alert fired: '
+            '${remainingCooldown}s remaining (threshold: ${threshold}s).',
+          );
+        } on PlatformException catch (e) {
+          debugPrint(
+            '[MascotOverlayService] showCooldownThresholdAlert error: ${e.message}',
+          );
+        }
         break;
       }
     }
@@ -331,6 +413,16 @@ class MascotOverlayService {
         if (_remainingSeconds > 0) {
           _remainingSeconds--;
           debugPrint('[MascotOverlayService] Countdown: $_remainingSeconds s');
+
+          // Show/update the persistent cooldown notification (if enabled).
+          await _showOrUpdateCooldownNotification(
+            remainingSeconds: _remainingSeconds,
+          );
+
+          // Fire one-shot audible alerts at threshold crossings.
+          // These ignore the cooldown notification toggle.
+          await _maybeFireCooldownThresholdAlert(_remainingSeconds);
+
           if (_remainingSeconds <= 0) {
             await _unblock();
             return;

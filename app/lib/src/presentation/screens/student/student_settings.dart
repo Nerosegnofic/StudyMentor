@@ -16,6 +16,7 @@ class _StudentSettingsState extends State<StudentSettings> {
   bool _soundEffectsEnabled = true;
   bool _backgroundMusicEnabled = false;
   bool _timerNotificationEnabled = true;
+  bool _cooldownNotificationEnabled = true;
   String _appVersion = 'v1.0';
   bool _loading = true;
 
@@ -38,6 +39,7 @@ class _StudentSettingsState extends State<StudentSettings> {
       _soundEffectsEnabled = settings.soundEffectsEnabled;
       _backgroundMusicEnabled = settings.backgroundMusicEnabled;
       _timerNotificationEnabled = settings.timerNotificationEnabled;
+      _cooldownNotificationEnabled = settings.cooldownNotificationEnabled;
       _appVersion = info != null ? 'v${info.version}' : 'v1.0';
       _loading = false;
     });
@@ -58,6 +60,8 @@ class _StudentSettingsState extends State<StudentSettings> {
           _backgroundMusicEnabled = value;
         case 'timerNotification':
           _timerNotificationEnabled = value;
+        case 'cooldownNotification':
+          _cooldownNotificationEnabled = value;
       }
     });
     await setter(value);
@@ -142,6 +146,19 @@ class _StudentSettingsState extends State<StudentSettings> {
           'timerNotification',
           v,
           _settings!.setTimerNotificationEnabled,
+        ),
+      ),
+      _divider(),
+      _toggleRow(
+        icon: Icons.hourglass_bottom_outlined,
+        title: 'Cooldown Timer Notification',
+        subtitle:
+            'Show a notification counting down your remaining cooldown time',
+        value: _cooldownNotificationEnabled,
+        onChanged: (v) => _toggle(
+          'cooldownNotification',
+          v,
+          _settings!.setCooldownNotificationEnabled,
         ),
       ),
     ],
