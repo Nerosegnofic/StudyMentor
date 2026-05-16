@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
@@ -52,13 +51,6 @@ class _StudentScreenState extends State<StudentScreen>
 
   /// Subscription to the quiz-trigger stream from MascotOverlayService.
   StreamSubscription<void>? _quizSub;
-
-  static const List<String> _titles = [
-    'Home',
-    'Shop',
-    'Leaderboard',
-    'Friends',
-  ];
 
   // ── Verification dialog state ─────────────────────────────────────────────
   //

@@ -15,6 +15,7 @@ class _StudentSettingsState extends State<StudentSettings> {
   bool _notificationsEnabled = true;
   bool _soundEffectsEnabled = true;
   bool _backgroundMusicEnabled = false;
+  bool _timerNotificationEnabled = true;
   String _appVersion = 'v1.0';
   bool _loading = true;
 
@@ -36,6 +37,7 @@ class _StudentSettingsState extends State<StudentSettings> {
       _notificationsEnabled = settings.notificationsEnabled;
       _soundEffectsEnabled = settings.soundEffectsEnabled;
       _backgroundMusicEnabled = settings.backgroundMusicEnabled;
+      _timerNotificationEnabled = settings.timerNotificationEnabled;
       _appVersion = info != null ? 'v${info.version}' : 'v1.0';
       _loading = false;
     });
@@ -54,6 +56,8 @@ class _StudentSettingsState extends State<StudentSettings> {
           _soundEffectsEnabled = value;
         case 'music':
           _backgroundMusicEnabled = value;
+        case 'timerNotification':
+          _timerNotificationEnabled = value;
       }
     });
     await setter(value);
@@ -127,6 +131,18 @@ class _StudentSettingsState extends State<StudentSettings> {
         value: _backgroundMusicEnabled,
         onChanged: (v) =>
             _toggle('music', v, _settings!.setBackgroundMusicEnabled),
+      ),
+      _divider(),
+      _toggleRow(
+        icon: Icons.timer_outlined,
+        title: 'Usage Timer Notification',
+        subtitle: 'Show a notification counting down your remaining app time',
+        value: _timerNotificationEnabled,
+        onChanged: (v) => _toggle(
+          'timerNotification',
+          v,
+          _settings!.setTimerNotificationEnabled,
+        ),
       ),
     ],
   );
