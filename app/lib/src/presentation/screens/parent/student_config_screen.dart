@@ -33,6 +33,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isDirty = false;
+  bool _hasTimingErrors = false;
 
   /// True while a parent-triggered refresh is in flight.
   bool _isRefreshing = false;
@@ -287,6 +288,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   AppBar _buildAppBar() {
+    final canSave = _isDirty && !_isSaving && !_hasTimingErrors;
+
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,10 +335,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         ),
         // ── Save button ────────────────────────────────────────────────────
         AnimatedOpacity(
-          opacity: (_isDirty && !_isSaving) ? 1.0 : 0.3,
+          opacity: canSave ? 1.0 : 0.3,
           duration: const Duration(milliseconds: 200),
           child: TextButton.icon(
-            onPressed: (_isDirty && !_isSaving) ? _save : null,
+            onPressed: canSave ? _save : null,
             icon: _isSaving
                 ? const SizedBox(
                     width: 16,
@@ -368,6 +371,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           onChanged: (updated) {
             setState(() => _config = updated);
             _markDirty();
+          },
+          onErrorsChanged: (hasErrors) {
+            setState(() => _hasTimingErrors = hasErrors);
           },
         ),
         // ── Quick-action row: Settings ────────────────────────────────────
@@ -519,9 +525,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   // ── document upload ────────────────────────────────────────────────────────
-  //
-  // Opens the document upload screen with its own DocumentUploadBloc so the
-  // parent can upload curriculum PDFs on behalf of the student.
 
   static const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
 
@@ -548,12 +551,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   // ── delete student ─────────────────────────────────────────────────────────
-  //
-  // Opens _DeleteStudentDialog wrapped in BlocProvider.value so the dialog can
-  // access the AuthBloc. The dialog dispatches DeleteStudentRequested itself,
-  // shows a spinner while loading, surfaces errors inline, and pops when
-  // StudentDeleted fires. This screen's BlocListener then pops the config
-  // screen itself, returning to the parent students list.
 
   Future<void> _confirmDeleteStudent() async {
     final authState = context.read<AuthBloc>().state;
@@ -561,9 +558,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
 
     await showDialog<void>(
       context: context,
-      // barrierDismissible defaults to false — the Cancel button covers
-      // intentional dismissal, and we must not allow tap-outside to escape
-      // while deletion is in flight.
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<AuthBloc>(),
         child: _DeleteStudentDialog(
@@ -604,20 +598,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
 }
 
 // ── _DeleteStudentDialog ──────────────────────────────────────────────────────
-//
-// Self-contained deletion dialog for verified students (shown from
-// StudentConfigScreen).
-//
-// Lifecycle:
-//   • "Delete Permanently" pressed  → dispatches DeleteStudentRequested,
-//                                     shows an inline spinner, disables buttons.
-//   • StudentDeleteLoading received → spinner visible, buttons disabled.
-//   • StudentDeleted received       → pops itself; the screen's BlocListener
-//                                     then pops the config screen too.
-//   • StudentDeleteError received   → stops spinner, shows error message
-//                                     inline beneath the password field;
-//                                     dialog remains open for correction.
-//   • "Cancel" pressed / tap outside → pops normally (only when not loading).
 
 class _DeleteStudentDialog extends StatefulWidget {
   final StudentModel student;
@@ -671,8 +651,6 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // PopScope prevents the back button / predictive-back gesture from
-    // dismissing the dialog while deletion is in flight.
     return PopScope(
       canPop: !_isLoading,
       child: BlocListener<AuthBloc, AuthState>(
@@ -681,8 +659,6 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
             setState(() => _isLoading = true);
           } else if (state is StudentDeleted &&
               state.studentUid == widget.student.uid) {
-            // Success — close the dialog. The screen's BlocListener handles
-            // popping StudentConfigScreen itself.
             Navigator.of(context).pop();
           } else if (state is StudentDeleteError) {
             final isWrongPassword = state.message.contains(
@@ -835,8 +811,13 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
 class _GlobalTimingCard extends StatefulWidget {
   final StudentConfigModel config;
   final void Function(StudentConfigModel updated) onChanged;
+  final void Function(bool hasErrors) onErrorsChanged;
 
-  const _GlobalTimingCard({required this.config, required this.onChanged});
+  const _GlobalTimingCard({
+    required this.config,
+    required this.onChanged,
+    required this.onErrorsChanged,
+  });
 
   @override
   State<_GlobalTimingCard> createState() => _GlobalTimingCardState();
@@ -847,6 +828,15 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
   late TextEditingController _usageMinutesCtl;
   late TextEditingController _cooldownHoursCtl;
   late TextEditingController _cooldownMinutesCtl;
+
+  // Tracks which fields currently hold an out-of-range value so the
+  // _TimeInput widget can show an inline error.
+  final Map<String, String?> _errors = {
+    'usageHours': null,
+    'usageMinutes': null,
+    'cooldownHours': null,
+    'cooldownMinutes': null,
+  };
 
   @override
   void initState() {
@@ -868,12 +858,17 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
   @override
   void didUpdateWidget(_GlobalTimingCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Sync controllers when config is replaced externally (e.g. after refresh).
     if (oldWidget.config != widget.config) {
       _usageHoursCtl.text = widget.config.usageHours.toString();
       _usageMinutesCtl.text = widget.config.usageMinutes.toString();
       _cooldownHoursCtl.text = widget.config.cooldownHours.toString();
       _cooldownMinutesCtl.text = widget.config.cooldownMinutes.toString();
+      setState(() => _errors.updateAll((_, __) => null));
+      // Defer the parent setState — calling onErrorsChanged directly here
+      // triggers setState on the parent mid-build, causing the crash.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _notifyErrors();
+      });
     }
   }
 
@@ -886,32 +881,55 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
     super.dispose();
   }
 
+  // ── validation helpers ─────────────────────────────────────────────────────
+
+  /// Notifies the parent whether any field currently has a validation error.
+  void _notifyErrors() {
+    widget.onErrorsChanged(_errors.values.any((e) => e != null));
+  }
+
+  /// Returns an error string when [value] is outside [min]..[max], else null.
+  String? _validateRange(String value, int min, int max) {
+    final parsed = int.tryParse(value);
+    if (parsed == null) return 'Must be a number';
+    if (parsed < min || parsed > max) return '$min – $max';
+    return null;
+  }
+
   void _onUsageHoursChanged(String v) {
-    final parsed = int.tryParse(v);
-    if (parsed != null && parsed >= 0) {
-      widget.onChanged(widget.config.copyWith(usageHours: parsed));
+    final error = _validateRange(v, 0, 24);
+    setState(() => _errors['usageHours'] = error);
+    if (error == null) {
+      widget.onChanged(widget.config.copyWith(usageHours: int.parse(v)));
     }
+    _notifyErrors();
   }
 
   void _onUsageMinutesChanged(String v) {
-    final parsed = int.tryParse(v);
-    if (parsed != null && parsed >= 0) {
-      widget.onChanged(widget.config.copyWith(usageMinutes: parsed));
+    final error = _validateRange(v, 0, 59);
+    setState(() => _errors['usageMinutes'] = error);
+    if (error == null) {
+      widget.onChanged(widget.config.copyWith(usageMinutes: int.parse(v)));
     }
+    _notifyErrors();
   }
 
   void _onCooldownHoursChanged(String v) {
-    final parsed = int.tryParse(v);
-    if (parsed != null && parsed >= 0) {
-      widget.onChanged(widget.config.copyWith(cooldownHours: parsed));
+    final error = _validateRange(v, 0, 24);
+    setState(() => _errors['cooldownHours'] = error);
+    if (error == null) {
+      widget.onChanged(widget.config.copyWith(cooldownHours: int.parse(v)));
     }
+    _notifyErrors();
   }
 
   void _onCooldownMinutesChanged(String v) {
-    final parsed = int.tryParse(v);
-    if (parsed != null && parsed >= 0) {
-      widget.onChanged(widget.config.copyWith(cooldownMinutes: parsed));
+    final error = _validateRange(v, 0, 59);
+    setState(() => _errors['cooldownMinutes'] = error);
+    if (error == null) {
+      widget.onChanged(widget.config.copyWith(cooldownMinutes: int.parse(v)));
     }
+    _notifyErrors();
   }
 
   @override
@@ -984,11 +1002,14 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
             ),
             const SizedBox(height: 10),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: _TimeInput(
                     controller: _usageHoursCtl,
                     suffix: 'hrs',
+                    hint: '0 – 24',
+                    errorText: _errors['usageHours'],
                     onChanged: _onUsageHoursChanged,
                   ),
                 ),
@@ -997,6 +1018,8 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                   child: _TimeInput(
                     controller: _usageMinutesCtl,
                     suffix: 'min',
+                    hint: '0 – 59',
+                    errorText: _errors['usageMinutes'],
                     onChanged: _onUsageMinutesChanged,
                   ),
                 ),
@@ -1024,11 +1047,14 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
             ),
             const SizedBox(height: 10),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: _TimeInput(
                     controller: _cooldownHoursCtl,
                     suffix: 'hrs',
+                    hint: '0 – 24',
+                    errorText: _errors['cooldownHours'],
                     onChanged: _onCooldownHoursChanged,
                   ),
                 ),
@@ -1037,6 +1063,8 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                   child: _TimeInput(
                     controller: _cooldownMinutesCtl,
                     suffix: 'min',
+                    hint: '0 – 59',
+                    errorText: _errors['cooldownMinutes'],
                     onChanged: _onCooldownMinutesChanged,
                   ),
                 ),
@@ -1526,16 +1554,27 @@ class _AppRuleCard extends StatelessWidget {
 class _TimeInput extends StatelessWidget {
   final TextEditingController controller;
   final String suffix;
+
+  /// Placeholder shown inside the field (e.g. "0 – 24").
+  final String hint;
+
+  /// Non-null when the current value is out of range.
+  final String? errorText;
+
   final ValueChanged<String> onChanged;
 
   const _TimeInput({
     required this.controller,
     required this.suffix,
+    required this.hint,
     required this.onChanged,
+    this.errorText,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasError = errorText != null;
+
     return TextFormField(
       controller: controller,
       keyboardType: TextInputType.number,
@@ -1544,21 +1583,42 @@ class _TimeInput extends StatelessWidget {
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         isDense: true,
+        hintText: hint,
+        hintStyle: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+        errorText: errorText,
+        errorStyle: const TextStyle(fontSize: 10, height: 1.2),
+        errorMaxLines: 1,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: hasError ? Colors.red.shade400 : Colors.grey.shade300,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF4A6CF7), width: 1.5),
+          borderSide: BorderSide(
+            color: hasError ? Colors.red.shade600 : const Color(0xFF4A6CF7),
+            width: 1.5,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.red.shade400),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.red.shade600, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 10,
           vertical: 10,
         ),
         suffixText: suffix,
-        suffixStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+        suffixStyle: TextStyle(
+          fontSize: 11,
+          color: hasError ? Colors.red.shade400 : Colors.grey.shade500,
+        ),
       ),
     );
   }
