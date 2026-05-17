@@ -38,14 +38,34 @@ class MascotOverlayService {
 
   // ── Quiz trigger stream ────────────────────────────────────────────────────
 
-  final StreamController<void> _quizController =
-      StreamController<void>.broadcast();
+  // Re-created lazily so it is never closed when a cold-launch onLimitReached
+  // arrives before init() has been called.
+  bool _pendingQuizTrigger = false;
+  StreamController<void>? _quizController;
 
-  Stream<void> get quizRequested => _quizController.stream;
+  StreamController<void> get _quizStream {
+    if (_quizController == null || _quizController!.isClosed) {
+      _quizController = StreamController<void>.broadcast();
+    }
+    return _quizController!;
+  }
+
+  Stream<void> get quizRequested => _quizStream.stream;
 
   void triggerQuizForTesting() {
     debugPrint('[MascotOverlayService] Quiz trigger (test).');
-    _quizController.add(null);
+    _quizStream.add(null);
+  }
+
+  /// Subscribes [onQuiz] to the quiz-trigger stream.
+  /// If a trigger fired before this call (cold-launch scenario), it is
+  /// delivered immediately via a microtask.
+  StreamSubscription<void> listenForQuiz(VoidCallback onQuiz) {
+    if (_pendingQuizTrigger) {
+      _pendingQuizTrigger = false;
+      Future.microtask(onQuiz);
+    }
+    return quizRequested.listen((_) => onQuiz());
   }
 
   // ── Settings ───────────────────────────────────────────────────────────────
@@ -109,7 +129,10 @@ class MascotOverlayService {
     _cooldownNotificationVisible = false;
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
-    _quizController.close();
+    // Close the existing controller so listeners are cleaned up, but do NOT
+    // set _quizController to null — _quizStream will lazily create a new one
+    // if needed (e.g. for a subsequent session).
+    _quizController?.close();
     debugPrint('[MascotOverlayService] Stopped.');
   }
 
@@ -205,6 +228,31 @@ class MascotOverlayService {
         await _accessibilityChannel.invokeMethod('setBlocked', {
           'blocked': true,
         });
+
+        // ── Cold-launch recovery ────────────────────────────────────────────
+        // When the app is fully killed and the usage limit is hit,
+        // UsageTimerService.block() starts MainActivity with
+        // EXTRA_QUIZ_ON_LAUNCH. MainActivity.onFlutterUiDisplayed() fires
+        // dispatchQuizOnLaunch() on the very first frame — which is the auth
+        // loading spinner. At that point StudentScreen.initState() has not
+        // run yet, so the timer-service MethodChannel handler is not
+        // registered and the invokeMethod("onLimitReached") call is silently
+        // dropped.
+        //
+        // By the time _syncStateFromNative() is awaited, listenForQuiz() has
+        // already been called synchronously in StudentScreen.initState()
+        // (it executes before init()'s first await suspends the isolate), so
+        // the broadcast stream has at least one active listener. Firing the
+        // quiz trigger here reliably covers the fully-killed-app case without
+        // risk of double-firing on warm resume (where this path is never
+        // reached because StudentScreen is never torn down).
+        if (_quizStream.hasListener) {
+          _quizStream.add(null);
+        } else {
+          // Listener hasn't subscribed yet (shouldn't happen in normal flow,
+          // but guard with the pending-trigger mechanism just in case).
+          _pendingQuizTrigger = true;
+        }
       }
 
       debugPrint(
@@ -260,6 +308,11 @@ class MascotOverlayService {
         break;
 
       case 'onLimitReached':
+        // This may arrive from MainActivity.dispatchQuizOnLaunch() on a
+        // cold-launch (app was fully closed when the limit was hit). We must
+        // handle it regardless of whether start() has been called yet — the
+        // native timer service is already running; we just need to update
+        // Dart-side state and fire the quiz stream.
         await _onLimitReached();
         break;
 
@@ -304,7 +357,7 @@ class MascotOverlayService {
 
       case 'onQuizRequested':
         debugPrint('[MascotOverlayService] Native overlay requested quiz.');
-        _quizController.add(null);
+        _quizStream.add(null);
         break;
     }
   }
@@ -320,13 +373,24 @@ class MascotOverlayService {
     );
 
     await _hideUsageNotification();
-    await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
 
+    try {
+      await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
+    } catch (_) {}
+
+    // bringAppToForeground is a no-op here because we ARE the foreground —
+    // MainActivity already launched us. Keep the call for the warm-resume
+    // path where the app was backgrounded but not swiped away.
     try {
       await _overlayChannel.invokeMethod('bringAppToForeground');
     } catch (_) {}
 
-    _quizController.add(null);
+    // If nobody is listening yet, park the trigger for listenForQuiz to pick
+    // up on the cold-launch path.
+    if (!_quizStream.hasListener) {
+      _pendingQuizTrigger = true;
+    }
+    _quizStream.add(null);
   }
 
   Future<void> _onUnblocked() async {

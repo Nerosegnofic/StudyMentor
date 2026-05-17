@@ -50,6 +50,15 @@ class UsageTimerService : Service() {
         const val EXTRA_COOLDOWN_LIMIT_SECS = "EXTRA_COOLDOWN_LIMIT_SECS"
         const val EXTRA_STUDENT_LOGGED_IN   = "EXTRA_STUDENT_LOGGED_IN"
 
+        /**
+         * Boolean extra attached to the MainActivity launch Intent when the
+         * usage limit is reached while the app is not in the foreground.
+         * MainActivity reads this on onCreate / onNewIntent and fires
+         * onLimitReached back into Flutter so the quiz screen is shown
+         * regardless of whether the app was already open or cold-launched.
+         */
+        const val EXTRA_QUIZ_ON_LAUNCH = "EXTRA_QUIZ_ON_LAUNCH"
+
         // Foreground service notification — active (usage / cooldown)
         private const val FG_NOTIF_CHANNEL_ID        = "studymentor_timer_service"
         private const val FG_NOTIF_CHANNEL_NAME      = "StudyMentor Timer"
@@ -263,6 +272,22 @@ class UsageTimerService : Service() {
         persistState()
         broadcastState(thresholdAlert = -1, limitReached = true)
         updateFgNotification()
+
+        // Launch (or resume) MainActivity with the quiz flag so the quiz screen
+        // is shown whether the app is open, backgrounded, or fully closed.
+        // FLAG_ACTIVITY_NEW_TASK is required when starting an Activity from a
+        // Service. FLAG_ACTIVITY_REORDER_TO_FRONT brings an existing instance
+        // to the top without recreating it; combined with onNewIntent in
+        // MainActivity this works for both the cold-launch and warm-resume cases.
+        val launchIntent = Intent(applicationContext, MainActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+                    or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+            )
+            putExtra(EXTRA_QUIZ_ON_LAUNCH, true)
+        }
+        applicationContext.startActivity(launchIntent)
     }
 
     fun unblock() {
