@@ -46,6 +46,11 @@ class _StudentScreenState extends State<StudentScreen>
   String _parentUid = '';
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
+  /// True while MascotOverlayService.init() is in progress.
+  /// Keeps a spinner on screen so the home page never flashes before the quiz
+  /// is pushed (cold-launch blocked case).
+  bool _initializing = true;
+
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
 
@@ -53,19 +58,6 @@ class _StudentScreenState extends State<StudentScreen>
   StreamSubscription<void>? _quizSub;
 
   // ── Verification dialog state ─────────────────────────────────────────────
-  //
-  // Rather than closing and reopening the dialog on each result, we keep it
-  // open for the entire verification lifecycle. StatefulBuilder gives us a
-  // setDialogState callback that can rebuild the dialog's contents in-place
-  // (loading spinner → error message → closed) without ever dismissing it.
-  //
-  // The dialog is only closed in two situations:
-  //   • The user taps Cancel (dialog pops itself).
-  //   • Authentication succeeds and pushNamedAndRemoveUntil removes all routes.
-  //
-  // _dialogSetState is non-null while the dialog is on screen and is cleared
-  // in the whenComplete callback so stale updates are never applied after the
-  // dialog has been dismissed.
   StateSetter? _dialogSetState;
   bool _dialogIsLoading = false;
   String? _dialogError;
@@ -77,13 +69,19 @@ class _StudentScreenState extends State<StudentScreen>
 
     _aiRepo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
 
-    MascotOverlayService.instance.init().then(
-      (_) => MascotOverlayService.instance.start(),
-    );
+    // listenForQuiz must be called BEFORE init() so the stream has a listener
+    // when _syncStateFromNative() fires the quiz trigger inside init().
+    _quizSub = MascotOverlayService.instance.listenForQuiz(_openQuizOverlay);
 
-    // Subscribe to overlay quiz trigger.
-    _quizSub = MascotOverlayService.instance.quizRequested.listen((_) {
-      _openQuizOverlay();
+    MascotOverlayService.instance.init().then((_) {
+      MascotOverlayService.instance.start();
+      // Reveal the home screen now that init is done. If the quiz was already
+      // triggered (blocked case), it was pushed on top of the spinner and the
+      // home screen will appear underneath it — the student only sees home
+      // once they dismiss the quiz, which is the correct behaviour.
+      if (mounted) {
+        setState(() => _initializing = false);
+      }
     });
 
     DataConnectProvider().updateLastActiveAt().catchError((_) {});
@@ -137,7 +135,7 @@ class _StudentScreenState extends State<StudentScreen>
     super.dispose();
   }
 
-  // ── Quiz overlay ─────────────────────────────────────────────────────────
+  // ── Quiz overlay ──────────────────────────────────────────────────────────
 
   void _openQuizOverlay() {
     if (!mounted) return;
@@ -151,16 +149,11 @@ class _StudentScreenState extends State<StudentScreen>
 
   // ── Verification dialog ───────────────────────────────────────────────────
 
-  // Opens the verification dialog and stores a StateSetter reference so the
-  // BLoC listener can update its contents in-place without closing it.
   void _showVerificationDialog() {
     _dialogIsLoading = false;
     _dialogError = null;
     showDialog(
       context: context,
-      // Keep barrier taps disabled for the entire dialog lifecycle so the
-      // dialog cannot be dismissed by tapping outside it, including when it
-      // is not loading.
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (_, setDialogState) {
@@ -169,8 +162,6 @@ class _StudentScreenState extends State<StudentScreen>
             errorMessage: _dialogError,
             isLoading: _dialogIsLoading,
             onSubmit: (email, password) {
-              // Show the loading state immediately — do NOT pop the dialog.
-              // The dialog stays open until the BLoC emits a result.
               setDialogState(() => _dialogIsLoading = true);
               context.read<AuthBloc>().add(
                 VerifyParentAndLogoutRequested(
@@ -184,15 +175,10 @@ class _StudentScreenState extends State<StudentScreen>
         },
       ),
     ).whenComplete(() {
-      // Clear the setter once the dialog is off the screen so that a
-      // belated BLoC state change can never call into a disposed widget.
       _dialogSetState = null;
     });
   }
 
-  // Called by the BLoC listener when verification fails. Updates the dialog
-  // in-place: stops the loading spinner and shows the error message. The
-  // dialog remains open so the user can correct their credentials and retry.
   void _updateDialogWithError(String message) {
     _dialogSetState?.call(() {
       _dialogIsLoading = false;
@@ -202,6 +188,16 @@ class _StudentScreenState extends State<StudentScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Hold on a spinner until init() resolves. This prevents the home screen
+    // from appearing momentarily before the quiz overlay is pushed on top in
+    // the cold-launch / fully-killed-app blocked scenario.
+    if (_initializing) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5F7FA),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return MultiBlocProvider(
       providers: [
         BlocProvider<ShopBloc>(create: (_) => ShopBloc()),
@@ -222,15 +218,9 @@ class _StudentScreenState extends State<StudentScreen>
               _showVerificationDialog();
             }
             if (state is ParentVerificationFailed) {
-              // Update the already-open dialog instead of closing and
-              // reopening it. The loading spinner is replaced with the
-              // error banner so the user can try again without disruption.
               _updateDialogWithError(state.message);
             }
             if (state is AuthUnauthenticated) {
-              // pushNamedAndRemoveUntil removes all routes — including the
-              // verification dialog — so no explicit Navigator.pop() is
-              // needed here.
               Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
             }
           },
@@ -254,9 +244,6 @@ class _StudentScreenState extends State<StudentScreen>
                           uid: widget.uid,
                           fullName: widget.fullName,
                           parentUid: _parentUid,
-                          // Only considered active when this tab is selected.
-                          // Prevents firing DataConnect queries at login before
-                          // the auth token has fully propagated.
                           isActive: _selectedIndex == 2,
                         ),
                         StudentFriends(
@@ -287,7 +274,6 @@ class _StudentScreenState extends State<StudentScreen>
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
-          // Avatar — tap to open profile page
           GestureDetector(
             onTap: () {
               final shopBloc = context.read<ShopBloc>();
@@ -331,21 +317,18 @@ class _StudentScreenState extends State<StudentScreen>
             ),
           ),
           const Spacer(),
-          // XP pill
           _navPill(
             icon: Icons.star_rounded,
             iconColor: const Color(0xFFFFC107),
             label: _formatNum(_xp),
           ),
           const SizedBox(width: 8),
-          // Coins pill
           _navPill(
             icon: Icons.monetization_on_rounded,
             iconColor: const Color(0xFFFFA000),
             label: _formatNum(_coins),
           ),
           const SizedBox(width: 6),
-          // Bell with green dot
           Stack(
             clipBehavior: Clip.none,
             children: [
