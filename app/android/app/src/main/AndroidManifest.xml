@@ -3,6 +3,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Required for DATA_SYNC foreground service type on Android 14+ (API 34+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
@@ -37,6 +39,19 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!--
+            Background usage timer foreground service.
+            • foregroundServiceType="dataSync" satisfies Android 14 (API 34)
+              requirements and is supported down to Android 10 (API 29).
+            • exported="false" — only started from within the app.
+            • START_STICKY ensures the OS restarts it after a process kill.
+        -->
+        <service
+            android:name=".UsageTimerService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
 
         <service
             android:name=".StudyMentorAccessibilityService"
