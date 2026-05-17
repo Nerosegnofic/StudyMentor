@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../services/settings_service.dart';
+import '../../../services/overlay/mascot_overlay_service.dart';
 
 class StudentSettings extends StatefulWidget {
   final String uid;
@@ -60,8 +61,10 @@ class _StudentSettingsState extends State<StudentSettings> {
           _backgroundMusicEnabled = value;
         case 'timerNotification':
           _timerNotificationEnabled = value;
+          MascotOverlayService.instance.setTimerNotificationEnabled(value);
         case 'cooldownNotification':
           _cooldownNotificationEnabled = value;
+          MascotOverlayService.instance.setCooldownNotificationEnabled(value);
       }
     });
     await setter(value);

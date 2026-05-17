@@ -9,6 +9,8 @@ class MascotOverlayService {
   MascotOverlayService._();
   static final MascotOverlayService instance = MascotOverlayService._();
 
+  // ── Channels ───────────────────────────────────────────────────────────────
+
   static const _overlayChannel = MethodChannel(
     'com.example.studymentor/overlay',
   );
@@ -18,8 +20,12 @@ class MascotOverlayService {
   static const _accessibilityChannel = MethodChannel(
     'com.example.studymentor/accessibility',
   );
+  static const _timerServiceChannel = MethodChannel(
+    'com.example.studymentor/timer_service',
+  );
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  // ── Mirrored state ─────────────────────────────────────────────────────────
+
   bool _running = false;
   bool _isBlocked = false;
   bool _overlayVisible = false;
@@ -27,31 +33,11 @@ class MascotOverlayService {
   bool _cooldownNotificationVisible = false;
   MascotState _mascotState = MascotState.idle;
 
-  // ── Countdown ──────────────────────────────────────────────────────────────
-  // No separate timer — the existing _pollTimer drives the countdown so there
-  // is only ever one 1-second tick source and no cancellation races.
-  int _remainingSeconds = 0;
-
-  // Guard flag: prevents _startWarning from being entered twice on the same
-  // tick if an awaited call yields and _poll fires again before it finishes.
-  bool _warningStarting = false;
-
-  // ── Polling ────────────────────────────────────────────────────────────────
-  Timer? _pollTimer;
-
-  // ── Shared usage counter ───────────────────────────────────────────────────
+  int _remainingCooldownSeconds = 0;
   int _totalUsageSeconds = 0;
 
-  // ── Threshold alerts ───────────────────────────────────────────────────────
-  /// Tracks which one-shot usage alert thresholds (in seconds) have already
-  /// fired this session. Cleared on unblock or stop so they re-arm next session.
-  final Set<int> _firedThresholds = {};
-
-  /// Tracks which one-shot cooldown alert thresholds (in seconds) have already
-  /// fired this cooldown session. Cleared on unblock or stop.
-  final Set<int> _firedCooldownThresholds = {};
-
   // ── Quiz trigger stream ────────────────────────────────────────────────────
+
   final StreamController<void> _quizController =
       StreamController<void>.broadcast();
 
@@ -63,7 +49,7 @@ class MascotOverlayService {
   }
 
   // ── Settings ───────────────────────────────────────────────────────────────
-  // Lazily loaded; null until the first poll that needs it.
+
   SettingsService? _settingsService;
 
   Future<SettingsService> _getSettings() async {
@@ -71,15 +57,8 @@ class MascotOverlayService {
     return _settingsService!;
   }
 
-  Future<bool> _isTimerNotificationEnabled() async {
-    return (await _getSettings()).timerNotificationEnabled;
-  }
-
-  Future<bool> _isCooldownNotificationEnabled() async {
-    return (await _getSettings()).cooldownNotificationEnabled;
-  }
-
   // ── Config ─────────────────────────────────────────────────────────────────
+
   Set<String> _monitoredPackages = {};
   StudentConfigModel _config = const StudentConfigModel();
 
@@ -92,7 +71,8 @@ class MascotOverlayService {
     _monitoredPackages = {for (var r in rules) r.packageName};
     _config = config;
 
-    _overlayChannel.setMethodCallHandler(_handleNativeCallback);
+    _overlayChannel.setMethodCallHandler(_handleOverlayCallback);
+    _timerServiceChannel.setMethodCallHandler(_handleTimerServiceCallback);
 
     await _accessibilityChannel.invokeMethod('setMonitoredApps', {
       'apps': _monitoredPackages.toList(),
@@ -101,18 +81,24 @@ class MascotOverlayService {
     await _requestOverlayPermission();
     await _requestUsageStatsPermission();
     await _requestAccessibilityPermissionIfNeeded();
+
+    await _syncStateFromNative();
+
+    final settings = await _getSettings();
+    await setTimerNotificationEnabled(settings.timerNotificationEnabled);
+    await setCooldownNotificationEnabled(settings.cooldownNotificationEnabled);
   }
 
   void start() {
     if (_running) return;
     _running = true;
-    _pollTimer = Timer.periodic(const Duration(seconds: 1), (_) => _poll());
-    debugPrint('[MascotOverlayService] Started.');
+    _startNativeTimerService();
+    debugPrint('[MascotOverlayService] Started (native timer service).');
   }
 
   Future<void> stop() async {
     _running = false;
-    _pollTimer?.cancel();
+    await _stopNativeTimerService();
     await _hideUsageNotification();
     await _hideCooldownNotification();
     await _hideOverlayNative();
@@ -121,11 +107,8 @@ class MascotOverlayService {
     _overlayVisible = false;
     _usageNotificationVisible = false;
     _cooldownNotificationVisible = false;
-    _remainingSeconds = 0;
+    _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
-    _warningStarting = false;
-    _firedThresholds.clear();
-    _firedCooldownThresholds.clear();
     _quizController.close();
     debugPrint('[MascotOverlayService] Stopped.');
   }
@@ -136,15 +119,21 @@ class MascotOverlayService {
   }) async {
     _monitoredPackages = {for (var r in rules) r.packageName};
     _config = config;
+
     try {
       await _accessibilityChannel.invokeMethod('setMonitoredApps', {
         'apps': _monitoredPackages.toList(),
       });
     } on PlatformException catch (e) {
       debugPrint(
-        '[MascotOverlayService] updateMonitoredApps error: ${e.message}',
+        '[MascotOverlayService] updateMonitoredApps accessibility error: ${e.message}',
       );
     }
+
+    if (_running) {
+      await _updateNativeTimerConfig();
+    }
+
     debugPrint(
       '[MascotOverlayService] Monitored apps updated: '
       '${_monitoredPackages.toList()}',
@@ -152,26 +141,151 @@ class MascotOverlayService {
   }
 
   // ── Getters ────────────────────────────────────────────────────────────────
+
   bool get isRunning => _running;
   bool get isBlocked => _isBlocked;
   bool get isOverlayVisible => _overlayVisible;
   bool get isUsageNotificationVisible => _usageNotificationVisible;
   bool get isCooldownNotificationVisible => _cooldownNotificationVisible;
-  int get remainingSeconds => _remainingSeconds;
+  int get remainingSeconds => _remainingCooldownSeconds;
   int get totalUsageSeconds => _totalUsageSeconds;
   MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
 
-  // ── Native → Dart callback handler ────────────────────────────────────────
+  // ── Native timer service helpers ───────────────────────────────────────────
 
-  Future<dynamic> _handleNativeCallback(MethodCall call) async {
+  Future<void> _startNativeTimerService() async {
+    try {
+      await _timerServiceChannel.invokeMethod('startTimerService', {
+        'monitoredApps': _monitoredPackages.toList(),
+        'usageLimitSecs': _usageLimitSecondsFromConfig(),
+        'cooldownLimitSecs': _cooldownLimitSecondsFromConfig(),
+      });
+    } on PlatformException catch (e) {
+      debugPrint(
+        '[MascotOverlayService] startTimerService error: ${e.message}',
+      );
+    }
+  }
+
+  Future<void> _stopNativeTimerService() async {
+    try {
+      await _timerServiceChannel.invokeMethod('stopTimerService');
+    } on PlatformException catch (e) {
+      debugPrint('[MascotOverlayService] stopTimerService error: ${e.message}');
+    }
+  }
+
+  Future<void> _updateNativeTimerConfig() async {
+    try {
+      await _timerServiceChannel.invokeMethod('updateTimerConfig', {
+        'monitoredApps': _monitoredPackages.toList(),
+        'usageLimitSecs': _usageLimitSecondsFromConfig(),
+        'cooldownLimitSecs': _cooldownLimitSecondsFromConfig(),
+      });
+    } on PlatformException catch (e) {
+      debugPrint(
+        '[MascotOverlayService] updateTimerConfig error: ${e.message}',
+      );
+    }
+  }
+
+  Future<void> _syncStateFromNative() async {
+    try {
+      final state = await _timerServiceChannel.invokeMapMethod<String, dynamic>(
+        'getTimerState',
+      );
+      if (state == null) return;
+
+      _totalUsageSeconds = (state['totalUsage'] as int?) ?? 0;
+      _isBlocked = (state['isBlocked'] as bool?) ?? false;
+      _remainingCooldownSeconds = (state['cooldownRemaining'] as int?) ?? 0;
+
+      if (_isBlocked) {
+        await _accessibilityChannel.invokeMethod('setBlocked', {
+          'blocked': true,
+        });
+      }
+
+      debugPrint(
+        '[MascotOverlayService] Restored state from native — '
+        'usage: $_totalUsageSeconds s, blocked: $_isBlocked, '
+        'cooldown remaining: $_remainingCooldownSeconds s.',
+      );
+    } on PlatformException catch (e) {
+      debugPrint('[MascotOverlayService] getTimerState error: ${e.message}');
+    }
+  }
+
+  Future<void> setTimerNotificationEnabled(bool enabled) async {
+    try {
+      await _timerServiceChannel.invokeMethod('setTimerNotificationEnabled', {
+        'enabled': enabled,
+      });
+    } on PlatformException catch (e) {
+      debugPrint(
+        '[MascotOverlayService] setTimerNotificationEnabled error: ${e.message}',
+      );
+    }
+  }
+
+  Future<void> setCooldownNotificationEnabled(bool enabled) async {
+    try {
+      await _timerServiceChannel.invokeMethod(
+        'setCooldownNotificationEnabled',
+        {'enabled': enabled},
+      );
+    } on PlatformException catch (e) {
+      debugPrint(
+        '[MascotOverlayService] setCooldownNotificationEnabled error: ${e.message}',
+      );
+    }
+  }
+
+  int _usageLimitSecondsFromConfig() =>
+      (_config.usageHours * 3600) + (_config.usageMinutes * 60);
+
+  int _cooldownLimitSecondsFromConfig() =>
+      (_config.cooldownHours * 3600) + (_config.cooldownMinutes * 60);
+
+  // ── Native → Dart callback: timer service ─────────────────────────────────
+
+  Future<dynamic> _handleTimerServiceCallback(MethodCall call) async {
+    switch (call.method) {
+      case 'onTimerTick':
+        final args = call.arguments as Map<dynamic, dynamic>;
+        _totalUsageSeconds = (args['totalUsage'] as int?) ?? 0;
+        _isBlocked = (args['isBlocked'] as bool?) ?? false;
+        _remainingCooldownSeconds = (args['cooldownRemaining'] as int?) ?? 0;
+        break;
+
+      case 'onLimitReached':
+        await _onLimitReached();
+        break;
+
+      case 'onThresholdAlert':
+        final args = call.arguments as Map<dynamic, dynamic>;
+        final remaining = (args['remainingSeconds'] as int?) ?? 0;
+        final isCooldown = (args['isCooldown'] as bool?) ?? false;
+        await _fireThresholdNotification(remaining, isCooldown: isCooldown);
+        break;
+
+      case 'onUnblocked':
+        await _onUnblocked();
+        break;
+    }
+  }
+
+  // ── Native → Dart callback: overlay ───────────────────────────────────────
+
+  Future<dynamic> _handleOverlayCallback(MethodCall call) async {
     switch (call.method) {
       case 'onOverlayDismissed':
         if (_isBlocked) {
           _overlayVisible = false;
           debugPrint(
             '[MascotOverlayService] Overlay dismissed — '
-            'countdown continues ($_remainingSeconds s remaining).',
+            'countdown continues ($_remainingCooldownSeconds s remaining).',
           );
         }
         break;
@@ -195,20 +309,14 @@ class MascotOverlayService {
     }
   }
 
-  // ── Warning phase ──────────────────────────────────────────────────────────
+  // ── Limit-reached handling ─────────────────────────────────────────────────
 
-  Future<void> _startWarning() async {
-    if (_warningStarting) return;
-    _warningStarting = true;
-
+  Future<void> _onLimitReached() async {
     _isBlocked = true;
-    _remainingSeconds =
-        (_config.cooldownHours * 3600) + (_config.cooldownMinutes * 60);
     _mascotState = MascotState.idle;
     debugPrint(
       '[MascotOverlayService] Limit reached — '
-      'total usage: ${_totalUsageSeconds}s. '
-      'Starting cooldown: $_remainingSeconds s.',
+      'total usage: ${_totalUsageSeconds}s. Starting cooldown.',
     );
 
     await _hideUsageNotification();
@@ -219,23 +327,44 @@ class MascotOverlayService {
     } catch (_) {}
 
     _quizController.add(null);
-
-    _warningStarting = false;
   }
 
-  Future<void> _unblock() async {
+  Future<void> _onUnblocked() async {
     _isBlocked = false;
-    _remainingSeconds = 0;
+    _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
     _mascotState = MascotState.idle;
-    _firedThresholds.clear();
-    _firedCooldownThresholds.clear();
 
     await _hideUsageNotification();
     await _hideCooldownNotification();
     await _hideOverlayNative();
     await _resetAccessibilityState();
     debugPrint('[MascotOverlayService] Cooldown ended — student is free.');
+  }
+
+  // ── Threshold alert firing ─────────────────────────────────────────────────
+
+  Future<void> _fireThresholdNotification(
+    int remainingSeconds, {
+    required bool isCooldown,
+  }) async {
+    try {
+      if (isCooldown) {
+        await _overlayChannel.invokeMethod('showCooldownThresholdAlert', {
+          'remainingSeconds': remainingSeconds,
+        });
+      } else {
+        await _overlayChannel.invokeMethod('showThresholdAlert', {
+          'remainingSeconds': remainingSeconds,
+        });
+      }
+      debugPrint(
+        '[MascotOverlayService] Threshold alert fired: '
+        '${remainingSeconds}s remaining (cooldown: $isCooldown).',
+      );
+    } on PlatformException catch (e) {
+      debugPrint('[MascotOverlayService] threshold alert error: ${e.message}');
+    }
   }
 
   // ── Native overlay helpers ─────────────────────────────────────────────────
@@ -251,33 +380,6 @@ class MascotOverlayService {
 
   // ── Usage notification helpers ─────────────────────────────────────────────
 
-  Future<void> _showOrUpdateUsageNotification({
-    required int remainingSeconds,
-  }) async {
-    final enabled = await _isTimerNotificationEnabled();
-    if (!enabled) {
-      await _hideUsageNotification();
-      return;
-    }
-
-    try {
-      if (_usageNotificationVisible) {
-        await _overlayChannel.invokeMethod('updateUsageTimer', {
-          'remainingSeconds': remainingSeconds,
-        });
-      } else {
-        await _overlayChannel.invokeMethod('showUsageTimer', {
-          'remainingSeconds': remainingSeconds,
-        });
-        _usageNotificationVisible = true;
-      }
-    } on PlatformException catch (e) {
-      debugPrint(
-        '[MascotOverlayService] usage notification error: ${e.message}',
-      );
-    }
-  }
-
   Future<void> _hideUsageNotification() async {
     if (!_usageNotificationVisible) return;
     _usageNotificationVisible = false;
@@ -290,37 +392,6 @@ class MascotOverlayService {
 
   // ── Cooldown notification helpers ──────────────────────────────────────────
 
-  /// Posts or updates the persistent cooldown-timer notification.
-  /// Reads [SettingsService.cooldownNotificationEnabled] on every call so that
-  /// toggling the setting takes effect on the very next poll tick — no restart
-  /// required.
-  Future<void> _showOrUpdateCooldownNotification({
-    required int remainingSeconds,
-  }) async {
-    final enabled = await _isCooldownNotificationEnabled();
-    if (!enabled) {
-      await _hideCooldownNotification();
-      return;
-    }
-
-    try {
-      if (_cooldownNotificationVisible) {
-        await _overlayChannel.invokeMethod('updateCooldownTimer', {
-          'remainingSeconds': remainingSeconds,
-        });
-      } else {
-        await _overlayChannel.invokeMethod('showCooldownTimer', {
-          'remainingSeconds': remainingSeconds,
-        });
-        _cooldownNotificationVisible = true;
-      }
-    } on PlatformException catch (e) {
-      debugPrint(
-        '[MascotOverlayService] cooldown notification error: ${e.message}',
-      );
-    }
-  }
-
   Future<void> _hideCooldownNotification() async {
     if (!_cooldownNotificationVisible) return;
     _cooldownNotificationVisible = false;
@@ -330,144 +401,6 @@ class MascotOverlayService {
       debugPrint(
         '[MascotOverlayService] hideCooldownTimer error: ${e.message}',
       );
-    }
-  }
-
-  // ── Threshold alert helpers — usage ───────────────────────────────────────
-
-  Future<void> _maybeFireThresholdAlert(int remainingToBlock) async {
-    const thresholds = [300, 60, 10];
-    for (final threshold in thresholds) {
-      if (!_firedThresholds.contains(threshold) &&
-          remainingToBlock <= threshold &&
-          remainingToBlock > 0) {
-        _firedThresholds.add(threshold);
-        try {
-          await _overlayChannel.invokeMethod('showThresholdAlert', {
-            'remainingSeconds': remainingToBlock,
-          });
-          debugPrint(
-            '[MascotOverlayService] Usage threshold alert fired: '
-            '${remainingToBlock}s remaining (threshold: ${threshold}s).',
-          );
-        } on PlatformException catch (e) {
-          debugPrint(
-            '[MascotOverlayService] showThresholdAlert error: ${e.message}',
-          );
-        }
-        break;
-      }
-    }
-  }
-
-  // ── Threshold alert helpers — cooldown ────────────────────────────────────
-
-  /// Fires a one-shot audible alert notification when [remainingCooldown] first
-  /// crosses one of the defined thresholds (300 s, 60 s, 10 s).
-  /// These alerts are ALWAYS fired regardless of the cooldown notification
-  /// toggle — they cannot be disabled from student settings.
-  Future<void> _maybeFireCooldownThresholdAlert(int remainingCooldown) async {
-    const thresholds = [300, 60, 10];
-    for (final threshold in thresholds) {
-      if (!_firedCooldownThresholds.contains(threshold) &&
-          remainingCooldown <= threshold &&
-          remainingCooldown > 0) {
-        _firedCooldownThresholds.add(threshold);
-        try {
-          await _overlayChannel.invokeMethod('showCooldownThresholdAlert', {
-            'remainingSeconds': remainingCooldown,
-          });
-          debugPrint(
-            '[MascotOverlayService] Cooldown threshold alert fired: '
-            '${remainingCooldown}s remaining (threshold: ${threshold}s).',
-          );
-        } on PlatformException catch (e) {
-          debugPrint(
-            '[MascotOverlayService] showCooldownThresholdAlert error: ${e.message}',
-          );
-        }
-        break;
-      }
-    }
-  }
-
-  // ── Polling ────────────────────────────────────────────────────────────────
-
-  Future<void> _poll() async {
-    if (!_running) return;
-    try {
-      final foreground = await _usageChannel.invokeMethod<String>(
-        'getForegroundApp',
-      );
-
-      if (foreground == null) {
-        await _hideUsageNotification();
-        return;
-      }
-
-      if (_isBlocked) {
-        await _hideUsageNotification();
-
-        // Drive the cooldown countdown from the existing poll timer so there
-        // is only one tick source and no Timer cancellation races.
-        if (_remainingSeconds > 0) {
-          _remainingSeconds--;
-          debugPrint('[MascotOverlayService] Countdown: $_remainingSeconds s');
-
-          // Show/update the persistent cooldown notification (if enabled).
-          await _showOrUpdateCooldownNotification(
-            remainingSeconds: _remainingSeconds,
-          );
-
-          // Fire one-shot audible alerts at threshold crossings.
-          // These ignore the cooldown notification toggle.
-          await _maybeFireCooldownThresholdAlert(_remainingSeconds);
-
-          if (_remainingSeconds <= 0) {
-            await _unblock();
-            return;
-          }
-        }
-
-        if (_monitoredPackages.contains(foreground)) {
-          debugPrint(
-            '[MascotOverlayService] Poll fallback: monitored app in foreground '
-            '— bringing Flutter quiz screen to foreground.',
-          );
-          try {
-            await _overlayChannel.invokeMethod('bringAppToForeground');
-          } catch (_) {}
-        }
-        return;
-      }
-
-      if (!_monitoredPackages.contains(foreground)) {
-        await _hideUsageNotification();
-        return;
-      }
-
-      _totalUsageSeconds++;
-
-      final thresholdSeconds =
-          (_config.usageHours * 3600) + (_config.usageMinutes * 60);
-      final remainingToBlock = (thresholdSeconds - _totalUsageSeconds).clamp(
-        0,
-        thresholdSeconds,
-      );
-
-      debugPrint(
-        '[MascotOverlayService] Restricted app in foreground: $foreground — '
-        'shared usage: ${_totalUsageSeconds}s / ${thresholdSeconds}s',
-      );
-
-      await _showOrUpdateUsageNotification(remainingSeconds: remainingToBlock);
-      await _maybeFireThresholdAlert(remainingToBlock);
-
-      if (_totalUsageSeconds >= thresholdSeconds) {
-        await _startWarning();
-      }
-    } on PlatformException catch (e) {
-      debugPrint('[MascotOverlayService] poll error: ${e.message}');
     }
   }
 
