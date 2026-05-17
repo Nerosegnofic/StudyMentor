@@ -81,9 +81,6 @@ class _QuizOverlayScaffold extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Auto-start panel
 // ---------------------------------------------------------------------------
-// Shown for a brief moment — immediately dispatches GenerateQuizEvent.
-// Gives the student a "Start Quiz" CTA so they have agency, but the
-// overlay context means they cannot dismiss until they complete or see results.
 
 class _AutoStartPanel extends StatelessWidget {
   const _AutoStartPanel();
@@ -96,7 +93,11 @@ class _AutoStartPanel extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.auto_awesome_rounded, size: 80, color: Color(0xFF4A6CF7)),
+            const Icon(
+              Icons.auto_awesome_rounded,
+              size: 80,
+              color: Color(0xFF4A6CF7),
+            ),
             const SizedBox(height: 24),
             const Text(
               'Time for Quiz',
@@ -121,7 +122,9 @@ class _AutoStartPanel extends StatelessWidget {
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () {
-                context.read<QuizBloc>().add(GenerateQuizEvent(totalQuestions: 5));
+                context.read<QuizBloc>().add(
+                  GenerateQuizEvent(totalQuestions: 5),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4A6CF7),
@@ -134,10 +137,7 @@ class _AutoStartPanel extends StatelessWidget {
               ),
               child: const Text(
                 'Start Quiz',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ),
             const SizedBox(height: 16),
@@ -149,6 +149,36 @@ class _AutoStartPanel extends StatelessWidget {
                 color: Color(0xFFA0A7BA),
               ),
             ),
+
+            // ── ⚠️ TESTING ONLY — REMOVE BEFORE PRODUCTION RELEASE ────────
+            const SizedBox(height: 32),
+            const Divider(color: Color(0xFFFFCDD2)),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.home_outlined, color: Color(0xFFE53935)),
+              label: const Text(
+                'Redirect to student home\n(FOR TESTING PURPOSES ONLY. DO NOT SHIP TO PRODUCTION!)',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFFE53935),
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFE53935)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+            ),
+            // ── END TESTING BLOCK ──────────────────────────────────────────
           ],
         ),
       ),
@@ -163,8 +193,6 @@ class StudentQuizScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const _AutoStartPanel();
 }
-
-
 
 // ---------------------------------------------------------------------------
 // Active quiz view
@@ -213,15 +241,15 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
         .inMilliseconds;
 
     context.read<QuizBloc>().add(
-          AnswerQuestionEvent(
-            StudentAnswer(
-              questionId: _currentQuestion.questionId,
-              selectedOption: option,
-              timeTakenMs: timeTaken,
-              hintsUsed: _hintsUsed,
-            ),
-          ),
-        );
+      AnswerQuestionEvent(
+        StudentAnswer(
+          questionId: _currentQuestion.questionId,
+          selectedOption: option,
+          timeTakenMs: timeTaken,
+          hintsUsed: _hintsUsed,
+        ),
+      ),
+    );
   }
 
   void _goNext(BuildContext context) {
@@ -233,8 +261,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
     }
     if (_isLastQuestion) {
       context.read<QuizBloc>().add(
-            SubmitQuizEvent(widget.state.quizResponse.quizSessionId),
-          );
+        SubmitQuizEvent(widget.state.quizResponse.quizSessionId),
+      );
     } else {
       setState(() {
         _currentIndex++;
@@ -242,16 +270,18 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
         _questionStartedAt = DateTime.now();
       });
       _pageController.nextPage(
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
   void _showHint(BuildContext context) {
     final hints = _currentQuestion.hints;
     if (_hintsUsed >= hints.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No more hints available.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No more hints available.')));
       return;
     }
     setState(() => _hintsUsed++);
@@ -260,7 +290,12 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
       builder: (_) => AlertDialog(
         title: Text('Hint $_hintsUsed'),
         content: Text(hints[_hintsUsed - 1]),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
@@ -287,7 +322,11 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
             children: [
               Text(
                 'Question ${_currentIndex + 1} of $total',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF8B93A7)),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Color(0xFF8B93A7),
+                ),
               ),
               Text(
                 '${answered.length} answered',
@@ -305,7 +344,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
             itemBuilder: (context, index) {
               return _QuestionCard(
                 question: questions[index],
-                selectedOption: answered[questions[index].questionId]?.selectedOption,
+                selectedOption:
+                    answered[questions[index].questionId]?.selectedOption,
                 onSelect: (opt) => _selectAnswer(context, opt),
               );
             },
@@ -323,7 +363,9 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFFF9800),
                   side: const BorderSide(color: Color(0xFFFF9800)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const Spacer(),
@@ -332,8 +374,13 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4A6CF7),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
                   elevation: 0,
                 ),
                 child: Text(
@@ -386,15 +433,21 @@ class _QuestionCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             question.questionText,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, height: 1.4),
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 20),
-          ...question.options.map((opt) => _OptionTile(
-                label: opt,
-                isSelected: selectedOption == opt,
-                isAnswered: selectedOption != null,
-                onTap: () => onSelect(opt),
-              )),
+          ...question.options.map(
+            (opt) => _OptionTile(
+              label: opt,
+              isSelected: selectedOption == opt,
+              isAnswered: selectedOption != null,
+              onTap: () => onSelect(opt),
+            ),
+          ),
           if (selectedOption != null) ...[
             const SizedBox(height: 16),
             Container(
@@ -407,12 +460,20 @@ class _QuestionCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline, size: 16, color: Color(0xFF4A6CF7)),
+                  const Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Color(0xFF4A6CF7),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       question.explanation,
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF1A1F3C), height: 1.5),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF1A1F3C),
+                        height: 1.5,
+                      ),
                     ),
                   ),
                 ],
@@ -426,21 +487,31 @@ class _QuestionCard extends StatelessWidget {
 
   Color _difficultyColor(int d) {
     switch (d) {
-      case 1: return const Color(0xFF34A853);
-      case 2: return const Color(0xFF4A6CF7);
-      case 3: return const Color(0xFFFF9800);
-      case 4: return const Color(0xFFEA4335);
-      default: return const Color(0xFF9C27B0);
+      case 1:
+        return const Color(0xFF34A853);
+      case 2:
+        return const Color(0xFF4A6CF7);
+      case 3:
+        return const Color(0xFFFF9800);
+      case 4:
+        return const Color(0xFFEA4335);
+      default:
+        return const Color(0xFF9C27B0);
     }
   }
 
   String _difficultyLabel(int d) {
     switch (d) {
-      case 1: return 'Very Easy';
-      case 2: return 'Easy';
-      case 3: return 'Medium';
-      case 4: return 'Hard';
-      default: return 'Very Hard';
+      case 1:
+        return 'Very Easy';
+      case 2:
+        return 'Easy';
+      case 3:
+        return 'Medium';
+      case 4:
+        return 'Hard';
+      default:
+        return 'Very Hard';
     }
   }
 }
@@ -460,7 +531,9 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? const Color(0xFF4A6CF7) : const Color(0xFFE8EDFF);
+    final color = isSelected
+        ? const Color(0xFF4A6CF7)
+        : const Color(0xFFE8EDFF);
     return GestureDetector(
       onTap: isAnswered ? null : onTap,
       child: AnimatedContainer(
@@ -506,7 +579,11 @@ class _ResultsView extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           Text(
-            pct >= 85 ? '🎉' : pct >= 50 ? '👍' : '💪',
+            pct >= 85
+                ? '🎉'
+                : pct >= 50
+                ? '👍'
+                : '💪',
             style: const TextStyle(fontSize: 64),
           ),
           const SizedBox(height: 16),
@@ -530,7 +607,9 @@ class _ResultsView extends StatelessWidget {
               color: isGood ? const Color(0xFFE6F4EA) : const Color(0xFFFFF3E0),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isGood ? const Color(0xFF34A853) : const Color(0xFFFF9800),
+                color: isGood
+                    ? const Color(0xFF34A853)
+                    : const Color(0xFFFF9800),
               ),
             ),
             child: Text(
@@ -540,7 +619,9 @@ class _ResultsView extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 height: 1.5,
-                color: isGood ? const Color(0xFF1B5E20) : const Color(0xFFE65100),
+                color: isGood
+                    ? const Color(0xFF1B5E20)
+                    : const Color(0xFFE65100),
               ),
             ),
           ),
@@ -548,12 +629,17 @@ class _ResultsView extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.check_circle_outline),
-            label: const Text('Done', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            label: const Text(
+              'Done',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4A6CF7),
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(54),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               elevation: 0,
             ),
           ),
@@ -561,12 +647,17 @@ class _ResultsView extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: () => context.read<QuizBloc>().add(ResetQuizEvent()),
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Take Another Quiz', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            label: const Text(
+              'Take Another Quiz',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF4A6CF7),
               side: const BorderSide(color: Color(0xFF4A6CF7)),
               minimumSize: const Size.fromHeight(48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ],
@@ -592,7 +683,10 @@ class _LoadingView extends StatelessWidget {
         children: [
           const CircularProgressIndicator(color: Color(0xFF4A6CF7)),
           const SizedBox(height: 20),
-          Text(message, style: const TextStyle(color: Color(0xFF8B93A7), fontSize: 15)),
+          Text(
+            message,
+            style: const TextStyle(color: Color(0xFF8B93A7), fontSize: 15),
+          ),
         ],
       ),
     );
