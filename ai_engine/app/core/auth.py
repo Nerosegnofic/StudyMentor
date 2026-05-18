@@ -24,9 +24,11 @@ def init_firebase():
         else:
             print(f"DEBUG: Firebase already initialized: {firebase_admin._apps}")
     except Exception as e:
-        print(f"CRITICAL: Firebase Admin initialization failed: {e}")
-        # In a real microservice, you might want to raise an error here to prevent startup
-        # if authentication is mandatory.
+        # A Firebase init failure is unrecoverable — all authenticated endpoints
+        # will fail. Raising here prevents the server from starting in a broken state.
+        raise RuntimeError(
+            f"Firebase Admin SDK failed to initialize. Server cannot start. Reason: {e}"
+        ) from e
 
 
 security = HTTPBearer()
@@ -55,11 +57,12 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             raise HTTPException(status_code=401, detail="Invalid Firebase Token: No UID found.")
         return uid
     except auth.ExpiredIdTokenError:
-        raise HTTPException(status_code=401, detail="Firebase Token has expired.")
+        raise HTTPException(status_code=401, detail="Firebase token has expired. Please sign in again.")
     except Exception as e:
-        # Generic catch for dev environments if needed, but strict in prod
-        print(f"DEBUG: Firebase Token Verification Failed: {str(e)}")
-        raise HTTPException(status_code=401, detail=f"Invalid authentication credentials: {str(e)}")
+        # Log the actual error internally but DO NOT expose it in the HTTP response.
+        # Token details, internal library errors, or project IDs must not leak to clients.
+        print(f"[Auth] Token verification failed: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication token.")
 
 def get_current_user_optional(request: Request) -> str | None:
     """

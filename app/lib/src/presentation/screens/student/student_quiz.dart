@@ -100,7 +100,7 @@ class _AutoStartPanel extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Time for Quiz',
+              'Time to Practice!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 26,

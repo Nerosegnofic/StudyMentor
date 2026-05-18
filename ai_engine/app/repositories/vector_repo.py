@@ -16,10 +16,23 @@ def generate_chunk_id(content: str, metadata: dict, document_id: UUID) -> str:
     hash_hex = hashlib.sha256(hash_input.encode('utf-8')).hexdigest()[:32]
     return str(uuid.UUID(hash_hex))
 
-def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID, firebase_uid: str = None):
+def save_chunks_to_pgvector(
+    langchain_docs: list,
+    document_id: UUID,
+    firebase_uid: str = None,
+    subject_id: int = None,
+):
     """
     Stores the vectorized chunks into PGVector incrementally.
     Skips chunks that are already embedded in the database.
+
+    Args:
+        langchain_docs: LangChain Document objects from the chunker.
+        document_id: UUID of the source document.
+        firebase_uid: If provided, tags chunks for tenant-scoped retrieval.
+        subject_id: If provided, tags chunks for subject-scoped retrieval.
+                    Required for the RAG guardrail that prevents cross-subject
+                    context injection into quiz prompts.
     """
     if not langchain_docs:
         print(f"Warning: No text could be extracted from document {document_id}", flush=True)
@@ -27,7 +40,7 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID, firebase_ui
 
     vector_store = get_vector_store()
     engine = create_engine(settings.POSTGRES_CONNECTION)
-    
+
     # 1. Fetch all existing chunk IDs for this document to avoid re-embedding
     with engine.connect() as conn:
         result = conn.execute(
@@ -38,13 +51,15 @@ def save_chunks_to_pgvector(langchain_docs: list, document_id: UUID, firebase_ui
 
     # 2. Map docs to their deterministic IDs and filter out duplicates
     new_chunks_registry = {}
-    
+
     for doc in langchain_docs:
         doc.metadata["document_id"] = str(document_id)
         if firebase_uid:
             doc.metadata["firebase_uid"] = firebase_uid
+        if subject_id is not None:
+            doc.metadata["subject_id"] = subject_id
         chunk_id = generate_chunk_id(doc.page_content, doc.metadata, document_id)
-        
+
         if chunk_id not in existing_ids and chunk_id not in new_chunks_registry:
             new_chunks_registry[chunk_id] = doc
 

@@ -54,7 +54,7 @@ def process_and_ingest_document(
             langchain_docs = chunker_context.execute_chunking(cleaned_text, document_id)
             
             # Step 5: Store Vector Embeddings
-            save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid)
+            save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
             
             # Step 6a: Populate Skills from raw regex extraction
             if raw_mastery_data:

@@ -17,3 +17,7 @@ langchain-experimental
 pymupdf
 pgvector
 firebase-admin
+# Guardrail dependencies
+slowapi>=0.1.9      # Per-UID rate limiting on quiz generation endpoint
+tenacity>=8.2.0     # Exponential backoff retries on LLM generation calls
+apscheduler>=3.10.0 # Daily scheduled data retention purge

@@ -14,7 +14,7 @@ class LlamaParseStrategy(DocumentParserStrategy):
             
         parser = LlamaParse(
             result_type="markdown",
-            premium_mode=False, # Switching to standard mode for better stability on free keys
+            premium_mode=True,
             language="ar",
             system_prompt ="""
             This is a bilingual educational textbook. 
