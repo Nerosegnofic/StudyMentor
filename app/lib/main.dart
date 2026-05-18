@@ -19,6 +19,7 @@ import 'src/presentation/screens/parent/parent_screen.dart';
 import 'src/presentation/screens/auth/parent_register_screen.dart';
 import 'src/presentation/screens/student/student_screen.dart';
 import 'src/services/installed_apps_service.dart';
+import 'src/services/device_admin_service.dart';
 
 // ── WorkManager task identifiers ─────────────────────────────────────────────
 const _kSyncTaskName = 'installedAppSync';
@@ -131,40 +132,68 @@ class RootPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      // AuthLoading only triggers a root rebuild during the true cold-start
-      // flow (AuthInitial → AuthLoading). Any AuthLoading emitted mid-session
-      // (e.g. during student creation) is ignored here, preventing RootPage
-      // from replacing the parent dashboard with an infinite spinner.
-      buildWhen: (prev, curr) =>
-          curr is AuthInitial ||
-          (curr is AuthLoading && prev is AuthInitial) ||
+    return BlocListener<AuthBloc, AuthState>(
+      // React to every meaningful auth transition to keep the native side
+      // in sync. We use listenWhen to avoid redundant native calls on
+      // unrelated state changes (e.g. AppConfigLoading, InstalledAppsSyncing).
+      listenWhen: (prev, curr) =>
           curr is AuthAuthenticated ||
           curr is AuthUnauthenticated ||
           curr is AuthEmailUnverified,
-      builder: (context, state) {
-        if (state is AuthInitial || state is AuthLoading) {
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          final isStudent = state.user.role.toLowerCase() != 'parent';
+          if (isStudent) {
+            // Student just logged in — enable accessibility guard and
+            // request Device Admin if not already granted.
+            DeviceAdminService.onStudentLogin();
+          } else {
+            // Parent logged in — disable the guard.
+            DeviceAdminService.onStudentLogout();
+          }
+        } else if (state is AuthUnauthenticated ||
+            state is AuthEmailUnverified) {
+          // Logged out or unverified — disable the guard.
+          DeviceAdminService.onStudentLogout();
+        }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        // AuthLoading only triggers a root rebuild during the true cold-start
+        // flow (AuthInitial → AuthLoading). Any AuthLoading emitted mid-session
+        // (e.g. during student creation) is ignored here, preventing RootPage
+        // from replacing the parent dashboard with an infinite spinner.
+        buildWhen: (prev, curr) =>
+            curr is AuthInitial ||
+            (curr is AuthLoading && prev is AuthInitial) ||
+            curr is AuthAuthenticated ||
+            curr is AuthUnauthenticated ||
+            curr is AuthEmailUnverified,
+        builder: (context, state) {
+          if (state is AuthInitial || state is AuthLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (state is AuthUnauthenticated) {
+            return const LoginScreen();
+          }
+          if (state is AuthEmailUnverified) {
+            return const ConfirmEmailScreen();
+          }
+          if (state is AuthAuthenticated) {
+            final role = state.user.role.toLowerCase();
+            final fullName = state.user.fullName;
+            if (role == 'parent') {
+              return ParentScreen(fullName: fullName, uid: state.user.uid);
+            } else {
+              return StudentScreen(fullName: fullName, uid: state.user.uid);
+            }
+          }
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
-        }
-        if (state is AuthUnauthenticated) {
-          return const LoginScreen();
-        }
-        if (state is AuthEmailUnverified) {
-          return const ConfirmEmailScreen();
-        }
-        if (state is AuthAuthenticated) {
-          final role = state.user.role.toLowerCase();
-          final fullName = state.user.fullName;
-          if (role == 'parent') {
-            return ParentScreen(fullName: fullName, uid: state.user.uid);
-          } else {
-            return StudentScreen(fullName: fullName, uid: state.user.uid);
-          }
-        }
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      },
+        },
+      ),
     );
   }
 }

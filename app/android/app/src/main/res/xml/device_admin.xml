@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Device Admin policy declaration.
+    No special policies are needed beyond being a device admin — that alone
+    is sufficient to prevent uninstallation without revoking admin first.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>
