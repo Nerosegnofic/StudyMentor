@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # RAG Retrieval Quality
     # Cosine distance threshold: chunks with score > this value are too irrelevant to inject.
     # Range: 0.0 (identical) → 2.0 (opposite). 0.45 retains reasonably on-topic chunks.
-    RETRIEVAL_SCORE_THRESHOLD: float = 0.45
+    RETRIEVAL_SCORE_THRESHOLD: float = 0.55
 
     # Quiz Bank Fallback (used when LLM generation fails)
     # Minimum fraction of required questions the bank must cover before using it.

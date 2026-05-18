@@ -37,7 +37,7 @@ _ORDINALS_FEM = (
 
 # Matches: "### المفاهيم" or "المفاهيم" as a standalone header
 _MFAHEEM_HEADER = re.compile(
-    r'^#{1,4}\s*المفاهيم\s*$', re.MULTILINE
+    r'^#{1,6}\s*المفاهيم\s*$', re.MULTILINE
 )
 
 # Matches: English objective section headers (comprehensive)
@@ -56,8 +56,9 @@ _EN_OBJECTIVES_HEADER = re.compile(
 )
 
 # Matches: Arabic objective section headers (all publishers, all subjects)
+# Uses #{0,6} to handle arbitrary markdown header depth from OCR.
 _AR_OBJECTIVES_HEADER = re.compile(
-    r'^#{0,4}\s*(?:'
+    r'^#{0,6}\s*(?:'
     r'(?:أهداف|هدف)\s+(?:التعلم|الدرس|الوحدة)'
     r'|نواتج\s+التعلم'
     r'|الأهداف\s*(?:السلوكية|التعليمية|الإجرائية)?'
@@ -82,7 +83,7 @@ _AR_INLINE_OBJECTIVES_INTRO = re.compile(
 
 # Matches: next major section header (Unit, Concept start, or lesson content start)
 _NEXT_SECTION = re.compile(
-    r'^#{1,3}\s+(?!المفهوم)', re.MULTILINE  # Any H1-H3 that isn't a concept sub-header
+    r'^#{1,4}\s+(?!المفهوم)', re.MULTILINE  # Any H1-H4 that isn't a concept sub-header
 )
 
 
@@ -91,12 +92,12 @@ _NEXT_SECTION = re.compile(
 # ---------------------------------------------------------------------------
 
 _UNIT_HEADER = re.compile(
-    rf'^#{{1,4}}\s*(?:الوحدة)\s*(?:[\(\[<{{]?\s*\d+\s*[\)\]>}}]?|(?:{_ORDINALS_FEM}))',
+    rf'^#{{1,6}}\s*(?:الوحدة)\s*(?:[\(\[<{{]?\s*\d+\s*[\)\]>}}]?|(?:{_ORDINALS_FEM}))',
     re.MULTILINE
 )
 
 _LESSON_HEADER = re.compile(
-    rf'^#{{1,4}}\s*(?:الدرس(?:ان|وس)?)\s*(?:[\(\[<{{]?\s*[\d\s،,\-/]+\s*[\)\]>}}]?|(?:{_ORDINALS_MASC}))',
+    rf'^#{{1,6}}\s*(?:الدرس(?:ان|وس)?)\s*(?:[\(\[<{{]?\s*[\d\s،,\-/]+\s*[\)\]>}}]?|(?:{_ORDINALS_MASC}))',
     re.MULTILINE
 )
 
@@ -130,17 +131,19 @@ _AR_OBJECTIVE = re.compile(
 #   - فهم العلاقة بين...           (Masdar/noun style)
 _AR_GENERIC_OBJECTIVE = re.compile(
     r'^\s*[-•*]\s+('
+    # Optional leading conjunction و (OCR sometimes joins "وأستطيع")
+    r'(?:و)?'
     # "أستطيع أن" style (Ministry) — with optional tashkeel
     r'أ(?:َ|ْ)?س(?:ْ)?ت(?:َ)?ط(?:ِ)?ي(?:ْ)?ع(?:ُ)?\s+أ(?:َ)?ن(?:ْ)?\s+.+'
     r'|'
     # "أن يفعل التلميذ/الطالب" style (common in science/Arabic language)
-    r'أن\s+(?:ي|يُ|يَ|يّ)\S+\s+.+'
+    r'(?:و)?أن\s+(?:ي|يُ|يَ|يّ)\S+\s+.+'
     r'|'
     # "يفعل التلميذ" style (Sela7/generic) — verb starts with ي
-    r'(?:ي|يُ|يَ|يّ|يٌ|يً|يِ|يْ)\S+\s+(?:التلميذ|الطالب|المتعلم)\s+.+'
+    r'(?:و)?(?:ي|يُ|يَ|يّ|يٌ|يً|يِ|يْ)\S+\s+(?:التلميذ|الطالب|المتعلم)\s+.+'
     r'|'
     # Masdar/noun style: "التعرف على", "فهم العلاقة", "تحديد أوجه"
-    r'(?:التعرف|التعريف|فهم|تحديد|وصف|مقارنة|تصنيف|استخدام|تطبيق|تحليل|استنتاج|ملاحظة|شرح|كتابة|قراءة|حل|رسم|تمثيل|إيجاد|توضيح)\s+.+'
+    r'(?:و)?(?:التعرف|التعريف|فهم|تحديد|وصف|مقارنة|تصنيف|استخدام|تطبيق|تحليل|استنتاج|ملاحظة|شرح|كتابة|قراءة|حل|رسم|تمثيل|إيجاد|توضيح|تقدير|تقريب|حساب|إجراء)\s+.+'
     r')$', re.MULTILINE
 )
 
@@ -164,6 +167,20 @@ _EN_OBJECTIVE = re.compile(
     r'|(?:Identify|Recognize|Understand|Describe|Explain|Apply|Analyze|Evaluate|Create|Compare|Classify|Demonstrate|Use|Write|Read|Listen|Speak|Match|Complete|Draw|Label|Name|List|Define|State|Discuss|Solve|Calculate)\s+.+'
     r')$', re.MULTILINE | re.IGNORECASE
 )
+
+
+def _clean_objective_text(text: str) -> str:
+    """
+    Normalize an extracted objective string:
+    - Strip leading conjunction و (OCR artifact from "وأستطيع أن...")
+    - Strip trailing period
+    - Normalize whitespace
+    """
+    text = text.strip().rstrip('.')
+    # Strip leading و if followed by أستطيع/أن (conjunction artifact)
+    if text.startswith('و') and len(text) > 1 and text[1] in 'أا':
+        text = text[1:]
+    return ' '.join(text.split())
 
 
 def _find_sections(text: str, header_pattern: re.Pattern) -> List[str]:
@@ -256,9 +273,7 @@ def extract_arabic_objectives(text: str) -> List[dict]:
             # Check if this is an objective (sub-indented Arabic verb bullet)
             obj_match = _AR_OBJECTIVE.match(line)
             if obj_match and current_lesson:
-                objective = obj_match.group(1).strip()
-                objective = objective.rstrip('.')
-                current_objectives.append(objective)
+                current_objectives.append(_clean_objective_text(obj_match.group(1)))
         
         # Don't forget the last lesson
         if current_lesson and current_objectives:
@@ -275,12 +290,16 @@ def extract_ministry_objectives(text: str) -> List[dict]:
     """
     Extract objectives from Ministry Techbook format (Discovery Education).
     
-    Structure:
+    Structure (bullet form):
         # الدرس الأول
         ## الكسور العشرية حتى جزء من الألف
         ### أهداف التعلم
         - أستطيع أن أقرأ الأعداد العشرية حتى جزء من الألف.
         - أستطيع أن أكتب الأعداد العشرية حتى جزء من الألف.
+    
+    Structure (bare-line form — common in scanned copies):
+        ##### هدف التعلم
+        أستطيع أن أقرب الأعداد العشرية إلى أقرب جزء من عشرة.
     
     Returns: [{'unit': ..., 'lesson': ..., 'objectives': [...]}]
     """
@@ -289,6 +308,24 @@ def extract_ministry_objectives(text: str) -> List[dict]:
     # Track current unit and lesson as we scan the document
     current_unit = "Unknown"
     current_lesson = "Unknown"
+    
+    # Pattern to match bare-line objectives (no bullet prefix)
+    # Handles optional leading و (conjunction) which OCR commonly produces
+    _AR_BARE_OBJECTIVE = re.compile(
+        r'^\s*('
+        # Optional leading و + "أستطيع أن" style
+        r'(?:و)?أ(?:َ|ْ)?س(?:ْ)?ت(?:َ)?ط(?:ِ)?ي(?:ْ)?ع(?:ُ)?\s+أ(?:َ)?ن(?:ْ)?\s+.+'
+        r'|'
+        # "أن يفعل" style
+        r'(?:و)?أن\s+(?:ي|يُ|يَ|يّ)\S+\s+.+'
+        r'|'
+        # "يفعل التلميذ" style
+        r'(?:و)?(?:ي|يُ|يَ|يّ|يٌ|يً|يِ|يْ)\S+\s+(?:التلميذ|الطالب|المتعلم)\s+.+'
+        r'|'
+        # Masdar/noun style: "التعرف على", "تقدير الفرق"
+        r'(?:و)?(?:التعرف|التعريف|فهم|تحديد|وصف|مقارنة|تصنيف|استخدام|تطبيق|تحليل|استنتاج|ملاحظة|شرح|كتابة|قراءة|حل|رسم|تمثيل|إيجاد|توضيح|تقدير|تقريب|حساب|إجراء)\s+.+'
+        r')$', re.MULTILINE
+    )
     
     lines = text.split('\n')
     
@@ -302,7 +339,6 @@ def extract_ministry_objectives(text: str) -> List[dict]:
         )
         if unit_match and stripped.startswith('#'):
             current_unit = unit_match.group(0).strip()
-            # Try to get title after colon
             rest = stripped[stripped.index(current_unit) + len(current_unit):]
             title_match = re.match(r'\s*[:\|]\s*(.+?)$', rest)
             if title_match:
@@ -316,13 +352,11 @@ def extract_ministry_objectives(text: str) -> List[dict]:
         )
         if lesson_match and stripped.startswith('#'):
             current_lesson = lesson_match.group(0).strip()
-            # Try to get title from the next header line (h2)
             rest = stripped[stripped.index(current_lesson) + len(current_lesson):]
             title_match = re.match(r'\s*[:\|]\s*(.+?)$', rest)
             if title_match:
                 current_lesson = f"{current_lesson}: {title_match.group(1).strip()}"
             else:
-                # Check if h2 on next non-empty line has the title
                 for j in range(i + 1, min(i + 3, len(lines))):
                     next_line = lines[j].strip()
                     if next_line.startswith('##') and not next_line.startswith('###'):
@@ -334,20 +368,24 @@ def extract_ministry_objectives(text: str) -> List[dict]:
         
         # Check for objectives header (all Arabic formats)
         if _AR_OBJECTIVES_HEADER.match(stripped):
-            # Collect all objectives following this header
             objectives = []
             for j in range(i + 1, len(lines)):
                 obj_line = lines[j]
+                obj_stripped = obj_line.strip()
+                # Try bullet-prefixed match first
                 obj_match = _AR_GENERIC_OBJECTIVE.match(obj_line)
                 if obj_match:
-                    obj_text = obj_match.group(1).strip().rstrip('.')
-                    objectives.append(obj_text)
-                elif obj_line.strip() == '':
-                    continue  # Skip blank lines
-                elif obj_line.strip().startswith('#') or obj_line.strip().startswith('---'):
-                    break  # Next section
+                    objectives.append(_clean_objective_text(obj_match.group(1)))
+                # Then try bare-line match (no bullet prefix)
+                elif _AR_BARE_OBJECTIVE.match(obj_line):
+                    bare_match = _AR_BARE_OBJECTIVE.match(obj_line)
+                    objectives.append(_clean_objective_text(bare_match.group(1)))
+                elif obj_stripped == '':
+                    continue
+                elif obj_stripped.startswith('#') or obj_stripped.startswith('---'):
+                    break
                 else:
-                    break  # Non-objective content
+                    break
             
             if objectives:
                 results.append({
@@ -357,18 +395,21 @@ def extract_ministry_objectives(text: str) -> List[dict]:
                 })
             continue
         
-        # Check for inline objective intros (e.g., "في هذا الدرس سوف نتعرف على:")
+        # Check for inline objective intros
         if _AR_INLINE_OBJECTIVES_INTRO.search(stripped):
             objectives = []
             for j in range(i + 1, len(lines)):
                 obj_line = lines[j]
+                obj_stripped = obj_line.strip()
                 obj_match = _AR_GENERIC_OBJECTIVE.match(obj_line)
                 if obj_match:
-                    obj_text = obj_match.group(1).strip().rstrip('.')
-                    objectives.append(obj_text)
-                elif obj_line.strip() == '':
+                    objectives.append(_clean_objective_text(obj_match.group(1)))
+                elif _AR_BARE_OBJECTIVE.match(obj_line):
+                    bare_match = _AR_BARE_OBJECTIVE.match(obj_line)
+                    objectives.append(_clean_objective_text(bare_match.group(1)))
+                elif obj_stripped == '':
                     continue
-                elif obj_line.strip().startswith('#') or obj_line.strip().startswith('---'):
+                elif obj_stripped.startswith('#') or obj_stripped.startswith('---'):
                     break
                 else:
                     break

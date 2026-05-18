@@ -22,6 +22,7 @@ class DocumentUploadBloc
       final response = await repository.uploadDocument(
         pdfFile: event.file,
         subjectName: event.subjectName,
+        studentUid: event.studentUid,
       );
       emit(DocumentUploadAccepted(response));
     } catch (e) {

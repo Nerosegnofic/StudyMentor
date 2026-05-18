@@ -17,7 +17,7 @@ ENV/
 
 # Debug & Temporary Files
 debug_*.md
-temp_*.pdf
+*.pdf
 *.log
 
 # Databases (if local)

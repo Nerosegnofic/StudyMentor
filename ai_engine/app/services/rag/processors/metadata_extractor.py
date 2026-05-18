@@ -37,14 +37,14 @@ _ORDINALS = f'{_ORDINALS_MASC}|{_ORDINALS_FEM}'
 # --- STRUCTURAL PATTERNS (Headers, Navigation) ---
 
 UNIT_PATTERNS = [
-    # Arabic numeric: الوحدة (1), الوحدة 1, الفصل (3)
-    re.compile(r'الوحدة\s*[\(\[\<{]?\s*\d+\s*[\)\]\>}]?', re.IGNORECASE),
-    re.compile(r'الفصل\s*[\(\[\<{]?\s*\d+\s*[\)\]\>}]?', re.IGNORECASE),
+    # Arabic numeric: الوحدة (1), الوحدة 1, الفصل (3) - limited to 1-2 digits to avoid years like 2025
+    re.compile(r'الوحدة\s*[\(\[\<{]?\s*\d{1,2}(?!\d)\s*[\)\]\>}]?', re.IGNORECASE),
+    re.compile(r'الفصل\s*[\(\[\<{]?\s*\d{1,2}(?!\d)\s*[\)\]\>}]?', re.IGNORECASE),
     # Arabic ordinal: الوحدة الأولى, الوحدة الثانية, الوحدة الرابعة
     re.compile(rf'الوحدة\s+({_ORDINALS_FEM})'),
     re.compile(rf'الفصل\s+({_ORDINALS_MASC})'),
     # English: Unit 1, Chapter 3, Module 2
-    re.compile(r'\b(Unit|Chapter|Module|Section)\s+\d+', re.IGNORECASE),
+    re.compile(r'\b(Unit|Chapter|Module|Section)\s+\d{1,2}(?!\d)', re.IGNORECASE),
 ]
 
 CONCEPT_PATTERNS = [
@@ -151,8 +151,10 @@ EXPLANATION_PATTERNS = [
 
 # --- GARBAGE PATTERNS (OCR artifacts, scanner noise) ---
 GARBAGE_PATTERNS = [
-    re.compile(r'CamScanner', re.IGNORECASE),
+    re.compile(r'CamScann?e?r?', re.IGNORECASE),  # Full and OCR-truncated variants
     re.compile(r'الممسوحة\s+ضوئياً', re.IGNORECASE),
+    re.compile(r'لممسوحة\s+ضوئي', re.IGNORECASE),  # OCR-truncated: "لممسوحة ضوئيا ب"
+    re.compile(r'لمسوحة\s+ضوئي', re.IGNORECASE),   # Another truncated variant
     re.compile(r'^[ivxlcdm]+$', re.IGNORECASE),  # Roman numerals only
     re.compile(r'^\s*الكود\s+السريع\s*$', re.MULTILINE),
     re.compile(r'^\s*Photo\s+Credit', re.IGNORECASE | re.MULTILINE),
@@ -446,11 +448,23 @@ class SequentialContextTracker:
                 and md_headers is not None):
             h1 = md_headers.get('h1', '')
             if h1 and not _is_pipe_composite(h1):
-                # Only use h1 if it looks like a real title (not a unit/concept/toc header)
+                # Only use h1 if it looks like a real topic title (not a unit/concept/toc header)
                 is_structural = any(
-                    p.search(h1) for p in UNIT_PATTERNS + CONCEPT_PATTERNS + TOC_PATTERNS + FRONT_MATTER_PATTERNS
+                    p.search(h1) for p in UNIT_PATTERNS + CONCEPT_PATTERNS + LESSON_PATTERNS + TOC_PATTERNS + FRONT_MATTER_PATTERNS
                 )
-                if not is_structural:
+                # Additional guards against garbled OCR page titles
+                _REJECT_H1_PATTERNS = [
+                    re.compile(r'الصف\s+(?:الخامس|الرابع|السادس|الأول|الثاني|الثالث)', re.IGNORECASE),
+                    re.compile(r'الابتدائ', re.IGNORECASE),
+                    re.compile(r'الفصل\s+الدراس', re.IGNORECASE),
+                    re.compile(r'\d{4}\s*[-–]\s*\d{4}', re.IGNORECASE),  # School year: 2025-2026
+                    re.compile(r'الرياضيات', re.IGNORECASE),  # "Mathematics" page header
+                    re.compile(r'مقدمة', re.IGNORECASE),  # Introduction pages
+                    re.compile(r'حقوق\s+الطبع', re.IGNORECASE),  # Copyright pages
+                    re.compile(r'مراجعة', re.IGNORECASE),  # Review header (not a lesson)
+                ]
+                is_page_title = any(p.search(h1) for p in _REJECT_H1_PATTERNS)
+                if not is_structural and not is_page_title:
                     cleaned = _clean_header_value(h1)
                     # Check it's not just a number, noise, or very short
                     if cleaned and len(cleaned) > 3 and not cleaned.strip().isdigit():

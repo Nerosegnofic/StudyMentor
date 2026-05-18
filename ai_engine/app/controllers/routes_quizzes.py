@@ -9,7 +9,7 @@ from app.models.schemas import (
     QuizSubmissionResponse,
 )
 from app.models.domain.quiz import QuizSession as QuizSessionModel
-from app.main import limiter
+from app.core.rate_limit import limiter
 from app.core.config import settings
 from app.services.rag.retrieval import retrieve_context_for_topics
 from app.services.rag.generation.context import GeneratorContext
@@ -50,7 +50,7 @@ bkt_engine = BKTEngine()
 @limiter.limit(settings.QUIZ_GENERATE_RATE_LIMIT)
 async def generate_quiz(
     request_body: GenerateQuizRequest,
-    http_request: Request,
+    request: Request,
     db: Session = Depends(get_db),
     student_uid: str = Depends(get_current_user),
 ):

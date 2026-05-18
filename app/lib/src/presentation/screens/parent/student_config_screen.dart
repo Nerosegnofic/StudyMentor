@@ -543,7 +543,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ),
-            body: const StudentDocumentUploadScreen(),
+            body: StudentDocumentUploadScreen(studentUid: widget.student.uid),
           ),
         ),
       ),

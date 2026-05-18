@@ -155,10 +155,20 @@ def _search_with_score(vector_store, topic: str, k: int, filter_dict: dict) -> l
         docs_with_scores = vector_store.similarity_search_with_score(
             topic, k=k, filter=filter_dict
         )
-        return [
-            doc for doc, score in docs_with_scores
-            if score <= settings.RETRIEVAL_SCORE_THRESHOLD
-        ]
+        accepted = []
+        rejected_scores = []
+        for doc, score in docs_with_scores:
+            if score <= settings.RETRIEVAL_SCORE_THRESHOLD:
+                accepted.append(doc)
+            else:
+                rejected_scores.append(round(score, 3))
+        if rejected_scores:
+            print(
+                f"[Retrieval] Filtered {len(rejected_scores)} chunks above threshold "
+                f"({settings.RETRIEVAL_SCORE_THRESHOLD}): {rejected_scores[:5]}",
+                flush=True,
+            )
+        return accepted
     except Exception as e:
         print(f"[Retrieval] Warning: Search failed with filter {filter_dict}: {e}", flush=True)
         return []

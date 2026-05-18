@@ -1,9 +1,10 @@
 import traceback
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
+from app.core.rate_limit import limiter
 
 from app.core.config import settings
 from app.controllers.routes_documents import router as documents_router
@@ -17,21 +18,7 @@ from app.core.auth import init_firebase, get_current_user_optional
 from contextlib import asynccontextmanager
 
 
-# ---------------------------------------------------------------------------
-# Rate Limiter (slowapi)
-# Keyed on Firebase UID extracted from the Authorization header.
-# Falls back to IP address if the header is missing or unparseable.
-# ---------------------------------------------------------------------------
-def _get_uid_or_ip(request: Request) -> str:
-    """
-    Rate limit key function. Extracts the Firebase UID from the JWT so rate
-    limits are per-user (not per-IP, which can be bypassed with VPNs).
-    Falls back to IP address for unauthenticated requests.
-    """
-    return get_current_user_optional(request) or get_remote_address(request)
 
-
-limiter = Limiter(key_func=_get_uid_or_ip)
 
 
 @asynccontextmanager

@@ -77,12 +77,34 @@ def preprocess_parsed_text(text: str) -> str:
         re.compile(r'^\d{1,3}\s*\|\s*الدرس.+$'),
         re.compile(r'^الدرس.+\s+\d{1,3}\s*$'),
     ]
+    # CamScanner noise: catches full and OCR-truncated variants
+    camscanner_patterns = [
+        re.compile(r'CamScann?e?r?', re.IGNORECASE),
+        re.compile(r'لممسوحة\s+ضوئي', re.IGNORECASE),
+        re.compile(r'لمسوحة\s+ضوئي', re.IGNORECASE),
+    ]
+    # Standalone page number lines: "| 10" or just "8" or "14"
+    standalone_page_num = re.compile(r'^\|?\s*\d{1,3}\s*$')
 
     for line in text.split('\n'):
         stripped = line.strip()
         if stripped.startswith('#') and any(p.match(stripped) for p in noise_patterns):
             cleaned_lines.append(stripped.lstrip('#').strip())
         elif any(p.match(stripped) for p in footer_patterns):
+            cleaned_lines.append('')
+        elif any(p.search(stripped) for p in camscanner_patterns):
+            # Remove lines that are primarily CamScanner artifacts
+            # If the line has substantial content besides the scanner text, keep the clean part
+            cleaned = stripped
+            for p in camscanner_patterns:
+                cleaned = p.sub('', cleaned).strip()
+            # Also strip common suffixes left behind
+            cleaned = re.sub(r'^[\*\s]+|[\*\s]+$', '', cleaned)
+            if len(cleaned) > 10:
+                cleaned_lines.append(cleaned)
+            else:
+                cleaned_lines.append('')
+        elif standalone_page_num.match(stripped):
             cleaned_lines.append('')
         else:
             cleaned_lines.append(line)

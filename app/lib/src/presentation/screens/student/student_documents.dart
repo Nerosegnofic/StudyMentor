@@ -9,7 +9,8 @@ import '../../../bloc/document/document_upload_state.dart';
 /// Document upload screen that lets the student browse for a PDF and upload it
 /// to the AI Engine for curriculum ingestion.
 class StudentDocumentUploadScreen extends StatefulWidget {
-  const StudentDocumentUploadScreen({super.key});
+  final String studentUid;
+  const StudentDocumentUploadScreen({super.key, required this.studentUid});
 
   @override
   State<StudentDocumentUploadScreen> createState() =>
@@ -62,6 +63,7 @@ class _StudentDocumentUploadScreenState
       PickAndUploadDocumentEvent(
         file: File(_selectedFilePath!),
         subjectName: name,
+        studentUid: widget.studentUid,
       ),
     );
   }

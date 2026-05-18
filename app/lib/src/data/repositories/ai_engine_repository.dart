@@ -253,13 +253,15 @@ class AiEngineRepository {
   Future<DocumentUploadResponse> uploadDocument({
     required File pdfFile,
     required String subjectName,
+    required String studentUid,
   }) async {
     final token = await _requireToken();
 
     final uri = Uri.parse('$baseUrl/api/v1/documents/upload');
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
-      ..fields['subject_name'] = subjectName;
+      ..fields['subject_name'] = subjectName
+      ..fields['student_uid'] = studentUid;
 
     request.files.add(await http.MultipartFile.fromPath(
         'file', // must match FastAPI's File(...) parameter name

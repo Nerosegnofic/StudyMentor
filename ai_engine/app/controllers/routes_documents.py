@@ -9,7 +9,7 @@ from app.core.config import settings
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 # Allowed MIME types for upload
-_ALLOWED_MIME_TYPES = {"application/pdf"}
+_ALLOWED_MIME_TYPES = {"application/pdf", "application/octet-stream", "", None}
 
 
 @router.post("/upload", response_model=DocumentUploadResponse)
@@ -17,6 +17,7 @@ async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     subject_name: str = Form(...),
+    student_uid: str = Form(...),
     firebase_uid: str = Depends(get_current_user),
 ):
     """
@@ -59,11 +60,11 @@ async def upload_document(
     try:
         subject = db.query(Subject).filter(
             Subject.name == subject_name,
-            Subject.student_uid == firebase_uid
+            Subject.student_uid == student_uid
         ).first()
 
         if not subject:
-            subject = Subject(name=subject_name, student_uid=firebase_uid, is_global=False)
+            subject = Subject(name=subject_name, student_uid=student_uid, is_global=False)
             db.add(subject)
             db.commit()
             db.refresh(subject)

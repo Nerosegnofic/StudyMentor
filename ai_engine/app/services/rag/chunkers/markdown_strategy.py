@@ -16,11 +16,16 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
     Pipeline:
         1. Split by Markdown headers (structure-aware, but we don't trust depth).
         2. Sub-split large sections with RecursiveCharacterTextSplitter.
-        3. Classify each chunk (substantive vs structural).
-        4. Detect chunk role from CONTENT (exercise, example, rule, etc.).
-        5. Track sequential context (parent unit, concept, lesson).
-        6. Filter garbage chunks (CamScanner artifacts, orphaned headers).
+        3. Merge adjacent small chunks to prevent context fragmentation.
+        4. Classify each chunk (substantive vs structural).
+        5. Detect chunk role from CONTENT (exercise, example, rule, etc.).
+        6. Track sequential context (parent unit, concept, lesson).
+        7. Filter garbage chunks (CamScanner artifacts, orphaned headers).
     """
+    # Minimum number of characters for a chunk to stand on its own.
+    # Smaller chunks get merged with the next chunk.
+    MIN_CHUNK_SIZE = 150
+
     def chunk(self, full_text: str, document_id: UUID) -> list:
         headers_to_split_on = [("#", "h1"), ("##", "h2"), ("###", "h3")]
         
@@ -41,12 +46,40 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
             sub_chunks = recursive_splitter.split_documents([chunk])
             all_sub_chunks.extend(sub_chunks)
         
-        # 4. Sequential context tracking + role detection + classification
+        # 4. Merge adjacent small chunks to prevent context fragmentation.
+        #    A 40-char chunk like "### الدرس الثاني: المتغيرات" alone is too
+        #    short for meaningful embedding. Merging it with the next chunk
+        #    preserves context locality and improves retrieval quality.
+        merged_chunks = []
+        accumulator = None
+        for chunk in all_sub_chunks:
+            if accumulator is None:
+                accumulator = chunk
+            else:
+                combined_len = len(accumulator.page_content) + len(chunk.page_content)
+                if len(accumulator.page_content) < self.MIN_CHUNK_SIZE and combined_len <= 2200:
+                    # Merge: combine text, keep metadata from the first chunk
+                    accumulator.page_content = accumulator.page_content + "\n\n" + chunk.page_content
+                    # Inherit any new header metadata from the merged chunk
+                    for key in ('h1', 'h2', 'h3'):
+                        if key in chunk.metadata and key not in accumulator.metadata:
+                            accumulator.metadata[key] = chunk.metadata[key]
+                else:
+                    merged_chunks.append(accumulator)
+                    accumulator = chunk
+        if accumulator is not None:
+            merged_chunks.append(accumulator)
+        
+        merge_count = len(all_sub_chunks) - len(merged_chunks)
+        if merge_count > 0:
+            print(f"[{document_id}] Merged {merge_count} small chunks ({len(all_sub_chunks)} → {len(merged_chunks)}).", flush=True)
+        
+        # 5. Sequential context tracking + role detection + classification
         tracker = SequentialContextTracker()
         final_chunks = []
         garbage_count = 0
         
-        for chunk in all_sub_chunks:
+        for chunk in merged_chunks:
             text = chunk.page_content
             
             # a) Classify first to get word_count

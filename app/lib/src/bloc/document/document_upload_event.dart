@@ -6,10 +6,12 @@ abstract class DocumentUploadEvent {}
 class PickAndUploadDocumentEvent extends DocumentUploadEvent {
   final File file;
   final String subjectName;
+  final String studentUid;
 
   PickAndUploadDocumentEvent({
     required this.file,
     required this.subjectName,
+    required this.studentUid,
   });
 }
 
