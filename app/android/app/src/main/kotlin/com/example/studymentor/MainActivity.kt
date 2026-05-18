@@ -10,6 +10,7 @@ class MainActivity : FlutterActivity() {
     private lateinit var overlayPlugin: OverlayPlugin
     private lateinit var installedAppsPlugin: InstalledAppsPlugin
     private lateinit var timerServiceBridge: TimerServiceBridge
+    private lateinit var deviceAdminPlugin: DeviceAdminPlugin
 
     // Cached channel reference so onNewIntent can invoke onLimitReached even
     // after configureFlutterEngine has run.
@@ -30,6 +31,9 @@ class MainActivity : FlutterActivity() {
 
         timerServiceBridge = TimerServiceBridge(this)
         timerServiceBridge.registerWith(flutterEngine)
+
+        deviceAdminPlugin = DeviceAdminPlugin(this)
+        deviceAdminPlugin.registerWith(flutterEngine)
 
         timerChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -108,5 +112,11 @@ class MainActivity : FlutterActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         overlayPlugin.onActivityResult(requestCode)
+
+        // The Device Admin dialog just closed (user granted or denied).
+        // Clear the bypass flag so the accessibility Settings guard resumes.
+        if (requestCode == DeviceAdminPlugin.REQUEST_CODE_ENABLE_ADMIN) {
+            StudyMentorAccessibilityService.isRequestingAdmin = false
+        }
     }
 }
