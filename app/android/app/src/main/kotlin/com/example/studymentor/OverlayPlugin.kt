@@ -11,7 +11,6 @@ import android.graphics.PixelFormat
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -36,8 +35,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         const val OVERLAY_CHANNEL = "com.example.studymentor/overlay"
         const val USAGE_CHANNEL   = "com.example.studymentor/usage_stats"
         const val ACCESS_CHANNEL  = "com.example.studymentor/accessibility"
-        private const val REQUEST_OVERLAY_PERMISSION     = 1001
-        private const val REQUEST_USAGE_STATS_PERMISSION = 1002
 
         // ── Silent usage timer notification ───────────────────────────────────
         private const val NOTIF_CHANNEL_ID   = "studymentor_usage_timer"
@@ -82,10 +79,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
     // Guard against double-firing the dismiss callback
     private var isDismissing = false
-
-    // ── Pending results for permission flows ──────────────────────────────────
-    private var pendingOverlayResult: MethodChannel.Result? = null
-    private var pendingUsageResult: MethodChannel.Result? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -186,20 +179,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
     private fun handleOverlay(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-
-            "requestOverlayPermission" -> {
-                if (Settings.canDrawOverlays(activity)) {
-                    result.success(true)
-                } else {
-                    pendingOverlayResult = result
-                    val intent = Intent(
-                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:${activity.packageName}"),
-                    )
-                    @Suppress("DEPRECATION")
-                    activity.startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
-                }
-            }
 
             "showOverlay" -> {
                 if (!Settings.canDrawOverlays(activity)) {
@@ -356,11 +335,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // Silent cooldown timer notification helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Posts (or updates) the persistent cooldown-timer notification.
-     * Non-dismissible (ongoing = true), silent, low-priority — mirrors the
-     * usage timer notification but on the COOLDOWN_NOTIF_CHANNEL_ID channel.
-     */
     private fun postCooldownNotification(remainingSeconds: Int) {
         ensureNotificationChannels()
         val notification = NotificationCompat.Builder(activity, COOLDOWN_NOTIF_CHANNEL_ID)
@@ -441,19 +415,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // Audible threshold alert helpers — cooldown
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Posts a one-shot audible, dismissible notification when the cooldown
-     * countdown crosses a threshold.
-     *
-     * Thresholds (fuzzy, same logic as usage alerts):
-     *   >= 270 s → 5-minute warning  (COOLDOWN_ALERT_NOTIF_ID_5MIN)
-     *   >= 45 s  → 1-minute warning  (COOLDOWN_ALERT_NOTIF_ID_1MIN)
-     *   < 45 s   → 10-second warning (COOLDOWN_ALERT_NOTIF_ID_10S)
-     *
-     * Uses a dedicated channel (COOLDOWN_ALERT_CHANNEL_ID) so users cannot
-     * disable it independently of regular usage alerts — both are high-priority
-     * and not suppressible from within the app.
-     */
     private fun postCooldownThresholdAlert(remainingSeconds: Int) {
         ensureNotificationChannels()
 
@@ -505,18 +466,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
     private fun handleUsage(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "requestUsageStatsPermission" -> {
-                if (hasUsageStatsPermission()) {
-                    result.success(true)
-                } else {
-                    pendingUsageResult = result
-                    @Suppress("DEPRECATION")
-                    activity.startActivityForResult(
-                        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS),
-                        REQUEST_USAGE_STATS_PERMISSION,
-                    )
-                }
-            }
             "getForegroundApp" -> result.success(getForegroundPackage())
             else -> result.notImplemented()
         }
@@ -529,13 +478,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     private fun handleAccessibility(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "isAccessibilityEnabled" -> result.success(isAccessibilityEnabled())
-
-            "requestAccessibilityPermission" -> {
-                if (!isAccessibilityEnabled()) {
-                    activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                }
-                result.success(null)
-            }
 
             "setMonitoredApps" -> {
                 val apps = call.argument<List<String>>("apps") ?: emptyList()
@@ -559,16 +501,8 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // ─────────────────────────────────────────────────────────────────────────
 
     fun onActivityResult(requestCode: Int) {
-        when (requestCode) {
-            REQUEST_OVERLAY_PERMISSION -> {
-                pendingOverlayResult?.success(Settings.canDrawOverlays(activity))
-                pendingOverlayResult = null
-            }
-            REQUEST_USAGE_STATS_PERMISSION -> {
-                pendingUsageResult?.success(hasUsageStatsPermission())
-                pendingUsageResult = null
-            }
-        }
+        // No pending permission results to handle — all permission flows are
+        // owned by PermissionGateScreen via PermissionPlugin.
     }
 
     fun dismissOverlay() {
@@ -622,7 +556,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Full-screen overlay (cooldown — unchanged)
+    // Full-screen overlay
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun showOrUpdateOverlay(remainingSeconds: Int) {

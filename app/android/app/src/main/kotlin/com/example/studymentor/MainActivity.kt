@@ -11,6 +11,7 @@ class MainActivity : FlutterActivity() {
     private lateinit var installedAppsPlugin: InstalledAppsPlugin
     private lateinit var timerServiceBridge: TimerServiceBridge
     private lateinit var deviceAdminPlugin: DeviceAdminPlugin
+    private lateinit var permissionPlugin: PermissionPlugin   // ← NEW
 
     // Cached channel reference so onNewIntent can invoke onLimitReached even
     // after configureFlutterEngine has run.
@@ -34,6 +35,9 @@ class MainActivity : FlutterActivity() {
 
         deviceAdminPlugin = DeviceAdminPlugin(this)
         deviceAdminPlugin.registerWith(flutterEngine)
+
+        permissionPlugin = PermissionPlugin(this)          // ← NEW
+        permissionPlugin.registerWith(flutterEngine)       // ← NEW
 
         timerChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
