@@ -329,7 +329,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           config: config ?? const StudentConfigModel(),
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[AuthBloc] _onLoadAppRules error: $e\n$stack');
       emit(AppConfigError(_mapException(e)));
     }
   }
@@ -346,7 +347,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         config: event.config,
       );
       emit(AppConfigSaved());
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[AuthBloc] _onSaveAppRules error: $e\n$stack');
       emit(AppConfigError(_mapException(e)));
     }
   }
@@ -367,7 +369,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           config: config ?? const StudentConfigModel(),
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[AuthBloc] _onLoadStudentAppConfig error: $e\n$stack');
       emit(AppConfigError(_mapException(e)));
     }
   }
@@ -544,6 +547,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Intentionally returns the same message for all auth failures so that
   /// no information about account existence is leaked to the UI.
   String _mapException(dynamic e) {
+    debugPrint('[AuthBloc] _mapException caught: $e');
     final msg = e.toString();
     if (msg.contains('weak-password')) return 'Password is too weak.';
     if (msg.contains('network-request-failed')) {

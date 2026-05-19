@@ -10,7 +10,7 @@ import '../../../domain/models/student_model.dart';
 import '../../widgets/parent_home/branded_header.dart';
 import '../../widgets/parent_home/child_card.dart';
 import '../../widgets/parent_home/ai_summary_carousel.dart';
-import 'student_config_screen.dart';
+import 'student_profile_dashboard.dart';
 
 class ParentHomeDashboard extends StatefulWidget {
   final String parentUid;
@@ -149,7 +149,7 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
           value: context.read<AuthBloc>(),
-          child: StudentConfigScreen(student: student),
+          child: StudentProfileDashboard(student: student),
         ),
       ),
     );

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
@@ -34,6 +35,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   bool _isSaving = false;
   bool _isDirty = false;
   bool _hasTimingErrors = false;
+  int _questionsPerQuiz = 5;
+
+  /// Package names of apps that are temporarily paused (toggle is OFF).
+  final Set<String> _pausedPackages = {};
 
   /// True while a parent-triggered refresh is in flight.
   bool _isRefreshing = false;
@@ -58,7 +63,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     _rules.clear();
     for (final r in saved) {
       _rules.add(
-        PendingAppRule(packageName: r.packageName, appLabel: r.appLabel),
+        PendingAppRule(
+          packageName: r.packageName, 
+          appLabel: r.appLabel,
+        ),
       );
     }
   }
@@ -68,10 +76,15 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   void _save() {
+    final rulesToSave = _rules.map((r) => PendingAppRule(
+      packageName: r.packageName,
+      appLabel: r.appLabel,
+    )).toList();
+
     context.read<AuthBloc>().add(
       SaveAppRulesRequested(
         studentUid: widget.student.uid,
-        rules: List.of(_rules),
+        rules: rulesToSave,
         config: _config,
       ),
     );
@@ -268,259 +281,345 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           if (leave && context.mounted) Navigator.of(context).pop();
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFFF5F7FF),
-          appBar: _buildAppBar(),
+          backgroundColor: const Color(0xFFF5F7FA),
           body: _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : _buildBody(),
-          floatingActionButton: (!_isLoading && _rules.isNotEmpty)
-              ? FloatingActionButton.extended(
-                  onPressed: _showAppPicker,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add App'),
-                  backgroundColor: const Color(0xFF4A6CF7),
-                  foregroundColor: Colors.white,
-                )
-              : null,
+              : Column(
+                  children: [
+                    _buildStickyHeader(),
+                    Expanded(child: _buildNewBody()),
+                  ],
+                ),
         ),
       ),
     );
   }
 
-  AppBar _buildAppBar() {
+  Widget _buildStickyHeader() {
     final canSave = _isDirty && !_isSaving && !_hasTimingErrors;
-
-    return AppBar(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'App Configuration',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-          Text(
-            widget.student.fullName,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-          ),
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Color(0xFF2196F3),
+        boxShadow: [
+          BoxShadow(color: Color(0x1A2196F3), blurRadius: 8, offset: Offset(0, 3)),
         ],
       ),
-      actions: [
-        // ── Refresh button ─────────────────────────────────────────────────
-        Tooltip(
-          message: 'Refresh apps & rules',
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: _isRefreshing
-                ? const Padding(
-                    key: ValueKey('spinner'),
-                    padding: EdgeInsets.symmetric(horizontal: 14),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF4A6CF7),
-                      ),
-                    ),
-                  )
-                : IconButton(
-                    key: const ValueKey('refresh'),
-                    icon: const Icon(Icons.refresh_rounded),
-                    color: _isSaving
-                        ? Colors.grey.shade400
-                        : const Color(0xFF4A6CF7),
-                    onPressed: _isSaving ? null : _refresh,
-                  ),
-          ),
-        ),
-        // ── Save button ────────────────────────────────────────────────────
-        AnimatedOpacity(
-          opacity: canSave ? 1.0 : 0.3,
-          duration: const Duration(milliseconds: 200),
-          child: TextButton.icon(
-            onPressed: canSave ? _save : null,
-            icon: _isSaving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFF4A6CF7),
-                    ),
-                  )
-                : const Icon(Icons.save_outlined, color: Color(0xFF4A6CF7)),
-            label: const Text(
-              'Save',
-              style: TextStyle(
-                color: Color(0xFF4A6CF7),
-                fontWeight: FontWeight.w700,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                onPressed: () {
+                  if (_isDirty) {
+                    _showUnsavedChangesDialog().then((leave) {
+                      if (leave && context.mounted) Navigator.of(context).pop();
+                    });
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                },
               ),
-            ),
+              Expanded(
+                child: Text(
+                  'Configurations',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: _isRefreshing
+                    ? const Padding(
+                        key: ValueKey('spinner'), padding: EdgeInsets.all(12),
+                        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                      )
+                    : IconButton(
+                        key: const ValueKey('refresh'),
+                        icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                        onPressed: _isSaving ? null : _refresh,
+                      ),
+              ),
+              AnimatedOpacity(
+                opacity: canSave ? 1.0 : 0.4,
+                duration: const Duration(milliseconds: 200),
+                child: IconButton(
+                  icon: _isSaving
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save_rounded, color: Colors.white),
+                  onPressed: canSave ? _save : null,
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildBody() {
-    return Column(
-      children: [
-        // ── Global timing card — always visible when not loading ───────────
-        _GlobalTimingCard(
-          config: _config,
-          onChanged: (updated) {
-            setState(() => _config = updated);
-            _markDirty();
-          },
-          onErrorsChanged: (hasErrors) {
-            setState(() => _hasTimingErrors = hasErrors);
-          },
-        ),
-        // ── Quick-action row: Settings ────────────────────────────────────
-        _buildQuickActions(),
-        // ── App rules list or empty state ──────────────────────────────────
-        Expanded(
-          child: _rules.isEmpty ? _buildEmptyState() : _buildRulesList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+  Widget _buildNewBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // ── Row 1: profile actions ─────────────────────────────────────
+          _buildRewardCard(),
+          const SizedBox(height: 16),
+          _buildMonitoredAppsCard(),
+          const SizedBox(height: 16),
+          _buildQuizSettingsCard(),
+          const SizedBox(height: 24),
+          _buildActionButtons(),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  // ── Card 1: Screen Time Reward ────────────────────────────────────────────
+
+  Widget _buildRewardCard() {
+    final hrs = _config.usageHours.toString().padLeft(2, '0');
+    final mins = _config.usageMinutes.toString().padLeft(2, '0');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        children: [
+          Text('Screen Time Reward per Quiz',
+              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)),
+            child: Text('$hrs : $mins',
+                style: GoogleFonts.roboto(color: const Color(0xFF2196F3), fontSize: 32, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 12),
+          Text('Child earns this much unlocked screen time for every quiz they pass.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  // ── Card 2: Monitored Apps ────────────────────────────────────────────────
+
+  Widget _buildMonitoredAppsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: _QuickActionButton(
-                  icon: Icons.manage_accounts_outlined,
-                  label: 'Edit Profile',
-                  color: const Color(0xFF1E88E5),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: context.read<AuthBloc>(),
-                        child: ParentStudentSettingsScreen(
-                          student: widget.student,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _QuickActionButton(
-                  icon: Icons.delete_outline_rounded,
-                  label: 'Delete Account',
-                  color: Colors.red.shade600,
-                  isDestructive: true,
-                  onTap: _confirmDeleteStudent,
+              Text('Monitored Apps',
+                  style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onTap: _showAppPicker,
+                child: Container(
+                  width: 32, height: 32,
+                  decoration: const BoxDecoration(color: Color(0xFFE3F2FD), shape: BoxShape.circle),
+                  child: const Icon(Icons.add, color: Color(0xFF2196F3), size: 18),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // ── Row 2: document upload ─────────────────────────────────────
-          _QuickActionButton(
-            icon: Icons.upload_file_outlined,
-            label: 'Upload Curriculum Docs',
-            color: const Color(0xFF43A047),
-            onTap: _openDocumentUpload,
+          if (_rules.isEmpty) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: Text('No apps monitored yet. Tap + to add apps.',
+                  style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 13)),
+            ),
+          ] else ...[
+            const SizedBox(height: 16),
+            for (int i = 0; i < _rules.length; i++) ...[
+              _buildAppRow(_rules[i], i),
+              if (i < _rules.length - 1) const Divider(height: 1, color: Color(0xFFF1F5F9)),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppRow(PendingAppRule rule, int index) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)),
+            child: Center(
+              child: Text(rule.appLabel.isNotEmpty ? rule.appLabel[0].toUpperCase() : '?',
+                  style: GoogleFonts.roboto(color: const Color(0xFF2196F3), fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(rule.appLabel,
+                    style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 14)),
+                Text('Monitored', style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 11)),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 24,
+            child: Switch(
+              value: !_pausedPackages.contains(rule.packageName),
+              onChanged: (isOn) {
+                setState(() {
+                  if (isOn) {
+                    _pausedPackages.remove(rule.packageName);
+                  } else {
+                    _pausedPackages.add(rule.packageName);
+                  }
+                });
+                _markDirty();
+              },
+              activeColor: const Color(0xFF2196F3),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () => _removeRule(index),
+            child: const Icon(Icons.delete_outline, color: Color(0xFFE53935), size: 20),
           ),
         ],
       ),
     );
   }
 
-  // ── empty state ────────────────────────────────────────────────────────────
+  // ── Card 3: Quiz Settings ─────────────────────────────────────────────────
 
-  Widget _buildEmptyState() {
-    return SingleChildScrollView(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE8EDFF),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.app_settings_alt_outlined,
-                  size: 40,
-                  color: Color(0xFF4A6CF7),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'No App Rules Yet',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Add apps below to restrict which apps '
-                '${widget.student.fullName.split(' ').first} can use. '
-                'The time limits above apply to all restricted apps.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 32),
-              FilledButton.icon(
-                onPressed: _showAppPicker,
-                icon: _appsLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.add),
-                label: const Text(
-                  'Add Apps',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A6CF7),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 16,
+  Widget _buildQuizSettingsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Quiz Settings',
+              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          Text('Questions per Quiz',
+              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 14, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+            child: Row(
+              children: [3, 5, 10].map((n) {
+                final isActive = _questionsPerQuiz == n;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (_questionsPerQuiz != n) {
+                        setState(() => _questionsPerQuiz = n);
+                        _markDirty();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isActive ? const Color(0xFF2196F3) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: isActive
+                            ? [const BoxShadow(color: Color(0x1A2196F3), blurRadius: 4, offset: Offset(0, 2))]
+                            : null,
+                      ),
+                      child: Text('$n',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.roboto(
+                              color: isActive ? Colors.white : const Color(0xFF64748B),
+                              fontWeight: FontWeight.w600, fontSize: 14)),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-            ],
+                );
+              }).toList(),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  // ── rules list ─────────────────────────────────────────────────────────────
+  // ── Bottom Action Buttons ─────────────────────────────────────────────────
 
-  Widget _buildRulesList() {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      itemCount: _rules.length,
-      itemBuilder: (ctx, i) =>
-          _AppRuleCard(rule: _rules[i], onRemove: () => _removeRule(i)),
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<AuthBloc>(),
+                child: ParentStudentSettingsScreen(student: widget.student),
+              ),
+            )),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2196F3), foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)), elevation: 0,
+            ),
+            child: Text('Edit Profile', style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: _openDocumentUpload,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF2196F3),
+              side: const BorderSide(color: Color(0xFF2196F3)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            ),
+            child: Text('Upload Curriculum', style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: _confirmDeleteStudent,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFE53935),
+              side: const BorderSide(color: Color(0xFFE53935)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            ),
+            child: Text('Delete Account', style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
     );
   }
 

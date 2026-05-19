@@ -7,6 +7,7 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../domain/models/student_model.dart';
 import '../../widgets/student_card.dart';
 import 'student_config_screen.dart';
+import 'student_profile_dashboard.dart';
 
 class ParentStudents extends StatefulWidget {
   final String parentUid;
@@ -64,7 +65,7 @@ class _ParentStudentsState extends State<ParentStudents> {
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
           value: context.read<AuthBloc>(),
-          child: StudentConfigScreen(student: student),
+          child: StudentProfileDashboard(student: student),
         ),
       ),
     );
