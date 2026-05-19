@@ -14,7 +14,9 @@ import '../../widgets/parent_verification_dialog.dart';
 import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../services/installed_apps_service.dart';
+import '../../../services/permission_service.dart';
 import '../../../data/providers/dataconnect_provider.dart';
+import 'permission_gate_screen.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
 
@@ -47,9 +49,15 @@ class _StudentScreenState extends State<StudentScreen>
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   /// True while MascotOverlayService.init() is in progress.
-  /// Keeps a spinner on screen so the home page never flashes before the quiz
-  /// is pushed (cold-launch blocked case).
   bool _initializing = true;
+
+  /// True while we are checking whether all permissions are granted.
+  /// Kept separate from [_initializing] so the two async paths are clear.
+  bool _checkingPermissions = true;
+
+  /// Once set to true, the permission gate is complete and the main
+  /// student shell (nav bar + screens) is rendered.
+  bool _permissionsGranted = false;
 
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
@@ -75,10 +83,6 @@ class _StudentScreenState extends State<StudentScreen>
 
     MascotOverlayService.instance.init().then((_) {
       MascotOverlayService.instance.start();
-      // Reveal the home screen now that init is done. If the quiz was already
-      // triggered (blocked case), it was pushed on top of the spinner and the
-      // home screen will appear underneath it — the student only sees home
-      // once they dismiss the quiz, which is the correct behaviour.
       if (mounted) {
         setState(() => _initializing = false);
       }
@@ -86,6 +90,43 @@ class _StudentScreenState extends State<StudentScreen>
 
     DataConnectProvider().updateLastActiveAt().catchError((_) {});
     _loadCoinsAndLevel();
+
+    // Run the permission check independently of MascotOverlayService.init()
+    // so both can proceed in parallel.
+    _checkPermissions();
+  }
+
+  /// Checks whether all required permissions are already granted.
+  /// If they are, skips the gate entirely. If not, the gate screen handles
+  /// the flow and calls [_onPermissionsGranted] when done.
+  Future<void> _checkPermissions() async {
+    final missing = await PermissionService.firstMissingPermission();
+    if (!mounted) return;
+
+    if (missing == null) {
+      // All permissions are already granted — skip the gate.
+      setState(() {
+        _checkingPermissions = false;
+        _permissionsGranted = true;
+      });
+    } else {
+      // Show the gate screen.
+      setState(() {
+        _checkingPermissions = false;
+        _permissionsGranted = false;
+      });
+    }
+  }
+
+  /// Called by [PermissionGateScreen] when all permissions have been confirmed.
+  void _onPermissionsGranted() {
+    if (!mounted) return;
+    setState(() => _permissionsGranted = true);
+  }
+
+  /// Called by [PermissionGateScreen] when the user taps "Sign out".
+  void _onGateSignOut() {
+    context.read<AuthBloc>().add(LogoutRequested());
   }
 
   Future<void> _loadCoinsAndLevel() async {
@@ -186,18 +227,41 @@ class _StudentScreenState extends State<StudentScreen>
     });
   }
 
+  // ── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
+    // ── Phase 1: MascotOverlayService is still initialising ─────────────────
     // Hold on a spinner until init() resolves. This prevents the home screen
     // from appearing momentarily before the quiz overlay is pushed on top in
     // the cold-launch / fully-killed-app blocked scenario.
-    if (_initializing) {
+    if (_initializing || _checkingPermissions) {
       return const Scaffold(
         backgroundColor: Color(0xFFF5F7FA),
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    // ── Phase 2: One or more permissions are missing ─────────────────────────
+    // Show the permission gate. The gate calls _onPermissionsGranted() when
+    // every permission has been confirmed, which triggers a rebuild into
+    // Phase 3. We do NOT wrap the gate in MultiBlocProvider — it is
+    // intentionally lightweight and does not need those BLoCs.
+    if (!_permissionsGranted) {
+      return BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthUnauthenticated) {
+            Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+          }
+        },
+        child: PermissionGateScreen(
+          onAllGranted: _onPermissionsGranted,
+          onSignOut: _onGateSignOut,
+        ),
+      );
+    }
+
+    // ── Phase 3: All permissions granted — show the full student shell ───────
     return MultiBlocProvider(
       providers: [
         BlocProvider<ShopBloc>(create: (_) => ShopBloc()),
@@ -266,7 +330,7 @@ class _StudentScreenState extends State<StudentScreen>
     );
   }
 
-  // ── Custom top navigation bar ──────────────────────────────────────────────
+  // ── Custom top navigation bar ─────────────────────────────────────────────
 
   Widget _buildTopNav(BuildContext context) {
     return Container(

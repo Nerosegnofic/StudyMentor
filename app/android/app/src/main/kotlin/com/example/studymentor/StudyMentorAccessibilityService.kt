@@ -15,8 +15,28 @@ class StudyMentorAccessibilityService : AccessibilityService() {
          * Enables the full Settings block that prevents the student from
          * opening Settings at all — including app info, accessibility settings,
          * and any other page they could use to revoke our permissions.
+         *
+         * This flag is set to true only AFTER the permission gate completes
+         * (i.e. every required permission has been granted). It must not be
+         * set at login time, because the student still needs Settings access
+         * to grant the remaining permissions.
          */
         @Volatile var isStudentLoggedIn = false
+
+        /**
+         * True while the permission setup flow (PermissionGateScreen) is
+         * active. Suppresses the Settings guard so the student can navigate
+         * to Settings freely to grant each required permission.
+         *
+         * Set to true by PermissionGateScreen.initState() and cleared to false
+         * atomically with isStudentLoggedIn being set to true once all
+         * permissions are confirmed (DeviceAdminService.onPermissionsGranted).
+         *
+         * This is intentionally separate from isRequestingAdmin: that flag
+         * handles the narrow Device Admin dialog window, whereas this flag
+         * covers the entire multi-step setup flow.
+         */
+        @Volatile var isInPermissionSetup = false
 
         /**
          * Temporarily true while the Device Admin activation dialog is open.
@@ -58,9 +78,10 @@ class StudyMentorAccessibilityService : AccessibilityService() {
          * startsWith so sub-packages (e.g. com.android.settings.intelligence)
          * are caught automatically.
          *
-         * isRequestingAdmin acts as a bypass: while the Device Admin dialog is
-         * open this entire block is suppressed so the system can show the
-         * dialog without us kicking the student back to the home screen.
+         * The guard is only active when ALL of the following are true:
+         *   • isStudentLoggedIn  — a student session is active
+         *   • !isInPermissionSetup — the setup gate has fully completed
+         *   • !isRequestingAdmin   — the Device Admin dialog is not open
          */
         private val BLOCKED_SETTINGS_PACKAGES = listOf(
             // ── Stock / AOSP ──────────────────────────────────────────────────
@@ -121,17 +142,20 @@ class StudyMentorAccessibilityService : AccessibilityService() {
 
         // ── Settings guard (student mode only) ───────────────────────────────
         //
-        // When a student is logged in, block the entire Settings app and every
-        // OEM-equivalent package that could expose:
-        //   • App Info  → disable "Display over other apps" or force-stop us
-        //   • Accessibility  → disable our accessibility service
-        //   • Device Admin / Permission manager  → revoke admin or permissions
+        // Block Settings and every OEM-equivalent package once a student
+        // session is fully active. Three bypass conditions exist:
         //
-        // isRequestingAdmin is a temporary bypass: while the Device Admin
-        // activation dialog is open this guard is suspended so Android can
-        // present the system dialog without us kicking the student home.
-        // It is cleared in MainActivity.onActivityResult once the dialog ends.
-        if (isStudentLoggedIn && !isRequestingAdmin) {
+        //   isInPermissionSetup — the PermissionGateScreen is still running;
+        //     the student must be able to reach Settings to grant permissions.
+        //
+        //   isRequestingAdmin — the Device Admin activation dialog is open;
+        //     Android must be able to display the system dialog without us
+        //     immediately kicking the student home.
+        //
+        // Both flags are cleared atomically with isStudentLoggedIn being set
+        // to true, so there is no window where the guard is active but a
+        // bypass is stale.
+        if (isStudentLoggedIn && !isInPermissionSetup && !isRequestingAdmin) {
             if (BLOCKED_SETTINGS_PACKAGES.any { pkg.startsWith(it) }) {
                 performGlobalAction(GLOBAL_ACTION_HOME)
                 return

@@ -58,6 +58,17 @@ class DeviceAdminPlugin(private val activity: MainActivity) {
                         result.success(null)
                     }
 
+                    // Suppresses the Settings guard for the entire permission
+                    // setup flow (PermissionGateScreen). Unlike isRequestingAdmin
+                    // — which only covers the narrow Device Admin dialog window —
+                    // this flag covers all five permission steps so the student
+                    // can reach Settings freely until setup is complete.
+                    "setPermissionSetupMode" -> {
+                        val active = call.argument<Boolean>("active") ?: false
+                        StudyMentorAccessibilityService.isInPermissionSetup = active
+                        result.success(null)
+                    }
+
                     else -> result.notImplemented()
                 }
             }
