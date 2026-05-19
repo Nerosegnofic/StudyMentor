@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../domain/models/student_model.dart';
 import 'student_config_screen.dart';
+import 'subjects_skills_screen.dart';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFF2196F3);
@@ -375,9 +376,11 @@ class _NavigationList extends StatelessWidget {
           title: 'Subjects & Skills',
           subtitle: 'Manage subjects and view skill progress',
           onTap: () {
-            // TODO: Navigate to Subjects & Skills screen when available
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Coming soon!')),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SubjectsSkillsScreen(),
+              ),
             );
           },
         ),
