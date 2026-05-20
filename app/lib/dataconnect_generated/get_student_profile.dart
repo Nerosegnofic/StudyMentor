@@ -21,7 +21,6 @@ class GetStudentProfileVariablesBuilder {
 class GetStudentProfileStudent {
   final String uid;
   final String username;
-  final String? friendCode;
   final int? totalXp;
   final int? totalCoins;
   final int? gradeLevel;
@@ -31,7 +30,6 @@ class GetStudentProfileStudent {
   
   uid = nativeFromJson<String>(json['uid']),
   username = nativeFromJson<String>(json['username']),
-  friendCode = json['friendCode'] == null ? null : nativeFromJson<String>(json['friendCode']),
   totalXp = json['totalXp'] == null ? null : nativeFromJson<int>(json['totalXp']),
   totalCoins = json['totalCoins'] == null ? null : nativeFromJson<int>(json['totalCoins']),
   gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']),
@@ -49,7 +47,6 @@ class GetStudentProfileStudent {
     final GetStudentProfileStudent otherTyped = other as GetStudentProfileStudent;
     return uid == otherTyped.uid && 
     username == otherTyped.username && 
-    friendCode == otherTyped.friendCode && 
     totalXp == otherTyped.totalXp && 
     totalCoins == otherTyped.totalCoins && 
     gradeLevel == otherTyped.gradeLevel && 
@@ -58,16 +55,13 @@ class GetStudentProfileStudent {
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, friendCode.hashCode, totalXp.hashCode, totalCoins.hashCode, gradeLevel.hashCode, totalQuestionsAnswered.hashCode, currentStreak.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, totalXp.hashCode, totalCoins.hashCode, gradeLevel.hashCode, totalQuestionsAnswered.hashCode, currentStreak.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['uid'] = nativeToJson<String>(uid);
     json['username'] = nativeToJson<String>(username);
-    if (friendCode != null) {
-      json['friendCode'] = nativeToJson<String?>(friendCode);
-    }
     if (totalXp != null) {
       json['totalXp'] = nativeToJson<int?>(totalXp);
     }
@@ -89,7 +83,6 @@ class GetStudentProfileStudent {
   GetStudentProfileStudent({
     required this.uid,
     required this.username,
-    this.friendCode,
     this.totalXp,
     this.totalCoins,
     this.gradeLevel,

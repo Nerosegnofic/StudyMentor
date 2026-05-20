@@ -38,13 +38,11 @@ class _StudentHomeState extends State<StudentHome> {
   final Map<String, String?> _iconCache = {};
 
   int _streak = 0;
-  int _rank = 0;
 
   // Last known garden data — persists across BLoC state changes.
   Map<String, SubjectProgressModel> _gardenCache = {};
 
   // ── Screen-time live refresh ───────────────────────────────────────────────
-  // Ticks every second so the usage bar and cooldown countdown stay live.
   Timer? _usageTicker;
 
   @override
@@ -60,9 +58,8 @@ class _StudentHomeState extends State<StudentHome> {
       SyncInstalledAppsRequested(studentUid: widget.uid),
     );
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
-    _loadStreakAndRank();
+    _loadStreak();
 
-    // Refresh usage UI every second from MascotOverlayService.
     _usageTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -74,26 +71,13 @@ class _StudentHomeState extends State<StudentHome> {
     super.dispose();
   }
 
-  Future<void> _loadStreakAndRank() async {
+  Future<void> _loadStreak() async {
     try {
       final provider = DataConnectProvider();
-      final results = await Future.wait([
-        provider.getStudentProfile(widget.uid),
-        provider.getWeeklyLeaderboard(),
-      ]);
-      final profile = results[0] as Map<String, dynamic>;
-      final leaderboard = results[1] as List<Map<String, dynamic>>;
-
-      leaderboard.sort(
-        (a, b) => (b['weekly_xp'] as int).compareTo(a['weekly_xp'] as int),
-      );
-      final rankIndex = leaderboard.indexWhere((e) => e['uid'] == widget.uid);
-      final rank = rankIndex >= 0 ? rankIndex + 1 : 0;
-
+      final profile = await provider.getStudentProfile(widget.uid);
       if (mounted) {
         setState(() {
           _streak = (profile['current_streak'] as int?) ?? 0;
-          _rank = rank;
         });
       }
     } catch (_) {}
@@ -111,7 +95,7 @@ class _StudentHomeState extends State<StudentHome> {
       LoadStudentAppConfigRequested(studentUid: widget.uid),
     );
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
-    _loadStreakAndRank();
+    _loadStreak();
   }
 
   Future<void> _loadIcons(List<AppRuleModel> rules) async {
@@ -488,7 +472,6 @@ class _StudentHomeState extends State<StudentHome> {
 
   Widget _buildQuickStats() {
     final streakLabel = _streak == 1 ? '1 day' : '$_streak days';
-    final rankLabel = _rank > 0 ? '#$_rank' : '#0';
     return Row(
       children: [
         Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '0')),
@@ -498,14 +481,6 @@ class _StudentHomeState extends State<StudentHome> {
             const Text('🔥', style: TextStyle(fontSize: 22)),
             'Streak',
             streakLabel,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _statCard(
-            const Text('⭐', style: TextStyle(fontSize: 22)),
-            'Rank',
-            rankLabel,
           ),
         ),
       ],
@@ -669,7 +644,6 @@ class _StudentHomeState extends State<StudentHome> {
         if (!_rulesLoading && _appRules.isEmpty)
           _buildNoRulesPlaceholder()
         else if (!_rulesLoading) ...[
-          // ── Screen-time card (always visible when rules exist) ─────────
           _buildScreenTimeCard(),
           const SizedBox(height: 12),
           _buildTimingBanner(),
@@ -682,9 +656,6 @@ class _StudentHomeState extends State<StudentHome> {
 
   // ── Screen-time card ────────────────────────────────────────────────────────
 
-  /// Reads live data from [MascotOverlayService] and renders either:
-  ///   • A usage progress bar with remaining time, or
-  ///   • A cooldown banner with live countdown.
   Widget _buildScreenTimeCard() {
     final svc = MascotOverlayService.instance;
     final thresholdSeconds =
@@ -694,33 +665,28 @@ class _StudentHomeState extends State<StudentHome> {
       return _buildCooldownBanner(svc.remainingSeconds);
     }
 
-    // Not blocked — show remaining usage time.
     return _buildUsageBar(
       usedSeconds: svc.totalUsageSeconds,
       totalSeconds: thresholdSeconds,
     );
   }
 
-  /// Animated progress bar showing used vs allowed screen time.
   Widget _buildUsageBar({required int usedSeconds, required int totalSeconds}) {
-    // Guard against zero-limit config (no usage limit set).
     if (totalSeconds <= 0) return const SizedBox.shrink();
 
     final remaining = (totalSeconds - usedSeconds).clamp(0, totalSeconds);
     final fraction = (usedSeconds / totalSeconds).clamp(0.0, 1.0);
 
-    // Color shifts: green → amber → red as usage fills up.
     final Color barColor;
     if (fraction < 0.6) {
-      barColor = const Color(0xFF34A853); // green
+      barColor = const Color(0xFF34A853);
     } else if (fraction < 0.85) {
-      barColor = const Color(0xFFFFA726); // amber
+      barColor = const Color(0xFFFFA726);
     } else {
-      barColor = const Color(0xFFEF5350); // red
+      barColor = const Color(0xFFEF5350);
     }
 
     final Color bgColor = barColor.withValues(alpha: 0.10);
-
     final remainingLabel = _formatDurationFromSeconds(remaining);
     final totalLabel = _formatDurationFromSeconds(totalSeconds);
 
@@ -741,7 +707,6 @@ class _StudentHomeState extends State<StudentHome> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row
           Row(
             children: [
               Container(
@@ -762,7 +727,6 @@ class _StudentHomeState extends State<StudentHome> {
                 ),
               ),
               const Spacer(),
-              // Remaining time badge
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -784,8 +748,6 @@ class _StudentHomeState extends State<StudentHome> {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
@@ -796,8 +758,6 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
           const SizedBox(height: 8),
-
-          // Used / total label
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -816,14 +776,12 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  /// Cooldown banner shown when the student has hit their limit.
   Widget _buildCooldownBanner(int remainingSeconds) {
     final cooldownLabel = _formatDurationFromSeconds(remainingSeconds);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        // Warm amber gradient — firm but not alarming
         gradient: const LinearGradient(
           colors: [Color(0xFFFFF3E0), Color(0xFFFFF8F0)],
           begin: Alignment.topLeft,
@@ -844,7 +802,6 @@ class _StudentHomeState extends State<StudentHome> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Lock icon in circle
           Container(
             width: 44,
             height: 44,
@@ -859,8 +816,6 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
           const SizedBox(width: 14),
-
-          // Text block
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -886,8 +841,6 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
           const SizedBox(width: 10),
-
-          // Live countdown pill
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -914,8 +867,6 @@ class _StudentHomeState extends State<StudentHome> {
       ),
     );
   }
-
-  // ── Timing banner (usage + cooldown pills) ──────────────────────────────────
 
   Widget _buildTimingBanner() {
     return Container(
@@ -1052,19 +1003,13 @@ class _StudentHomeState extends State<StudentHome> {
     return '${hours}h ${minutes}m';
   }
 
-  /// Formats a raw second count into a human-readable duration string.
-  /// e.g. 3725 → "1h 2m", 95 → "1m 35s", 45 → "45s"
   String _formatDurationFromSeconds(int seconds) {
     if (seconds <= 0) return '0s';
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
     final s = seconds % 60;
-    if (h > 0) {
-      return m > 0 ? '${h}h ${m}m' : '${h}h';
-    }
-    if (m > 0) {
-      return s > 0 ? '${m}m ${s}s' : '${m}m';
-    }
+    if (h > 0) return m > 0 ? '${h}h ${m}m' : '${h}h';
+    if (m > 0) return s > 0 ? '${m}m ${s}s' : '${m}m';
     return '${s}s';
   }
 

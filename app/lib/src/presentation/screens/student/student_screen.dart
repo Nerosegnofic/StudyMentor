@@ -19,10 +19,7 @@ import '../../../data/providers/dataconnect_provider.dart';
 import 'permission_gate_screen.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
-
 import 'student_shop.dart';
-import 'student_leaderboard.dart';
-import 'student_friends.dart';
 import 'student_profile.dart';
 
 /// Base URL for the AI Engine.
@@ -45,7 +42,6 @@ class _StudentScreenState extends State<StudentScreen>
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
-  String _parentUid = '';
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   /// True while MascotOverlayService.init() is in progress.
@@ -134,21 +130,17 @@ class _StudentScreenState extends State<StudentScreen>
       final provider = DataConnectProvider();
       final results = await Future.wait([
         provider.getStudentProfile(widget.uid),
-        provider.getParentUidForStudent(widget.uid),
         provider.getStudentAvatar(widget.uid),
       ]);
       if (mounted) {
         final profile = results[0] as Map<String, dynamic>;
-        final avatarMap = results[2];
+        final avatarMap = results[1];
         setState(() {
           _coins = (profile['total_coins'] as int?) ?? 0;
           _xp = (profile['total_xp'] as int?) ?? 0;
           _level = (_xp ~/ 500) + 1;
-          _parentUid = results[1] as String;
           if (avatarMap != null) {
-            _avatarConfig = AvatarConfig.fromMap(
-              avatarMap as Map<String, dynamic>,
-            );
+            _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
         });
       }
@@ -232,9 +224,6 @@ class _StudentScreenState extends State<StudentScreen>
   @override
   Widget build(BuildContext context) {
     // ── Phase 1: MascotOverlayService is still initialising ─────────────────
-    // Hold on a spinner until init() resolves. This prevents the home screen
-    // from appearing momentarily before the quiz overlay is pushed on top in
-    // the cold-launch / fully-killed-app blocked scenario.
     if (_initializing || _checkingPermissions) {
       return const Scaffold(
         backgroundColor: Color(0xFFF5F7FA),
@@ -243,10 +232,6 @@ class _StudentScreenState extends State<StudentScreen>
     }
 
     // ── Phase 2: One or more permissions are missing ─────────────────────────
-    // Show the permission gate. The gate calls _onPermissionsGranted() when
-    // every permission has been confirmed, which triggers a rebuild into
-    // Phase 3. We do NOT wrap the gate in MultiBlocProvider — it is
-    // intentionally lightweight and does not need those BLoCs.
     if (!_permissionsGranted) {
       return BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -303,16 +288,6 @@ class _StudentScreenState extends State<StudentScreen>
                           uid: widget.uid,
                           coins: _coins,
                           level: _level,
-                        ),
-                        StudentLeaderboard(
-                          uid: widget.uid,
-                          fullName: widget.fullName,
-                          parentUid: _parentUid,
-                          isActive: _selectedIndex == 2,
-                        ),
-                        StudentFriends(
-                          uid: widget.uid,
-                          fullName: widget.fullName,
                         ),
                       ],
                     ),
