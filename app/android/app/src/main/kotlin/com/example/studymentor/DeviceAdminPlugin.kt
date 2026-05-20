@@ -12,6 +12,10 @@ class DeviceAdminPlugin(private val activity: MainActivity) {
     companion object {
         const val CHANNEL = "com.example.studymentor/device_admin"
         const val REQUEST_CODE_ENABLE_ADMIN = 9001
+
+        private const val PREFS_NAME = "studymentor_prefs"
+        private const val KEY_STUDENT_MODE = "is_student_logged_in"
+        private const val KEY_PERMISSION_SETUP = "is_in_permission_setup"
     }
 
     private val dpm: DevicePolicyManager by lazy {
@@ -20,6 +24,10 @@ class DeviceAdminPlugin(private val activity: MainActivity) {
 
     private val adminComponent: ComponentName by lazy {
         ComponentName(activity, MyDeviceAdminReceiver::class.java)
+    }
+
+    private val prefs by lazy {
+        activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     fun registerWith(flutterEngine: FlutterEngine) {
@@ -55,6 +63,7 @@ class DeviceAdminPlugin(private val activity: MainActivity) {
                     "setStudentMode" -> {
                         val active = call.argument<Boolean>("active") ?: false
                         StudyMentorAccessibilityService.isStudentLoggedIn = active
+                        prefs.edit().putBoolean(KEY_STUDENT_MODE, active).apply()
                         result.success(null)
                     }
 
@@ -66,6 +75,7 @@ class DeviceAdminPlugin(private val activity: MainActivity) {
                     "setPermissionSetupMode" -> {
                         val active = call.argument<Boolean>("active") ?: false
                         StudyMentorAccessibilityService.isInPermissionSetup = active
+                        prefs.edit().putBoolean(KEY_PERMISSION_SETUP, active).apply()
                         result.success(null)
                     }
 

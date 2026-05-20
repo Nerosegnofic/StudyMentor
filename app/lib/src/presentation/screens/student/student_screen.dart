@@ -15,6 +15,7 @@ import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/permission_service.dart';
+import '../../../services/device_admin_service.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import 'permission_gate_screen.dart';
 import 'student_home.dart';
@@ -101,6 +102,9 @@ class _StudentScreenState extends State<StudentScreen>
 
     if (missing == null) {
       // All permissions are already granted — skip the gate.
+      // Activate student mode here since PermissionGateScreen (which normally
+      // does this) is being bypassed entirely on this path.
+      await DeviceAdminService.onPermissionsGranted();
       setState(() {
         _checkingPermissions = false;
         _permissionsGranted = true;
@@ -140,7 +144,9 @@ class _StudentScreenState extends State<StudentScreen>
           _xp = (profile['total_xp'] as int?) ?? 0;
           _level = (_xp ~/ 500) + 1;
           if (avatarMap != null) {
-            _avatarConfig = AvatarConfig.fromMap(avatarMap);
+            _avatarConfig = AvatarConfig.fromMap(
+              avatarMap,
+            );
           }
         });
       }
