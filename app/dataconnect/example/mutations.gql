@@ -91,59 +91,10 @@ mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
   appRule_deleteMany(where: { studentUid: { eq: $studentUid } })
 }
 
-mutation UpdateStudentFriendCode($friendCode: String!) @auth(level: USER) {
-  student_update(
-    key: { uid_expr: "auth.uid" }
-    data: { friendCode: $friendCode }
-  )
-}
-
 mutation UpdateLastActiveAt @auth(level: USER) {
   student_update(
     key: { uid_expr: "auth.uid" }
     data: { lastActiveAt_expr: "request.time" }
-  )
-}
-
-mutation SendFriendRequest(
-  $fromStudentUid: String!
-  $toFriendCode: String!
-  $toStudentUid: String!
-  $toStudentName: String!
-) @auth(level: USER, insecureReason: "Authenticated students may send friend requests.") {
-  friendRequest_insert(
-    data: {
-      fromStudentUid: $fromStudentUid
-      toFriendCode: $toFriendCode
-      toStudentUid: $toStudentUid
-      toStudentName: $toStudentName
-    }
-  )
-}
-
-mutation CreateFriendship(
-  $studentUid: String!
-  $friendUid: String!
-) @auth(level: USER, insecureReason: "Friendship creation is gated by parent approval.") {
-  friendship_insert(
-    data: {
-      studentUid: $studentUid
-      friendUid: $friendUid
-    }
-  )
-}
-
-mutation RemoveFriend($id: UUID!) @auth(level: USER, insecureReason: "Students can remove their own friendships.") {
-  friendship_delete(key: { id: $id })
-}
-
-mutation UpdateFriendRequestStatus(
-  $id: UUID!
-  $status: String!
-) @auth(level: USER, insecureReason: "Parents are authorized to approve or reject their children's friend requests.") {
-  friendRequest_update(
-    key: { id: $id }
-    data: { status: $status }
   )
 }
 
@@ -251,8 +202,6 @@ mutation UpdateStudentXpAndCoins(
   )
 }
 
-# ── Student Config Mutations ──────────────────────────────────────────────────
-
 # ── Student Account Deletion (parent-side) ───────────────────────────────────
 
 mutation DeleteAllOwnedItemsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's owned items.") {
@@ -269,14 +218,6 @@ mutation DeleteStudentSettings($studentUid: String!) @auth(level: USER, insecure
 
 mutation DeleteStudentConfig($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's config.") {
   studentConfig_delete(key: { studentUid: $studentUid })
-}
-
-mutation DeleteAllFriendRequestsByStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's friend requests.") {
-  friendRequest_deleteMany(where: { fromStudentUid: { eq: $studentUid } })
-}
-
-mutation DeleteAllFriendshipsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's friendships.") {
-  friendship_deleteMany(where: { studentUid: { eq: $studentUid } })
 }
 
 mutation DeleteStudentRecord($uid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's student record.") {

@@ -89,11 +89,7 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    // ── Username check FIRST — before touching Firebase Auth or the database.
-    // This ensures nothing is partially created when the username is taken.
-    // checkUsernameAvailable throws Exception('username-already-in-use') if
-    // the username already exists, which _mapRegistrationException in
-    // AuthBloc surfaces as a friendly message.
+    // Username check FIRST — before touching Firebase Auth or the database.
     await dataConnect.checkUsernameAvailable(username);
 
     try {
@@ -117,10 +113,6 @@ class AuthRepositoryImpl implements AuthRepository {
       await firebase.signOut();
       await firebase.signInWithPassword(parentEmail, parentPassword);
     } catch (e) {
-      // Registration failed after signUp() displaced the parent session.
-      // Always attempt to restore it, then rethrow so AuthBloc can surface
-      // the error. The username-already-in-use check above guarantees this
-      // block is never reached for that specific case.
       try {
         await firebase.signOut();
         await firebase.signInWithPassword(parentEmail, parentPassword);
@@ -144,9 +136,7 @@ class AuthRepositoryImpl implements AuthRepository {
     List<StudentModel> students,
   ) async {
     if (students.isEmpty) return students;
-    final parentUid = await dataConnect.getParentUidForStudent(
-      students.first.uid,
-    );
+    final parentUid = await dataConnect.getParentFullName(students.first.uid);
     return await getStudentsByParent(parentUid);
   }
 
@@ -184,20 +174,23 @@ class AuthRepositoryImpl implements AuthRepository {
     required String parentEmail,
     required String parentPassword,
   }) async {
-    final linkedParentUid = await dataConnect.getParentUidForStudent(
-      studentUid,
-    );
+    final linkedParentUid = await _getParentUidForStudent(studentUid);
     final authenticatedUid = await firebase.verifyCredentialsAndGetUid(
       parentEmail,
       parentPassword,
     );
-    // Return false for both wrong-password (null UID) and credentials that
-    // belong to a different account (UID mismatch). Both are treated as
-    // verification failures — no exception is thrown — so the BLoC always
-    // takes the same code path and reliably shows the error in the dialog.
     if (authenticatedUid == null) return false;
     if (authenticatedUid != linkedParentUid) return false;
     return true;
+  }
+
+  Future<String> _getParentUidForStudent(String studentUid) async {
+    final result = await ExampleConnector.instance
+        .getStudentWithParent(uid: studentUid)
+        .execute();
+    final student = result.data.student;
+    if (student == null) throw Exception('Student not found');
+    return student.parent.uid;
   }
 
   @override

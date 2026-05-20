@@ -1,3 +1,5 @@
+// lib/src/presentation/screens/parent/parent_students.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -69,18 +71,6 @@ class _ParentStudentsState extends State<ParentStudents> {
       ),
     );
   }
-
-  // ── Delete flow ────────────────────────────────────────────────────────────
-  //
-  // The dialog is entirely self-contained: it dispatches DeleteStudentRequested,
-  // shows a loading spinner while the request is in flight, surfaces errors
-  // inline, and pops itself only when StudentDeleted fires. The parent screen
-  // no longer needs to track deletion state or push errors into the dialog.
-  //
-  // barrierDismissible is set to false so that tapping outside can never
-  // silently dismiss the dialog — the Cancel button (disabled while loading)
-  // is the only intentional exit. PopScope inside the dialog additionally
-  // blocks the system back gesture while deletion is in flight.
 
   Future<void> _confirmAndDeleteStudent(StudentModel student) async {
     await showDialog<void>(
@@ -216,8 +206,6 @@ class _ParentStudentsState extends State<ParentStudents> {
     );
   }
 
-  // ── Delete button rendered beneath each unverified card ───────────────────
-
   Widget _buildDeleteButton(StudentModel student) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
@@ -248,8 +236,6 @@ class _ParentStudentsState extends State<ParentStudents> {
     );
   }
 
-  // ── Student list ───────────────────────────────────────────────────────────
-
   Widget _buildStudentList() {
     final unverifiedStudents = _students
         .where((s) => !s.isEmailVerified)
@@ -278,8 +264,6 @@ class _ParentStudentsState extends State<ParentStudents> {
     );
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -293,8 +277,6 @@ class _ParentStudentsState extends State<ParentStudents> {
         }
 
         if (state is StudentDeleted) {
-          // Switch to the loading spinner immediately so the empty state never
-          // flashes while the fresh list is being fetched.
           setState(() => _isLoading = true);
           context.read<AuthBloc>().add(
             LoadStudentsRequested(parentUid: widget.parentUid),
@@ -328,23 +310,6 @@ class _ParentStudentsState extends State<ParentStudents> {
 }
 
 // ── _DeleteConfirmationDialog ─────────────────────────────────────────────────
-//
-// Self-contained deletion dialog for unverified students.
-//
-// Lifecycle:
-//   • "Delete Permanently" pressed  → dispatches DeleteStudentRequested,
-//                                     shows an inline spinner, disables buttons.
-//   • StudentDeleteLoading received → spinner visible, buttons disabled.
-//   • StudentDeleted received       → pops itself; parent BlocListener
-//                                     triggers the list reload.
-//   • StudentDeleteError received   → stops spinner, shows error message
-//                                     inline beneath the password field;
-//                                     dialog remains open for correction.
-//   • "Cancel" pressed              → pops normally (only when not loading).
-//   • Back gesture / tap outside    → blocked while loading via PopScope;
-//                                     barrierDismissible is always false so
-//                                     tapping the scrim never silently closes
-//                                     the dialog.
 
 class _DeleteConfirmationDialog extends StatefulWidget {
   final StudentModel student;
@@ -411,8 +376,6 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
           setState(() => _isLoading = true);
         } else if (state is StudentDeleted &&
             state.studentUid == widget.student.uid) {
-          // Success — close the dialog. The parent screen's BlocListener
-          // will handle the list reload via its own StudentDeleted handler.
           Navigator.of(context).pop();
         } else if (state is StudentDeleteError) {
           final isWrongPassword = state.message.contains('Invalid credentials');
@@ -424,10 +387,6 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
           });
         }
       },
-      // PopScope blocks the system back gesture/button while deletion is in
-      // flight. Combined with barrierDismissible: false on showDialog, this
-      // guarantees the dialog cannot be dismissed by any means other than the
-      // Cancel button (which is itself disabled while loading).
       child: PopScope(
         canPop: !_isLoading,
         child: AlertDialog(
@@ -507,8 +466,8 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '$_firstName\'s login credentials, progress, settings, '
-                          'and friends list will all be permanently deleted.',
+                          '$_firstName\'s login credentials, progress, and settings '
+                          'will all be permanently deleted.',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFFE65100),

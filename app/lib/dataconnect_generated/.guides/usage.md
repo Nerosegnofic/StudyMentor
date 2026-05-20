@@ -1,16 +1,16 @@
 # Basic Usage
 
 ```dart
-ExampleConnector.instance.InsertUser(insertUserVariables).execute();
-ExampleConnector.instance.UpsertCurrentUser(upsertCurrentUserVariables).execute();
-ExampleConnector.instance.DeleteUser().execute();
-ExampleConnector.instance.InsertParent(insertParentVariables).execute();
-ExampleConnector.instance.InsertStudent(insertStudentVariables).execute();
-ExampleConnector.instance.SetUserInactive().execute();
-ExampleConnector.instance.MarkEmailVerified().execute();
-ExampleConnector.instance.InsertAppRule(insertAppRuleVariables).execute();
-ExampleConnector.instance.DeleteAllAppRulesForStudent(deleteAllAppRulesForStudentVariables).execute();
-ExampleConnector.instance.UpdateStudentFriendCode(updateStudentFriendCodeVariables).execute();
+ExampleConnector.instance.GetUserByUid(getUserByUidVariables).execute();
+ExampleConnector.instance.GetStudentsByParent(getStudentsByParentVariables).execute();
+ExampleConnector.instance.GetStudentWithParent(getStudentWithParentVariables).execute();
+ExampleConnector.instance.GetInstalledAppsForStudent(getInstalledAppsForStudentVariables).execute();
+ExampleConnector.instance.InsertInstalledApp(insertInstalledAppVariables).execute();
+ExampleConnector.instance.DeleteAllInstalledAppsForStudent(deleteAllInstalledAppsForStudentVariables).execute();
+ExampleConnector.instance.GetStudentProfile(getStudentProfileVariables).execute();
+ExampleConnector.instance.GetStudentByUsername(getStudentByUsernameVariables).execute();
+ExampleConnector.instance.GetStudentSettings(getStudentSettingsVariables).execute();
+ExampleConnector.instance.GetStudentOwnedItems(getStudentOwnedItemsVariables).execute();
 
 ```
 

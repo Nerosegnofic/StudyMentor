@@ -4,6 +4,32 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
+part 'get_user_by_uid.dart';
+
+part 'get_students_by_parent.dart';
+
+part 'get_student_with_parent.dart';
+
+part 'get_installed_apps_for_student.dart';
+
+part 'insert_installed_app.dart';
+
+part 'delete_all_installed_apps_for_student.dart';
+
+part 'get_student_profile.dart';
+
+part 'get_student_by_username.dart';
+
+part 'get_student_settings.dart';
+
+part 'get_student_owned_items.dart';
+
+part 'get_student_avatar.dart';
+
+part 'get_app_config_for_student.dart';
+
+part 'get_all_subject_progress.dart';
+
 part 'insert_user.dart';
 
 part 'upsert_current_user.dart';
@@ -22,17 +48,7 @@ part 'insert_app_rule.dart';
 
 part 'delete_all_app_rules_for_student.dart';
 
-part 'update_student_friend_code.dart';
-
 part 'update_last_active_at.dart';
-
-part 'send_friend_request.dart';
-
-part 'create_friendship.dart';
-
-part 'remove_friend.dart';
-
-part 'update_friend_request_status.dart';
 
 part 'upsert_student_settings.dart';
 
@@ -54,10 +70,6 @@ part 'delete_student_settings.dart';
 
 part 'delete_student_config.dart';
 
-part 'delete_all_friend_requests_by_student.dart';
-
-part 'delete_all_friendships_for_student.dart';
-
 part 'delete_student_record.dart';
 
 part 'delete_user_record.dart';
@@ -69,44 +81,6 @@ part 'delete_parent_record.dart';
 part 'upsert_student_config.dart';
 
 part 'upsert_subject_progress.dart';
-
-part 'get_user_by_uid.dart';
-
-part 'get_students_by_parent.dart';
-
-part 'get_student_with_parent.dart';
-
-part 'get_installed_apps_for_student.dart';
-
-part 'insert_installed_app.dart';
-
-part 'delete_all_installed_apps_for_student.dart';
-
-part 'get_student_profile.dart';
-
-part 'get_student_by_username.dart';
-
-part 'get_weekly_leaderboard.dart';
-
-part 'get_student_by_friend_code.dart';
-
-part 'get_sent_friend_requests.dart';
-
-part 'get_friends_for_student.dart';
-
-part 'get_pending_friend_requests_for_parent.dart';
-
-part 'get_student_settings.dart';
-
-part 'get_student_owned_items.dart';
-
-part 'get_student_avatar.dart';
-
-part 'get_app_config_for_student.dart';
-
-part 'get_sibling_leaderboard.dart';
-
-part 'get_all_subject_progress.dart';
 
 
 
@@ -190,6 +164,71 @@ class Unknown extends EnumValue<Never> {
 class ExampleConnector {
   
   
+  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
+    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetStudentsByParentVariablesBuilder getStudentsByParent ({required String parentUid, }) {
+    return GetStudentsByParentVariablesBuilder(dataConnect, parentUid: parentUid,);
+  }
+  
+  
+  GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
+    return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetInstalledAppsForStudentVariablesBuilder getInstalledAppsForStudent ({required String studentUid, }) {
+    return GetInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  InsertInstalledAppVariablesBuilder insertInstalledApp ({required String studentUid, required String packageName, required String appLabel, required bool isSystemApp, }) {
+    return InsertInstalledAppVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,isSystemApp: isSystemApp,);
+  }
+  
+  
+  DeleteAllInstalledAppsForStudentVariablesBuilder deleteAllInstalledAppsForStudent ({required String studentUid, }) {
+    return DeleteAllInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetStudentProfileVariablesBuilder getStudentProfile ({required String uid, }) {
+    return GetStudentProfileVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetStudentByUsernameVariablesBuilder getStudentByUsername ({required String username, }) {
+    return GetStudentByUsernameVariablesBuilder(dataConnect, username: username,);
+  }
+  
+  
+  GetStudentSettingsVariablesBuilder getStudentSettings ({required String studentUid, }) {
+    return GetStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetStudentOwnedItemsVariablesBuilder getStudentOwnedItems ({required String studentUid, }) {
+    return GetStudentOwnedItemsVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetStudentAvatarVariablesBuilder getStudentAvatar ({required String studentUid, }) {
+    return GetStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
+    return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetAllSubjectProgressVariablesBuilder getAllSubjectProgress ({required String studentUid, }) {
+    return GetAllSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
   InsertUserVariablesBuilder insertUser ({required String email, required String fullName, required Role role, }) {
     return InsertUserVariablesBuilder(dataConnect, email: email,fullName: fullName,role: role,);
   }
@@ -235,33 +274,8 @@ class ExampleConnector {
   }
   
   
-  UpdateStudentFriendCodeVariablesBuilder updateStudentFriendCode ({required String friendCode, }) {
-    return UpdateStudentFriendCodeVariablesBuilder(dataConnect, friendCode: friendCode,);
-  }
-  
-  
   UpdateLastActiveAtVariablesBuilder updateLastActiveAt () {
     return UpdateLastActiveAtVariablesBuilder(dataConnect, );
-  }
-  
-  
-  SendFriendRequestVariablesBuilder sendFriendRequest ({required String fromStudentUid, required String toFriendCode, required String toStudentUid, required String toStudentName, }) {
-    return SendFriendRequestVariablesBuilder(dataConnect, fromStudentUid: fromStudentUid,toFriendCode: toFriendCode,toStudentUid: toStudentUid,toStudentName: toStudentName,);
-  }
-  
-  
-  CreateFriendshipVariablesBuilder createFriendship ({required String studentUid, required String friendUid, }) {
-    return CreateFriendshipVariablesBuilder(dataConnect, studentUid: studentUid,friendUid: friendUid,);
-  }
-  
-  
-  RemoveFriendVariablesBuilder removeFriend ({required String id, }) {
-    return RemoveFriendVariablesBuilder(dataConnect, id: id,);
-  }
-  
-  
-  UpdateFriendRequestStatusVariablesBuilder updateFriendRequestStatus ({required String id, required String status, }) {
-    return UpdateFriendRequestStatusVariablesBuilder(dataConnect, id: id,status: status,);
   }
   
   
@@ -315,16 +329,6 @@ class ExampleConnector {
   }
   
   
-  DeleteAllFriendRequestsByStudentVariablesBuilder deleteAllFriendRequestsByStudent ({required String studentUid, }) {
-    return DeleteAllFriendRequestsByStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  DeleteAllFriendshipsForStudentVariablesBuilder deleteAllFriendshipsForStudent ({required String studentUid, }) {
-    return DeleteAllFriendshipsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
   DeleteStudentRecordVariablesBuilder deleteStudentRecord ({required String uid, }) {
     return DeleteStudentRecordVariablesBuilder(dataConnect, uid: uid,);
   }
@@ -352,101 +356,6 @@ class ExampleConnector {
   
   UpsertSubjectProgressVariablesBuilder upsertSubjectProgress ({required String studentUid, required String subjectKey, required int totalXp, required int level, }) {
     return UpsertSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,subjectKey: subjectKey,totalXp: totalXp,level: level,);
-  }
-  
-  
-  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
-    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetStudentsByParentVariablesBuilder getStudentsByParent ({required String parentUid, }) {
-    return GetStudentsByParentVariablesBuilder(dataConnect, parentUid: parentUid,);
-  }
-  
-  
-  GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
-    return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetInstalledAppsForStudentVariablesBuilder getInstalledAppsForStudent ({required String studentUid, }) {
-    return GetInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  InsertInstalledAppVariablesBuilder insertInstalledApp ({required String studentUid, required String packageName, required String appLabel, required bool isSystemApp, }) {
-    return InsertInstalledAppVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,isSystemApp: isSystemApp,);
-  }
-  
-  
-  DeleteAllInstalledAppsForStudentVariablesBuilder deleteAllInstalledAppsForStudent ({required String studentUid, }) {
-    return DeleteAllInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetStudentProfileVariablesBuilder getStudentProfile ({required String uid, }) {
-    return GetStudentProfileVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetStudentByUsernameVariablesBuilder getStudentByUsername ({required String username, }) {
-    return GetStudentByUsernameVariablesBuilder(dataConnect, username: username,);
-  }
-  
-  
-  GetWeeklyLeaderboardVariablesBuilder getWeeklyLeaderboard () {
-    return GetWeeklyLeaderboardVariablesBuilder(dataConnect, );
-  }
-  
-  
-  GetStudentByFriendCodeVariablesBuilder getStudentByFriendCode ({required String friendCode, }) {
-    return GetStudentByFriendCodeVariablesBuilder(dataConnect, friendCode: friendCode,);
-  }
-  
-  
-  GetSentFriendRequestsVariablesBuilder getSentFriendRequests ({required String fromStudentUid, }) {
-    return GetSentFriendRequestsVariablesBuilder(dataConnect, fromStudentUid: fromStudentUid,);
-  }
-  
-  
-  GetFriendsForStudentVariablesBuilder getFriendsForStudent ({required String studentUid, }) {
-    return GetFriendsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetPendingFriendRequestsForParentVariablesBuilder getPendingFriendRequestsForParent ({required String parentUid, }) {
-    return GetPendingFriendRequestsForParentVariablesBuilder(dataConnect, parentUid: parentUid,);
-  }
-  
-  
-  GetStudentSettingsVariablesBuilder getStudentSettings ({required String studentUid, }) {
-    return GetStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetStudentOwnedItemsVariablesBuilder getStudentOwnedItems ({required String studentUid, }) {
-    return GetStudentOwnedItemsVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetStudentAvatarVariablesBuilder getStudentAvatar ({required String studentUid, }) {
-    return GetStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
-    return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetSiblingLeaderboardVariablesBuilder getSiblingLeaderboard ({required String parentUid, }) {
-    return GetSiblingLeaderboardVariablesBuilder(dataConnect, parentUid: parentUid,);
-  }
-  
-  
-  GetAllSubjectProgressVariablesBuilder getAllSubjectProgress ({required String studentUid, }) {
-    return GetAllSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,);
   }
   
 
