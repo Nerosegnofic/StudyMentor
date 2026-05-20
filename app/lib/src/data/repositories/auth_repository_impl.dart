@@ -136,7 +136,7 @@ class AuthRepositoryImpl implements AuthRepository {
     List<StudentModel> students,
   ) async {
     if (students.isEmpty) return students;
-    final parentUid = await dataConnect.getParentFullName(students.first.uid);
+    final parentUid = await _getParentUidForStudent(students.first.uid);
     return await getStudentsByParent(parentUid);
   }
 
