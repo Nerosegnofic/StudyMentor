@@ -137,26 +137,25 @@ class RootPage extends StatelessWidget {
           curr is AuthAuthenticated ||
           curr is AuthUnauthenticated ||
           curr is AuthEmailUnverified,
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is AuthAuthenticated) {
           final isStudent = state.user.role.toLowerCase() != 'parent';
-          if (isStudent) {
-            // Do NOT activate student mode here. The Settings block must not
-            // be enabled until ALL required permissions have been granted —
-            // otherwise the student is locked out of Settings mid-flow and
-            // cannot enable the remaining permissions.
-            //
-            // Student mode (isStudentLoggedIn = true) is activated by
-            // PermissionGateScreen once every permission is confirmed, just
-            // before navigating to student_home.
-          } else {
+          if (!isStudent) {
             // Parent logged in — ensure the Settings guard is disabled.
-            DeviceAdminService.onStudentLogout();
+            await DeviceAdminService.onStudentLogout();
           }
+          // Do NOT activate student mode for students here. The Settings block
+          // must not be enabled until ALL required permissions have been
+          // granted — otherwise the student is locked out of Settings mid-flow
+          // and cannot enable the remaining permissions.
+          //
+          // Student mode (isStudentLoggedIn = true) is activated by
+          // PermissionGateScreen once every permission is confirmed, just
+          // before navigating to student_home.
         } else if (state is AuthUnauthenticated ||
             state is AuthEmailUnverified) {
           // Logged out or unverified — disable the guard.
-          DeviceAdminService.onStudentLogout();
+          await DeviceAdminService.onStudentLogout();
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(

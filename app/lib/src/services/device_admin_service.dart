@@ -21,6 +21,8 @@ class DeviceAdminService {
       return await _channel.invokeMethod<bool>('isAdminActive') ?? false;
     } on PlatformException {
       return false;
+    } on MissingPluginException {
+      return false;
     }
   }
 
@@ -33,6 +35,9 @@ class DeviceAdminService {
       // Non-fatal — the user may deny; we'll re-check isAdminActive later.
       // ignore: avoid_print
       print('[DeviceAdmin] requestAdmin error: $e');
+    } on MissingPluginException catch (e) {
+      // ignore: avoid_print
+      print('[DeviceAdmin] requestAdmin plugin not available: $e');
     }
   }
 
@@ -45,6 +50,9 @@ class DeviceAdminService {
     } on PlatformException catch (e) {
       // ignore: avoid_print
       print('[DeviceAdmin] setStudentMode error: $e');
+    } on MissingPluginException catch (e) {
+      // ignore: avoid_print
+      print('[DeviceAdmin] setStudentMode plugin not available: $e');
     }
   }
 
@@ -64,6 +72,9 @@ class DeviceAdminService {
     } on PlatformException catch (e) {
       // ignore: avoid_print
       print('[DeviceAdmin] setPermissionSetupMode error: $e');
+    } on MissingPluginException catch (e) {
+      // ignore: avoid_print
+      print('[DeviceAdmin] setPermissionSetupMode plugin not available: $e');
     }
   }
 
