@@ -192,19 +192,30 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top Row: Title on the left, 3-dots menu on the far right
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          title,
-                          style: GoogleFonts.roboto(
-                            color: const Color(0xFF1E293B),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: GoogleFonts.roboto(
+                                color: const Color(0xFF1E293B),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: GoogleFonts.roboto(
+                                color: const Color(0xFF64748B),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -243,41 +254,40 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                       ),
                     ],
                   ),
-                  // Middle Row: Subtitle below the title
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.roboto(
-                      color: const Color(0xFF64748B),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 12), // margin-bottom: 12px below the subtitle
+                  const SizedBox(height: 12),
                   // Bottom Row: Progress bar + Percentage text
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Stack(
-                        alignment: Alignment.centerLeft,
-                        children: [
-                          Container(
-                            width: 120, // 120px wide progress bar
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE2E8F0),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          Container(
-                            width: 120 * (progress / 100),
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2196F3),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final maxWidth = constraints.maxWidth;
+                            return Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [
+                                Container(
+                                  width: maxWidth,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE2E8F0),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                Container(
+                                  width: maxWidth * (progress / 100),
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2196F3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       Text(
                         "$progress%",
                         style: GoogleFonts.roboto(
