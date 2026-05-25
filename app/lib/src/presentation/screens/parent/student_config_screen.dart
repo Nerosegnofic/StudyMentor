@@ -12,6 +12,7 @@ import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
 import 'parent_student_settings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentConfigScreen extends StatefulWidget {
   final StudentModel student;
@@ -47,12 +48,28 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   @override
   void initState() {
     super.initState();
+    _loadLocalSettings();
     context.read<AuthBloc>().add(
       LoadAppRulesRequested(studentUid: widget.student.uid),
     );
     context.read<AuthBloc>().add(
       LoadInstalledAppsForStudentRequested(studentUid: widget.student.uid),
     );
+  }
+
+  Future<void> _loadLocalSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedQ = prefs.getInt('questions_per_quiz_${widget.student.uid}');
+    final pausedList = prefs.getStringList('paused_packages_${widget.student.uid}');
+    if (mounted) {
+      setState(() {
+        if (savedQ != null) _questionsPerQuiz = savedQ;
+        if (pausedList != null) {
+          _pausedPackages.clear();
+          _pausedPackages.addAll(pausedList);
+        }
+      });
+    }
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -73,11 +90,19 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     if (!_isDirty) setState(() => _isDirty = true);
   }
 
-  void _save() {
+  Future<void> _save() async {
     final rulesToSave = _rules.map((r) => PendingAppRule(
       packageName: r.packageName,
       appLabel: r.appLabel,
     )).toList();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('questions_per_quiz_${widget.student.uid}', _questionsPerQuiz);
+      await prefs.setStringList('paused_packages_${widget.student.uid}', _pausedPackages.toList());
+    } catch (_) {}
+
+    if (!mounted) return;
 
     context.read<AuthBloc>().add(
       SaveAppRulesRequested(
@@ -600,7 +625,13 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
               children: [
                 Text(rule.appLabel,
                     style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 14)),
-                Text('Monitored', style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 11)),
+                Text(
+                  _pausedPackages.contains(rule.packageName) ? 'Unmonitored' : 'Monitored',
+                  style: GoogleFonts.roboto(
+                    color: _pausedPackages.contains(rule.packageName) ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 11,
+                  ),
+                ),
               ],
             ),
           ),
