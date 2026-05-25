@@ -10,9 +10,6 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
-import '../../../bloc/document/document_upload_bloc.dart';
-import '../../../data/repositories/ai_engine_repository.dart';
-import '../student/student_documents.dart';
 import 'parent_student_settings_screen.dart';
 
 class StudentConfigScreen extends StatefulWidget {
@@ -171,8 +168,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => _AppPickerSheet(
         availableApps: available,
@@ -201,6 +199,94 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   void _removeRule(int index) {
     setState(() => _rules.removeAt(index));
     _markDirty();
+  }
+
+  Future<void> _confirmRemoveRule(PendingAppRule rule, int index) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: const Color(0xFFFFFFFF),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Remove ${rule.appLabel}?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Are you sure you want to stop monitoring this app? Your child will have unrestricted access to it.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.roboto(
+                  color: const Color(0xFF64748B),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(dialogContext).pop(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'Cancel',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.roboto(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        _removeRule(index);
+                        Navigator.of(dialogContext).pop();
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE53935),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'Remove',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.roboto(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ── build ──────────────────────────────────────────────────────────────────
@@ -502,7 +588,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           ),
           const SizedBox(width: 4),
           GestureDetector(
-            onTap: () => _removeRule(index),
+            onTap: () => _confirmRemoveRule(rule, index),
             child: const Icon(Icons.delete_outline, color: Color(0xFFE53935), size: 20),
           ),
         ],
@@ -595,20 +681,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: _openDocumentUpload,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF2196F3),
-              side: const BorderSide(color: Color(0xFF2196F3)),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            ),
-            child: Text('Upload Curriculum', style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
             onPressed: _confirmDeleteStudent,
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFE53935),
@@ -620,32 +692,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  // ── document upload ────────────────────────────────────────────────────────
-
-  static const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
-
-  void _openDocumentUpload() {
-    final repo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider(
-          create: (_) => DocumentUploadBloc(repository: repo),
-          child: Scaffold(
-            backgroundColor: const Color(0xFFF5F7FF),
-            appBar: AppBar(
-              title: const Text(
-                'Upload Curriculum',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-            ),
-            body: StudentDocumentUploadScreen(studentUid: widget.student.uid),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1276,14 +1322,13 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
       },
       child: Container(
         height: _buttonHeight,
-        width: double.infinity,
-        padding: _buttonPadding,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFFE8EDFF),
-          borderRadius: _buttonRadius,
-          border: Border.all(color: const Color.fromRGBO(74, 108, 247, 0.3)),
+          color: const Color(0xFFE3F2FD),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
@@ -1291,57 +1336,24 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                   ? Icons.phone_android_rounded
                   : Icons.apps_rounded,
               size: 14,
-              color: const Color(0xFF4A6CF7),
+              color: const Color(0xFF2196F3),
             ),
             const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                _showSystemApps ? 'All Apps' : 'Installed Apps',
-                overflow: TextOverflow.ellipsis,
-                style: _buttonTextStyle.copyWith(
-                  color: const Color(0xFF4A6CF7),
-                ),
+            Text(
+              _showSystemApps ? 'All Apps' : 'Installed Apps',
+              overflow: TextOverflow.ellipsis,
+              style: _buttonTextStyle.copyWith(
+                color: const Color(0xFF2196F3),
               ),
             ),
             const SizedBox(width: 3),
             const Icon(
               Icons.arrow_drop_down_rounded,
               size: 16,
-              color: Color(0xFF4A6CF7),
+              color: Color(0xFF2196F3),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAddButton() {
-    return FilledButton(
-      onPressed: _submitted
-          ? null
-          : () {
-              if (_submitted) return;
-              setState(() => _submitted = true);
-              final selected = widget.availableApps
-                  .where((a) => _selectedPackages.contains(a.packageName))
-                  .toList();
-              Navigator.of(context).pop();
-              widget.onAppsSelected(selected);
-            },
-      style: FilledButton.styleFrom(
-        backgroundColor: const Color(0xFF4A6CF7),
-        foregroundColor: Colors.white,
-        fixedSize: const Size.fromHeight(_buttonHeight),
-        minimumSize: const Size(0, _buttonHeight),
-        padding: _buttonPadding,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: VisualDensity.compact,
-        shape: const RoundedRectangleBorder(borderRadius: _buttonRadius),
-      ),
-      child: Text(
-        'Add (${_selectedPackages.length})',
-        style: _buttonTextStyle,
-        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -1413,35 +1425,29 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
         children: [
           Center(
             child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              margin: const EdgeInsets.only(top: 8, bottom: 8),
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Select Apps',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildFilterButton()),
-                      if (_selectedPackages.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildAddButton()),
-                      ],
-                    ],
+                  style: GoogleFonts.cairo(
+                    color: const Color(0xFF1E293B),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                _buildFilterButton(),
               ],
             ),
           ),
@@ -1453,18 +1459,18 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
                 hintText: 'Search apps…',
-                prefixIcon: const Icon(Icons.search, size: 20),
+                hintStyle: const TextStyle(color: Color(0xFF64748B)),
+                prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF64748B)),
                 isDense: true,
+                filled: true,
+                fillColor: const Color(0xFFF1F5F9),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
+                  horizontal: 16,
+                  vertical: 12,
                 ),
               ),
             ),
@@ -1481,30 +1487,8 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                       final selected = _selectedPackages.contains(
                         app.packageName,
                       );
-                      return ListTile(
-                        leading: _AppLetterAvatar(label: app.appLabel),
-                        title: Text(
-                          app.appLabel,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          app.packageName,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                        trailing: Checkbox(
-                          value: selected,
-                          activeColor: const Color(0xFF4A6CF7),
-                          onChanged: (_) => setState(() {
-                            if (selected) {
-                              _selectedPackages.remove(app.packageName);
-                            } else {
-                              _selectedPackages.add(app.packageName);
-                            }
-                          }),
-                        ),
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
                         onTap: () => setState(() {
                           if (selected) {
                             _selectedPackages.remove(app.packageName);
@@ -1512,9 +1496,104 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                             _selectedPackages.add(app.packageName);
                           }
                         }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              _AppLetterAvatar(label: app.appLabel),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      app.appLabel,
+                                      style: const TextStyle(
+                                        color: Color(0xFF1E293B),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      app.packageName,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: selected ? const Color(0xFF2196F3) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: selected ? null : Border.all(color: const Color(0xFFCBD5E1), width: 2),
+                                ),
+                                child: selected
+                                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                   ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x0D000000),
+                  blurRadius: 12,
+                  offset: Offset(0, -4),
+                ),
+              ],
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: (_submitted || _selectedPackages.isEmpty)
+                    ? null
+                    : () {
+                        if (_submitted) return;
+                        setState(() => _submitted = true);
+                        final selected = widget.availableApps
+                            .where((a) => _selectedPackages.contains(a.packageName))
+                            .toList();
+                        Navigator.of(context).pop();
+                        widget.onAppsSelected(selected);
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2196F3),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: const Color(0xFF2196F3).withOpacity(0.5),
+                  disabledForegroundColor: Colors.white.withOpacity(0.8),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Add Selected',
+                  style: GoogleFonts.roboto(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -1576,14 +1655,21 @@ class _AppLetterAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CircleAvatar(
-      backgroundColor: const Color(0xFFE8EDFF),
-      radius: 20,
-      child: Text(
-        label.isNotEmpty ? label[0].toUpperCase() : '?',
-        style: const TextStyle(
-          color: Color(0xFF4A6CF7),
-          fontWeight: FontWeight.w700,
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Center(
+        child: Text(
+          label.isNotEmpty ? label[0].toUpperCase() : '?',
+          style: GoogleFonts.roboto(
+            color: const Color(0xFF2196F3),
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
         ),
       ),
     );
