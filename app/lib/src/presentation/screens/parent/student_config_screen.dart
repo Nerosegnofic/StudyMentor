@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/cupertino.dart' show CupertinoTimerPicker, CupertinoTheme, CupertinoThemeData, CupertinoTextThemeData, CupertinoTimerPickerMode;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
@@ -192,6 +193,29 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _showRewardTimePicker() async {
+    final result = await showModalBottomSheet<Map<String, int>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return _SetRewardTimeSheet(
+          initialHours: _config.usageHours,
+          initialMinutes: _config.usageMinutes,
+        );
+      },
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _config = _config.copyWith(
+          usageHours: result['hours']!,
+          usageMinutes: result['minutes']!,
+        );
+      });
+      _markDirty();
+    }
   }
 
   // ── remove a rule ──────────────────────────────────────────────────────────
@@ -482,11 +506,23 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           Text('Screen Time Reward per Quiz',
               style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)),
-            child: Text('$hrs : $mins',
-                style: GoogleFonts.roboto(color: const Color(0xFF2196F3), fontSize: 32, fontWeight: FontWeight.bold)),
+          GestureDetector(
+            onTap: _showRewardTimePicker,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('$hrs : $mins',
+                      style: GoogleFonts.roboto(color: const Color(0xFF2196F3), fontSize: 32, fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.edit, color: Color(0xFF2196F3), size: 20),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           Text('Child earns this much unlocked screen time for every quiz they pass.',
@@ -1866,6 +1902,189 @@ class _QuickActionButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SetRewardTimeSheet extends StatefulWidget {
+  final int initialHours;
+  final int initialMinutes;
+
+  const _SetRewardTimeSheet({
+    required this.initialHours,
+    required this.initialMinutes,
+  });
+
+  @override
+  State<_SetRewardTimeSheet> createState() => _SetRewardTimeSheetState();
+}
+
+class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
+  late int _hours;
+  late int _minutes;
+  int _pickerKeyIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _hours = widget.initialHours;
+    _minutes = widget.initialMinutes;
+  }
+
+  void _selectPreset(int h, int m) {
+    setState(() {
+      _hours = h;
+      _minutes = m;
+      _pickerKeyIndex++;
+    });
+  }
+
+  bool _isPresetSelected(int h, int m) {
+    return _hours == h && _minutes == m;
+  }
+
+  Widget _buildPresetChip(String label, int h, int m) {
+    final bool isSelected = _isPresetSelected(h, m);
+    return InkWell(
+      onTap: () => _selectPreset(h, m),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE3F2FD) : const Color(0xFFF8FAFC),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF2196F3) : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.roboto(
+            color: isSelected ? const Color(0xFF2196F3) : const Color(0xFF64748B),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFCBD5E1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Text(
+                "Set Reward Time",
+                style: GoogleFonts.cairo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildPresetChip("10 mins", 0, 10),
+                      _buildPresetChip("15 mins", 0, 15),
+                      _buildPresetChip("30 mins", 0, 30),
+                      _buildPresetChip("1 hour", 1, 0),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 180,
+                    child: CupertinoTheme(
+                      data: CupertinoThemeData(
+                        textTheme: CupertinoTextThemeData(
+                          pickerTextStyle: GoogleFonts.roboto(
+                            fontSize: 20,
+                            color: const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ),
+                      child: CupertinoTimerPicker(
+                        key: ValueKey(_pickerKeyIndex),
+                        mode: CupertinoTimerPickerMode.hm,
+                        initialTimerDuration: Duration(hours: _hours, minutes: _minutes),
+                        onTimerDurationChanged: (duration) {
+                          _hours = duration.inHours;
+                          _minutes = duration.inMinutes % 60;
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop({'hours': _hours, 'minutes': _minutes});
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2196F3),
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    "Save Time",
+                    style: GoogleFonts.roboto(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
