@@ -13,20 +13,26 @@ import '../../../data/repositories/ai_engine_repository.dart';
 
 class QuizOverlayPage extends StatelessWidget {
   final AiEngineRepository repository;
+  final int studentGrade;
 
-  const QuizOverlayPage({super.key, required this.repository});
+  const QuizOverlayPage({
+    super.key,
+    required this.repository,
+    this.studentGrade = 5,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => QuizBloc(repository: repository),
-      child: const _QuizOverlayScaffold(),
+      child: _QuizOverlayScaffold(studentGrade: studentGrade),
     );
   }
 }
 
 class _QuizOverlayScaffold extends StatelessWidget {
-  const _QuizOverlayScaffold();
+  final int studentGrade;
+  const _QuizOverlayScaffold({required this.studentGrade});
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +67,7 @@ class _QuizOverlayScaffold extends StatelessWidget {
       ),
       body: BlocBuilder<QuizBloc, QuizState>(
         builder: (context, state) {
-          if (state is QuizInitial) return const _AutoStartPanel();
+          if (state is QuizInitial) return _AutoStartPanel(studentGrade: studentGrade);
           if (state is QuizLoading) {
             return const _LoadingView(message: 'Generating your quiz…');
           }
@@ -83,7 +89,8 @@ class _QuizOverlayScaffold extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _AutoStartPanel extends StatelessWidget {
-  const _AutoStartPanel();
+  final int studentGrade;
+  const _AutoStartPanel({required this.studentGrade});
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +130,10 @@ class _AutoStartPanel extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 context.read<QuizBloc>().add(
-                  GenerateQuizEvent(totalQuestions: 5),
+                  GenerateQuizEvent(
+                    totalQuestions: 5,
+                    studentGrade: studentGrade,
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -191,7 +201,7 @@ class StudentQuizScreen extends StatelessWidget {
   const StudentQuizScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const _AutoStartPanel();
+  Widget build(BuildContext context) => const _AutoStartPanel(studentGrade: 5);
 }
 
 // ---------------------------------------------------------------------------
@@ -421,9 +431,14 @@ class _QuestionCard extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: _difficultyColor(question.difficulty).withOpacity(0.12),
+                  color: _difficultyColor(
+                    question.difficulty,
+                  ).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -436,7 +451,10 @@ class _QuestionCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8EDFF),
                   borderRadius: BorderRadius.circular(8),

@@ -43,6 +43,7 @@ class _StudentScreenState extends State<StudentScreen>
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
+  int _gradeLevel = 5;
   String _parentUid = '';
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
@@ -103,6 +104,7 @@ class _StudentScreenState extends State<StudentScreen>
           _coins = (profile['total_coins'] as int?) ?? 0;
           _xp = (profile['total_xp'] as int?) ?? 0;
           _level = (_xp ~/ 500) + 1;
+          _gradeLevel = (profile['grade_level'] as int?) ?? 5;
           _parentUid = results[1] as String;
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(
@@ -142,7 +144,10 @@ class _StudentScreenState extends State<StudentScreen>
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
-        builder: (_) => QuizOverlayPage(repository: _aiRepo),
+        builder: (_) => QuizOverlayPage(
+          repository: _aiRepo,
+          studentGrade: _gradeLevel,
+        ),
       ),
     );
   }

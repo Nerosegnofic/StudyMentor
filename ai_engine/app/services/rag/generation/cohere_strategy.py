@@ -8,10 +8,10 @@ class CohereStrategy(QuizGeneratorStrategy):
     """
     Implementation of Quiz Generation using Cohere.
     """
-    def generate(self, topic_instructions: str, total_count: int, context: str) -> GenerateQuizResponse:
+    def generate(self, topic_instructions: str, total_count: int, context: str, student_grade: str = "5th") -> GenerateQuizResponse:
         llm = ChatCohere(
             cohere_api_key=settings.COHERE_API_KEY, 
-            model="command-r-08-2024", 
+            model=settings.COHERE_MODEL, 
             temperature=0.2
         )
         
@@ -21,7 +21,8 @@ class CohereStrategy(QuizGeneratorStrategy):
         response = chain.invoke({
             "topic_instructions": topic_instructions,
             "total_count": total_count,
-            "context": context
+            "context": context,
+            "student_grade": student_grade,
         })
         
         return response

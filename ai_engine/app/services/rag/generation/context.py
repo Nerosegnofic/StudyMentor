@@ -27,12 +27,14 @@ class GeneratorContext:
         topic_instructions: str,
         total_count: int,
         context: str,
+        student_grade: str = "5th",
     ) -> GenerateQuizResponse:
         # LLMGenerationError propagates up — the controller handles it
         response = self._strategy.generate(
             topic_instructions=topic_instructions,
             total_count=total_count,
             context=context,
+            student_grade=student_grade,
         )
 
         # Post-generation sanity check: an empty list means the LLM

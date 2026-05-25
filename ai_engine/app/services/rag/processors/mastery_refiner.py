@@ -227,7 +227,7 @@ def refine_mastery_points(
     # Initialize Gemini
     llm = ChatGoogleGenerativeAI(
         google_api_key=settings.GEMINI_API_KEY,
-        model="gemini-2.5-flash",
+        model=settings.GEMINI_MODEL,
         temperature=0.1,  # Low temp for consistency
     )
     structured_llm = llm.with_structured_output(RefinedMasteryResponse)

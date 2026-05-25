@@ -18,11 +18,13 @@ import 'student_quiz.dart';
 class SubjectDetailScreen extends StatefulWidget {
   final String studentUid;
   final String subjectKey;
+  final int studentGrade;
 
   const SubjectDetailScreen({
     super.key,
     required this.studentUid,
     required this.subjectKey,
+    this.studentGrade = 5,
   });
 
   @override
@@ -85,11 +87,19 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               ),
             );
           }
-          if (state is SubjectSkillsLoaded && state.subjectKey == widget.subjectKey) {
-            return _buildContent(context, subject, state.progress, state.skills);
+          if (state is SubjectSkillsLoaded &&
+              state.subjectKey == widget.subjectKey) {
+            return _buildContent(
+              context,
+              subject,
+              state.progress,
+              state.skills,
+            );
           }
           // Fallback: still loading or different subject key in state
-          return Center(child: CircularProgressIndicator(color: subject.primaryColor));
+          return Center(
+            child: CircularProgressIndicator(color: subject.primaryColor),
+          );
         },
       ),
     );
@@ -115,7 +125,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Plant hero ──────────────────────────────────────────────────
-          _PlantHeroSection(subject: subject, stage: stage, mastery: overallMastery),
+          _PlantHeroSection(
+            subject: subject,
+            stage: stage,
+            mastery: overallMastery,
+          ),
           const SizedBox(height: 20),
 
           // ── Growth Progress card ─────────────────────────────────────────
@@ -128,7 +142,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   children: [
                     const Text(
                       'Growth Progress',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     RichText(
                       text: TextSpan(
@@ -158,7 +175,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     value: progressFraction,
                     minHeight: 14,
                     backgroundColor: subject.primaryColor.withOpacity(0.15),
-                    valueColor: AlwaysStoppedAnimation<Color>(subject.primaryColor),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      subject.primaryColor,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -167,12 +186,18 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   children: [
                     Text(
                       '${progress.totalXp} XP',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
                     ),
                     if (nextLevel != null)
                       Text(
                         '${nextLevel} XP',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
                       ),
                   ],
                 ),
@@ -201,15 +226,17 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: GrowthStageUtils.healthColor(overallMastery).withOpacity(0.15),
+                    color: GrowthStageUtils.healthColor(
+                      overallMastery,
+                    ).withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     overallMastery >= 75
                         ? Icons.local_florist_rounded
                         : overallMastery >= 50
-                            ? Icons.spa_rounded
-                            : Icons.energy_savings_leaf_rounded,
+                        ? Icons.spa_rounded
+                        : Icons.energy_savings_leaf_rounded,
                     color: GrowthStageUtils.healthColor(overallMastery),
                     size: 24,
                   ),
@@ -228,7 +255,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     ),
                     Text(
                       'Overall mastery: ${overallMastery.toStringAsFixed(0)}%',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
                     ),
                   ],
                 ),
@@ -241,10 +271,17 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           if (skills.isNotEmpty) ...[
             const Text(
               'Skills',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1A2E)),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1A2E),
+              ),
             ),
             const SizedBox(height: 12),
-            ...skills.map((skill) => _SkillRow(skill: skill, subjectColor: subject.primaryColor)),
+            ...skills.map(
+              (skill) =>
+                  _SkillRow(skill: skill, subjectColor: subject.primaryColor),
+            ),
             const SizedBox(height: 20),
           ],
 
@@ -285,6 +322,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     fullscreenDialog: true,
                     builder: (_) => QuizOverlayPage(
                       repository: AiEngineRepository.instance,
+                      studentGrade: widget.studentGrade,
                     ),
                   ),
                 );
@@ -292,7 +330,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: subject.primaryColor,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 elevation: 0,
               ),
               icon: const Icon(Icons.play_arrow_rounded, size: 22),
@@ -324,7 +364,11 @@ class _PlantHeroSection extends StatelessWidget {
   final GrowthStage stage;
   final double mastery;
 
-  const _PlantHeroSection({required this.subject, required this.stage, required this.mastery});
+  const _PlantHeroSection({
+    required this.subject,
+    required this.stage,
+    required this.mastery,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -399,7 +443,11 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  const _SectionHeader({required this.icon, required this.label, required this.color});
+  const _SectionHeader({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -409,7 +457,11 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: color),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
         ),
       ],
     );
@@ -436,7 +488,9 @@ class _SkillRow extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: attempted ? healthColor.withOpacity(0.3) : Colors.grey.shade200,
+          color: attempted
+              ? healthColor.withOpacity(0.3)
+              : Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
@@ -452,12 +506,18 @@ class _SkillRow extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: attempted ? healthColor.withOpacity(0.12) : Colors.grey.shade100,
+              color: attempted
+                  ? healthColor.withOpacity(0.12)
+                  : Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
             child: Icon(
               attempted
-                  ? (skill.isStrong ? Icons.emoji_events_rounded : skill.isWeak ? Icons.fitness_center_rounded : Icons.trending_up_rounded)
+                  ? (skill.isStrong
+                        ? Icons.emoji_events_rounded
+                        : skill.isWeak
+                        ? Icons.fitness_center_rounded
+                        : Icons.trending_up_rounded)
                   : Icons.lock_outline_rounded,
               color: attempted ? healthColor : Colors.grey.shade400,
               size: 18,
@@ -473,7 +533,9 @@ class _SkillRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: attempted ? const Color(0xFF1A1A2E) : Colors.grey.shade400,
+                    color: attempted
+                        ? const Color(0xFF1A1A2E)
+                        : Colors.grey.shade400,
                   ),
                 ),
                 if (attempted)
@@ -523,22 +585,24 @@ class _SkillChipRow extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: skills
-          .map((s) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withOpacity(0.3)),
+          .map(
+            (s) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withOpacity(0.3)),
+              ),
+              child: Text(
+                SubjectCatalog.skillName(s.skillKey),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: color,
+                  fontWeight: FontWeight.w600,
                 ),
-                child: Text(
-                  SubjectCatalog.skillName(s.skillKey),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ))
+              ),
+            ),
+          )
           .toList(),
     );
   }

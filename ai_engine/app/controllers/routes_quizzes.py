@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
@@ -40,10 +41,76 @@ from app.models.domain import Question, QuestionResponse
 
 DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
 
+# Map ordinal grade numbers to English ordinal suffixes for the prompt
+GRADE_LABELS = {
+    1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th",
+    7: "7th", 8: "8th", 9: "9th", 10: "10th", 11: "11th", 12: "12th",
+}
+
 router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
 
 generator_context = GeneratorContext(strategy=GeminiStrategy())
 bkt_engine = BKTEngine()
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _shuffle_question_options(question_schema: QuestionSchema) -> QuestionSchema:
+    """
+    Shuffle the options of a question in-place and keep correct_answer consistent.
+    This is the definitive server-side fix for LLM positional bias (always putting
+    the correct answer first).
+    """
+    options = list(question_schema.options)
+    random.shuffle(options)
+    # correct_answer is a value, not a position — it stays the same string
+    return QuestionSchema(
+        question_id=question_schema.question_id,
+        topic=question_schema.topic,
+        question_text=question_schema.question_text,
+        options=options,
+        correct_answer=question_schema.correct_answer,
+        explanation=question_schema.explanation,
+        difficulty=question_schema.difficulty,
+        hints=question_schema.hints,
+    )
+
+
+def _build_difficulty_map(payload: list) -> dict:
+    """
+    Build a mapping from skill name → requested difficulty from the BKT payload.
+    Used for post-generation difficulty mismatch detection.
+    """
+    return {cfg["skill"]: cfg["difficulty"] for cfg in payload}
+
+
+def _filter_mismatched_questions(
+    questions: list,
+    difficulty_map: dict,
+    tolerance: int = 1,
+) -> tuple:
+    """
+    Filters out questions whose difficulty doesn't match what was requested (±tolerance).
+    
+    Returns:
+        (accepted_questions, dropped_count)
+    """
+    accepted = []
+    dropped = 0
+    for q in questions:
+        requested_diff = difficulty_map.get(q.topic)
+        if requested_diff is not None and abs(q.difficulty - requested_diff) > tolerance:
+            print(
+                f"[DifficultyGuard] Dropping question for topic='{q.topic}': "
+                f"requested difficulty={requested_diff}, got={q.difficulty}",
+                flush=True,
+            )
+            dropped += 1
+        else:
+            accepted.append(q)
+    return accepted, dropped
 
 
 @router.post("/generate", response_model=GenerateQuizResponse)
@@ -75,6 +142,9 @@ async def generate_quiz(
 
         target_subject_id = subject.subject_id
         target_subject_name = subject.name
+
+        # Resolve grade label for prompt (e.g., 5 → "5th")
+        student_grade_label = GRADE_LABELS.get(request_body.student_grade, f"{request_body.student_grade}th")
 
         # ------------------------------------------------------------------ #
         # Step 0.5: Quiz Cache Check (Cross-Device Reuse)
@@ -144,6 +214,7 @@ async def generate_quiz(
             all_topics.append(cfg["skill"])
 
         topic_instructions = "\n".join(instruction_lines)
+        difficulty_map = _build_difficulty_map(payload)
 
         # ------------------------------------------------------------------ #
         # Step 3: Create Quiz Session (needed for both LLM and bank paths)
@@ -169,30 +240,64 @@ async def generate_quiz(
                 subject_id=target_subject_id,
             )
 
-            # Step 4b: LLM structured generation
+            # Step 4b: LLM structured generation (with student grade context)
             response = generator_context.execute_generation(
                 topic_instructions=topic_instructions,
                 total_count=request_body.total_questions,
                 context=context,
+                student_grade=student_grade_label,
             )
 
-            for q in response.questions:
-                skill_id = skill_name_to_id.get(q.topic, 1)
+            # Step 4c: Difficulty mismatch guardrail
+            # Drop questions that don't match the requested difficulty (±1 tolerance).
+            # If >20% are mismatched, retry once before falling through.
+            accepted_questions, dropped_count = _filter_mismatched_questions(
+                response.questions, difficulty_map, tolerance=1
+            )
+            total_generated = len(response.questions)
+            mismatch_ratio = dropped_count / total_generated if total_generated > 0 else 0.0
+
+            if mismatch_ratio > 0.20:
+                print(
+                    f"[DifficultyGuard] {mismatch_ratio:.0%} of questions mismatched "
+                    f"({dropped_count}/{total_generated}). Retrying LLM generation...",
+                    flush=True,
+                )
+                # Retry once
+                response = generator_context.execute_generation(
+                    topic_instructions=topic_instructions,
+                    total_count=request_body.total_questions,
+                    context=context,
+                    student_grade=student_grade_label,
+                )
+                accepted_questions, dropped_count = _filter_mismatched_questions(
+                    response.questions, difficulty_map, tolerance=1
+                )
+                if dropped_count > 0:
+                    print(
+                        f"[DifficultyGuard] Retry still dropped {dropped_count} mismatched questions. Proceeding.",
+                        flush=True,
+                    )
+
+            # Step 4d: Shuffle options & build DB questions
+            for q in accepted_questions:
+                shuffled = _shuffle_question_options(q)
+                skill_id = skill_name_to_id.get(shuffled.topic, 1)
                 db_questions.append(Question(
-                    question_id=q.question_id,
+                    question_id=shuffled.question_id,
                     skill_id=skill_id,
                     session_id=quiz_session.session_id,
-                    text_content=q.question_text,
-                    options=q.options,
-                    correct_answer=q.correct_answer,
-                    difficulty=q.difficulty,
+                    text_content=shuffled.question_text,
+                    options=shuffled.options,
+                    correct_answer=shuffled.correct_answer,
+                    difficulty=shuffled.difficulty,
                     source_enum="AI",
-                    explanation=q.explanation,
-                    hints=q.hints,
+                    explanation=shuffled.explanation,
+                    hints=shuffled.hints,
                 ))
 
         except (LLMGenerationError, InsufficientContextError) as llm_err:
-            # Step 4c: Bank fallback — use the student's previously answered questions
+            # Step 4e: Bank fallback — use the student's previously answered questions
             print(f"[QuizGenerate] LLM/context failed: {llm_err}. Attempting quiz bank fallback.", flush=True)
             try:
                 db_questions = build_quiz_from_bank(
@@ -204,7 +309,7 @@ async def generate_quiz(
                 )
                 quiz_source = "BANK"
             except QuizBankInsufficientError:
-                # Step 4d: Hard fallback — nothing we can do
+                # Step 4f: Hard fallback — nothing we can do
                 db.rollback()
                 raise HTTPException(
                     status_code=503,
@@ -217,6 +322,8 @@ async def generate_quiz(
         # ------------------------------------------------------------------ #
         # Step 5: Persist and return
         # ------------------------------------------------------------------ #
+        # Update session total_questions to reflect actual count after filtering
+        quiz_session.total_questions = len(db_questions)
         save_questions(db, db_questions)
         db.commit()
 

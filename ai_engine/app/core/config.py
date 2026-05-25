@@ -18,6 +18,22 @@ class Settings(BaseSettings):
     FIREBASE_PROJECT_ID: str = "fcai-studymentor"
     FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = None
 
+    # --- AI Model Configuration ---
+    # Gemini Models:
+    # - "gemini-2.5-flash" (Recommended default: fast, cheap, highly capable)
+    # - "gemini-2.5-pro" (Better for complex logic, deeper reasoning, and complex parsing)
+    GEMINI_MODEL: str = "gemini-3.5-flash"
+
+    # Cohere Models:
+    # - "command-r-08-2024" (Current default)
+    # - "command-r-plus" (Recommended for advanced multi-step tools & reasoning)
+    COHERE_MODEL: str = "command-r-08-2024"
+
+    # Cohere Embeddings:
+    # - "embed-multilingual-v3.0" (Recommended: high-quality vector embeddings for Arabic)
+    # - "embed-multilingual-light-v3.0" (Faster, smaller dimensions)
+    COHERE_EMBEDDING_MODEL: str = "embed-multilingual-v3.0"
+
     # --- Guardrail Configuration ---
     # File Upload
     MAX_UPLOAD_SIZE_MB: int = 50

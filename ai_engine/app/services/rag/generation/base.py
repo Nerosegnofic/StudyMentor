@@ -7,5 +7,5 @@ class QuizGeneratorStrategy(ABC):
     All integrations must implement the generate method to return a standard Pydantic schema.
     """
     @abstractmethod
-    def generate(self, topic_instructions: str, total_count: int, context: str) -> GenerateQuizResponse:
+    def generate(self, topic_instructions: str, total_count: int, context: str, student_grade: str = "5th") -> GenerateQuizResponse:
         pass

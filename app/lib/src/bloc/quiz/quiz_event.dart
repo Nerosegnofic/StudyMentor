@@ -8,8 +8,13 @@ abstract class QuizEvent {}
 class GenerateQuizEvent extends QuizEvent {
   final int? subjectId;
   final int totalQuestions;
+  final int studentGrade;
 
-  GenerateQuizEvent({this.subjectId, required this.totalQuestions});
+  GenerateQuizEvent({
+    this.subjectId,
+    required this.totalQuestions,
+    this.studentGrade = 5,
+  });
 }
 
 /// Dispatched each time the student selects an answer option.
