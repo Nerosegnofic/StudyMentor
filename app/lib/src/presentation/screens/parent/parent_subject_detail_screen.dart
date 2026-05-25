@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'all_skills_screen.dart';
+import 'all_quizzes_screen.dart';
 
-class ParentSubjectDetailScreen extends StatelessWidget {
+class ParentSubjectDetailScreen extends StatefulWidget {
   final String subjectName;
   final MaterialColor color;
 
@@ -10,6 +12,137 @@ class ParentSubjectDetailScreen extends StatelessWidget {
     required this.subjectName,
     required this.color,
   });
+
+  @override
+  State<ParentSubjectDetailScreen> createState() => _ParentSubjectDetailScreenState();
+}
+
+class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
+  String _activeSortMethod = "Date: Newest to Oldest";
+
+  final List<QuizData> _quizzes = [
+    QuizData(
+      time: "Today, 10:30 AM",
+      timestamp: DateTime(2026, 5, 25, 10, 30),
+      tag: "Fractions",
+      score: "9/10",
+      scoreValue: 9.0,
+      duration: "5m 20s",
+      passed: true,
+      totalQuestions: 10,
+      correctAnswers: const [1, 2, 3, 4, 5, 6, 8, 9, 10],
+    ),
+    QuizData(
+      time: "Yesterday, 2:15 PM",
+      timestamp: DateTime(2026, 5, 24, 14, 15),
+      tag: "Decimals",
+      score: "3/10",
+      scoreValue: 3.0,
+      duration: "4m 10s",
+      passed: false,
+      totalQuestions: 10,
+      correctAnswers: const [1, 5, 8],
+    ),
+  ];
+
+  List<QuizData> get _sortedQuizzes {
+    final list = List<QuizData>.from(_quizzes);
+    if (_activeSortMethod == "Date: Newest to Oldest") {
+      list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    } else if (_activeSortMethod == "Date: Oldest to Newest") {
+      list.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    } else if (_activeSortMethod == "Score: Highest to Lowest") {
+      list.sort((a, b) => b.scoreValue.compareTo(a.scoreValue));
+    } else if (_activeSortMethod == "Score: Lowest to Highest") {
+      list.sort((a, b) => a.scoreValue.compareTo(b.scoreValue));
+    }
+    return list;
+  }
+
+  void _showSortModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Sort Quizzes",
+                style: GoogleFonts.cairo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildSortOptionRow(context, "Date: Newest to Oldest"),
+              _buildSortOptionRow(context, "Date: Oldest to Newest"),
+              _buildSortOptionRow(context, "Score: Highest to Lowest"),
+              _buildSortOptionRow(context, "Score: Lowest to Highest"),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOptionRow(BuildContext context, String optionText) {
+    final bool isSelected = _activeSortMethod == optionText;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _activeSortMethod = optionText;
+        });
+        Navigator.of(context).pop();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Color(0xFFF1F5F9),
+              width: 1,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              optionText,
+              style: GoogleFonts.roboto(
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check,
+                color: Color(0xFF2196F3),
+                size: 20,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +157,7 @@ class ParentSubjectDetailScreen extends StatelessWidget {
               children: [
                 _buildOverviewStatsCard(),
                 const SizedBox(height: 16),
-                _buildSkillsProgressCard(),
+                _buildSkillsProgressCard(context),
                 const SizedBox(height: 16),
                 _buildQuizHistorySection(),
                 const SizedBox(height: 32),
@@ -53,7 +186,7 @@ class ParentSubjectDetailScreen extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
           ),
           Text(
-            subjectName,
+            widget.subjectName,
             style: GoogleFonts.cairo(
               color: Colors.white,
               fontSize: 20,
@@ -67,7 +200,7 @@ class ParentSubjectDetailScreen extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.book, color: color.shade700),
+            child: Icon(Icons.book, color: widget.color.shade700),
           ),
         ],
       ),
@@ -100,13 +233,93 @@ class ParentSubjectDetailScreen extends StatelessWidget {
               _buildStatCol("5h 10m", "Time Spent"),
             ],
           ),
-          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "Overall Mastery Level",
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "82%",
+                      style: GoogleFonts.roboto(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF2196F3),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0F2F1), // Light Teal
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "Proficient",
+                        style: GoogleFonts.roboto(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF00897B), // Teal
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           SizedBox(
             height: 100,
             width: double.infinity,
             child: CustomPaint(
               painter: AreaChartPainter(),
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Week 1",
+                style: GoogleFonts.roboto(
+                  fontSize: 10,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              Text(
+                "Week 2",
+                style: GoogleFonts.roboto(
+                  fontSize: 10,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              Text(
+                "Week 3",
+                style: GoogleFonts.roboto(
+                  fontSize: 10,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              Text(
+                "This Week",
+                style: GoogleFonts.roboto(
+                  fontSize: 10,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -136,7 +349,7 @@ class ParentSubjectDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSkillsProgressCard() {
+  Widget _buildSkillsProgressCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -164,20 +377,29 @@ class ParentSubjectDetailScreen extends StatelessWidget {
                   color: const Color(0xFF1E293B),
                 ),
               ),
-              Text(
-                "See All",
-                style: GoogleFonts.roboto(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2196F3),
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AllSkillsScreen(),
+                    ),
+                  );
+                },
+                child: Text(
+                  "See All",
+                  style: GoogleFonts.roboto(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2196F3),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          _buildSkillRow("Fractions", 85, isStrong: true),
-          _buildSkillRow("Decimals", 45, isNeedsWork: true),
-          _buildSkillRow("Geometry", 70),
+          _buildSkillRow("الكسور", 85, isStrong: true),
+          _buildSkillRow("الأعداد العشرية", 45, isNeedsWork: true),
+          _buildSkillRow("الهندسة", 70),
         ],
       ),
     );
@@ -185,103 +407,111 @@ class ParentSubjectDetailScreen extends StatelessWidget {
 
   Widget _buildSkillRow(String name, int score, {bool isStrong = false, bool isNeedsWork = false}) {
     final bool failed = score < 50;
+    final bool showStrong = isStrong || score >= 80;
+    final bool showNeedsWork = isNeedsWork || score < 50;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    name,
-                    style: GoogleFonts.roboto(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E293B),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (isStrong) ...[
-                  const SizedBox(width: 8),
+          // Top Row (Text & Badge)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Left Side: Skill Name and Badge
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE0F2F1), // Light Teal
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    constraints: const BoxConstraints(maxWidth: 100),
                     child: Text(
-                      "Strong",
-                      style: GoogleFonts.roboto(
-                        fontSize: 10,
+                      name,
+                      textDirection: TextDirection.rtl,
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF00897B), // Teal
+                        color: const Color(0xFF1E293B),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
-                ],
-                if (isNeedsWork) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBEE), // Light Red
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "Needs Work",
-                      style: GoogleFonts.roboto(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFE53935),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 4,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Stack(
-                  children: [
+                  if (showStrong) ...[
+                    const SizedBox(width: 8),
                     Container(
-                      width: constraints.maxWidth,
-                      height: 6,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE2E8F0),
-                        borderRadius: BorderRadius.circular(3),
+                        color: const Color(0xFFE0F2F1), // Light Teal
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    Container(
-                      width: constraints.maxWidth * (score / 100),
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: failed ? const Color(0xFFE53935) : const Color(0xFF2196F3),
-                        borderRadius: BorderRadius.circular(3),
+                      child: Text(
+                        "Strong",
+                        style: GoogleFonts.roboto(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF00897B), // Teal
+                        ),
                       ),
                     ),
                   ],
-                );
-              }
-            ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 32,
-            child: Text(
-              "$score%",
-              textAlign: TextAlign.right,
-              style: GoogleFonts.roboto(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: failed ? const Color(0xFFE53935) : const Color(0xFF1E293B),
+                  if (showNeedsWork && !showStrong) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEE), // Light Red
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "Needs Work",
+                        style: GoogleFonts.roboto(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFE53935), // Red
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
+              // Right Side: Percentage
+              Text(
+                "$score%",
+                style: GoogleFonts.roboto(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: failed ? const Color(0xFFE53935) : const Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Bottom Row (Progress Bar)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  Container(
+                    width: constraints.maxWidth,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  Container(
+                    width: constraints.maxWidth * (score / 100),
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: failed ? const Color(0xFFE53935) : const Color(0xFF2196F3),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              );
+            }
           ),
         ],
       ),
@@ -289,6 +519,7 @@ class ParentSubjectDetailScreen extends StatelessWidget {
   }
 
   Widget _buildQuizHistorySection() {
+    final sortedList = _sortedQuizzes;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -303,33 +534,77 @@ class ParentSubjectDetailScreen extends StatelessWidget {
                 color: const Color(0xFF1E293B),
               ),
             ),
-            const Icon(Icons.filter_list, color: Color(0xFF64748B)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const AllQuizzesScreen(),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    "See All",
+                    style: GoogleFonts.roboto(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2196F3),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.sort, color: Color(0xFF64748B)),
+                  onPressed: () => _showSortModal(context),
+                ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 12),
-        const QuizHistoryCard(
-          time: "Today, 10:30 AM",
-          tag: "Fractions",
-          score: "9/10",
-          duration: "5m 20s",
-          passed: true,
-          totalQuestions: 10,
-          correctAnswers: [1, 2, 3, 4, 5, 6, 8, 9, 10], // 7 is wrong
-        ),
-        const SizedBox(height: 8),
-        const QuizHistoryCard(
-          time: "Yesterday, 2:15 PM",
-          tag: "Decimals",
-          score: "3/10",
-          duration: "4m 10s",
-          passed: false,
-          totalQuestions: 10,
-          correctAnswers: [1, 5, 8],
-        ),
+        ...sortedList.take(10).map((q) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: QuizHistoryCard(
+                time: q.time,
+                tag: q.tag,
+                score: q.score,
+                duration: q.duration,
+                passed: q.passed,
+                totalQuestions: q.totalQuestions,
+                correctAnswers: q.correctAnswers,
+              ),
+            )),
       ],
     );
   }
 }
+
+class QuizData {
+  final String time;
+  final DateTime timestamp;
+  final String tag;
+  final String score;
+  final double scoreValue;
+  final String duration;
+  final bool passed;
+  final int totalQuestions;
+  final List<int> correctAnswers;
+
+  const QuizData({
+    required this.time,
+    required this.timestamp,
+    required this.tag,
+    required this.score,
+    required this.scoreValue,
+    required this.duration,
+    required this.passed,
+    required this.totalQuestions,
+    required this.correctAnswers,
+  });
+}
+
 
 class QuizHistoryCard extends StatefulWidget {
   final String time;
@@ -406,22 +681,6 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                             color: const Color(0xFF1E293B),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.purple.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            widget.tag,
-                            style: GoogleFonts.roboto(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.purple.shade700,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -477,20 +736,23 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                     children: List.generate(widget.totalQuestions, (index) {
                       final qNum = index + 1;
                       final isCorrect = widget.correctAnswers.contains(qNum);
-                      return Container(
-                        width: 28,
-                        height: 28,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isCorrect ? const Color(0xFF2196F3) : const Color(0xFFE53935),
-                        ),
-                        child: Text(
-                          qNum.toString(),
-                          style: GoogleFonts.roboto(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                      return GestureDetector(
+                        onTap: () => _showQuestionDetailBottomSheet(context, qNum, isCorrect),
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isCorrect ? const Color(0xFF2196F3) : const Color(0xFFE53935),
+                          ),
+                          child: Text(
+                            qNum.toString(),
+                            style: GoogleFonts.roboto(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       );
@@ -499,6 +761,203 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuestionDetailBottomSheet(BuildContext context, int qNum, bool isCorrect) {
+    const String questionText = "ما هو الكوكب الأقرب إلى الشمس؟";
+
+    final List<Map<String, String>> optionData = [
+      {
+        "text": "عطارد",
+        "state": isCorrect ? "selected_correct" : "correct_missed",
+      },
+      {
+        "text": "الزهرة",
+        "state": isCorrect ? "default" : "selected_incorrect",
+      },
+      {
+        "text": "الأرض",
+        "state": "default",
+      },
+      {
+        "text": "المريخ",
+        "state": "default",
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Question $qNum",
+                        style: GoogleFonts.cairo(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isCorrect ? const Color(0xFFE3F2FD) : const Color(0xFFFFEBEE),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          isCorrect ? "Correct" : "Incorrect",
+                          style: GoogleFonts.roboto(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isCorrect ? const Color(0xFF2196F3) : const Color(0xFFE53935),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          child: Text(
+                            questionText,
+                            textDirection: TextDirection.rtl,
+                            textAlign: TextAlign.right,
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ...optionData.map((opt) => _buildOptionRow(opt["text"]!, opt["state"]!)),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        foregroundColor: const Color(0xFF64748B),
+                        shape: const StadiumBorder(),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        "Close",
+                        style: GoogleFonts.roboto(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOptionRow(String text, String state) {
+    Color backgroundColor = Colors.white;
+    Color borderColor = const Color(0xFFE2E8F0);
+    Color textColor = const Color(0xFF1E293B);
+    FontWeight fontWeight = FontWeight.normal;
+    Widget? icon;
+
+    if (state == 'selected_correct') {
+      backgroundColor = const Color(0xFFE3F2FD);
+      borderColor = const Color(0xFF2196F3);
+      textColor = const Color(0xFF2196F3);
+      fontWeight = FontWeight.bold;
+      icon = const Icon(Icons.check_circle_outline, color: Color(0xFF2196F3), size: 20);
+    } else if (state == 'selected_incorrect') {
+      backgroundColor = const Color(0xFFFFEBEE);
+      borderColor = const Color(0xFFE53935);
+      textColor = const Color(0xFFE53935);
+      fontWeight = FontWeight.bold;
+      icon = const Icon(Icons.cancel_outlined, color: Color(0xFFE53935), size: 20);
+    } else if (state == 'correct_missed') {
+      backgroundColor = const Color(0xFFE0F2F1);
+      borderColor = const Color(0xFF00897B);
+      textColor = const Color(0xFF00897B);
+      fontWeight = FontWeight.bold;
+      icon = const Icon(Icons.check_circle_outline, color: Color(0xFF00897B), size: 20);
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                fontWeight: fontWeight,
+                color: textColor,
+              ),
+            ),
+          ),
+          if (icon != null) ...[
+            const SizedBox(width: 12),
+            icon,
+          ],
         ],
       ),
     );

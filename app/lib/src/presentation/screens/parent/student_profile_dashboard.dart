@@ -105,7 +105,7 @@ class _StickyHeader extends StatelessWidget {
               // Center: student name
               Expanded(
                 child: Text(
-                  name,
+                  "$name's Profile",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     color: Colors.white,
