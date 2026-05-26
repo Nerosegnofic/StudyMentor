@@ -279,48 +279,6 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 100,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: AreaChartPainter(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Week 1",
-                style: GoogleFonts.roboto(
-                  fontSize: 10,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-              Text(
-                "Week 2",
-                style: GoogleFonts.roboto(
-                  fontSize: 10,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-              Text(
-                "Week 3",
-                style: GoogleFonts.roboto(
-                  fontSize: 10,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-              Text(
-                "This Week",
-                style: GoogleFonts.roboto(
-                  fontSize: 10,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -962,43 +920,4 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
       ),
     );
   }
-}
-
-class AreaChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paintLine = Paint()
-      ..color = const Color(0xFF2196F3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    final paintFill = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF2196F3).withValues(alpha: 0.2),
-          const Color(0xFF2196F3).withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(0, size.height * 0.8);
-    path.quadraticBezierTo(size.width * 0.2, size.height * 0.9, size.width * 0.4, size.height * 0.5);
-    path.quadraticBezierTo(size.width * 0.6, size.height * 0.1, size.width * 0.8, size.height * 0.3);
-    path.quadraticBezierTo(size.width * 0.9, size.height * 0.4, size.width, size.height * 0.2);
-
-    canvas.drawPath(path, paintLine);
-
-    final fillPath = Path.from(path);
-    fillPath.lineTo(size.width, size.height);
-    fillPath.lineTo(0, size.height);
-    fillPath.close();
-
-    canvas.drawPath(fillPath, paintFill);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

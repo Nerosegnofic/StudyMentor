@@ -8,6 +8,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../domain/models/student_model.dart';
 import 'student_config_screen.dart';
 import 'subjects_skills_screen.dart';
+import 'reports_analysis_screen.dart';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFF2196F3);
@@ -390,9 +391,11 @@ class _NavigationList extends StatelessWidget {
           title: 'Reports & Analytics',
           subtitle: 'Weekly reports, accuracy trends, weak topics',
           onTap: () {
-            // TODO: Navigate to Reports & Analytics screen when available
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Coming soon!')),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReportsAnalysisScreen(student: student),
+              ),
             );
           },
         ),
