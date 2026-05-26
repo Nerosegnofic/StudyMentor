@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../screens/parent/parent_account_screen.dart';
+
 class BrandedHeader extends StatelessWidget {
   final String parentName;
+  final List<dynamic> notifications;
 
-  const BrandedHeader({super.key, required this.parentName});
+  const BrandedHeader({
+    super.key,
+    required this.parentName,
+    this.notifications = const [],
+  });
 
   void _showNotificationsSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const _NotificationsSheet(),
+      builder: (ctx) => _NotificationsSheet(notifications: notifications),
     );
   }
 
@@ -44,21 +51,30 @@ class BrandedHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Left: Circular profile avatar (50x50px)
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.25),
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              child: Center(
-                child: Text(
-                  parentName.isNotEmpty ? parentName[0].toUpperCase() : 'P',
-                  style: GoogleFonts.cairo(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ParentAccountScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.25),
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Center(
+                  child: Text(
+                    parentName.isNotEmpty ? parentName[0].toUpperCase() : 'P',
+                    style: GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                 ),
               ),
@@ -91,22 +107,23 @@ class BrandedHeader extends StatelessWidget {
                         size: 28,
                       ),
                     ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE53935),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF2196F3),
-                            width: 2.0,
+                    if (notifications.isNotEmpty)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE53935),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF2196F3),
+                              width: 2.0,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -121,7 +138,9 @@ class BrandedHeader extends StatelessWidget {
 // ── Notifications Bottom Sheet ──────────────────────────────────────────────
 
 class _NotificationsSheet extends StatelessWidget {
-  const _NotificationsSheet();
+  final List<dynamic> notifications;
+
+  const _NotificationsSheet({this.notifications = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -181,30 +200,66 @@ class _NotificationsSheet extends StatelessWidget {
             ),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
             // List
-            const _NotificationItem(
-              iconBg: Color(0xFFE3F2FD),
-              iconColor: Color(0xFF2196F3),
-              icon: Icons.check_circle_rounded,
-              title: 'Screen Time Unlocked',
-              subtitle: 'Ahmed earned 15 mins for passing Mathematics.',
-              time: '2m ago',
-            ),
-            const _NotificationItem(
-              iconBg: Color(0xFFFFEBEE),
-              iconColor: Color(0xFFE53935),
-              icon: Icons.warning_rounded,
-              title: 'Needs Work',
-              subtitle: 'Ahmed scored 45% on Decimals.',
-              time: '1h ago',
-            ),
-            const _NotificationItem(
-              iconBg: Color(0xFFF1F5F9),
-              iconColor: Color(0xFF64748B),
-              icon: Icons.system_update_rounded,
-              title: 'System Update',
-              subtitle: 'New science quizzes are available.',
-              time: 'Yesterday',
-            ),
+            if (notifications.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.notifications_outlined,
+                      size: 48,
+                      color: Color(0xFFCBD5E1),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No New Notifications',
+                      style: GoogleFonts.cairo(
+                        color: const Color(0xFF1E293B),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "You're all caught up! Activity alerts will appear here.",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.roboto(
+                        color: const Color(0xFF64748B),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else ...[
+              const _NotificationItem(
+                iconBg: Color(0xFFE3F2FD),
+                iconColor: Color(0xFF2196F3),
+                icon: Icons.check_circle_rounded,
+                title: 'Screen Time Unlocked',
+                subtitle: 'Ahmed earned 15 mins for passing Mathematics.',
+                time: '2m ago',
+              ),
+              const _NotificationItem(
+                iconBg: Color(0xFFFFEBEE),
+                iconColor: Color(0xFFE53935),
+                icon: Icons.warning_rounded,
+                title: 'Needs Work',
+                subtitle: 'Ahmed scored 45% on Decimals.',
+                time: '1h ago',
+              ),
+              const _NotificationItem(
+                iconBg: Color(0xFFF1F5F9),
+                iconColor: Color(0xFF64748B),
+                icon: Icons.system_update_rounded,
+                title: 'System Update',
+                subtitle: 'New science quizzes are available.',
+                time: 'Yesterday',
+              ),
+            ],
             const SizedBox(height: 16),
           ],
         ),
