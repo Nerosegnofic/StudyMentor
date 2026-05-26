@@ -148,6 +148,7 @@ class _StudentHomeState extends State<StudentHome> {
               });
               MascotOverlayService.instance.updateMonitoredApps(
                 state.rules,
+                studentUid: widget.uid,
                 config: state.config,
               );
               _loadIcons(state.rules);

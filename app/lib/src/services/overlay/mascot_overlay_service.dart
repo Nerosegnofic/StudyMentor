@@ -79,15 +79,18 @@ class MascotOverlayService {
 
   // ── Config ─────────────────────────────────────────────────────────────────
 
+  String? _studentUid;
   Set<String> _monitoredPackages = {};
   StudentConfigModel _config = const StudentConfigModel();
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
   Future<void> init({
+    String? studentUid,
     List<AppRuleModel> rules = const [],
     StudentConfigModel config = const StudentConfigModel(),
   }) async {
+    _studentUid = studentUid;
     _monitoredPackages = {for (var r in rules) r.packageName};
     _config = config;
 
@@ -96,6 +99,7 @@ class MascotOverlayService {
 
     await _accessibilityChannel.invokeMethod('setMonitoredApps', {
       'apps': _monitoredPackages.toList(),
+      'studentUid': _studentUid,
     });
 
     await _requestOverlayPermission();
@@ -138,14 +142,19 @@ class MascotOverlayService {
 
   Future<void> updateMonitoredApps(
     List<AppRuleModel> rules, {
+    String? studentUid,
     StudentConfigModel config = const StudentConfigModel(),
   }) async {
+    if (studentUid != null) {
+      _studentUid = studentUid;
+    }
     _monitoredPackages = {for (var r in rules) r.packageName};
     _config = config;
 
     try {
       await _accessibilityChannel.invokeMethod('setMonitoredApps', {
         'apps': _monitoredPackages.toList(),
+        'studentUid': _studentUid,
       });
     } on PlatformException catch (e) {
       debugPrint(
@@ -180,6 +189,7 @@ class MascotOverlayService {
   Future<void> _startNativeTimerService() async {
     try {
       await _timerServiceChannel.invokeMethod('startTimerService', {
+        'studentUid': _studentUid,
         'monitoredApps': _monitoredPackages.toList(),
         'usageLimitSecs': _usageLimitSecondsFromConfig(),
         'cooldownLimitSecs': _cooldownLimitSecondsFromConfig(),
@@ -202,6 +212,7 @@ class MascotOverlayService {
   Future<void> _updateNativeTimerConfig() async {
     try {
       await _timerServiceChannel.invokeMethod('updateTimerConfig', {
+        'studentUid': _studentUid,
         'monitoredApps': _monitoredPackages.toList(),
         'usageLimitSecs': _usageLimitSecondsFromConfig(),
         'cooldownLimitSecs': _cooldownLimitSecondsFromConfig(),

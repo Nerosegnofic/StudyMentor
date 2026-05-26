@@ -142,7 +142,21 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         if (!isBlocked) return
 
         val isLauncher  = LAUNCHER_PACKAGES.any { pkg.startsWith(it) }
-        val isMonitored = monitoredApps.contains(pkg)
+
+        // Fetch studentUid from UsageTimerService shared prefs
+        val timerPrefs = UsageTimerService.prefs(this)
+        val studentUid = timerPrefs.getString("student_uid", "") ?: ""
+
+        // Fetch paused packages from FlutterSharedPreferences
+        val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", android.content.Context.MODE_PRIVATE)
+        val pausedAppsValue = flutterPrefs.all["flutter.paused_packages_$studentUid"]
+        val isPaused = when (pausedAppsValue) {
+            is Set<*> -> pausedAppsValue.contains(pkg)
+            is String -> pausedAppsValue.contains("\"$pkg\"")
+            else -> false
+        }
+
+        val isMonitored = monitoredApps.contains(pkg) && !isPaused
 
         if (isLauncher || !isMonitored) {
             if (!justIntercepted) {

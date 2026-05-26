@@ -73,7 +73,7 @@ class _StudentScreenState extends State<StudentScreen>
     // when _syncStateFromNative() fires the quiz trigger inside init().
     _quizSub = MascotOverlayService.instance.listenForQuiz(_openQuizOverlay);
 
-    MascotOverlayService.instance.init().then((_) {
+    MascotOverlayService.instance.init(studentUid: widget.uid).then((_) {
       MascotOverlayService.instance.start();
       // Reveal the home screen now that init is done. If the quiz was already
       // triggered (blocked case), it was pushed on top of the spinner and the

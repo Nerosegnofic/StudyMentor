@@ -49,6 +49,7 @@ class UsageTimerService : Service() {
         const val EXTRA_USAGE_LIMIT_SECS    = "EXTRA_USAGE_LIMIT_SECS"
         const val EXTRA_COOLDOWN_LIMIT_SECS = "EXTRA_COOLDOWN_LIMIT_SECS"
         const val EXTRA_STUDENT_LOGGED_IN   = "EXTRA_STUDENT_LOGGED_IN"
+        const val EXTRA_STUDENT_UID         = "EXTRA_STUDENT_UID"
 
         /**
          * Boolean extra attached to the MainActivity launch Intent when the
@@ -97,6 +98,7 @@ class UsageTimerService : Service() {
         private const val KEY_MONITORED_APPS     = "monitored_apps"
         const val KEY_TIMER_NOTIF_ENABLED        = "timer_notification_enabled"
         const val KEY_COOLDOWN_NOTIF_ENABLED     = "cooldown_notification_enabled"
+        private const val KEY_STUDENT_UID        = "student_uid"
 
         // State snapshot broadcast (used by TimerServiceBridge to push to Flutter)
         const val BROADCAST_STATE_UPDATE    = "com.example.studymentor.TIMER_STATE_UPDATE"
@@ -133,6 +135,7 @@ class UsageTimerService : Service() {
     private var monitoredInForeground = false
     private var timerNotifEnabled    = true
     private var cooldownNotifEnabled = true
+    private var studentUid        = ""
 
     // One-shot threshold alert tracking (reset on unblock)
     private val firedUsageThresholds    = mutableSetOf<Int>()
@@ -178,6 +181,12 @@ class UsageTimerService : Service() {
                 }
                 studentLoggedIn = intent.getBooleanExtra(EXTRA_STUDENT_LOGGED_IN, true)
                 prefs.edit().putBoolean(KEY_STUDENT_LOGGED_IN, studentLoggedIn).apply()
+                intent.getStringExtra(EXTRA_STUDENT_UID)?.let {
+                    if (it.isNotEmpty()) {
+                        studentUid = it
+                        prefs.edit().putString(KEY_STUDENT_UID, it).apply()
+                    }
+                }
 
                 startForegroundWithNotification()
                 if (!isRunning) {
@@ -216,6 +225,15 @@ class UsageTimerService : Service() {
         val foreground = getForegroundPackage()
         var thresholdAlert = -1
 
+        val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val pausedAppsValue = flutterPrefs.all["flutter.paused_packages_$studentUid"]
+        val isPaused = when (pausedAppsValue) {
+            is Set<*> -> pausedAppsValue.contains(foreground)
+            is String -> pausedAppsValue.contains("\"$foreground\"")
+            else -> false
+        }
+        val isForegroundMonitored = foreground != null && monitoredApps.contains(foreground) && !isPaused
+
         if (isBlocked) {
             // ── Cooldown countdown ─────────────────────────────────────────────
             if (cooldownRemSecs > 0) {
@@ -230,16 +248,16 @@ class UsageTimerService : Service() {
                 return
             }
 
-            if (foreground != null && monitoredApps.contains(foreground)) {
+            if (isForegroundMonitored) {
                 StudyMentorAccessibilityService.instance?.performGlobalAction(
                     android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME,
                 )
-                OverlayPlugin.instance?.notifyMonitoredAppIntercepted(foreground)
+                OverlayPlugin.instance?.notifyMonitoredAppIntercepted(foreground!!)
             }
 
         } else {
             // ── Usage accumulation ─────────────────────────────────────────────
-            if (foreground != null && monitoredApps.contains(foreground)) {
+            if (isForegroundMonitored) {
                 totalUsageSecs++
                 val remaining = (usageLimitSecs - totalUsageSecs).coerceAtLeast(0)
                 thresholdAlert = checkUsageThreshold(remaining)
@@ -254,8 +272,7 @@ class UsageTimerService : Service() {
             }
         }
 
-        monitoredInForeground = !isBlocked &&
-            foreground != null && monitoredApps.contains(foreground)
+        monitoredInForeground = !isBlocked && isForegroundMonitored
 
         persistState()
         broadcastState(thresholdAlert, monitoredInForeground = monitoredInForeground)
@@ -594,6 +611,7 @@ class UsageTimerService : Service() {
                                    ?.toMutableSet() ?: mutableSetOf()
         timerNotifEnabled    = prefs.getBoolean(KEY_TIMER_NOTIF_ENABLED, true)
         cooldownNotifEnabled = prefs.getBoolean(KEY_COOLDOWN_NOTIF_ENABLED, true)
+        studentUid           = prefs.getString(KEY_STUDENT_UID, "") ?: ""
 
         if (isBlocked) {
             StudyMentorAccessibilityService.isBlocked = true
@@ -608,6 +626,7 @@ class UsageTimerService : Service() {
             .putInt(KEY_USAGE_LIMIT, usageLimitSecs)
             .putInt(KEY_COOLDOWN_LIMIT, cooldownLimitSecs)
             .putBoolean(KEY_STUDENT_LOGGED_IN, studentLoggedIn)
+            .putString(KEY_STUDENT_UID, studentUid)
             .apply()
         saveMonitoredApps()
     }

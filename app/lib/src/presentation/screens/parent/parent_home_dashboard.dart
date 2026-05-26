@@ -95,15 +95,23 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
                     ),
                   ),
 
+                  // Component 4 — AI Summary Carousel (moved to top)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 24, bottom: 24),
+                      child: AiSummaryCarousel(),
+                    ),
+                  ),
+
                   // Component 2 — "My Children" subheader
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.only(
-                        top: 24,
+                        top: 0,
                         left: 20,
                         bottom: 12,
                       ),
-                      child: Text(
+                        child: Text(
                         'My Children',
                         style: GoogleFonts.cairo(
                           color: const Color(0xFF1E293B),
@@ -130,8 +138,7 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
                     ),
                   ),
 
-                  // Component 4 — AI Summary Carousel
-                  const SliverToBoxAdapter(child: AiSummaryCarousel()),
+
 
                   // Bottom spacer so FAB doesn't overlap last card
                   const SliverToBoxAdapter(child: SizedBox(height: 100)),
