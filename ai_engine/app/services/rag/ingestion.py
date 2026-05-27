@@ -73,17 +73,42 @@ def process_and_ingest_document(
             #     chunks_dump = [{"page_content": d.page_content, "metadata": d.metadata} for d in langchain_docs]
             #     json.dump(chunks_dump, f, indent=4, ensure_ascii=False)
 
-            # Step 5: Store Vector Embeddings
-            save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
-            
-            # Step 6: Refine via Gemini LLM — overwrite skills with better granularity
+
+            # Step 5: Refine mastery points via Gemini LLM (needed before tagging and saving)
+            refined_mastery_data = None
             if raw_mastery_data:
                 refined_mastery_data = refine_mastery_points(raw_mastery_data, cleaned_text)
-                
-                # DEBUG DUMP 4: Refined Skills
-                # with open(f"{debug_prefix}_refined_skills.json", "w", encoding="utf-8") as f:
-                #     json.dump(refined_mastery_data, f, indent=4, ensure_ascii=False)
-                
+
+            # Step 6: Tag chunks with skill_names from mastery data (for precision retrieval)
+            # Build a lesson → skill_names mapping from refined (or raw) mastery data
+            active_mastery_data = refined_mastery_data if refined_mastery_data else raw_mastery_data
+            if active_mastery_data:
+                lesson_to_skills = {}
+                for entry in active_mastery_data:
+                    lesson = entry.get("lesson_name", "") or entry.get("lesson", "")
+                    skills = entry.get("skills", [])
+                    if lesson and skills:
+                        skill_names = [s["name"] if isinstance(s, dict) else str(s) for s in skills]
+                        lesson_to_skills[lesson] = skill_names
+
+                # Tag each chunk with its lesson's skills
+                tagged_count = 0
+                for chunk in langchain_docs:
+                    parent_lesson = chunk.metadata.get("parent_lesson", "")
+                    if parent_lesson:
+                        for lesson_key, skill_list in lesson_to_skills.items():
+                            if lesson_key in parent_lesson or parent_lesson in lesson_key:
+                                chunk.metadata["skill_names"] = skill_list
+                                tagged_count += 1
+                                break
+                if tagged_count > 0:
+                    print(f"[{document_id}] Tagged {tagged_count}/{len(langchain_docs)} chunks with skill_names.", flush=True)
+
+            # Step 7: Store Vector Embeddings
+            save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
+            
+            # Step 8: Save skills to DB
+            if raw_mastery_data:
                 # Only save if refinement produced different data (not a fallback)
                 if refined_mastery_data:
                     save_skills_from_mastery_data(db, refined_mastery_data, subject_id=subject_id)

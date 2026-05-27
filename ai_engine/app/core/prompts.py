@@ -84,6 +84,6 @@ Guidelines:
 8. Clearly state the correct answer (which must exactly match one of the options).
 9. Provide a brief, supportive explanation for why the answer is correct.
 10. IMPORTANT: Map each question to the correct `skill_id` provided in the Topic Instructions. If no Skill ID was provided for a topic, leave it as null.
-"""),
+{variance_block}"""),
     ("human", "Curriculum Context:\n{context}\n\nPlease generate the adaptive quiz now.")
 ])

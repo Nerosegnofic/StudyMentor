@@ -33,11 +33,12 @@ class GeminiStrategy(QuizGeneratorStrategy):
         total_count: int,
         context: str,
         student_grade: str = "5th",
+        variance_block: str = "",
     ) -> GenerateQuizResponse:
         llm = ChatGoogleGenerativeAI(
             google_api_key=settings.GEMINI_API_KEY,
             model=settings.GEMINI_MODEL,
-            temperature=0.2,
+            temperature=0.7,
         )
         structured_llm = llm.with_structured_output(GenerateQuizResponse)
         chain = QUIZ_GENERATION_PROMPT | structured_llm
@@ -46,6 +47,7 @@ class GeminiStrategy(QuizGeneratorStrategy):
             "total_count": total_count,
             "context": context,
             "student_grade": student_grade,
+            "variance_block": variance_block,
         }
 
         last_exc: Exception = None

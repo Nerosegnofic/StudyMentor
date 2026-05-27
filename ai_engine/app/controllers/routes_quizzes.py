@@ -1,4 +1,5 @@
 import random
+import string
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
@@ -12,7 +13,7 @@ from app.models.schemas import (
 from app.models.domain.quiz import QuizSession as QuizSessionModel
 from app.core.rate_limit import limiter
 from app.core.config import settings
-from app.services.rag.retrieval import retrieve_context_for_topics
+from app.services.rag.retrieval import retrieve_context_for_quiz
 from app.services.rag.generation.context import GeneratorContext
 from app.services.rag.generation.gemini_strategy import GeminiStrategy
 from app.services.quiz.quiz_bank_service import build_quiz_from_bank
@@ -20,11 +21,9 @@ from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.core.exceptions import LLMGenerationError, QuizBankInsufficientError, InsufficientContextError
 from app.repositories import (
-    get_all_student_skill_states,
     get_student_skill_state,
     get_priority_subject,
     get_subject_by_id,
-    get_skills_by_subject_id,
     get_skills_by_names,
     create_quiz_session,
     upsert_student_subject_profile_last_quizzed,
@@ -56,6 +55,73 @@ bkt_engine = BKTEngine()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _generate_variance_block() -> str:
+    """
+    Generate a unique variance seed and question format requirements
+    for each quiz generation call. This forces the LLM to produce diverse
+    questions instead of deterministic repeats for identical inputs.
+    """
+    seed = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    formats = random.sample([
+        "word problem with a real-world Egyptian scenario",
+        "fill-in-the-blank calculation",
+        "error detection (find the mistake in this solution)",
+        "comparison between two values",
+        "multi-step reasoning chain",
+        "true/false with justification converted to MCQ",
+    ], k=3)
+    return (
+        f"\n\nVARIANCE SEED: {seed}\n"
+        "For this specific generation, you MUST use at least these question formats:\n"
+        + "\n".join(f"  - {f}" for f in formats)
+        + "\n\nDo NOT reuse numbers from any examples in the context. "
+        "Generate fresh, novel numerical values for every question. "
+        "Use Egyptian names (أحمد, فاطمة, يوسف, مريم, نور, عمر) and Egyptian contexts "
+        "(المدرسة, السوق, الحديقة, المكتبة, الملعب) in word problems."
+    )
+
+
+def _get_recent_question_fingerprints(
+    db: Session,
+    student_uid: str,
+    subject_id: int,
+    limit: int = 50,
+) -> set:
+    """
+    Get fingerprints (first 80 chars) of recently generated questions
+    for a specific student + subject, to prevent the LLM from repeating
+    questions across quiz sessions.
+
+    Scoped to ``subject_id`` so Math dedup fingerprints don't bleed into
+    Arabic or Science quizzes (and vice versa).
+    """
+    recent_session_ids = (
+        db.query(QuizSessionModel.session_id)
+        .filter(
+            QuizSessionModel.student_uid == student_uid,
+            QuizSessionModel.subject_id == subject_id,
+        )
+        .order_by(QuizSessionModel.start_time.desc())
+        .limit(10)
+        .all()
+    )
+    if not recent_session_ids:
+        return set()
+
+    session_ids = [s.session_id for s in recent_session_ids]
+    recent_questions = (
+        db.query(Question.text_content)
+        .filter(Question.session_id.in_(session_ids))
+        .limit(limit)
+        .all()
+    )
+    return {
+        q.text_content[:80].strip()
+        for q in recent_questions
+        if q.text_content
+    }
 
 def _shuffle_question_options(question_schema: QuestionSchema) -> QuestionSchema:
     """
@@ -186,30 +252,26 @@ async def generate_quiz(
                 )
 
         # ------------------------------------------------------------------ #
-        # Step 1: Get the student's BKT mastery profile
+        # Step 1+2: Build quiz payload via Ordered Frontier + SRS
         # ------------------------------------------------------------------ #
-        student_profile = get_all_student_skill_states(db, student_uid)
-
-        if not student_profile:
-            all_skills = get_skills_by_subject_id(db, target_subject_id)
-            student_profile = {skill.name: 0.01 for skill in all_skills}
-
-        if not student_profile:
-            student_profile = {"General Math": 0.01}
-
-        # ------------------------------------------------------------------ #
-        # Step 2: Build quiz payload via BKT allocator
-        # ------------------------------------------------------------------ #
-        payload = build_quiz_payload(student_profile, request_body.total_questions)
+        payload = build_quiz_payload(
+            db, student_uid, target_subject_id,
+            request_body.total_questions, request_body.student_grade
+        )
         if not payload:
-            raise HTTPException(status_code=400, detail="Could not allocate questions based on profile.")
+            raise HTTPException(
+                status_code=400,
+                detail="Could not allocate questions. No skills found for this subject."
+            )
 
         instruction_lines = []
         all_topics = []
         for cfg in payload:
             label = DIFFICULTY_LABELS.get(cfg["difficulty"], "Medium")
+            zone_tag = cfg.get('zone', 'frontier').upper()
             instruction_lines.append(
-                f"- Topic: {cfg['skill']} | Difficulty: {cfg['difficulty']} ({label}) | Questions: {cfg['count']}"
+                f"- Topic: {cfg['skill']} | Difficulty: {cfg['difficulty']} ({label}) "
+                f"| Questions: {cfg['count']} | Zone: {zone_tag}"
             )
             all_topics.append(cfg["skill"])
 
@@ -232,20 +294,68 @@ async def generate_quiz(
         db_questions = []
 
         try:
-            # Step 4a: PGVector retrieval (subject-scoped, tenant-isolated)
-            context = retrieve_context_for_topics(
-                all_topics,
-                k=10,
+            # Step 4a: Zone-aware PGVector retrieval (MMR + zone budgets)
+            context = retrieve_context_for_quiz(
+                payload,
+                k=15,
                 firebase_uid=student_uid,
                 subject_id=target_subject_id,
             )
 
-            # Step 4b: LLM structured generation (with student grade context)
+            # Step 4a.5: Inject variance seed and question dedup avoidance
+            variance_block = _generate_variance_block()
+
+            recent_fps = _get_recent_question_fingerprints(db, student_uid, target_subject_id)
+            if recent_fps:
+                avoidance_instructions = (
+                    "\n\n⚠️ PREVIOUSLY ASKED QUESTIONS (DO NOT REPEAT):\n"
+                    + "\n".join(f'  - "{fp}..."' for fp in list(recent_fps)[:15])
+                    + "\n\nGenerate COMPLETELY DIFFERENT questions with different numbers, names, and scenarios."
+                )
+                context = context + avoidance_instructions
+
+            # Debug output injection - Formatted readable report
+            try:
+                with open("debug_output.txt", "w", encoding="utf-8") as f:
+                    f.write("==================================================\n")
+                    f.write("QUIZ GENERATION DEBUG REPORT\n")
+                    f.write("==================================================\n\n")
+
+                    f.write("1. SKILLS PICKED FOR QUIZ\n")
+                    f.write("-" * 50 + "\n")
+                    for idx, skill in enumerate(all_topics, 1):
+                        f.write(f"  {idx}. {skill}\n")
+                    f.write("\n")
+
+                    f.write("2. PAYLOAD DETAILS & MASTERY LEVELS\n")
+                    f.write("-" * 50 + "\n")
+                    for cfg in payload:
+                        skill_name = cfg['skill']
+                        mastery = cfg.get('mastery', 'N/A')
+                        zone = cfg.get('zone', 'unknown')
+                        f.write(f"  • Skill: {skill_name}\n")
+                        f.write(f"    - Zone: {zone}\n")
+                        f.write(f"    - Requested Difficulty: {cfg['difficulty']}\n")
+                        f.write(f"    - Question Count: {cfg['count']}\n")
+                        f.write(f"    - Current Mastery Level: {mastery}\n\n")
+
+                    f.write("3. FETCHED CHUNKS (RAG Context)\n")
+                    f.write("-" * 50 + "\n")
+                    if not context:
+                        f.write("  [No chunks fetched]\n")
+                    else:
+                        f.write(f"{context}\n\n")
+
+            except Exception as e:
+                print(f"[Debug] Failed to write debug_output.txt: {e}")
+
+            # Step 4b: LLM structured generation (with variance seed)
             response = generator_context.execute_generation(
                 topic_instructions=topic_instructions,
                 total_count=request_body.total_questions,
                 context=context,
                 student_grade=student_grade_label,
+                variance_block=variance_block,
             )
 
             # Step 4c: Difficulty mismatch guardrail
@@ -269,6 +379,7 @@ async def generate_quiz(
                     total_count=request_body.total_questions,
                     context=context,
                     student_grade=student_grade_label,
+                    variance_block=variance_block,
                 )
                 accepted_questions, dropped_count = _filter_mismatched_questions(
                     response.questions, difficulty_map, tolerance=1
