@@ -4,22 +4,19 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/document/document_upload_bloc.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../domain/models/student_model.dart';
-import '../student/student_documents.dart';
+import '../../../domain/models/student_model.dart';
+import '../../../domain/models/subject_summary_model.dart';
 import 'parent_subject_detail_screen.dart';
+import '../../../bloc/subject/subject_bloc.dart';
+import '../../../bloc/subject/subject_event.dart';
+import '../../../bloc/subject/subject_state.dart';
+import '../../../bloc/subject_detail/subject_detail_bloc.dart';
+import '../../../bloc/subject_detail/subject_detail_event.dart';
+import '../../../domain/repositories/auth_repository.dart';
+import '../student/student_documents.dart';
 
-class SubjectData {
-  final String title;
-  final String subtitle;
-  final int progress;
-  final MaterialColor color;
+// SubjectData removed, using SubjectSummaryModel directly
 
-  SubjectData({
-    required this.title,
-    required this.subtitle,
-    required this.progress,
-    required this.color,
-  });
-}
 
 class SubjectsSkillsScreen extends StatefulWidget {
   final StudentModel student;
@@ -33,31 +30,10 @@ class SubjectsSkillsScreen extends StatefulWidget {
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
   static const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
 
-  final List<SubjectData> _subjects = [];
-
   @override
   void initState() {
     super.initState();
-    _subjects.addAll([
-      SubjectData(
-        title: "Mathematics",
-        subtitle: "12 skills tracked",
-        progress: 85,
-        color: Colors.purple,
-      ),
-      SubjectData(
-        title: "Science",
-        subtitle: "8 skills tracked",
-        progress: 60,
-        color: Colors.teal,
-      ),
-      SubjectData(
-        title: "English",
-        subtitle: "15 skills tracked",
-        progress: 92,
-        color: Colors.orange,
-      ),
-    ]);
+    context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
   }
 
   void _openDocumentUpload(BuildContext context) {
@@ -86,19 +62,40 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: Column(
-        children: [
-          _buildHeader(context),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _subjects.length,
-              itemBuilder: (context, index) {
-                return _buildSubjectCard(context, _subjects[index]);
-              },
-            ),
-          ),
-        ],
+      body: BlocListener<SubjectBloc, SubjectState>(
+        listener: (context, state) {
+          if (state is SubjectRemoved || state is SubjectAdded) {
+            context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
+          }
+        },
+        child: BlocBuilder<SubjectBloc, SubjectState>(
+          buildWhen: (prev, curr) =>
+              curr is SubjectsLoading || curr is SubjectsLoaded || curr is SubjectsError,
+          builder: (context, state) {
+            if (state is SubjectsLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state is SubjectsError) {
+              return Center(child: Text(state.message));
+            }
+            final subjects = state is SubjectsLoaded ? state.subjects : <SubjectSummaryModel>[];
+
+            return Column(
+              children: [
+                _buildHeader(context),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: subjects.length,
+                    itemBuilder: (context, index) {
+                      return _buildSubjectCard(context, subjects[index]);
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -144,18 +141,29 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     );
   }
 
-  Widget _buildSubjectCard(BuildContext context, SubjectData subject) {
-    final title = subject.title;
-    final subtitle = subject.subtitle;
-    final progress = subject.progress;
-    final color = subject.color;
+  Widget _buildSubjectCard(BuildContext context, SubjectSummaryModel subject) {
+    final title = subject.subjectKey[0].toUpperCase() + subject.subjectKey.substring(1);
+    final subtitle = "${subject.skillsCount} skills tracked";
+    final progress = subject.masteryPercent;
+    
+    Color color;
+    try {
+      color = Color(int.parse(subject.colorHex.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      color = Colors.blue;
+    }
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ParentSubjectDetailScreen(subjectName: title, color: color),
+            builder: (ctx) => ParentSubjectDetailScreen(
+                studentUid: widget.student.uid,
+                subjectKey: subject.subjectKey,
+                subjectName: title, 
+                color: color,
+              ),
           ),
         );
       },
@@ -181,10 +189,10 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.shade50,
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.book, color: color.shade700),
+              child: Icon(Icons.book, color: color),
             ),
             const SizedBox(width: 16),
             // Right-hand content area: flex-column taking up remaining space (Expanded)
@@ -307,7 +315,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     );
   }
 
-  Future<void> _showRemoveConfirmationDialog(BuildContext context, SubjectData subject) async {
+  Future<void> _showRemoveConfirmationDialog(BuildContext context, SubjectSummaryModel subject) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -322,7 +330,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "Remove ${subject.title}?",
+                  "Remove ${subject.subjectKey}?",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     color: const Color(0xFF1E293B),
@@ -395,9 +403,9 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     );
 
     if (confirmed == true && mounted) {
-      setState(() {
-        _subjects.remove(subject);
-      });
+      context.read<SubjectBloc>().add(
+        RemoveSubjectRequested(studentUid: widget.student.uid, subjectKey: subject.subjectKey)
+      );
     }
   }
 

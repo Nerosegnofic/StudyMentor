@@ -1,42 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/models/student_model.dart';
+import '../../../domain/repositories/auth_repository.dart';
+import '../../../bloc/snapshot/snapshot_bloc.dart';
+import '../../../bloc/snapshot/snapshot_event.dart';
+import '../../../bloc/snapshot/snapshot_state.dart';
 
 /// Dummy stats for the card — gateway logic: quizzes, study time, accuracy.
 /// Real backend fields can replace these later.
-class _ChildStats {
-  final int xp;
-  final int streakDays;
-  final int coins;
-  final int quizzesPassed;       // number of quizzes passed today
-  final int studyTimeMinutes;    // minutes studied today
-  final int dailyAccuracyPercent; // 0-100
-
-  const _ChildStats({
-    required this.xp,
-    required this.streakDays,
-    required this.coins,
-    required this.quizzesPassed,
-    required this.studyTimeMinutes,
-    required this.dailyAccuracyPercent,
-  });
-}
-
-/// Resolves stats for a given student using real model fields where available,
-/// falling back to spec-defined dummy data keyed by first name.
-_ChildStats _resolveStats(StudentModel student) {
-  // Use real backend fields if available, otherwise provide generic dummy data
-  // so the dashboard always looks populated and engaging.
-  return _ChildStats(
-    xp: student.totalXp ?? 245,
-    streakDays: 7,
-    coins: student.totalCoins ?? 120,
-    quizzesPassed: 14,
-    studyTimeMinutes: 25,
-    dailyAccuracyPercent: 88,
-  );
-}
-
 class ChildCard extends StatelessWidget {
   final StudentModel student;
   final VoidCallback? onTap;
@@ -45,10 +17,28 @@ class ChildCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stats = _resolveStats(student);
     final initial = student.fullName.isNotEmpty
         ? student.fullName[0].toUpperCase()
         : '?';
+
+    return BlocProvider<SnapshotBloc>(
+      create: (context) => SnapshotBloc(
+        repository: context.read<AuthRepository>(),
+      )..add(LoadDailySnapshotRequested(studentUid: student.uid)),
+      child: BlocBuilder<SnapshotBloc, SnapshotState>(
+        builder: (context, state) {
+          int xp = student.totalXp ?? 245;
+          int streakDays = 7;
+          int coins = student.totalCoins ?? 120;
+          int quizzesPassed = 0;
+          int studyTimeMinutes = 0;
+          int dailyAccuracyPercent = 0;
+
+          if (state is SnapshotLoaded) {
+            quizzesPassed = state.snapshot.quizzesCompletedToday;
+            studyTimeMinutes = state.snapshot.totalStudyTimeToday.inMinutes;
+            dailyAccuracyPercent = state.snapshot.averageAccuracyToday;
+          }
 
     return GestureDetector(
       onTap: onTap,
@@ -108,17 +98,17 @@ class ChildCard extends StatelessWidget {
                 children: [
                   _StatCol(
                     icon: Icons.star_rounded,
-                    value: '${stats.xp} XP',
+                    value: '$xp XP',
                     label: 'Experience',
                   ),
                   _StatCol(
                     icon: Icons.local_fire_department_rounded,
-                    value: '${stats.streakDays} Days',
+                    value: '$streakDays Days',
                     label: 'Streak',
                   ),
                   _StatCol(
                     icon: Icons.monetization_on_rounded,
-                    value: '${stats.coins}',
+                    value: '$coins',
                     label: 'Coins',
                   ),
                 ],
@@ -148,7 +138,7 @@ class ChildCard extends StatelessWidget {
                       children: [
                         const TextSpan(text: 'Quizzes Passed: '),
                         TextSpan(
-                          text: '${stats.quizzesPassed}',
+                          text: '$quizzesPassed',
                           style: const TextStyle(
                             color: Color(0xFF1E293B),
                             fontWeight: FontWeight.bold,
@@ -167,7 +157,7 @@ class ChildCard extends StatelessWidget {
                       children: [
                         const TextSpan(text: 'Study Time: '),
                         TextSpan(
-                          text: '${stats.studyTimeMinutes} mins',
+                          text: '$studyTimeMinutes mins',
                           style: const TextStyle(
                             color: Color(0xFF1E293B),
                             fontWeight: FontWeight.bold,
@@ -182,9 +172,12 @@ class ChildCard extends StatelessWidget {
             const SizedBox(height: 16),
 
             // ── Row 2: Daily Accuracy Bar ──────────────────────────────
-            _AccuracyBar(accuracyPercent: stats.dailyAccuracyPercent),
+            _AccuracyBar(accuracyPercent: dailyAccuracyPercent),
           ],
         ),
+      ),
+    );
+        },
       ),
     );
   }

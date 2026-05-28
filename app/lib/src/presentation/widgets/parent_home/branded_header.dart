@@ -1,30 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../bloc/notifications/notifications_bloc.dart';
+import '../../../bloc/notifications/notifications_event.dart';
+import '../../../bloc/notifications/notifications_state.dart';
+import '../../../domain/models/notification_model.dart';
 import '../../screens/parent/parent_account_screen.dart';
 
-class BrandedHeader extends StatelessWidget {
+class BrandedHeader extends StatefulWidget {
   final String parentName;
-  final List<dynamic> notifications;
+  final String parentUid;
 
   const BrandedHeader({
     super.key,
     required this.parentName,
-    this.notifications = const [],
+    required this.parentUid,
   });
 
-  void _showNotificationsSheet(BuildContext context) {
+  @override
+  State<BrandedHeader> createState() => _BrandedHeaderState();
+}
+
+class _BrandedHeaderState extends State<BrandedHeader> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<NotificationsBloc>().add(LoadNotificationsRequested(widget.parentUid));
+  }
+
+  void _showNotificationsSheet(BuildContext context, List<NotificationModel> notifications) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _NotificationsSheet(notifications: notifications),
+      builder: (ctx) => _NotificationsSheet(
+        notifications: notifications,
+        parentUid: widget.parentUid,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return BlocBuilder<NotificationsBloc, NotificationsState>(
+      builder: (context, state) {
+        List<NotificationModel> notifications = [];
+        if (state is NotificationsLoaded) {
+          notifications = state.notifications;
+        }
+        
+        final hasUnread = notifications.any((n) => !n.isRead);
+
+        return Container(
       width: double.infinity,
       // Flat rectangle — no border-radius. Shadow cast downward so scrolled
       // content visibly slides under the sticky header.
@@ -69,7 +97,7 @@ class BrandedHeader extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    parentName.isNotEmpty ? parentName[0].toUpperCase() : 'P',
+                    widget.parentName.isNotEmpty ? widget.parentName[0].toUpperCase() : 'P',
                     style: GoogleFonts.cairo(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -93,7 +121,7 @@ class BrandedHeader extends StatelessWidget {
 
             // Right: Bell icon with red notification dot
             GestureDetector(
-              onTap: () => _showNotificationsSheet(context),
+              onTap: () => _showNotificationsSheet(context, notifications),
               child: SizedBox(
                 width: 50,
                 height: 50,
@@ -107,7 +135,7 @@ class BrandedHeader extends StatelessWidget {
                         size: 28,
                       ),
                     ),
-                    if (notifications.isNotEmpty)
+                    if (hasUnread)
                       Positioned(
                         right: 8,
                         top: 8,
@@ -132,15 +160,21 @@ class BrandedHeader extends StatelessWidget {
         ),
       ),
     );
+      },
+    );
   }
 }
 
 // ── Notifications Bottom Sheet ──────────────────────────────────────────────
 
 class _NotificationsSheet extends StatelessWidget {
-  final List<dynamic> notifications;
+  final List<NotificationModel> notifications;
+  final String parentUid;
 
-  const _NotificationsSheet({this.notifications = const []});
+  const _NotificationsSheet({
+    required this.notifications,
+    required this.parentUid,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +214,9 @@ class _NotificationsSheet extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      context.read<NotificationsBloc>().add(MarkAllNotificationsReadRequested(parentUid));
+                    },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: Size.zero,
@@ -235,30 +271,55 @@ class _NotificationsSheet extends StatelessWidget {
                 ),
               )
             else ...[
-              const _NotificationItem(
-                iconBg: Color(0xFFE3F2FD),
-                iconColor: Color(0xFF2196F3),
-                icon: Icons.check_circle_rounded,
-                title: 'Screen Time Unlocked',
-                subtitle: 'Ahmed earned 15 mins for passing Mathematics.',
-                time: '2m ago',
-              ),
-              const _NotificationItem(
-                iconBg: Color(0xFFFFEBEE),
-                iconColor: Color(0xFFE53935),
-                icon: Icons.warning_rounded,
-                title: 'Needs Work',
-                subtitle: 'Ahmed scored 45% on Decimals.',
-                time: '1h ago',
-              ),
-              const _NotificationItem(
-                iconBg: Color(0xFFF1F5F9),
-                iconColor: Color(0xFF64748B),
-                icon: Icons.system_update_rounded,
-                title: 'System Update',
-                subtitle: 'New science quizzes are available.',
-                time: 'Yesterday',
-              ),
+              ...notifications.map((notif) {
+                IconData icon;
+                Color iconColor;
+                Color iconBg;
+
+                switch (notif.type) {
+                  case NotificationType.screenTimeUnlocked:
+                    icon = Icons.check_circle_rounded;
+                    iconColor = const Color(0xFF2196F3);
+                    iconBg = const Color(0xFFE3F2FD);
+                    break;
+                  case NotificationType.needsWork:
+                    icon = Icons.warning_rounded;
+                    iconColor = const Color(0xFFE53935);
+                    iconBg = const Color(0xFFFFEBEE);
+                    break;
+                  case NotificationType.systemUpdate:
+                    icon = Icons.system_update_rounded;
+                    iconColor = const Color(0xFF64748B);
+                    iconBg = const Color(0xFFF1F5F9);
+                    break;
+                  case NotificationType.streakAchieved:
+                    icon = Icons.local_fire_department_rounded;
+                    iconColor = const Color(0xFFFF9800);
+                    iconBg = const Color(0xFFFFF3E0);
+                    break;
+                }
+
+                // Simple time formatter
+                final diff = DateTime.now().difference(notif.createdAt);
+                String timeStr;
+                if (diff.inMinutes < 60) {
+                  timeStr = '${diff.inMinutes}m ago';
+                } else if (diff.inHours < 24) {
+                  timeStr = '${diff.inHours}h ago';
+                } else {
+                  timeStr = '${diff.inDays}d ago';
+                }
+
+                return _NotificationItem(
+                  iconBg: iconBg,
+                  iconColor: iconColor,
+                  icon: icon,
+                  title: notif.title,
+                  subtitle: notif.subtitle,
+                  time: timeStr,
+                  isRead: notif.isRead,
+                );
+              }),
             ],
             const SizedBox(height: 16),
           ],
@@ -275,6 +336,7 @@ class _NotificationItem extends StatelessWidget {
   final String title;
   final String subtitle;
   final String time;
+  final bool isRead;
 
   const _NotificationItem({
     required this.iconBg,
@@ -283,14 +345,16 @@ class _NotificationItem extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.time,
+    required this.isRead,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+      decoration: BoxDecoration(
+        color: isRead ? Colors.white : const Color(0xFFF8FAFC),
+        border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,

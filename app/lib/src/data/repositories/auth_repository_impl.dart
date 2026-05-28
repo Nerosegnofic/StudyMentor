@@ -4,6 +4,13 @@ import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
 import '../../domain/models/app_config_model.dart';
 import '../../domain/models/installed_app_model.dart';
+import '../../domain/models/subject_summary_model.dart';
+import '../../domain/models/quiz_attempt_model.dart';
+import '../../domain/models/question_detail_model.dart';
+import '../../domain/models/skill_progress_model.dart';
+import '../../domain/models/ai_summary_model.dart';
+import '../../domain/models/notification_model.dart';
+import '../../domain/models/report_models.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../providers/firebase_auth_provider.dart';
 import '../providers/dataconnect_provider.dart';
@@ -208,7 +215,9 @@ class AuthRepositoryImpl implements AuthRepository {
   // ── Profile update ────────────────────────────────────────────────────────
 
   @override
+  @override
   Future<UserModel> updateProfile({
+    required String parentUid,
     String? newFullName,
     String? newEmail,
     String? currentPassword,
@@ -309,6 +318,7 @@ class AuthRepositoryImpl implements AuthRepository {
         studentUid: studentUid,
         packageName: rule.packageName,
         appLabel: rule.appLabel,
+        isPaused: rule.isPaused,
       );
     }
   }
@@ -344,13 +354,14 @@ class AuthRepositoryImpl implements AuthRepository {
   // ── Student Profile Update (parent-side: name + email + password) ─────────
 
   @override
-  Future<String?> updateStudentProfile({
+  Future<StudentModel> updateStudentProfile({
     required String studentUid,
-    required String studentEmail,
+    String? studentEmail,
     String? newFullName,
     String? newEmail,
     String? currentPassword,
     String? newPassword,
+    String? newGradeLevel,
   }) async {
     if (newFullName != null && newFullName.isNotEmpty) {
       await dataConnect.updateStudentFullName(
@@ -363,8 +374,8 @@ class AuthRepositoryImpl implements AuthRepository {
         newEmail != null && newEmail.isNotEmpty && newEmail != studentEmail;
     final isChangingPassword = newPassword != null && newPassword.isNotEmpty;
 
-    if ((isChangingEmail || isChangingPassword) && currentPassword != null) {
-      return await firebase.updateStudentCredentials(
+    if ((isChangingEmail || isChangingPassword) && currentPassword != null && studentEmail != null) {
+      await firebase.updateStudentCredentials(
         studentEmail: studentEmail,
         currentPassword: currentPassword,
         newEmail: isChangingEmail ? newEmail : null,
@@ -372,13 +383,22 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    return null;
+    return StudentModel(
+      uid: studentUid,
+      fullName: newFullName ?? 'Updated',
+      email: studentEmail ?? 'student@example.com',
+      username: 'student123',
+      gradeLevel: int.tryParse(newGradeLevel ?? '8') ?? 8,
+      totalXp: 0,
+      totalCoins: 0,
+      isEmailVerified: true,
+    );
   }
 
   // ── Parent Account Deletion ───────────────────────────────────────────────
 
   @override
-  Future<void> deleteParentAccount({required String currentPassword}) async {
+  Future<void> deleteParentAccount(String currentPassword) async {
     if (firebase.currentUser == null) throw Exception('No authenticated user.');
 
     await firebase.reauthenticate(currentPassword);
@@ -391,5 +411,91 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (_) {}
 
     await firebase.deleteCurrentUser();
+  }
+
+  // ── Subjects & Skills ───────────────────────────────────────────────────
+
+  @override
+  Future<List<SubjectSummaryModel>> getSubjectsByStudent(String studentUid) {
+    return dataConnect.getSubjectsByStudent(studentUid);
+  }
+
+  @override
+  Future<List<SubjectSummaryModel>> getAvailableSubjects() {
+    return dataConnect.getAvailableSubjects();
+  }
+
+  @override
+  Future<void> addSubjectsForStudent({required String studentUid, required List<String> subjectKeys}) {
+    return dataConnect.addSubjectsForStudent(studentUid: studentUid, subjectKeys: subjectKeys);
+  }
+
+  @override
+  Future<void> removeSubject({required String studentUid, required String subjectKey}) {
+    return dataConnect.removeSubject(studentUid: studentUid, subjectKey: subjectKey);
+  }
+
+  @override
+  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) {
+    return dataConnect.getSubjectOverview(studentUid, subjectKey);
+  }
+
+  @override
+  Future<List<SkillProgressModel>> getSkillsForSubject(String studentUid, String subjectKey) {
+    return dataConnect.getSkillsForSubject(studentUid: studentUid, subjectKey: subjectKey);
+  }
+
+  // ── Quizzes ─────────────────────────────────────────────────────────────
+
+  @override
+  Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, String subjectKey, {int limit = 10}) {
+    return dataConnect.getRecentQuizzes(studentUid, subjectKey, limit: limit);
+  }
+
+  @override
+  Future<List<QuizAttemptModel>> getAllQuizzes(String studentUid, String subjectKey) {
+    return dataConnect.getRecentQuizzes(studentUid, subjectKey, limit: 100);
+  }
+
+  @override
+  Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber) {
+    return dataConnect.getQuestionDetail(quizAttemptId, questionNumber);
+  }
+
+  // ── Reports & Analytics ─────────────────────────────────────────────────
+
+  @override
+  Future<WeeklyReportModel> getWeeklyReport(String studentUid) {
+    return dataConnect.getWeeklyReport(studentUid);
+  }
+
+  @override
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, String subjectKey) {
+    return dataConnect.getSubjectMasteryReport(studentUid, subjectKey);
+  }
+
+  @override
+  Future<StudyHabitsReport> getStudyHabitsReport(String studentUid) {
+    return dataConnect.getStudyHabitsReport(studentUid);
+  }
+
+  @override
+  Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid) {
+    return dataConnect.getDailySnapshot(studentUid);
+  }
+
+  @override
+  Future<AiSummaryModel> getAiSummary(String parentUid) {
+    return dataConnect.getAiSummary(parentUid);
+  }
+
+  @override
+  Future<List<NotificationModel>> getNotificationsForParent(String parentUid) {
+    return dataConnect.getNotificationsForParent(parentUid);
+  }
+
+  @override
+  Future<void> markAllNotificationsRead(String parentUid) {
+    return dataConnect.markAllNotificationsRead(parentUid);
   }
 }

@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../bloc/subject_detail/subject_detail_bloc.dart';
+import '../../../bloc/subject_detail/subject_detail_event.dart';
+import '../../../bloc/subject_detail/subject_detail_state.dart';
+import '../../../domain/models/quiz_attempt_model.dart';
+import '../../../domain/models/skill_progress_model.dart';
+import '../../../domain/models/subject_summary_model.dart';
+import '../../../domain/repositories/auth_repository.dart';
 import 'all_skills_screen.dart';
 import 'all_quizzes_screen.dart';
 
 class ParentSubjectDetailScreen extends StatefulWidget {
+  final String studentUid;
+  final String subjectKey;
   final String subjectName;
-  final MaterialColor color;
+  final Color color;
 
   const ParentSubjectDetailScreen({
     super.key,
+    required this.studentUid,
+    required this.subjectKey,
     required this.subjectName,
     required this.color,
   });
@@ -20,41 +32,16 @@ class ParentSubjectDetailScreen extends StatefulWidget {
 class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
   String _activeSortMethod = "Date: Newest to Oldest";
 
-  final List<QuizData> _quizzes = [
-    QuizData(
-      time: "Today, 10:30 AM",
-      timestamp: DateTime(2026, 5, 25, 10, 30),
-      tag: "Fractions",
-      score: "9/10",
-      scoreValue: 9.0,
-      duration: "5m 20s",
-      passed: true,
-      totalQuestions: 10,
-      correctAnswers: const [1, 2, 3, 4, 5, 6, 8, 9, 10],
-    ),
-    QuizData(
-      time: "Yesterday, 2:15 PM",
-      timestamp: DateTime(2026, 5, 24, 14, 15),
-      tag: "Decimals",
-      score: "3/10",
-      scoreValue: 3.0,
-      duration: "4m 10s",
-      passed: false,
-      totalQuestions: 10,
-      correctAnswers: const [1, 5, 8],
-    ),
-  ];
-
-  List<QuizData> get _sortedQuizzes {
-    final list = List<QuizData>.from(_quizzes);
+  List<QuizAttemptModel> _sortQuizzes(List<QuizAttemptModel> quizzes) {
+    final list = List<QuizAttemptModel>.from(quizzes);
     if (_activeSortMethod == "Date: Newest to Oldest") {
-      list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      list.sort((a, b) => b.attemptedAt.compareTo(a.attemptedAt));
     } else if (_activeSortMethod == "Date: Oldest to Newest") {
-      list.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      list.sort((a, b) => a.attemptedAt.compareTo(b.attemptedAt));
     } else if (_activeSortMethod == "Score: Highest to Lowest") {
-      list.sort((a, b) => b.scoreValue.compareTo(a.scoreValue));
+      list.sort((a, b) => b.correctAnswers.compareTo(a.correctAnswers));
     } else if (_activeSortMethod == "Score: Lowest to Highest") {
-      list.sort((a, b) => a.scoreValue.compareTo(b.scoreValue));
+      list.sort((a, b) => a.correctAnswers.compareTo(b.correctAnswers));
     }
     return list;
   }
@@ -146,25 +133,54 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Always create our own SubjectDetailBloc so the screen is self-contained.
+    // This avoids ProviderNotFoundException on Android activity restoration
+    // where the route-scoped BlocProvider from the parent is lost.
+    return BlocProvider<SubjectDetailBloc>(
+      create: (_) => SubjectDetailBloc(
+        authRepository: context.read<AuthRepository>(),
+      )..add(LoadSubjectDetailRequested(
+          studentUid: widget.studentUid,
+          subjectKey: widget.subjectKey,
+        )),
+      child: Builder(builder: (ctx) => _buildScaffold(ctx)),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: Column(
-        children: [
-          _buildHeader(context),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      body: BlocBuilder<SubjectDetailBloc, SubjectDetailState>(
+        builder: (context, state) {
+          if (state is SubjectDetailLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is SubjectDetailError) {
+            return Center(child: Text(state.message));
+          }
+
+          if (state is SubjectDetailLoaded) {
+            return Column(
               children: [
-                _buildOverviewStatsCard(),
-                const SizedBox(height: 16),
-                _buildSkillsProgressCard(context),
-                const SizedBox(height: 16),
-                _buildQuizHistorySection(),
-                const SizedBox(height: 32),
+                _buildHeader(context),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    children: [
+                      _buildOverviewStatsCard(state.summary),
+                      const SizedBox(height: 16),
+                      _buildSkillsProgressCard(context, state.skills),
+                      const SizedBox(height: 16),
+                      _buildQuizHistorySection(state.recentQuizzes),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
               ],
-            ),
-          ),
-        ],
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -193,21 +209,20 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.book, color: widget.color.shade700),
+          CircleAvatar(
+            backgroundColor: widget.color.withOpacity(0.2),
+            child: Icon(Icons.book, color: widget.color),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildOverviewStatsCard() {
+  Widget _buildOverviewStatsCard(SubjectSummaryModel summary) {
+    final hours = summary.totalTimeSpent.inHours;
+    final minutes = summary.totalTimeSpent.inMinutes % 60;
+    final timeStr = hours > 0 ? "${hours}h ${minutes}m" : "${minutes}m";
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -226,11 +241,11 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatCol("88%", "Accuracy"),
+              _buildStatCol("${summary.accuracyPercent}%", "Accuracy"),
               Container(width: 1, height: 40, color: const Color(0xFFE2E8F0)),
-              _buildStatCol("42", "Quizzes Done"),
+              _buildStatCol("${summary.quizzesCompleted}", "Quizzes Done"),
               Container(width: 1, height: 40, color: const Color(0xFFE2E8F0)),
-              _buildStatCol("5h 10m", "Time Spent"),
+              _buildStatCol(timeStr, "Time Spent"),
             ],
           ),
           Padding(
@@ -251,7 +266,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      "82%",
+                      "${summary.masteryPercent}%",
                       style: GoogleFonts.roboto(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -266,11 +281,11 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        "Proficient",
+                        "Proficient", // You can calculate this based on masteryPercent if needed
                         style: GoogleFonts.roboto(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF00897B), // Teal
+                          color: const Color(0xFF00897B),
                         ),
                       ),
                     ),
@@ -307,7 +322,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
     );
   }
 
-  Widget _buildSkillsProgressCard(BuildContext context) {
+  Widget _buildSkillsProgressCard(BuildContext context, List<SkillProgressModel> skills) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -355,9 +370,17 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          _buildSkillRow("الكسور", 85, isStrong: true),
-          _buildSkillRow("الأعداد العشرية", 45, isNeedsWork: true),
-          _buildSkillRow("الهندسة", 70),
+          ...skills.map((skill) {
+            final accuracy = skill.totalAttempts > 0 
+                ? ((skill.correctAnswers / skill.totalAttempts) * 100).round()
+                : 0;
+            return _buildSkillRow(
+              skill.skillKey, 
+              accuracy, 
+              isStrong: accuracy >= 80, 
+              isNeedsWork: accuracy < 50 && skill.totalAttempts > 0
+            );
+          }).take(5), // Show top 5 skills
         ],
       ),
     );
@@ -476,8 +499,8 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
     );
   }
 
-  Widget _buildQuizHistorySection() {
-    final sortedList = _sortedQuizzes;
+  Widget _buildQuizHistorySection(List<QuizAttemptModel> recentQuizzes) {
+    final sortedList = _sortQuizzes(recentQuizzes);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -522,49 +545,33 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...sortedList.take(10).map((q) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: QuizHistoryCard(
-                time: q.time,
-                tag: q.tag,
-                score: q.score,
-                duration: q.duration,
-                passed: q.passed,
-                totalQuestions: q.totalQuestions,
-                correctAnswers: q.correctAnswers,
-              ),
-            )),
+        ...sortedList.take(10).map((q) {
+          final timeStr = "${q.attemptedAt.month}/${q.attemptedAt.day}/${q.attemptedAt.year}";
+          final durationStr = "${q.duration.inMinutes}m ${q.duration.inSeconds % 60}s";
+          final scoreStr = "${q.correctAnswers}/${q.totalQuestions}";
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: QuizHistoryCard(
+              quizAttemptId: q.id,
+              time: timeStr,
+              tag: q.skillTag,
+              score: scoreStr,
+              duration: durationStr,
+              passed: q.passed,
+              totalQuestions: q.totalQuestions,
+              correctAnswers: q.correctAnswerNumbers,
+            ),
+          );
+        }),
       ],
     );
   }
 }
 
-class QuizData {
-  final String time;
-  final DateTime timestamp;
-  final String tag;
-  final String score;
-  final double scoreValue;
-  final String duration;
-  final bool passed;
-  final int totalQuestions;
-  final List<int> correctAnswers;
-
-  const QuizData({
-    required this.time,
-    required this.timestamp,
-    required this.tag,
-    required this.score,
-    required this.scoreValue,
-    required this.duration,
-    required this.passed,
-    required this.totalQuestions,
-    required this.correctAnswers,
-  });
-}
-
 
 class QuizHistoryCard extends StatefulWidget {
+  final String quizAttemptId;
   final String time;
   final String tag;
   final String score;
@@ -575,6 +582,7 @@ class QuizHistoryCard extends StatefulWidget {
 
   const QuizHistoryCard({
     super.key,
+    required this.quizAttemptId,
     required this.time,
     required this.tag,
     required this.score,
@@ -695,7 +703,7 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                       final qNum = index + 1;
                       final isCorrect = widget.correctAnswers.contains(qNum);
                       return GestureDetector(
-                        onTap: () => _showQuestionDetailBottomSheet(context, qNum, isCorrect),
+                        onTap: () => _showQuestionDetailBottomSheet(context, widget.quizAttemptId, qNum, isCorrect),
                         child: Container(
                           width: 28,
                           height: 28,
@@ -724,27 +732,9 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
     );
   }
 
-  void _showQuestionDetailBottomSheet(BuildContext context, int qNum, bool isCorrect) {
-    const String questionText = "ما هو الكوكب الأقرب إلى الشمس؟";
-
-    final List<Map<String, String>> optionData = [
-      {
-        "text": "عطارد",
-        "state": isCorrect ? "selected_correct" : "correct_missed",
-      },
-      {
-        "text": "الزهرة",
-        "state": isCorrect ? "default" : "selected_incorrect",
-      },
-      {
-        "text": "الأرض",
-        "state": "default",
-      },
-      {
-        "text": "المريخ",
-        "state": "default",
-      },
-    ];
+  void _showQuestionDetailBottomSheet(BuildContext context, String quizAttemptId, int qNum, bool isCorrect) {
+    final bloc = context.read<SubjectDetailBloc>();
+    bloc.add(FetchQuestionDetailRequested(quizAttemptId: quizAttemptId, questionNumber: qNum));
 
     showModalBottomSheet(
       context: context,
@@ -754,109 +744,136 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCBD5E1),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Question $qNum",
-                        style: GoogleFonts.cairo(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        return BlocBuilder<SubjectDetailBloc, SubjectDetailState>(
+          bloc: bloc,
+          builder: (context, state) {
+            if (state is! SubjectDetailLoaded) {
+              return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
+            }
+            final detailKey = '${quizAttemptId}_$qNum';
+            final detail = state.questionDetails[detailKey];
+
+            if (detail == null) {
+              return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
+            }
+
+            final List<Map<String, String>> optionData = detail.options.map((opt) {
+              String stateStr = 'default';
+              if (opt == detail.correctAnswer && opt == detail.selectedAnswer) {
+                stateStr = 'selected_correct';
+              } else if (opt == detail.correctAnswer && opt != detail.selectedAnswer) {
+                stateStr = 'correct_missed';
+              } else if (opt != detail.correctAnswer && opt == detail.selectedAnswer) {
+                stateStr = 'selected_incorrect';
+              }
+              return {'text': opt, 'state': stateStr};
+            }).toList();
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
                         decoration: BoxDecoration(
-                          color: isCorrect ? const Color(0xFFE3F2FD) : const Color(0xFFFFEBEE),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          isCorrect ? "Correct" : "Incorrect",
-                          style: GoogleFonts.roboto(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: isCorrect ? const Color(0xFF2196F3) : const Color(0xFFE53935),
-                          ),
+                          color: const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          child: Text(
-                            questionText,
-                            textDirection: TextDirection.rtl,
-                            textAlign: TextAlign.right,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Question $qNum",
                             style: GoogleFonts.cairo(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF1E293B),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        ...optionData.map((opt) => _buildOptionRow(opt["text"]!, opt["state"]!)),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF1F5F9),
-                        foregroundColor: const Color(0xFF64748B),
-                        shape: const StadiumBorder(),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        "Close",
-                        style: GoogleFonts.roboto(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: detail.isCorrect ? const Color(0xFFE3F2FD) : const Color(0xFFFFEBEE),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              detail.isCorrect ? "Correct" : "Incorrect",
+                              style: GoogleFonts.roboto(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: detail.isCorrect ? const Color(0xFF2196F3) : const Color(0xFFE53935),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              child: Text(
+                                detail.questionText,
+                                textDirection: TextDirection.rtl,
+                                textAlign: TextAlign.right,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            ...optionData.map((opt) => _buildOptionRow(opt["text"]!, opt["state"]!)),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            foregroundColor: const Color(0xFF64748B),
+                            shape: const StadiumBorder(),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            "Close",
+                            style: GoogleFonts.roboto(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

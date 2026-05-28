@@ -6,9 +6,10 @@ class UpsertStudentConfigVariablesBuilder {
   int usageMinutes;
   int cooldownHours;
   int cooldownMinutes;
+  String quizCount;
 
   final FirebaseDataConnect _dataConnect;
-  UpsertStudentConfigVariablesBuilder(this._dataConnect, {required  this.studentUid,required  this.usageHours,required  this.usageMinutes,required  this.cooldownHours,required  this.cooldownMinutes,});
+  UpsertStudentConfigVariablesBuilder(this._dataConnect, {required  this.studentUid,required  this.usageHours,required  this.usageMinutes,required  this.cooldownHours,required  this.cooldownMinutes,required  this.quizCount,});
   Deserializer<UpsertStudentConfigData> dataDeserializer = (dynamic json)  => UpsertStudentConfigData.fromJson(jsonDecode(json));
   Serializer<UpsertStudentConfigVariables> varsSerializer = (UpsertStudentConfigVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<UpsertStudentConfigData, UpsertStudentConfigVariables>> execute() {
@@ -16,7 +17,7 @@ class UpsertStudentConfigVariablesBuilder {
   }
 
   MutationRef<UpsertStudentConfigData, UpsertStudentConfigVariables> ref() {
-    UpsertStudentConfigVariables vars= UpsertStudentConfigVariables(studentUid: studentUid,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,);
+    UpsertStudentConfigVariables vars= UpsertStudentConfigVariables(studentUid: studentUid,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,quizCount: quizCount,);
     return _dataConnect.mutation("UpsertStudentConfig", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -96,6 +97,7 @@ class UpsertStudentConfigVariables {
   final int usageMinutes;
   final int cooldownHours;
   final int cooldownMinutes;
+  final String quizCount;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   UpsertStudentConfigVariables.fromJson(Map<String, dynamic> json):
   
@@ -103,7 +105,8 @@ class UpsertStudentConfigVariables {
   usageHours = nativeFromJson<int>(json['usageHours']),
   usageMinutes = nativeFromJson<int>(json['usageMinutes']),
   cooldownHours = nativeFromJson<int>(json['cooldownHours']),
-  cooldownMinutes = nativeFromJson<int>(json['cooldownMinutes']);
+  cooldownMinutes = nativeFromJson<int>(json['cooldownMinutes']),
+  quizCount = nativeFromJson<String>(json['quizCount'] ?? 'auto');
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -118,11 +121,12 @@ class UpsertStudentConfigVariables {
     usageHours == otherTyped.usageHours && 
     usageMinutes == otherTyped.usageMinutes && 
     cooldownHours == otherTyped.cooldownHours && 
-    cooldownMinutes == otherTyped.cooldownMinutes;
+    cooldownMinutes == otherTyped.cooldownMinutes &&
+    quizCount == otherTyped.quizCount;
     
   }
   @override
-  int get hashCode => Object.hashAll([studentUid.hashCode, usageHours.hashCode, usageMinutes.hashCode, cooldownHours.hashCode, cooldownMinutes.hashCode]);
+  int get hashCode => Object.hashAll([studentUid.hashCode, usageHours.hashCode, usageMinutes.hashCode, cooldownHours.hashCode, cooldownMinutes.hashCode, quizCount.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -132,6 +136,7 @@ class UpsertStudentConfigVariables {
     json['usageMinutes'] = nativeToJson<int>(usageMinutes);
     json['cooldownHours'] = nativeToJson<int>(cooldownHours);
     json['cooldownMinutes'] = nativeToJson<int>(cooldownMinutes);
+    json['quizCount'] = nativeToJson<String>(quizCount);
     return json;
   }
 
@@ -141,6 +146,7 @@ class UpsertStudentConfigVariables {
     required this.usageMinutes,
     required this.cooldownHours,
     required this.cooldownMinutes,
+    required this.quizCount,
   });
 }
 

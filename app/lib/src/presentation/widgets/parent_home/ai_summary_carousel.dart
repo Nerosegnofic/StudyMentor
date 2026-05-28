@@ -1,9 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../bloc/ai_summary/ai_summary_bloc.dart';
+import '../../../bloc/ai_summary/ai_summary_event.dart';
+import '../../../bloc/ai_summary/ai_summary_state.dart';
 
 class AiSummaryCarousel extends StatefulWidget {
-  const AiSummaryCarousel({super.key});
+  final String parentUid;
+
+  const AiSummaryCarousel({super.key, required this.parentUid});
 
   @override
   State<AiSummaryCarousel> createState() => _AiSummaryCarouselState();
@@ -14,15 +20,12 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
   int _currentPage = 0;
   Timer? _timer;
 
-  static const _slides = [
-    "A 7-day streak has been reached! 14 quizzes were passed today with high accuracy to unlock the device.",
-    "Someone is performing exceptionally well in Mathematics, answering 15 questions correctly in a row.",
-    "Your children are keeping up with their daily screen-time limits. Great parenting! 🎉",
-  ];
+  List<String> _slides = [];
 
   @override
   void initState() {
     super.initState();
+    context.read<AiSummaryBloc>().add(LoadAiSummaryRequested(parentUid: widget.parentUid));
     _timer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (!mounted) return;
       final next = (_currentPage + 1) % _slides.length;
@@ -43,8 +46,28 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 15),
+    return BlocBuilder<AiSummaryBloc, AiSummaryState>(
+      builder: (context, state) {
+        if (state is AiSummaryLoading || state is AiSummaryInitial) {
+          return Container(
+            margin: const EdgeInsets.fromLTRB(20, 0, 20, 15),
+            height: 180,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (state is AiSummaryLoaded) {
+          _slides = state.summary.slides;
+        } else {
+          _slides = ["AI Summary not available."];
+        }
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -138,6 +161,8 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

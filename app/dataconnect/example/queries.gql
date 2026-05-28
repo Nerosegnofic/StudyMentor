@@ -221,11 +221,13 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
     usageMinutes
     cooldownHours
     cooldownMinutes
+    quizCount
   }
   appRules(where: { studentUid: { eq: $studentUid } }) {
     id
     packageName
     appLabel
+    isPaused
   }
 }
 

@@ -7,12 +7,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
+
 import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/app_config/app_config_bloc.dart';
+import '../../../bloc/app_config/app_config_event.dart';
+import '../../../bloc/app_config/app_config_state.dart';
 import '../../../domain/models/app_config_model.dart';
+import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
 import 'parent_student_settings_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentConfigScreen extends StatefulWidget {
   final StudentModel student;
@@ -34,10 +38,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   bool _isSaving = false;
   bool _isDirty = false;
   bool _hasTimingErrors = false;
-  int _questionsPerQuiz = 5;
-
-  /// Package names of apps that are temporarily paused (toggle is OFF).
-  final Set<String> _pausedPackages = {};
 
   /// True while a parent-triggered refresh is in flight.
   bool _isRefreshing = false;
@@ -48,28 +48,12 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLocalSettings();
-    context.read<AuthBloc>().add(
+    context.read<AppConfigBloc>().add(
       LoadAppRulesRequested(studentUid: widget.student.uid),
     );
     context.read<AuthBloc>().add(
       LoadInstalledAppsForStudentRequested(studentUid: widget.student.uid),
     );
-  }
-
-  Future<void> _loadLocalSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedQ = prefs.getInt('questions_per_quiz_${widget.student.uid}');
-    final pausedList = prefs.getStringList('paused_packages_${widget.student.uid}');
-    if (mounted) {
-      setState(() {
-        if (savedQ != null) _questionsPerQuiz = savedQ;
-        if (pausedList != null) {
-          _pausedPackages.clear();
-          _pausedPackages.addAll(pausedList);
-        }
-      });
-    }
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -81,6 +65,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         PendingAppRule(
           packageName: r.packageName, 
           appLabel: r.appLabel,
+          isPaused: r.isPaused,
         ),
       );
     }
@@ -94,17 +79,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     final rulesToSave = _rules.map((r) => PendingAppRule(
       packageName: r.packageName,
       appLabel: r.appLabel,
+      isPaused: r.isPaused,
     )).toList();
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('questions_per_quiz_${widget.student.uid}', _questionsPerQuiz);
-      await prefs.setStringList('paused_packages_${widget.student.uid}', _pausedPackages.toList());
-    } catch (_) {}
-
-    if (!mounted) return;
-
-    context.read<AuthBloc>().add(
+    context.read<AppConfigBloc>().add(
       SaveAppRulesRequested(
         studentUid: widget.student.uid,
         rules: rulesToSave,
@@ -145,7 +123,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       if (proceed != true) return;
     }
 
-    context.read<AuthBloc>().add(
+    context.read<AppConfigBloc>().add(
       RefreshStudentDataRequested(studentUid: widget.student.uid),
     );
   }
@@ -209,6 +187,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                   PendingAppRule(
                     packageName: app.packageName,
                     appLabel: app.appLabel,
+                    isPaused: false,
                   ),
                 );
               }
@@ -342,72 +321,79 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        // ── Refresh started ────────────────────────────────────────────────
-        if (state is StudentDataRefreshing) {
-          setState(() => _isRefreshing = true);
-        }
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AppConfigBloc, AppConfigState>(
+          listener: (context, state) {
+            // ── Refresh started ────────────────────────────────────────────────
+            if (state is StudentDataRefreshing) {
+              setState(() => _isRefreshing = true);
+            }
 
-        // ── Rules + config loaded (initial load OR after refresh) ──────────
-        if (state is AppRulesLoaded && state.studentUid == widget.student.uid) {
-          setState(() {
-            _config = state.config;
-            _loadRulesFromSaved(state.rules);
-            _isLoading = false;
-            _isDirty = false;
-            _isRefreshing = false;
-          });
-        }
+            // ── Rules + config loaded (initial load OR after refresh) ──────────
+            if (state is AppRulesLoaded && state.studentUid == widget.student.uid) {
+              setState(() {
+                _config = state.config;
+                _loadRulesFromSaved(state.rules);
+                _isLoading = false;
+                _isDirty = false;
+                _isRefreshing = false;
+              });
+            }
 
-        // ── Installed apps loaded (initial load OR after refresh) ──────────
-        if (state is InstalledAppsLoaded &&
-            state.studentUid == widget.student.uid) {
-          setState(() {
-            _installedApps = state.apps;
-            _appsLoading = false;
-            _isRefreshing = false;
-          });
-        }
+            if (state is AppConfigSaving) {
+              setState(() => _isSaving = true);
+            }
 
-        if (state is AppConfigSaving) {
-          setState(() => _isSaving = true);
-        }
+            if (state is AppConfigSaved) {
+              setState(() {
+                _isSaving = false;
+                _isDirty = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Configuration saved successfully.'),
+                  backgroundColor: Color(0xFF34A853),
+                ),
+              );
+            }
 
-        if (state is AppConfigSaved) {
-          setState(() {
-            _isSaving = false;
-            _isDirty = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Configuration saved successfully.'),
-              backgroundColor: Color(0xFF34A853),
-            ),
-          );
-        }
-
-        if (state is AppConfigError) {
-          setState(() {
-            _isLoading = false;
-            _isSaving = false;
-            _isRefreshing = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
-        }
+            if (state is AppConfigError) {
+              setState(() {
+                _isLoading = false;
+                _isSaving = false;
+                _isRefreshing = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red.shade700,
+                ),
+              );
+            }
+          },
+        ),
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            // ── Installed apps loaded (initial load OR after refresh) ──────────
+            if (state is InstalledAppsLoaded &&
+                state.studentUid == widget.student.uid) {
+              setState(() {
+                _installedApps = state.apps;
+                _appsLoading = false;
+                _isRefreshing = false;
+              });
+            }
 
         // The dialog handles StudentDeleteLoading and StudentDeleteError
         // internally. The screen only needs to react to StudentDeleted so it
         // can pop back to the parent students list.
-        if (state is StudentDeleted && state.studentUid == widget.student.uid) {
-          if (mounted) Navigator.of(context).pop();
-        }
-      },
+            if (state is StudentDeleted && state.studentUid == widget.student.uid) {
+              if (mounted) Navigator.of(context).pop();
+            }
+          },
+        ),
+      ],
       child: PopScope(
         canPop: !_isDirty,
         onPopInvokedWithResult: (didPop, _) async {
@@ -626,9 +612,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 Text(rule.appLabel,
                     style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 14)),
                 Text(
-                  _pausedPackages.contains(rule.packageName) ? 'Unmonitored' : 'Monitored',
+                  rule.isPaused ? 'Unmonitored' : 'Monitored',
                   style: GoogleFonts.roboto(
-                    color: _pausedPackages.contains(rule.packageName) ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: rule.isPaused ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                     fontSize: 11,
                   ),
                 ),
@@ -638,14 +624,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           SizedBox(
             height: 24,
             child: Switch(
-              value: !_pausedPackages.contains(rule.packageName),
+              value: !rule.isPaused,
               onChanged: (isOn) {
                 setState(() {
-                  if (isOn) {
-                    _pausedPackages.remove(rule.packageName);
-                  } else {
-                    _pausedPackages.add(rule.packageName);
-                  }
+                  _rules[index] = rule.copyWith(isPaused: !isOn);
                 });
                 _markDirty();
               },
@@ -687,37 +669,60 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
             child: Row(
-              children: [3, 5, 10].map((n) {
-                final isActive = _questionsPerQuiz == n;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      if (_questionsPerQuiz != n) {
-                        setState(() => _questionsPerQuiz = n);
-                        _markDirty();
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isActive ? const Color(0xFF2196F3) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: isActive
-                            ? [const BoxShadow(color: Color(0x1A2196F3), blurRadius: 4, offset: Offset(0, 2))]
-                            : null,
-                      ),
-                      child: Text('$n',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.roboto(
-                              color: isActive ? Colors.white : const Color(0xFF64748B),
-                              fontWeight: FontWeight.w600, fontSize: 14)),
-                    ),
-                  ),
-                );
-              }).toList(),
+              children: [
+                _buildQuizCountSegment('Auto'),
+                _buildQuizCountSegment('3'),
+                _buildQuizCountSegment('5'),
+                _buildQuizCountSegment('10'),
+              ],
             ),
           ),
+          const SizedBox(height: 12),
+          Text(
+            _config.quizCount is Auto 
+                ? 'Smart Tutor will adjust the quiz length dynamically based on the child\'s current performance.'
+                : 'Child must correctly answer ${(_config.quizCount as Fixed).count} questions to unlock their device.',
+            style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 13),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuizCountSegment(String label) {
+    final isActive = label == 'Auto' 
+        ? _config.quizCount is Auto 
+        : _config.quizCount is Fixed && (_config.quizCount as Fixed).count == int.parse(label);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (!isActive) {
+            setState(() {
+              if (label == 'Auto') {
+                _config = _config.copyWith(quizCount: const Auto());
+              } else {
+                _config = _config.copyWith(quizCount: Fixed(int.parse(label)));
+              }
+            });
+            _markDirty();
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF2196F3) : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: isActive
+                ? [const BoxShadow(color: Color(0x1A2196F3), blurRadius: 4, offset: Offset(0, 2))]
+                : null,
+          ),
+          child: Text(label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(
+                  color: isActive ? Colors.white : const Color(0xFF64748B),
+                  fontWeight: FontWeight.w600, fontSize: 14)),
+        ),
       ),
     );
   }

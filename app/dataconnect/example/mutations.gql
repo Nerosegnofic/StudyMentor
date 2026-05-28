@@ -77,12 +77,14 @@ mutation InsertAppRule(
   $studentUid: String!
   $packageName: String!
   $appLabel: String!
+  $isPaused: Boolean = false
 ) @auth(level: USER) {
   appRule_insert(
     data: {
       studentUid: $studentUid
       packageName: $packageName
       appLabel: $appLabel
+      isPaused: $isPaused
     }
   )
 }
@@ -307,6 +309,7 @@ mutation UpsertStudentConfig(
   $usageMinutes: Int!
   $cooldownHours: Int!
   $cooldownMinutes: Int!
+  $quizCount: String!
 ) @auth(level: USER) {
   studentConfig_upsert(
     data: {
@@ -315,6 +318,7 @@ mutation UpsertStudentConfig(
       usageMinutes: $usageMinutes
       cooldownHours: $cooldownHours
       cooldownMinutes: $cooldownMinutes
+      quizCount: $quizCount
     }
   )
 }

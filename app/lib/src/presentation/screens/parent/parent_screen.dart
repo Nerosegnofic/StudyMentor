@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
+import '../../../bloc/students/students_bloc.dart';
+import '../../../bloc/students/students_event.dart';
 import '../../widgets/parent_navigation_bar.dart';
 import 'add_student_screen.dart';
 import 'parent_home_dashboard.dart';
@@ -46,8 +48,8 @@ class _ParentScreenState extends State<ParentScreen> {
       ),
     );
     if (mounted) {
-      context.read<AuthBloc>().add(
-            LoadStudentsRequested(parentUid: widget.uid),
+      context.read<StudentsBloc>().add(
+          LoadStudentsRequested(parentUid: widget.uid),
           );
     }
   }

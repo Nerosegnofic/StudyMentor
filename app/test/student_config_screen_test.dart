@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:studymentor/src/bloc/auth/auth_bloc.dart';
-import 'package:studymentor/src/bloc/auth/auth_event.dart';
-import 'package:studymentor/src/bloc/auth/auth_state.dart';
+import 'package:studymentor/src/bloc/app_config/app_config_bloc.dart';
 import 'package:studymentor/src/domain/models/student_model.dart';
 import 'package:studymentor/src/domain/models/app_config_model.dart';
 import 'package:studymentor/src/domain/models/installed_app_model.dart';
@@ -48,12 +46,17 @@ void main() {
       username: 'ahmeddoe',
     );
 
-    final fakeBloc = FakeAuthBloc();
+    final fakeRepo = FakeAuthRepository();
+    final fakeAuthBloc = FakeAuthBloc();
+    final fakeAppConfigBloc = AppConfigBloc(authRepository: fakeRepo);
 
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider<AuthBloc>.value(
-          value: fakeBloc,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthBloc>.value(value: fakeAuthBloc),
+            BlocProvider<AppConfigBloc>.value(value: fakeAppConfigBloc),
+          ],
           child: StudentConfigScreen(student: student),
         ),
       ),

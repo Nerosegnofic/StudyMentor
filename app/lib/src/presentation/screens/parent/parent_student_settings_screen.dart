@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/auth/auth_event.dart';
-import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/student_profile/student_profile_bloc.dart';
+import '../../../bloc/student_profile/student_profile_event.dart';
+import '../../../bloc/student_profile/student_profile_state.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 
@@ -113,7 +113,7 @@ class _ParentStudentSettingsScreenState
     final isChangingPassword = _newPassCtl.text.isNotEmpty;
     final emailChanged = newEmail != _originalEmail && newEmail.isNotEmpty;
 
-    context.read<AuthBloc>().add(
+    context.read<StudentProfileBloc>().add(
       UpdateStudentProfileRequested(
         studentUid: widget.student.uid,
         studentEmail: _originalEmail,
@@ -130,47 +130,39 @@ class _ParentStudentSettingsScreenState
   }
 
   void _onSaveSuccess(StudentProfileUpdateSuccess state) {
-    if (state.newFullName != null) {
-      _originalFullName = state.newFullName!;
-      _fullNameCtl.text = state.newFullName!;
-    }
+    _originalFullName = state.updatedStudent.fullName;
+    _fullNameCtl.text = state.updatedStudent.fullName;
+    
     // If email changed we keep _originalEmail as-is until student verifies.
     _currentPassCtl.clear();
     _newPassCtl.clear();
     _confirmPassCtl.clear();
 
-    if (state.pendingEmail != null) {
-      setState(() {
-        _pendingEmailNotice = state.pendingEmail;
-        _isSaving = false;
-        _isDirty = false;
-      });
-    } else {
-      setState(() {
-        _isSaving = false;
-        _isDirty = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Student profile updated successfully.'),
-          backgroundColor: Color(0xFF34A853),
-        ),
-      );
-    }
+    // In a real app we might handle pending email here.
+    setState(() {
+      _isSaving = false;
+      _isDirty = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Student profile updated successfully.'),
+        backgroundColor: Color(0xFF34A853),
+      ),
+    );
   }
 
   // ── build ─────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<StudentProfileBloc, StudentProfileState>(
       listener: (context, state) {
-        if (state is StudentProfileUpdateLoading) {
+        if (state is StudentProfileLoading) {
           setState(() => _isSaving = true);
         } else if (state is StudentProfileUpdateSuccess &&
-            state.studentUid == widget.student.uid) {
+            state.updatedStudent.uid == widget.student.uid) {
           _onSaveSuccess(state);
-        } else if (state is StudentProfileUpdateError) {
+        } else if (state is StudentProfileError) {
           setState(() => _isSaving = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

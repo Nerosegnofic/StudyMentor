@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../bloc/reports/reports_bloc.dart';
+import '../../../bloc/reports/reports_event.dart';
+import '../../../bloc/reports/reports_state.dart';
+import '../../../domain/models/report_models.dart';
 import '../../../domain/models/student_model.dart';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
@@ -35,6 +40,9 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    context.read<ReportsBloc>().add(LoadWeeklyReportRequested(studentUid: widget.student.uid));
+    context.read<ReportsBloc>().add(LoadSubjectMasteryRequested(studentUid: widget.student.uid, subjectKey: 'math')); // Mock key
+    context.read<ReportsBloc>().add(LoadStudyHabitsRequested(studentUid: widget.student.uid));
   }
 
   @override
@@ -135,8 +143,21 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   // ── Overview Tab ────────────────────────────────────────────────────────────
 
   Widget _buildOverviewTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+    return BlocBuilder<ReportsBloc, ReportsState>(
+      builder: (context, state) {
+        if (state.isWeeklyLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state.weeklyError != null) {
+          return Center(child: Text(state.weeklyError!, style: const TextStyle(color: Colors.red)));
+        }
+        final report = state.weeklyReport;
+        if (report == null) {
+          return const Center(child: Text('No report available.'));
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -144,15 +165,15 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           Row(
             children: [
               Expanded(
-                child: _buildMetricCard("Accuracy", "85%", _kTeal),
+                child: _buildMetricCard("Accuracy", "${report.overallAccuracyPercent.toInt()}%", _kTeal),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildMetricCard("Quizzes", "12", _kPrimary),
+                child: _buildMetricCard("Quizzes", "${report.totalQuizzes}", _kPrimary),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildMetricCard("Study Time", "4.5h", _kAmber),
+                child: _buildMetricCard("Study Time", "${report.totalStudyTime.inHours}h ${report.totalStudyTime.inMinutes.remainder(60)}m", _kAmber),
               ),
             ],
           ),
@@ -178,20 +199,13 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   height: 140,
                   width: double.infinity,
                   child: CustomPaint(
-                    painter: _AccuracyTrendPainter(),
+                    painter: _AccuracyTrendPainter(report.accuracyTrend),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _chartLabel("W1"),
-                    _chartLabel("W2"),
-                    _chartLabel("W3"),
-                    _chartLabel("W4"),
-                    _chartLabel("W5"),
-                    _chartLabel("This Wk"),
-                  ],
+                  children: report.accuracyTrend.map((point) => _chartLabel(point.weekLabel)).toList(),
                 ),
               ],
             ),
@@ -231,14 +245,14 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                           width: 120,
                           height: 120,
                           child: CustomPaint(
-                            painter: _SubjectDonutPainter(),
+                            painter: _SubjectDonutPainter(report.subjectAllocations),
                           ),
                         ),
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              "4.5h",
+                              "${report.totalStudyTime.inHours}h ${report.totalStudyTime.inMinutes.remainder(60)}m",
                               style: GoogleFonts.roboto(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -262,15 +276,12 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _donutLegendItem("Mathematics", "40%", _kPrimary),
-                          const SizedBox(height: 8),
-                          _donutLegendItem("Science", "30%", _kTeal),
-                          const SizedBox(height: 8),
-                          _donutLegendItem("English", "20%", _kAmber),
-                          const SizedBox(height: 8),
-                          _donutLegendItem("History", "10%", _kRed),
-                        ],
+                        children: report.subjectAllocations.map((alloc) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _donutLegendItem(alloc.subjectKey.toUpperCase(), "${alloc.percentage.toInt()}%", Color(int.parse(alloc.colorHex.replaceFirst('#', '0xFF')))),
+                          );
+                        }).toList(),
                       ),
                     ),
                   ],
@@ -303,7 +314,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  "${widget.student.fullName.split(' ').first} has completed 12 quizzes this week with an impressive 85% accuracy. Math scores are climbing, but Science activity was low over the last 3 days. A quick review of Science topics might be beneficial.",
+                  report.aiInsightText,
                   style: GoogleFonts.roboto(
                     fontSize: 14,
                     height: 1.5,
@@ -316,6 +327,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           const SizedBox(height: 24),
         ],
       ),
+    );
+      },
     );
   }
 
@@ -384,15 +397,30 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   // ── Subject Mastery Tab ─────────────────────────────────────────────────────
 
   Widget _buildSubjectMasteryTab() {
-    final subjects = ['Mathematics', 'Science', 'English', 'History'];
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Total Mastery Card
-          _buildTotalMasteryCard(),
-          const SizedBox(height: 16),
+    final subjects = ['math', 'science', 'english', 'history']; // Use keys
+    
+    return BlocBuilder<ReportsBloc, ReportsState>(
+      builder: (context, state) {
+        if (state.isMasteryLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state.masteryError != null) {
+          return Center(child: Text(state.masteryError!, style: const TextStyle(color: Colors.red)));
+        }
+        
+        final report = state.masteryReport;
+        if (report == null) {
+          return const Center(child: Text('No mastery report available.'));
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Total Mastery Card
+              _buildTotalMasteryCard(report.totalMasteryPercent, report.masteryLabel),
+              const SizedBox(height: 16),
 
           // Chips
           SingleChildScrollView(
@@ -403,7 +431,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: ChoiceChip(
-                    label: Text(sub),
+                    label: Text(sub.toUpperCase()),
                     selected: isSelected,
                     selectedColor: _kPrimary,
                     labelStyle: GoogleFonts.roboto(
@@ -411,7 +439,13 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                     onSelected: (val) {
-                      if (val) setState(() => _selectedSubject = sub);
+                      if (val && _selectedSubject != sub) {
+                        setState(() => _selectedSubject = sub);
+                        context.read<ReportsBloc>().add(LoadSubjectMasteryRequested(
+                          studentUid: widget.student.uid,
+                          subjectKey: sub,
+                        ));
+                      }
                     },
                   ),
                 );
@@ -426,13 +460,13 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               width: 160,
               height: 160,
               child: CustomPaint(
-                painter: _MasteryCirclePainter(percentage: 0.75),
+                painter: _MasteryCirclePainter(percentage: report.totalMasteryPercent / 100.0),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "75%",
+                        "${report.totalMasteryPercent.toInt()}%",
                         style: GoogleFonts.roboto(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -464,8 +498,11 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             ),
           ),
           const SizedBox(height: 12),
-          _buildSkillRow("الكسور", 88, isStrong: true),
-          _buildSkillRow("الجبر والتفاضل والتكامل المتقدم جداً", 82, isStrong: true),
+          if (report.strongSkills.isNotEmpty) ...[
+            ...report.strongSkills.map((skill) => _buildSkillRow(skill.skillKey, skill.masteryPercent.toInt(), isStrong: true)).toList(),
+          ] else ...[
+            Text("No strong areas identified yet.", style: GoogleFonts.roboto(color: _kSubText)),
+          ],
 
           const SizedBox(height: 24),
           Text(
@@ -477,19 +514,24 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             ),
           ),
           const SizedBox(height: 12),
-          _buildSkillRow("الهندسة", 42, isNeedsWork: true),
-          _buildSkillRow("الأعداد العشرية", 35, isNeedsWork: true),
+          if (report.weakSkills.isNotEmpty) ...[
+            ...report.weakSkills.map((skill) => _buildSkillRow(skill.skillKey, skill.masteryPercent.toInt(), isNeedsWork: true)).toList(),
+          ] else ...[
+            Text("No weak areas identified yet.", style: GoogleFonts.roboto(color: _kSubText)),
+          ],
           
           const SizedBox(height: 24),
           // Error Analytics
-          _buildErrorAnalyticsCard(),
+          _buildErrorAnalyticsCard(report.errorAnalytics),
           const SizedBox(height: 24),
         ],
       ),
     );
+      },
+    );
   }
 
-  Widget _buildTotalMasteryCard() {
+  Widget _buildTotalMasteryCard(double percent, String label) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -530,7 +572,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   ),
                 ),
                 Text(
-                  "72.5% Mastery Score",
+                  "${percent.toStringAsFixed(1)}% Mastery Score",
                   style: GoogleFonts.cairo(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -548,7 +590,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              "Good",
+              label,
               style: GoogleFonts.roboto(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -561,7 +603,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     );
   }
 
-  Widget _buildErrorAnalyticsCard() {
+  Widget _buildErrorAnalyticsCard(ErrorAnalyticModel analytics) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: _cardDecoration(),
@@ -595,15 +637,15 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             height: 14,
             width: double.infinity,
             child: CustomPaint(
-              painter: _ErrorAnalyticsPainter(),
+              painter: _ErrorAnalyticsPainter(analytics),
             ),
           ),
           const SizedBox(height: 20),
-          _errorDetailItem(_kRed.withOpacity(0.8), "Careless Mistakes (45%)", "Answering too quickly on calculations"),
+          _errorDetailItem(_kRed.withOpacity(0.8), "Careless Mistakes (${analytics.carelessPercent.toInt()}%)", "Answering too quickly on calculations"),
           const SizedBox(height: 10),
-          _errorDetailItem(_kAmber, "Concept Gaps (38%)", "Struggles with newly introduced topics"),
+          _errorDetailItem(_kAmber, "Concept Gaps (${analytics.conceptGapPercent.toInt()}%)", "Struggles with newly introduced topics"),
           const SizedBox(height: 10),
-          _errorDetailItem(_kPrimary, "Time Pressure (17%)", "Failing to finish within the quiz timer"),
+          _errorDetailItem(_kPrimary, "Time Pressure (${analytics.timePressurePercent.toInt()}%)", "Failing to finish within the quiz timer"),
         ],
       ),
     );
@@ -720,12 +762,26 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   // ── Time & Habits Tab ───────────────────────────────────────────────────────
 
   Widget _buildTimeHabitsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Streak
+    return BlocBuilder<ReportsBloc, ReportsState>(
+      builder: (context, state) {
+        if (state.isHabitsLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state.habitsError != null) {
+          return Center(child: Text(state.habitsError!, style: const TextStyle(color: Colors.red)));
+        }
+        
+        final report = state.habitsReport;
+        if (report == null) {
+          return const Center(child: Text('No habits report available.'));
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Streak
           Row(
             children: [
               Expanded(
@@ -740,7 +796,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Current Streak", style: GoogleFonts.roboto(fontSize: 12, color: _kSubText)),
-                          Text("7 Days", style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold, color: _kDarkText)),
+                          Text("${report.currentStreakDays} Days", style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold, color: _kDarkText)),
                         ],
                       ),
                     ],
@@ -760,7 +816,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Longest Streak", style: GoogleFonts.roboto(fontSize: 12, color: _kSubText)),
-                          Text("14 Days", style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold, color: _kDarkText)),
+                          Text("${report.longestStreakDays} Days", style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold, color: _kDarkText)),
                         ],
                       ),
                     ],
@@ -772,7 +828,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           const SizedBox(height: 16),
 
           // Study Consistency Grid (Heatmap)
-          _buildHeatmapCard(),
+          _buildHeatmapCard(report),
           const SizedBox(height: 16),
 
           // Correlation Chart
@@ -803,7 +859,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   height: 180,
                   width: double.infinity,
                   child: CustomPaint(
-                    painter: _CorrelationChartPainter(),
+                    painter: _CorrelationChartPainter(report.correlation),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -818,15 +874,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _chartLabel("Mon"),
-                    _chartLabel("Tue"),
-                    _chartLabel("Wed"),
-                    _chartLabel("Thu"),
-                    _chartLabel("Fri"),
-                    _chartLabel("Sat"),
-                    _chartLabel("Sun"),
-                  ],
+                  children: report.correlation.map((c) => _chartLabel(c.dayLabel)).toList(),
                 ),
               ],
             ),
@@ -835,16 +883,17 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
         ],
       ),
     );
+      },
+    );
   }
 
-  Widget _buildHeatmapCard() {
-    final studyMinutes = [
-      30, 45, 0, 60, 90, 0, 15,
-      45, 0, 30, 60, 0, 120, 0,
-      0, 40, 60, 90, 30, 0, 15,
-      40, 60, 45, 90, 120, 30, 0
-    ];
-
+  Widget _buildHeatmapCard(StudyHabitsReport report) {
+    // Map HeatmapDay objects into an array of 28 ints for the painter
+    final studyMinutes = report.consistencyHeatmap.map((d) => d.studyMinutes).toList();
+    // Ensure we have exactly 28, pad with 0 if needed (just in case)
+    while (studyMinutes.length < 28) {
+      studyMinutes.add(0);
+    }
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: _cardDecoration(),
@@ -1037,9 +1086,12 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
 // ── Custom Painters ───────────────────────────────────────────────────────────
 
 class _AccuracyTrendPainter extends CustomPainter {
+  final List<WeeklyAccuracyPoint> data;
+  _AccuracyTrendPainter(this.data);
+
   @override
   void paint(Canvas canvas, Size size) {
-    final points = [0.4, 0.5, 0.45, 0.7, 0.65, 0.85];
+    final points = data.map((d) => d.accuracy / 100.0).toList();
 
     final paintLine = Paint()
       ..color = _kPrimary
@@ -1100,7 +1152,9 @@ class _AccuracyTrendPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _AccuracyTrendPainter oldDelegate) {
+    return oldDelegate.data != data;
+  }
 }
 
 class _MasteryCirclePainter extends CustomPainter {
@@ -1143,6 +1197,9 @@ class _MasteryCirclePainter extends CustomPainter {
 }
 
 class _SubjectDonutPainter extends CustomPainter {
+  final List<SubjectTimeAllocation> data;
+  _SubjectDonutPainter(this.data);
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
@@ -1154,12 +1211,10 @@ class _SubjectDonutPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.butt;
 
-    final segments = [
-      _DonutSegment(value: 0.40, color: _kPrimary),
-      _DonutSegment(value: 0.30, color: _kTeal),
-      _DonutSegment(value: 0.20, color: _kAmber),
-      _DonutSegment(value: 0.10, color: _kRed),
-    ];
+    final segments = data.map((d) => _DonutSegment(
+      value: d.percentage / 100.0,
+      color: Color(int.parse(d.colorHex.replaceFirst('#', '0xFF'))),
+    )).toList();
 
     double startAngle = -math.pi / 2;
 
@@ -1178,7 +1233,9 @@ class _SubjectDonutPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _SubjectDonutPainter oldDelegate) {
+    return oldDelegate.data != data;
+  }
 }
 
 class _DonutSegment {
@@ -1188,6 +1245,9 @@ class _DonutSegment {
 }
 
 class _ErrorAnalyticsPainter extends CustomPainter {
+  final ErrorAnalyticModel data;
+  _ErrorAnalyticsPainter(this.data);
+
   @override
   void paint(Canvas canvas, Size size) {
     final h = size.height;
@@ -1202,9 +1262,9 @@ class _ErrorAnalyticsPainter extends CustomPainter {
     final paint2 = Paint()..color = _kAmber;
     final paint3 = Paint()..color = _kPrimary;
 
-    final w1 = size.width * 0.45;
-    final w2 = size.width * 0.38;
-    final w3 = size.width * 0.17;
+    final w1 = size.width * (data.carelessPercent / 100.0);
+    final w2 = size.width * (data.conceptGapPercent / 100.0);
+    final w3 = size.width * (data.timePressurePercent / 100.0);
 
     final clipRRect = RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, h), Radius.circular(r));
     canvas.save();
@@ -1218,7 +1278,9 @@ class _ErrorAnalyticsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ErrorAnalyticsPainter oldDelegate) {
+    return oldDelegate.data != data;
+  }
 }
 
 class _ActivityHeatmapPainter extends CustomPainter {
@@ -1270,10 +1332,13 @@ class _ActivityHeatmapPainter extends CustomPainter {
 }
 
 class _CorrelationChartPainter extends CustomPainter {
+  final List<StudyVsAppCorrelationPoint> data;
+  _CorrelationChartPainter(this.data);
+
   @override
   void paint(Canvas canvas, Size size) {
-    final studyMins = [40, 60, 45, 90, 120, 30, 0];
-    final appMins = [90, 45, 60, 30, 20, 150, 180];
+    final studyMins = data.map((e) => e.studyMinutes).toList();
+    final appMins = data.map((e) => e.appUsageMinutes).toList();
 
     final maxVal = 200.0;
 
@@ -1318,5 +1383,7 @@ class _CorrelationChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _CorrelationChartPainter oldDelegate) {
+    return oldDelegate.data != data;
+  }
 }

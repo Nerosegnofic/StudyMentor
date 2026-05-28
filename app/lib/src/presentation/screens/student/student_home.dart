@@ -40,10 +40,10 @@ class _StudentHomeState extends State<StudentHome> {
   int _streak = 0;
   int _rank = 0;
 
-  // Last known garden data — persists across BLoC state changes.
+  // Last known garden data â€” persists across BLoC state changes.
   Map<String, SubjectProgressModel> _gardenCache = {};
 
-  // ── Screen-time live refresh ───────────────────────────────────────────────
+  // â”€â”€ Screen-time live refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Ticks every second so the usage bar and cooldown countdown stay live.
   Timer? _usageTicker;
 
@@ -140,7 +140,7 @@ class _StudentHomeState extends State<StudentHome> {
             if (state is ParentNameLoaded) {
               setState(() => _parentFullName = state.parentFullName);
             }
-            if (state is AppRulesLoaded && state.studentUid == widget.uid) {
+            if (state is LegacyAppRulesLoaded && state.studentUid == widget.uid) {
               setState(() {
                 _appRules = state.rules;
                 _config = state.config;
@@ -153,7 +153,7 @@ class _StudentHomeState extends State<StudentHome> {
               );
               _loadIcons(state.rules);
             }
-            if (state is AppConfigError) {
+            if (state is LegacyAppConfigError) {
               setState(() => _rulesLoading = false);
             }
           },
@@ -173,7 +173,7 @@ class _StudentHomeState extends State<StudentHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Garden area ───────────────────────────────────────────────
+              // â”€â”€ Garden area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               Container(
                 color: const Color(0xFFF8FAF6),
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -193,7 +193,7 @@ class _StudentHomeState extends State<StudentHome> {
                             text:
                                 'Welcome back, ${widget.fullName.split(' ').first}! ',
                           ),
-                          const TextSpan(text: '☀️'),
+                          const TextSpan(text: 'â˜€ï¸'),
                         ],
                       ),
                     ),
@@ -215,7 +215,7 @@ class _StudentHomeState extends State<StudentHome> {
                 ),
               ),
 
-              // ── Parent + App rules ─────────────────────────────────────────
+              // â”€â”€ Parent + App rules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Column(
@@ -234,7 +234,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── Atmospheric garden ──────────────────────────────────────────────────────
+  // â”€â”€ Atmospheric garden â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildGardenArea() {
     return BlocBuilder<GardenBloc, GardenState>(
@@ -420,7 +420,7 @@ class _StudentHomeState extends State<StudentHome> {
     return total / _gardenCache.length;
   }
 
-  // ── Owl mascot ──────────────────────────────────────────────────────────────
+  // â”€â”€ Owl mascot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildOwlSection() {
     return Container(
@@ -464,7 +464,7 @@ class _StudentHomeState extends State<StudentHome> {
                     ),
                   ),
                   child: Text(
-                    'Great job today! Keep studying to help your garden bloom! 🌸',
+                    'Great job today! Keep studying to help your garden bloom! ðŸŒ¸',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade700,
@@ -485,7 +485,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── Quick stats ─────────────────────────────────────────────────────────────
+  // â”€â”€ Quick stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildQuickStats() {
     final streakLabel = _streak == 1 ? '1 day' : '$_streak days';
@@ -496,7 +496,7 @@ class _StudentHomeState extends State<StudentHome> {
         const SizedBox(width: 10),
         Expanded(
           child: _statCard(
-            const Text('🔥', style: TextStyle(fontSize: 22)),
+            const Text('ðŸ”¥', style: TextStyle(fontSize: 22)),
             'Streak',
             streakLabel,
           ),
@@ -504,7 +504,7 @@ class _StudentHomeState extends State<StudentHome> {
         const SizedBox(width: 10),
         Expanded(
           child: _statCard(
-            const Text('⭐', style: TextStyle(fontSize: 22)),
+            const Text('â­', style: TextStyle(fontSize: 22)),
             'Rank',
             rankLabel,
           ),
@@ -598,7 +598,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── Parent section ──────────────────────────────────────────────────────────
+  // â”€â”€ Parent section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildParentSection() {
     return Row(
@@ -640,7 +640,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── App rules section ───────────────────────────────────────────────────────
+  // â”€â”€ App rules section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildAppRulesSection() {
     return Column(
@@ -670,7 +670,7 @@ class _StudentHomeState extends State<StudentHome> {
         if (!_rulesLoading && _appRules.isEmpty)
           _buildNoRulesPlaceholder()
         else if (!_rulesLoading) ...[
-          // ── Screen-time card (always visible when rules exist) ─────────
+          // â”€â”€ Screen-time card (always visible when rules exist) â”€â”€â”€â”€â”€â”€â”€â”€â”€
           _buildScreenTimeCard(),
           const SizedBox(height: 12),
           _buildTimingBanner(),
@@ -681,11 +681,11 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── Screen-time card ────────────────────────────────────────────────────────
+  // â”€â”€ Screen-time card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Reads live data from [MascotOverlayService] and renders either:
-  ///   • A usage progress bar with remaining time, or
-  ///   • A cooldown banner with live countdown.
+  ///   â€¢ A usage progress bar with remaining time, or
+  ///   â€¢ A cooldown banner with live countdown.
   Widget _buildScreenTimeCard() {
     final svc = MascotOverlayService.instance;
     final thresholdSeconds =
@@ -695,7 +695,7 @@ class _StudentHomeState extends State<StudentHome> {
       return _buildCooldownBanner(svc.remainingSeconds);
     }
 
-    // Not blocked — show remaining usage time.
+    // Not blocked â€” show remaining usage time.
     return _buildUsageBar(
       usedSeconds: svc.totalUsageSeconds,
       totalSeconds: thresholdSeconds,
@@ -710,7 +710,7 @@ class _StudentHomeState extends State<StudentHome> {
     final remaining = (totalSeconds - usedSeconds).clamp(0, totalSeconds);
     final fraction = (usedSeconds / totalSeconds).clamp(0.0, 1.0);
 
-    // Color shifts: green → amber → red as usage fills up.
+    // Color shifts: green â†’ amber â†’ red as usage fills up.
     final Color barColor;
     if (fraction < 0.6) {
       barColor = const Color(0xFF34A853); // green
@@ -824,7 +824,7 @@ class _StudentHomeState extends State<StudentHome> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        // Warm amber gradient — firm but not alarming
+        // Warm amber gradient â€” firm but not alarming
         gradient: const LinearGradient(
           colors: [Color(0xFFFFF3E0), Color(0xFFFFF8F0)],
           begin: Alignment.topLeft,
@@ -867,7 +867,7 @@ class _StudentHomeState extends State<StudentHome> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "You're on cooldown! 😴",
+                  "You're on cooldown! ðŸ˜´",
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -876,7 +876,7 @@ class _StudentHomeState extends State<StudentHome> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  "Apps will unlock again soon. Time to study! 📚",
+                  "Apps will unlock again soon. Time to study! ðŸ“š",
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.orange.shade800,
@@ -916,7 +916,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── Timing banner (usage + cooldown pills) ──────────────────────────────────
+  // â”€â”€ Timing banner (usage + cooldown pills) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildTimingBanner() {
     return Container(
@@ -1044,7 +1044,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   String _formatDuration(int hours, int minutes) {
     if (hours == 0 && minutes == 0) return '0m';
@@ -1054,7 +1054,7 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   /// Formats a raw second count into a human-readable duration string.
-  /// e.g. 3725 → "1h 2m", 95 → "1m 35s", 45 → "45s"
+  /// e.g. 3725 â†’ "1h 2m", 95 â†’ "1m 35s", 45 â†’ "45s"
   String _formatDurationFromSeconds(int seconds) {
     if (seconds <= 0) return '0s';
     final h = seconds ~/ 3600;
@@ -1114,7 +1114,7 @@ class _StudentHomeState extends State<StudentHome> {
   }
 }
 
-// ── Owl CustomPainter ──────────────────────────────────────────────────────────
+// â”€â”€ Owl CustomPainter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _OwlPainter extends CustomPainter {
   @override
@@ -1186,7 +1186,7 @@ class _OwlPainter extends CustomPainter {
   bool shouldRepaint(_OwlPainter old) => false;
 }
 
-// ── App icon widget ────────────────────────────────────────────────────────────
+// â”€â”€ App icon widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AppIcon extends StatelessWidget {
   final String? iconBase64;
@@ -1232,3 +1232,4 @@ class _AppIcon extends StatelessWidget {
     );
   }
 }
+

@@ -5,6 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/students/students_bloc.dart';
+import '../../../bloc/students/students_event.dart';
+import '../../../bloc/students/students_state.dart';
 import '../../../domain/models/student_model.dart';
 import '../../widgets/parent_home/branded_header.dart';
 import '../../widgets/parent_home/child_card.dart';
@@ -33,11 +36,11 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
   @override
   void initState() {
     super.initState();
-    final authState = context.read<AuthBloc>().state;
+    final authState = context.read<StudentsBloc>().state;
     if (authState is StudentsLoaded) {
       _realStudents = authState.students;
     }
-    context.read<AuthBloc>().add(
+    context.read<StudentsBloc>().add(
           LoadStudentsRequested(parentUid: widget.parentUid),
         );
   }
@@ -45,7 +48,7 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
   // ── Data loading ──────────────────────────────────────────────────────────
 
   Future<void> _refreshAll() async {
-    context.read<AuthBloc>().add(
+    context.read<StudentsBloc>().add(
           LoadStudentsRequested(parentUid: widget.parentUid),
         );
   }
@@ -67,7 +70,7 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AuthBloc, AuthState>(
+    return BlocConsumer<StudentsBloc, StudentsState>(
       listener: (context, state) {
         if (state is StudentsLoaded) {
           setState(() {
@@ -91,15 +94,17 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _StickyHeaderDelegate(
-                      child: BrandedHeader(parentName: widget.fullName),
+                      child: BrandedHeader(
+                        parentName: widget.fullName,
+                        parentUid: widget.parentUid,
+                      ),
                     ),
                   ),
 
-                  // Component 4 — AI Summary Carousel (moved to top)
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.only(top: 24, bottom: 24),
-                      child: AiSummaryCarousel(),
+                      padding: const EdgeInsets.only(top: 10, bottom: 5),
+                      child: AiSummaryCarousel(parentUid: widget.parentUid),
                     ),
                   ),
 
