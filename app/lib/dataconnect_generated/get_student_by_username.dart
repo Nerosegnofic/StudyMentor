@@ -7,8 +7,8 @@ class GetStudentByUsernameVariablesBuilder {
   GetStudentByUsernameVariablesBuilder(this._dataConnect, {required  this.username,});
   Deserializer<GetStudentByUsernameData> dataDeserializer = (dynamic json)  => GetStudentByUsernameData.fromJson(jsonDecode(json));
   Serializer<GetStudentByUsernameVariables> varsSerializer = (GetStudentByUsernameVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetStudentByUsernameData, GetStudentByUsernameVariables>> execute() {
-    return ref().execute();
+  Future<QueryResult<GetStudentByUsernameData, GetStudentByUsernameVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
+    return ref().execute(fetchPolicy: fetchPolicy);
   }
 
   QueryRef<GetStudentByUsernameData, GetStudentByUsernameVariables> ref() {

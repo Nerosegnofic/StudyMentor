@@ -41,46 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBfdzHRIGMGBAen1RHPDq7jaqx2RQYbNW8',
-    appId: '1:546676894438:web:ddb97d19877360c10ba927',
-    messagingSenderId: '546676894438',
-    projectId: 'fcai-studymentor',
-    authDomain: 'fcai-studymentor.firebaseapp.com',
-    storageBucket: 'fcai-studymentor.firebasestorage.app',
+    apiKey: 'AIzaSyChAvb0igkR7jB7t1TAgU4ocHfHhEBYU0s',
+    appId: '1:24974446130:web:925fca71114f8e5fa0b62b',
+    messagingSenderId: '24974446130',
+    projectId: 'studymentor-cu',
+    authDomain: 'studymentor-cu.firebaseapp.com',
+    storageBucket: 'studymentor-cu.firebasestorage.app',
+    measurementId: 'G-144J7Y49FG',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyA6MRFekWzbpyNZeqQiHrkgHsfRSQNoPAA',
-    appId: '1:546676894438:android:4b12802b89e9e02a0ba927',
-    messagingSenderId: '546676894438',
-    projectId: 'fcai-studymentor',
-    storageBucket: 'fcai-studymentor.firebasestorage.app',
+    apiKey: 'AIzaSyBA4G51Z6xdBq_v0qifARlqOz2Aszb1RZI',
+    appId: '1:24974446130:android:2c927cc98551d6faa0b62b',
+    messagingSenderId: '24974446130',
+    projectId: 'studymentor-cu',
+    storageBucket: 'studymentor-cu.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCeLsOH5IPfQEpxzNVuzhM6xVxprD2Z9z0',
-    appId: '1:546676894438:ios:a87ba8d55cbb964f0ba927',
-    messagingSenderId: '546676894438',
-    projectId: 'fcai-studymentor',
-    storageBucket: 'fcai-studymentor.firebasestorage.app',
+    apiKey: 'AIzaSyD78i0AHH9A2cQC6xeNu3TrwZvCj502dAo',
+    appId: '1:24974446130:ios:e40b61f69f5bac0ea0b62b',
+    messagingSenderId: '24974446130',
+    projectId: 'studymentor-cu',
+    storageBucket: 'studymentor-cu.firebasestorage.app',
     iosBundleId: 'com.example.studymentor',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCeLsOH5IPfQEpxzNVuzhM6xVxprD2Z9z0',
-    appId: '1:546676894438:ios:a87ba8d55cbb964f0ba927',
-    messagingSenderId: '546676894438',
-    projectId: 'fcai-studymentor',
-    storageBucket: 'fcai-studymentor.firebasestorage.app',
+    apiKey: 'AIzaSyD78i0AHH9A2cQC6xeNu3TrwZvCj502dAo',
+    appId: '1:24974446130:ios:e40b61f69f5bac0ea0b62b',
+    messagingSenderId: '24974446130',
+    projectId: 'studymentor-cu',
+    storageBucket: 'studymentor-cu.firebasestorage.app',
     iosBundleId: 'com.example.studymentor',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBfdzHRIGMGBAen1RHPDq7jaqx2RQYbNW8',
-    appId: '1:546676894438:web:1bb2f14bef4db4d70ba927',
-    messagingSenderId: '546676894438',
-    projectId: 'fcai-studymentor',
-    authDomain: 'fcai-studymentor.firebaseapp.com',
-    storageBucket: 'fcai-studymentor.firebasestorage.app',
+    apiKey: 'AIzaSyChAvb0igkR7jB7t1TAgU4ocHfHhEBYU0s',
+    appId: '1:24974446130:web:28348518e44a0cf4a0b62b',
+    messagingSenderId: '24974446130',
+    projectId: 'studymentor-cu',
+    authDomain: 'studymentor-cu.firebaseapp.com',
+    storageBucket: 'studymentor-cu.firebasestorage.app',
+    measurementId: 'G-6M2PP0RMG5',
   );
+
 }

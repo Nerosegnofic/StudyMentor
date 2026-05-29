@@ -540,6 +540,10 @@ input Parent_Data {
   ✨ `_expr` server value variant of `pinCode` (✨ Generated from Field `Parent`.`pinCode` of type `String`)
   """
   pinCode_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Parent`.`students_on_parent` of type `[Student!]!`
+  """
+  students_on_parent: [Student_Data!]
 }
 """
 ✨ Generated filter input type for table 'Parent'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
@@ -941,6 +945,22 @@ input Student_Data {
   ✨ `_update` server value variant of `weeklyXp` (✨ Generated from Field `Student`.`weeklyXp` of type `Int`)
   """
   weeklyXp_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Student`.`appRules_on_student` of type `[AppRule!]!`
+  """
+  appRules_on_student: [AppRule_Data!]
+  """
+  ✨ Generated from Field `Student`.`installedApps_on_student` of type `[InstalledApp!]!`
+  """
+  installedApps_on_student: [InstalledApp_Data!]
+  """
+  ✨ Generated from Field `Student`.`studentOwnedItems_on_student` of type `[StudentOwnedItem!]!`
+  """
+  studentOwnedItems_on_student: [StudentOwnedItem_Data!]
+  """
+  ✨ Generated from Field `Student`.`subjectProgresses_on_student` of type `[SubjectProgress!]!`
+  """
+  subjectProgresses_on_student: [SubjectProgress_Data!]
 }
 """
 ✨ Generated filter input type for table 'Student'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
@@ -3294,6 +3314,14 @@ input User_Data {
   ✨ `_expr` server value variant of `role` (✨ Generated from Field `User`.`role` of type `Role!`)
   """
   role_expr: Role_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `User`.`parents_on_user` of type `[Parent!]!`
+  """
+  parents_on_user: [Parent_Data!]
+  """
+  ✨ Generated from Field `User`.`students_on_user` of type `[Student!]!`
+  """
+  students_on_user: [Student_Data!]
 }
 """
 ✨ Generated filter input type for table 'User'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
