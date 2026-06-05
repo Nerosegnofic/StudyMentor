@@ -360,17 +360,24 @@ class ExampleConnector {
   
 
   static ConnectorConfig connectorConfig = ConnectorConfig(
-    'us-east1',
+    'me-west1',
     'example',
-    'studymentor',
+    'studymentor-cu-service',
   );
 
   ExampleConnector({required this.dataConnect});
   static ExampleConnector get instance {
     
+    CacheSettings cacheSettings = CacheSettings(
+      maxAge: Duration(milliseconds:0),
+      storage: CacheStorage.persistent,
+    );
+    
     return ExampleConnector(
         dataConnect: FirebaseDataConnect.instanceFor(
             connectorConfig: connectorConfig,
+            
+            cacheSettings: cacheSettings,
             
             sdkType: CallerSDKType.generated));
   }

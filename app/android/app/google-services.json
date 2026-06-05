@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "546676894438",
-    "project_id": "fcai-studymentor",
-    "storage_bucket": "fcai-studymentor.firebasestorage.app"
+    "project_number": "24974446130",
+    "project_id": "studymentor-cu",
+    "storage_bucket": "studymentor-cu.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:546676894438:android:4b12802b89e9e02a0ba927",
+        "mobilesdk_app_id": "1:24974446130:android:2c927cc98551d6faa0b62b",
         "android_client_info": {
           "package_name": "com.example.studymentor"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA6MRFekWzbpyNZeqQiHrkgHsfRSQNoPAA"
+          "current_key": "AIzaSyBA4G51Z6xdBq_v0qifARlqOz2Aszb1RZI"
         }
       ],
       "services": {

@@ -7,8 +7,8 @@ class GetInstalledAppsForStudentVariablesBuilder {
   GetInstalledAppsForStudentVariablesBuilder(this._dataConnect, {required  this.studentUid,});
   Deserializer<GetInstalledAppsForStudentData> dataDeserializer = (dynamic json)  => GetInstalledAppsForStudentData.fromJson(jsonDecode(json));
   Serializer<GetInstalledAppsForStudentVariables> varsSerializer = (GetInstalledAppsForStudentVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetInstalledAppsForStudentData, GetInstalledAppsForStudentVariables>> execute() {
-    return ref().execute();
+  Future<QueryResult<GetInstalledAppsForStudentData, GetInstalledAppsForStudentVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
+    return ref().execute(fetchPolicy: fetchPolicy);
   }
 
   QueryRef<GetInstalledAppsForStudentData, GetInstalledAppsForStudentVariables> ref() {

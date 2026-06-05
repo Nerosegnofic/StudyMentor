@@ -7,8 +7,8 @@ class GetStudentOwnedItemsVariablesBuilder {
   GetStudentOwnedItemsVariablesBuilder(this._dataConnect, {required  this.studentUid,});
   Deserializer<GetStudentOwnedItemsData> dataDeserializer = (dynamic json)  => GetStudentOwnedItemsData.fromJson(jsonDecode(json));
   Serializer<GetStudentOwnedItemsVariables> varsSerializer = (GetStudentOwnedItemsVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetStudentOwnedItemsData, GetStudentOwnedItemsVariables>> execute() {
-    return ref().execute();
+  Future<QueryResult<GetStudentOwnedItemsData, GetStudentOwnedItemsVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
+    return ref().execute(fetchPolicy: fetchPolicy);
   }
 
   QueryRef<GetStudentOwnedItemsData, GetStudentOwnedItemsVariables> ref() {

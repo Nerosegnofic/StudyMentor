@@ -361,6 +361,19 @@ class MascotOverlayService {
   // ── Limit-reached handling ─────────────────────────────────────────────────
 
   Future<void> _onLimitReached() async {
+    // ── Primary double-fire guard ──────────────────────────────────────────
+    // _isBlocked is set synchronously (before the first await), so Dart's
+    // single-threaded event loop guarantees a second concurrent call — e.g.
+    // PATH 1 from broadcastState and PATH 2 from startActivity on a warm
+    // resume — sees _isBlocked == true and exits cleanly without pushing a
+    // second QuizOverlayPage.
+    if (_isBlocked) {
+      debugPrint(
+        '[MascotOverlayService] _onLimitReached called while already blocked — ignoring duplicate.',
+      );
+      return;
+    }
+
     _isBlocked = true;
     _mascotState = MascotState.idle;
     debugPrint(
