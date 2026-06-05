@@ -56,6 +56,15 @@ class _StudentScreenState extends State<StudentScreen>
   /// student shell (nav bar + screens) is rendered.
   bool _permissionsGranted = false;
 
+  /// Defense-in-depth guard against double-push of QuizOverlayPage.
+  /// Set to true immediately before pushing, cleared in the .then() callback
+  /// after the route pops. Prevents a second quiz push if a duplicate
+  /// onLimitReached signal arrives while the quiz is already on the stack
+  /// (e.g. a race between the broadcastState path and the startActivity path
+  /// on a warm resume that slips past the _isBlocked guard in
+  /// MascotOverlayService).
+  bool _quizIsOpen = false;
+
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
 
@@ -144,9 +153,7 @@ class _StudentScreenState extends State<StudentScreen>
           _xp = (profile['total_xp'] as int?) ?? 0;
           _level = (_xp ~/ 500) + 1;
           if (avatarMap != null) {
-            _avatarConfig = AvatarConfig.fromMap(
-              avatarMap,
-            );
+            _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
         });
       }
@@ -178,12 +185,30 @@ class _StudentScreenState extends State<StudentScreen>
 
   void _openQuizOverlay() {
     if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => QuizOverlayPage(repository: _aiRepo),
-      ),
-    );
+
+    // ── Defense-in-depth guard ─────────────────────────────────────────────
+    // The primary guard lives in MascotOverlayService._onLimitReached()
+    // (the _isBlocked early-return). This flag catches any duplicate signal
+    // that slips through — e.g. a race between broadcastState PATH 1 and the
+    // startActivity PATH 2 on a warm resume where both arrive after _isBlocked
+    // has already been set to true by the first call but before the stream
+    // listener fires for the second.
+    if (_quizIsOpen) {
+      debugPrint(
+        '[StudentScreen] _openQuizOverlay called while quiz is already open — ignoring duplicate.',
+      );
+      return;
+    }
+
+    _quizIsOpen = true;
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute<void>(
+            fullscreenDialog: true,
+            builder: (_) => QuizOverlayPage(repository: _aiRepo),
+          ),
+        )
+        .then((_) => _quizIsOpen = false);
   }
 
   // ── Verification dialog ───────────────────────────────────────────────────
