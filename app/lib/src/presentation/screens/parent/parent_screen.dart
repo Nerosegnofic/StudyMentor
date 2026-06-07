@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
-import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/students/students_bloc.dart';
 import '../../../bloc/students/students_event.dart';
 import '../../widgets/parent_navigation_bar.dart';
@@ -65,19 +63,12 @@ class _ParentScreenState extends State<ParentScreen> {
         backgroundColor: const Color(0xFFF5F7FF),
 
         // Tab 0 uses its own branded curved header — hide the standard AppBar.
-        // All other tabs keep the standard AppBar with the logout button.
+        // All other tabs keep the standard AppBar.
         appBar: _selectedIndex == 0
             ? null
             : AppBar(
                 title: Text('Welcome, ${widget.fullName}'),
                 automaticallyImplyLeading: false,
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.logout),
-                    onPressed: () =>
-                        context.read<AuthBloc>().add(LogoutRequested()),
-                  ),
-                ],
               ),
 
         body: IndexedStack(

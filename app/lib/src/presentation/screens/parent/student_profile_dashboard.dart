@@ -5,6 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../bloc/auth/auth_bloc.dart';
+import '../../../bloc/snapshot/snapshot_bloc.dart';
+import '../../../bloc/snapshot/snapshot_event.dart';
+import '../../../bloc/snapshot/snapshot_state.dart';
+import '../../../bloc/reports/reports_bloc.dart';
+import '../../../bloc/reports/reports_event.dart';
+import '../../../bloc/reports/reports_state.dart';
 import '../../../domain/models/student_model.dart';
 import 'student_config_screen.dart';
 import 'subjects_skills_screen.dart';
@@ -21,15 +27,34 @@ const _kDarkText = Color(0xFF1E293B);
 const _kSubText = Color(0xFF64748B);
 const _kChevron = Color(0xFFCBD5E1);
 
-class StudentProfileDashboard extends StatelessWidget {
+class StudentProfileDashboard extends StatefulWidget {
   final StudentModel student;
 
   const StudentProfileDashboard({super.key, required this.student});
 
-  String get _firstName => student.fullName.split(' ').first;
-  String get _initial => student.fullName.isNotEmpty
-      ? student.fullName[0].toUpperCase()
+  @override
+  State<StudentProfileDashboard> createState() =>
+      _StudentProfileDashboardState();
+}
+
+class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
+  String get _firstName => widget.student.fullName.split(' ').first;
+  String get _initial => widget.student.fullName.isNotEmpty
+      ? widget.student.fullName[0].toUpperCase()
       : '?';
+
+  @override
+  void initState() {
+    super.initState();
+    // Load daily snapshot (quizzes today, study time, accuracy)
+    context.read<SnapshotBloc>().add(
+          LoadDailySnapshotRequested(studentUid: widget.student.uid),
+        );
+    // Load weekly report (accuracy trend, streak)
+    context.read<ReportsBloc>().add(
+          LoadWeeklyReportRequested(studentUid: widget.student.uid),
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +72,15 @@ class StudentProfileDashboard extends StatelessWidget {
               child: Column(
                 children: [
                   // 1 — Hero Profile Card
-                  _HeroProfileCard(student: student, initial: _initial),
+                  _HeroProfileCard(student: widget.student, initial: _initial),
                   const SizedBox(height: 16),
 
-                  // 2 — Quick Stats 2x2 Grid
-                  _QuickStatsGrid(student: student),
+                  // 2 — Quick Stats 2x2 Grid (BLoC-driven)
+                  _QuickStatsGrid(student: widget.student),
                   const SizedBox(height: 16),
 
                   // 3 — Navigation List
-                  _NavigationList(student: student),
+                  _NavigationList(student: widget.student),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -250,59 +275,107 @@ class _GamPill extends StatelessWidget {
 }
 
 // ── Quick Stats Grid ──────────────────────────────────────────────────────────
+// Reads from SnapshotBloc (quizzes today, study time) and ReportsBloc
+// (weekly accuracy %, active streak days). Shows a small spinner while loading
+// and a dash '—' on error/no data.
 
 class _QuickStatsGrid extends StatelessWidget {
   final StudentModel student;
   const _QuickStatsGrid({required this.student});
 
+  // Format a Duration as "Xh Ym" or "Xm" when under an hour.
+  String _formatDuration(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60);
+    if (h > 0) return '${h}h ${m}m';
+    return '${m}m';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.quiz_outlined,
-                iconColor: _kPrimary,
-                value: '14',
-                label: 'Quizzes Passed',
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.access_time_rounded,
-                iconColor: _kPrimary,
-                value: '3h 20m',
-                label: 'Total Study Time',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.track_changes_rounded,
-                iconColor: _kPrimary,
-                value: '88%',
-                label: 'Weekly Accuracy',
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.local_fire_department_rounded,
-                iconColor: _kAmber,
-                value: '7 days',
-                label: 'Active Streak',
-              ),
-            ),
-          ],
-        ),
-      ],
+    return BlocBuilder<SnapshotBloc, SnapshotState>(
+      builder: (context, snapState) {
+        return BlocBuilder<ReportsBloc, ReportsState>(
+          builder: (context, reportsState) {
+            // ── resolve values ──────────────────────────────────────────────
+            final isSnapLoading = snapState is SnapshotLoading ||
+                snapState is SnapshotInitial;
+            final snap = snapState is SnapshotLoaded ? snapState.snapshot : null;
+
+            final isReportLoading = reportsState.isWeeklyLoading ||
+                reportsState.weeklyReport == null;
+            final report = reportsState.weeklyReport;
+
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.quiz_outlined,
+                        iconColor: _kPrimary,
+                        value: isSnapLoading
+                            ? null
+                            : snap != null
+                                ? '${snap.quizzesCompletedToday}'
+                                : '—',
+                        label: 'Quizzes Today',
+                        isLoading: isSnapLoading,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.access_time_rounded,
+                        iconColor: _kPrimary,
+                        value: isSnapLoading
+                            ? null
+                            : snap != null
+                                ? _formatDuration(snap.totalStudyTimeToday)
+                                : '—',
+                        label: 'Study Time Today',
+                        isLoading: isSnapLoading,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.track_changes_rounded,
+                        iconColor: _kPrimary,
+                        value: isReportLoading
+                            ? null
+                            : report != null
+                                ? '${report.overallAccuracyPercent.toInt()}%'
+                                : '—',
+                        label: 'Weekly Accuracy',
+                        isLoading: isReportLoading,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.local_fire_department_rounded,
+                        iconColor: _kAmber,
+                        value: isReportLoading
+                            ? null
+                            : report != null
+                                ? '${report.currentStreakDays} days'
+                                : '—',
+                        label: 'Active Streak',
+                        isLoading: isReportLoading,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -310,14 +383,17 @@ class _QuickStatsGrid extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
-  final String value;
+  /// Null means still loading — shows a spinner. '—' means loaded but no data.
+  final String? value;
   final String label;
+  final bool isLoading;
 
   const _StatCard({
     required this.icon,
     required this.iconColor,
     required this.value,
     required this.label,
+    this.isLoading = false,
   });
 
   @override
@@ -340,14 +416,21 @@ class _StatCard extends StatelessWidget {
         children: [
           Icon(icon, color: iconColor, size: 22),
           const SizedBox(height: 10),
-          Text(
-            value,
-            style: GoogleFonts.roboto(
-              color: _kDarkText,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+          if (isLoading)
+            const SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Text(
+              value ?? '—',
+              style: GoogleFonts.roboto(
+                color: _kDarkText,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
           const SizedBox(height: 4),
           Text(
             label,

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../bloc/auth/auth_bloc.dart';
+import '../../../bloc/auth/auth_event.dart' show LogoutRequested;
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/students/students_bloc.dart';
 import '../../../bloc/students/students_event.dart';
@@ -336,6 +337,8 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                 _buildSaveButton(),
                 const SizedBox(height: 40),
                 _buildDeleteAccountSection(),
+                const SizedBox(height: 24),
+                _buildLogoutButton(),
               ],
             ),
           ),
@@ -832,6 +835,106 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
         color: Colors.grey.shade500,
       ),
       onPressed: onToggle,
+    );
+  }
+
+  Future<void> _confirmLogout() async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.logout,
+                color: Colors.red,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Log Out',
+              style: GoogleFonts.cairo(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to log out of your account?',
+          style: GoogleFonts.roboto(
+            fontSize: 14,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.cairo(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Log Out',
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (proceed == true && mounted) {
+      context.read<AuthBloc>().add(LogoutRequested());
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    }
+  }
+
+  Widget _buildLogoutButton() {
+    return OutlinedButton.icon(
+      onPressed: _confirmLogout,
+      icon: const Icon(
+        Icons.logout,
+        color: Colors.red,
+        size: 18,
+      ),
+      label: Text(
+        'Log Out',
+        style: GoogleFonts.cairo(
+          color: Colors.red,
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        side: const BorderSide(color: Colors.red, width: 1.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 }

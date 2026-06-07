@@ -3,11 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/auth/auth_event.dart';
-import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/students/students_bloc.dart';
 import '../../../bloc/students/students_event.dart';
 import '../../../bloc/students/students_state.dart';
+import '../../../bloc/snapshot/snapshot_bloc.dart';
+import '../../../bloc/reports/reports_bloc.dart';
 import '../../../domain/models/student_model.dart';
 import '../../widgets/parent_home/branded_header.dart';
 import '../../widgets/parent_home/child_card.dart';
@@ -36,9 +36,9 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
   @override
   void initState() {
     super.initState();
-    final authState = context.read<StudentsBloc>().state;
-    if (authState is StudentsLoaded) {
-      _realStudents = authState.students;
+    final currentState = context.read<StudentsBloc>().state;
+    if (currentState is StudentsLoaded) {
+      _realStudents = currentState.students;
     }
     context.read<StudentsBloc>().add(
           LoadStudentsRequested(parentUid: widget.parentUid),
@@ -53,13 +53,17 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
         );
   }
 
-  // ── Navigation to real child config ──────────────────────────────────────
+  // ── Navigation to student profile ─────────────────────────────────────────
 
   Future<void> _openConfig(StudentModel student) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<AuthBloc>(),
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: context.read<AuthBloc>()),
+            BlocProvider.value(value: context.read<SnapshotBloc>()),
+            BlocProvider.value(value: context.read<ReportsBloc>()),
+          ],
           child: StudentProfileDashboard(student: student),
         ),
       ),
@@ -80,86 +84,84 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
       },
       builder: (context, state) {
         return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        body: Stack(
-          children: [
-            // ── Scrollable content ──────────────────────────────────────
-            RefreshIndicator(
-              onRefresh: _refreshAll,
-              color: const Color(0xFF2196F3),
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  // Component 1 — Branded Header (sticky / pinned)
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _StickyHeaderDelegate(
-                      child: BrandedHeader(
-                        parentName: widget.fullName,
-                        parentUid: widget.parentUid,
-                      ),
-                    ),
-                  ),
-
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 10, bottom: 5),
-                      child: AiSummaryCarousel(parentUid: widget.parentUid),
-                    ),
-                  ),
-
-                  // Component 2 — "My Children" subheader
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                        top: 0,
-                        left: 20,
-                        bottom: 12,
-                      ),
-                        child: Text(
-                        'My Children',
-                        style: GoogleFonts.cairo(
-                          color: const Color(0xFF1E293B),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
+          backgroundColor: const Color(0xFFF5F7FA),
+          body: Stack(
+            children: [
+              // ── Scrollable content ──────────────────────────────────────
+              RefreshIndicator(
+                onRefresh: _refreshAll,
+                color: const Color(0xFF2196F3),
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // Component 1 — Branded Header (sticky / pinned)
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _StickyHeaderDelegate(
+                        child: BrandedHeader(
+                          parentName: widget.fullName,
+                          parentUid: widget.parentUid,
                         ),
                       ),
                     ),
-                  ),
 
-                  // Component 3 — Child Cards (real)
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final student = _realStudents[index];
-                        return ChildCard(
-                          student: student,
-                          onTap: student.isEmailVerified
-                              ? () => _openConfig(student)
-                              : null,
-                        );
-                      },
-                      childCount: _realStudents.length,
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 10, bottom: 5),
+                        child: AiSummaryCarousel(parentUid: widget.parentUid),
+                      ),
                     ),
-                  ),
 
+                    // Component 2 — "My Children" subheader
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          top: 0,
+                          left: 20,
+                          bottom: 12,
+                        ),
+                        child: Text(
+                          'My Children',
+                          style: GoogleFonts.cairo(
+                            color: const Color(0xFF1E293B),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
+                    ),
 
+                    // Component 3 — Child Cards (real)
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final student = _realStudents[index];
+                          return ChildCard(
+                            student: student,
+                            onTap: student.isEmailVerified
+                                ? () => _openConfig(student)
+                                : null,
+                          );
+                        },
+                        childCount: _realStudents.length,
+                      ),
+                    ),
 
-                  // Bottom spacer so FAB doesn't overlap last card
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                ],
+                    // Bottom spacer so FAB doesn't overlap last card
+                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  ],
+                ),
               ),
-            ),
 
-            // Component 5 — FAB (fixed bottom-right)
-            Positioned(
-              bottom: 30,
-              right: 30,
-              child: _DashboardFab(onPressed: widget.onAddStudentPressed),
-            ),
-          ],
-        ),
-      );
+              // Component 5 — FAB (fixed bottom-right)
+              Positioned(
+                bottom: 30,
+                right: 30,
+                child: _DashboardFab(onPressed: widget.onAddStudentPressed),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -199,8 +201,6 @@ class _DashboardFab extends StatelessWidget {
     );
   }
 }
-
-
 
 // ── Sticky header delegate ────────────────────────────────────────────────────
 // Wraps BrandedHeader so it can be used inside SliverPersistentHeader(pinned).
