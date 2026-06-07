@@ -11,7 +11,7 @@ class MainActivity : FlutterActivity() {
     private lateinit var installedAppsPlugin: InstalledAppsPlugin
     private lateinit var timerServiceBridge: TimerServiceBridge
     private lateinit var deviceAdminPlugin: DeviceAdminPlugin
-    private lateinit var permissionPlugin: PermissionPlugin   // ← NEW
+    private lateinit var permissionPlugin: PermissionPlugin
 
     // Cached channel reference so onNewIntent can invoke onLimitReached even
     // after configureFlutterEngine has run.
@@ -36,8 +36,8 @@ class MainActivity : FlutterActivity() {
         deviceAdminPlugin = DeviceAdminPlugin(this)
         deviceAdminPlugin.registerWith(flutterEngine)
 
-        permissionPlugin = PermissionPlugin(this)          // ← NEW
-        permissionPlugin.registerWith(flutterEngine)       // ← NEW
+        permissionPlugin = PermissionPlugin(this)
+        permissionPlugin.registerWith(flutterEngine)
 
         timerChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -95,6 +95,29 @@ class MainActivity : FlutterActivity() {
             dispatchQuizOnLaunch()
             intent.removeExtra(UsageTimerService.EXTRA_QUIZ_ON_LAUNCH)
         }
+    }
+
+    /**
+     * Restores the service binding on every resume in case it was lost without
+     * a full process restart. This covers two scenarios:
+     *
+     *   1. The Activity was recreated due to a configuration change (rotation,
+     *      theme switch, locale change). configureFlutterEngine is not called
+     *      again in this case, so registerWith() — and the tryBindExistingService()
+     *      call at its end — do not run. rebindIfNeeded() fills that gap.
+     *
+     *   2. Android unbound the service while the app was in the background
+     *      (low-memory trim, OEM battery optimisation). The service itself stays
+     *      alive as a foreground service, but serviceBound becomes false and
+     *      timerService becomes null. rebindIfNeeded() restores the reference
+     *      before the user can interact with anything.
+     *
+     * rebindIfNeeded() is a no-op when already bound, so there is no cost to
+     * calling it unconditionally here.
+     */
+    override fun onResume() {
+        super.onResume()
+        timerServiceBridge.rebindIfNeeded()
     }
 
     /**

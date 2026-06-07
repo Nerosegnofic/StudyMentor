@@ -194,6 +194,14 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
         } else {
             activity.registerReceiver(stateReceiver, filter)
         }
+
+        // If UsageTimerService is already running (e.g. the Activity was
+        // destroyed and recreated while the foreground service stayed alive),
+        // restore the binder reference immediately. This covers the
+        // swipe-to-dismiss-then-reopen case where Flutter's MascotOverlayService
+        // does not call startTimerService again because it considers the service
+        // already running.
+        tryBindExistingService()
     }
 
     fun unregister() {
@@ -201,6 +209,18 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
         unbindService()
         channel?.setMethodCallHandler(null)
         channel = null
+    }
+
+    /**
+     * Called from Activity.onResume to restore the service binding if it was
+     * lost without a full process restart (e.g. Activity recreation due to a
+     * configuration change or system-initiated recreation). Safe to call when
+     * already bound — it is a no-op in that case.
+     */
+    fun rebindIfNeeded() {
+        if (!serviceBound) {
+            tryBindExistingService()
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -220,12 +240,34 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
         }
     }
 
+    /**
+     * Binds to UsageTimerService explicitly — used when Flutter has just
+     * started the service via startTimerService and we need the binder for
+     * direct method calls.
+     */
     private fun bindService() {
         if (!serviceBound) {
             activity.bindService(
                 serviceIntent(ACTION_START),
                 serviceConnection,
                 Context.BIND_AUTO_CREATE,
+            )
+        }
+    }
+
+    /**
+     * Attempts to bind to UsageTimerService if it is already running, without
+     * starting it. Uses flags=0 (no BIND_AUTO_CREATE) so Android will NOT
+     * launch the service if it is not already alive — the bind simply fails
+     * silently and onServiceConnected is never called. This is intentional:
+     * service startup is always initiated by Flutter via startTimerService.
+     */
+    private fun tryBindExistingService() {
+        if (!serviceBound) {
+            activity.bindService(
+                serviceIntent(ACTION_START),
+                serviceConnection,
+                0, // no BIND_AUTO_CREATE — do not start the service if not running
             )
         }
     }
