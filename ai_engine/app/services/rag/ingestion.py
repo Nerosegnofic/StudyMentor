@@ -42,42 +42,48 @@ def process_and_ingest_document(
 
         try:
             # DEBUG: DUMP FILES
-            # import json
-            # os.makedirs("debug_output", exist_ok=True)
-            # debug_prefix = f"debug_output/{document_id}"
+            import json
+            os.makedirs("debug_output", exist_ok=True)
+            debug_prefix = f"debug_output/{document_id}"
 
             full_text = parser_context.execute_parse(document_id, temp_file_path)
 
-            # with open("debug_output/c3e44b6c-ad89-40c9-af83-4935cfcd9da9_parsed.md", "r", encoding="utf-8") as f:
+            # Optional: to read from cache instead of re-parsing
+            # with open(f"debug_output/{document_id}_parsed.md", "r", encoding="utf-8") as f:
             #     full_text = f.read()
             
             # Step 2: Preprocess text to clean artifacts
             cleaned_text = preprocess_parsed_text(full_text)
             
             # DEBUG DUMP 1: Parsed & Cleaned Text
-            # with open(f"{debug_prefix}_parsed.md", "w", encoding="utf-8") as f:
-            #     f.write(cleaned_text)
+            with open(f"{debug_prefix}_parsed.md", "w", encoding="utf-8") as f:
+                f.write(cleaned_text)
 
             # Step 3: Extract Mastery Points (regex-based, zero API cost)
             raw_mastery_data = extract_all_objectives(cleaned_text)
 
             # DEBUG DUMP 2: Raw Skills
-            # with open(f"{debug_prefix}_raw_skills.json", "w", encoding="utf-8") as f:
-            #     json.dump(raw_mastery_data, f, indent=4, ensure_ascii=False)
+            with open(f"{debug_prefix}_raw_skills.json", "w", encoding="utf-8") as f:
+                json.dump(raw_mastery_data, f, indent=4, ensure_ascii=False)
             
             # Step 4: Chunk
             langchain_docs = chunker_context.execute_chunking(cleaned_text, document_id)
             
             # DEBUG DUMP 3: Chunks
-            # with open(f"{debug_prefix}_chunks.json", "w", encoding="utf-8") as f:
-            #     chunks_dump = [{"page_content": d.page_content, "metadata": d.metadata} for d in langchain_docs]
-            #     json.dump(chunks_dump, f, indent=4, ensure_ascii=False)
+            with open(f"{debug_prefix}_chunks.json", "w", encoding="utf-8") as f:
+                chunks_dump = [{"page_content": d.page_content, "metadata": d.metadata} for d in langchain_docs]
+                json.dump(chunks_dump, f, indent=4, ensure_ascii=False)
 
 
             # Step 5: Refine mastery points via Gemini LLM (needed before tagging and saving)
             refined_mastery_data = None
             if raw_mastery_data:
                 refined_mastery_data = refine_mastery_points(raw_mastery_data, cleaned_text)
+            
+            # DEBUG DUMP 4: Refined Skills
+            if refined_mastery_data:
+                with open(f"{debug_prefix}_refined_skills.json", "w", encoding="utf-8") as f:
+                    json.dump(refined_mastery_data, f, indent=4, ensure_ascii=False)
 
             # Step 6: Tag chunks with skill_names from mastery data (for precision retrieval)
             # Build a lesson → skill_names mapping from refined (or raw) mastery data

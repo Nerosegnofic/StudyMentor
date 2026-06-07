@@ -6,6 +6,12 @@ Categorises skill mastery statuses and computes trend indicators.
 """
 
 from typing import Dict, List
+from datetime import datetime, timedelta
+
+from sqlalchemy.orm import Session
+from sqlalchemy import func, cast, Date
+
+from app.models.domain import Skill, QuizSession, StudentSkillState
 
 # ── Skill Status Thresholds ──────────────────────────────────────────────
 MASTERED_THRESHOLD = 0.80
@@ -74,3 +80,51 @@ def compute_mastery_trend(current_mastery: float, previous_mastery: float | None
     if delta < -0.02:
         return "declining"
     return "stable"
+
+
+def get_overall_dashboard_stats(db: Session, student_uid: str) -> dict:
+    """
+    Computes global dashboard statistics for a student, including total tracked skills,
+    mastered skills count, overall mastery percentage, and a 30-day activity heatmap.
+    """
+    # ── Aggregate mastery across all subjects ────────────────────────────
+    all_states = (
+        db.query(StudentSkillState)
+        .filter(StudentSkillState.student_uid == student_uid)
+        .all()
+    )
+    total_skills = db.query(Skill).count()
+    mastered_skills = sum(1 for s in all_states if s.is_mastered)
+    overall_mastery = (
+        round(sum(s.mastery_probability for s in all_states) / total_skills, 4)
+        if total_skills
+        else 0.0
+    )
+
+    # ── Activity heatmap: sessions per day over the last 30 days ─────────
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    heatmap_rows = (
+        db.query(
+            cast(QuizSession.start_time, Date).label("date"),
+            func.count(QuizSession.session_id).label("count"),
+        )
+        .filter(
+            QuizSession.student_uid == student_uid,
+            QuizSession.start_time >= thirty_days_ago,
+        )
+        .group_by(cast(QuizSession.start_time, Date))
+        .order_by(cast(QuizSession.start_time, Date))
+        .all()
+    )
+    activity_heatmap = {
+        row.date.isoformat(): row.count for row in heatmap_rows
+    }
+
+    return {
+        "student_uid": student_uid,
+        "total_skills": total_skills,
+        "mastered_skills": mastered_skills,
+        "overall_mastery": overall_mastery,
+        "activity_heatmap": activity_heatmap,
+    }
+

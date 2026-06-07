@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     COHERE_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
     POSTGRES_CONNECTION: Optional[str] = None
-    FIREBASE_PROJECT_ID: str = "fcai-studymentor"
+    FIREBASE_PROJECT_ID: str = "studymentor-cu"
     FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = None
 
     # --- AI Model Configuration ---
