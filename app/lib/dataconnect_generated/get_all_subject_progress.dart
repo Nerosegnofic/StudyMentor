@@ -7,8 +7,8 @@ class GetAllSubjectProgressVariablesBuilder {
   GetAllSubjectProgressVariablesBuilder(this._dataConnect, {required  this.studentUid,});
   Deserializer<GetAllSubjectProgressData> dataDeserializer = (dynamic json)  => GetAllSubjectProgressData.fromJson(jsonDecode(json));
   Serializer<GetAllSubjectProgressVariables> varsSerializer = (GetAllSubjectProgressVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetAllSubjectProgressData, GetAllSubjectProgressVariables>> execute() {
-    return ref().execute();
+  Future<QueryResult<GetAllSubjectProgressData, GetAllSubjectProgressVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
+    return ref().execute(fetchPolicy: fetchPolicy);
   }
 
   QueryRef<GetAllSubjectProgressData, GetAllSubjectProgressVariables> ref() {

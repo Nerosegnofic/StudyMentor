@@ -59,9 +59,6 @@ abstract class AuthRepository {
     required StudentConfigModel config,
   });
 
-  // ── CHANGED: studentEmail + studentPassword added so the implementation
-  // can sign in as the student via a secondary Firebase app and delete their
-  // Auth account before wiping the database records.
   Future<void> deleteStudent({
     required String studentUid,
     required String studentEmail,

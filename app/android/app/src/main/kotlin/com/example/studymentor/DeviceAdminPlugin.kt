@@ -22,6 +22,10 @@ class DeviceAdminPlugin(private val activity: MainActivity) {
         ComponentName(activity, MyDeviceAdminReceiver::class.java)
     }
 
+    private val prefs by lazy {
+        activity.getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
     fun registerWith(flutterEngine: FlutterEngine) {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
@@ -55,6 +59,19 @@ class DeviceAdminPlugin(private val activity: MainActivity) {
                     "setStudentMode" -> {
                         val active = call.argument<Boolean>("active") ?: false
                         StudyMentorAccessibilityService.isStudentLoggedIn = active
+                        prefs.edit().putBoolean(AppPrefs.KEY_STUDENT_MODE, active).apply()
+                        result.success(null)
+                    }
+
+                    // Suppresses the Settings guard for the entire permission
+                    // setup flow (PermissionGateScreen). Unlike isRequestingAdmin
+                    // — which only covers the narrow Device Admin dialog window —
+                    // this flag covers all five permission steps so the student
+                    // can reach Settings freely until setup is complete.
+                    "setPermissionSetupMode" -> {
+                        val active = call.argument<Boolean>("active") ?: false
+                        StudyMentorAccessibilityService.isInPermissionSetup = active
+                        prefs.edit().putBoolean(AppPrefs.KEY_PERMISSION_SETUP, active).apply()
                         result.success(null)
                     }
 

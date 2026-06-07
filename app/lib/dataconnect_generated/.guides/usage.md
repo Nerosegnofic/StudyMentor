@@ -10,7 +10,7 @@ ExampleConnector.instance.SetUserInactive().execute();
 ExampleConnector.instance.MarkEmailVerified().execute();
 ExampleConnector.instance.InsertAppRule(insertAppRuleVariables).execute();
 ExampleConnector.instance.DeleteAllAppRulesForStudent(deleteAllAppRulesForStudentVariables).execute();
-ExampleConnector.instance.UpdateStudentFriendCode(updateStudentFriendCodeVariables).execute();
+ExampleConnector.instance.UpdateLastActiveAt().execute();
 
 ```
 

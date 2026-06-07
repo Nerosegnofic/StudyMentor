@@ -21,7 +21,35 @@ class ParentDashboard extends StatelessWidget {
             ),
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.dashboard_outlined,
+                  size: 64,
+                  color: Colors.grey.shade300,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Nothing here yet.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Activity and alerts will appear here.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

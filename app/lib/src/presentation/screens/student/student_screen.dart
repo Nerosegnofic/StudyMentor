@@ -14,13 +14,13 @@ import '../../widgets/parent_verification_dialog.dart';
 import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../services/installed_apps_service.dart';
+import '../../../services/permission_service.dart';
+import '../../../services/device_admin_service.dart';
 import '../../../data/providers/dataconnect_provider.dart';
+import 'permission_gate_screen.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
-
 import 'student_shop.dart';
-import 'student_leaderboard.dart';
-import 'student_friends.dart';
 import 'student_profile.dart';
 
 /// Base URL for the AI Engine.
@@ -43,13 +43,27 @@ class _StudentScreenState extends State<StudentScreen>
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
-  String _parentUid = '';
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   /// True while MascotOverlayService.init() is in progress.
-  /// Keeps a spinner on screen so the home page never flashes before the quiz
-  /// is pushed (cold-launch blocked case).
   bool _initializing = true;
+
+  /// True while we are checking whether all permissions are granted.
+  /// Kept separate from [_initializing] so the two async paths are clear.
+  bool _checkingPermissions = true;
+
+  /// Once set to true, the permission gate is complete and the main
+  /// student shell (nav bar + screens) is rendered.
+  bool _permissionsGranted = false;
+
+  /// Defense-in-depth guard against double-push of QuizOverlayPage.
+  /// Set to true immediately before pushing, cleared in the .then() callback
+  /// after the route pops. Prevents a second quiz push if a duplicate
+  /// onLimitReached signal arrives while the quiz is already on the stack
+  /// (e.g. a race between the broadcastState path and the startActivity path
+  /// on a warm resume that slips past the _isBlocked guard in
+  /// MascotOverlayService).
+  bool _quizIsOpen = false;
 
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
@@ -75,10 +89,6 @@ class _StudentScreenState extends State<StudentScreen>
 
     MascotOverlayService.instance.init(studentUid: widget.uid).then((_) {
       MascotOverlayService.instance.start();
-      // Reveal the home screen now that init is done. If the quiz was already
-      // triggered (blocked case), it was pushed on top of the spinner and the
-      // home screen will appear underneath it — the student only sees home
-      // once they dismiss the quiz, which is the correct behaviour.
       if (mounted) {
         setState(() => _initializing = false);
       }
@@ -86,6 +96,46 @@ class _StudentScreenState extends State<StudentScreen>
 
     DataConnectProvider().updateLastActiveAt().catchError((_) {});
     _loadCoinsAndLevel();
+
+    // Run the permission check independently of MascotOverlayService.init()
+    // so both can proceed in parallel.
+    _checkPermissions();
+  }
+
+  /// Checks whether all required permissions are already granted.
+  /// If they are, skips the gate entirely. If not, the gate screen handles
+  /// the flow and calls [_onPermissionsGranted] when done.
+  Future<void> _checkPermissions() async {
+    final missing = await PermissionService.firstMissingPermission();
+    if (!mounted) return;
+
+    if (missing == null) {
+      // All permissions are already granted — skip the gate.
+      // Activate student mode here since PermissionGateScreen (which normally
+      // does this) is being bypassed entirely on this path.
+      await DeviceAdminService.onPermissionsGranted();
+      setState(() {
+        _checkingPermissions = false;
+        _permissionsGranted = true;
+      });
+    } else {
+      // Show the gate screen.
+      setState(() {
+        _checkingPermissions = false;
+        _permissionsGranted = false;
+      });
+    }
+  }
+
+  /// Called by [PermissionGateScreen] when all permissions have been confirmed.
+  void _onPermissionsGranted() {
+    if (!mounted) return;
+    setState(() => _permissionsGranted = true);
+  }
+
+  /// Called by [PermissionGateScreen] when the user taps "Sign out".
+  void _onGateSignOut() {
+    context.read<AuthBloc>().add(LogoutRequested());
   }
 
   Future<void> _loadCoinsAndLevel() async {
@@ -93,21 +143,17 @@ class _StudentScreenState extends State<StudentScreen>
       final provider = DataConnectProvider();
       final results = await Future.wait([
         provider.getStudentProfile(widget.uid),
-        provider.getParentUidForStudent(widget.uid),
         provider.getStudentAvatar(widget.uid),
       ]);
       if (mounted) {
         final profile = results[0] as Map<String, dynamic>;
-        final avatarMap = results[2];
+        final avatarMap = results[1];
         setState(() {
           _coins = (profile['total_coins'] as int?) ?? 0;
           _xp = (profile['total_xp'] as int?) ?? 0;
           _level = (_xp ~/ 500) + 1;
-          _parentUid = results[1] as String;
           if (avatarMap != null) {
-            _avatarConfig = AvatarConfig.fromMap(
-              avatarMap as Map<String, dynamic>,
-            );
+            _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
         });
       }
@@ -139,12 +185,30 @@ class _StudentScreenState extends State<StudentScreen>
 
   void _openQuizOverlay() {
     if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => QuizOverlayPage(repository: _aiRepo),
-      ),
-    );
+
+    // ── Defense-in-depth guard ─────────────────────────────────────────────
+    // The primary guard lives in MascotOverlayService._onLimitReached()
+    // (the _isBlocked early-return). This flag catches any duplicate signal
+    // that slips through — e.g. a race between broadcastState PATH 1 and the
+    // startActivity PATH 2 on a warm resume where both arrive after _isBlocked
+    // has already been set to true by the first call but before the stream
+    // listener fires for the second.
+    if (_quizIsOpen) {
+      debugPrint(
+        '[StudentScreen] _openQuizOverlay called while quiz is already open — ignoring duplicate.',
+      );
+      return;
+    }
+
+    _quizIsOpen = true;
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute<void>(
+            fullscreenDialog: true,
+            builder: (_) => QuizOverlayPage(repository: _aiRepo),
+          ),
+        )
+        .then((_) => _quizIsOpen = false);
   }
 
   // ── Verification dialog ───────────────────────────────────────────────────
@@ -186,18 +250,34 @@ class _StudentScreenState extends State<StudentScreen>
     });
   }
 
+  // ── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    // Hold on a spinner until init() resolves. This prevents the home screen
-    // from appearing momentarily before the quiz overlay is pushed on top in
-    // the cold-launch / fully-killed-app blocked scenario.
-    if (_initializing) {
+    // ── Phase 1: MascotOverlayService is still initialising ─────────────────
+    if (_initializing || _checkingPermissions) {
       return const Scaffold(
         backgroundColor: Color(0xFFF5F7FA),
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    // ── Phase 2: One or more permissions are missing ─────────────────────────
+    if (!_permissionsGranted) {
+      return BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthUnauthenticated) {
+            Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+          }
+        },
+        child: PermissionGateScreen(
+          onAllGranted: _onPermissionsGranted,
+          onSignOut: _onGateSignOut,
+        ),
+      );
+    }
+
+    // ── Phase 3: All permissions granted — show the full student shell ───────
     return MultiBlocProvider(
       providers: [
         BlocProvider<ShopBloc>(create: (_) => ShopBloc()),
@@ -240,16 +320,6 @@ class _StudentScreenState extends State<StudentScreen>
                           coins: _coins,
                           level: _level,
                         ),
-                        StudentLeaderboard(
-                          uid: widget.uid,
-                          fullName: widget.fullName,
-                          parentUid: _parentUid,
-                          isActive: _selectedIndex == 2,
-                        ),
-                        StudentFriends(
-                          uid: widget.uid,
-                          fullName: widget.fullName,
-                        ),
                       ],
                     ),
                   ),
@@ -266,7 +336,7 @@ class _StudentScreenState extends State<StudentScreen>
     );
   }
 
-  // ── Custom top navigation bar ──────────────────────────────────────────────
+  // ── Custom top navigation bar ─────────────────────────────────────────────
 
   Widget _buildTopNav(BuildContext context) {
     return Container(

@@ -7,8 +7,8 @@ class GetUserByUidVariablesBuilder {
   GetUserByUidVariablesBuilder(this._dataConnect, {required  this.uid,});
   Deserializer<GetUserByUidData> dataDeserializer = (dynamic json)  => GetUserByUidData.fromJson(jsonDecode(json));
   Serializer<GetUserByUidVariables> varsSerializer = (GetUserByUidVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetUserByUidData, GetUserByUidVariables>> execute() {
-    return ref().execute();
+  Future<QueryResult<GetUserByUidData, GetUserByUidVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
+    return ref().execute(fetchPolicy: fetchPolicy);
   }
 
   QueryRef<GetUserByUidData, GetUserByUidVariables> ref() {

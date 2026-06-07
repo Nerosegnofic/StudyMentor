@@ -38,13 +38,11 @@ class _StudentHomeState extends State<StudentHome> {
   final Map<String, String?> _iconCache = {};
 
   int _streak = 0;
-  int _rank = 0;
 
-  // Last known garden data â€” persists across BLoC state changes.
+  // Last known garden data — persists across BLoC state changes.
   Map<String, SubjectProgressModel> _gardenCache = {};
 
-  // â”€â”€ Screen-time live refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Ticks every second so the usage bar and cooldown countdown stay live.
+  // ── Screen-time live refresh ───────────────────────────────────────────────
   Timer? _usageTicker;
 
   @override
@@ -60,9 +58,8 @@ class _StudentHomeState extends State<StudentHome> {
       SyncInstalledAppsRequested(studentUid: widget.uid),
     );
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
-    _loadStreakAndRank();
+    _loadStreak();
 
-    // Refresh usage UI every second from MascotOverlayService.
     _usageTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -74,26 +71,13 @@ class _StudentHomeState extends State<StudentHome> {
     super.dispose();
   }
 
-  Future<void> _loadStreakAndRank() async {
+  Future<void> _loadStreak() async {
     try {
       final provider = DataConnectProvider();
-      final results = await Future.wait([
-        provider.getStudentProfile(widget.uid),
-        provider.getWeeklyLeaderboard(),
-      ]);
-      final profile = results[0] as Map<String, dynamic>;
-      final leaderboard = results[1] as List<Map<String, dynamic>>;
-
-      leaderboard.sort(
-        (a, b) => (b['weekly_xp'] as int).compareTo(a['weekly_xp'] as int),
-      );
-      final rankIndex = leaderboard.indexWhere((e) => e['uid'] == widget.uid);
-      final rank = rankIndex >= 0 ? rankIndex + 1 : 0;
-
+      final profile = await provider.getStudentProfile(widget.uid);
       if (mounted) {
         setState(() {
           _streak = (profile['current_streak'] as int?) ?? 0;
-          _rank = rank;
         });
       }
     } catch (_) {}
@@ -111,7 +95,7 @@ class _StudentHomeState extends State<StudentHome> {
       LoadStudentAppConfigRequested(studentUid: widget.uid),
     );
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
-    _loadStreakAndRank();
+    _loadStreak();
   }
 
   Future<void> _loadIcons(List<AppRuleModel> rules) async {
@@ -173,7 +157,7 @@ class _StudentHomeState extends State<StudentHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // â”€â”€ Garden area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── Garden area ───────────────────────────────────────────────────
               Container(
                 color: const Color(0xFFF8FAF6),
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -193,7 +177,7 @@ class _StudentHomeState extends State<StudentHome> {
                             text:
                                 'Welcome back, ${widget.fullName.split(' ').first}! ',
                           ),
-                          const TextSpan(text: 'â˜€ï¸'),
+                          const TextSpan(text: '☀️'),
                         ],
                       ),
                     ),
@@ -215,7 +199,7 @@ class _StudentHomeState extends State<StudentHome> {
                 ),
               ),
 
-              // â”€â”€ Parent + App rules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── Parent + App rules ──────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Column(
@@ -234,7 +218,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // â”€â”€ Atmospheric garden â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Atmospheric garden ──────────────────────────────────────────────────────
 
   Widget _buildGardenArea() {
     return BlocBuilder<GardenBloc, GardenState>(
@@ -420,7 +404,7 @@ class _StudentHomeState extends State<StudentHome> {
     return total / _gardenCache.length;
   }
 
-  // â”€â”€ Owl mascot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Owl mascot ──────────────────────────────────────────────────────────────
 
   Widget _buildOwlSection() {
     return Container(
@@ -464,7 +448,7 @@ class _StudentHomeState extends State<StudentHome> {
                     ),
                   ),
                   child: Text(
-                    'Great job today! Keep studying to help your garden bloom! ðŸŒ¸',
+                    'Great job today! Keep studying to help your garden bloom! 🌸',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade700,
@@ -485,28 +469,19 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // â”€â”€ Quick stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Quick stats ─────────────────────────────────────────────────────────────
 
   Widget _buildQuickStats() {
     final streakLabel = _streak == 1 ? '1 day' : '$_streak days';
-    final rankLabel = _rank > 0 ? '#$_rank' : '#0';
     return Row(
       children: [
         Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '0')),
         const SizedBox(width: 10),
         Expanded(
           child: _statCard(
-            const Text('ðŸ”¥', style: TextStyle(fontSize: 22)),
+            const Text('🔥', style: TextStyle(fontSize: 22)),
             'Streak',
             streakLabel,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _statCard(
-            const Text('â­', style: TextStyle(fontSize: 22)),
-            'Rank',
-            rankLabel,
           ),
         ),
       ],
@@ -598,7 +573,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // â”€â”€ Parent section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Parent section ──────────────────────────────────────────────────────────
 
   Widget _buildParentSection() {
     return Row(
@@ -640,7 +615,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // â”€â”€ App rules section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── App rules section ───────────────────────────────────────────────────────
 
   Widget _buildAppRulesSection() {
     return Column(
@@ -670,7 +645,7 @@ class _StudentHomeState extends State<StudentHome> {
         if (!_rulesLoading && _appRules.isEmpty)
           _buildNoRulesPlaceholder()
         else if (!_rulesLoading) ...[
-          // â”€â”€ Screen-time card (always visible when rules exist) â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Screen-time card (always visible when rules exist) ───────────────
           _buildScreenTimeCard(),
           const SizedBox(height: 12),
           _buildTimingBanner(),
@@ -681,11 +656,11 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // â”€â”€ Screen-time card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Screen-time card ────────────────────────────────────────────────────────
 
   /// Reads live data from [MascotOverlayService] and renders either:
-  ///   â€¢ A usage progress bar with remaining time, or
-  ///   â€¢ A cooldown banner with live countdown.
+  ///   • A usage progress bar with remaining time, or
+  ///   • A cooldown banner with live countdown.
   Widget _buildScreenTimeCard() {
     final svc = MascotOverlayService.instance;
     final thresholdSeconds =
@@ -695,33 +670,30 @@ class _StudentHomeState extends State<StudentHome> {
       return _buildCooldownBanner(svc.remainingSeconds);
     }
 
-    // Not blocked â€” show remaining usage time.
+    // Not blocked — show remaining usage time.
     return _buildUsageBar(
       usedSeconds: svc.totalUsageSeconds,
       totalSeconds: thresholdSeconds,
     );
   }
 
-  /// Animated progress bar showing used vs allowed screen time.
   Widget _buildUsageBar({required int usedSeconds, required int totalSeconds}) {
-    // Guard against zero-limit config (no usage limit set).
     if (totalSeconds <= 0) return const SizedBox.shrink();
 
     final remaining = (totalSeconds - usedSeconds).clamp(0, totalSeconds);
     final fraction = (usedSeconds / totalSeconds).clamp(0.0, 1.0);
 
-    // Color shifts: green â†’ amber â†’ red as usage fills up.
+    // Color shifts: green → amber → red as usage fills up.
     final Color barColor;
     if (fraction < 0.6) {
-      barColor = const Color(0xFF34A853); // green
+      barColor = const Color(0xFF34A853);
     } else if (fraction < 0.85) {
-      barColor = const Color(0xFFFFA726); // amber
+      barColor = const Color(0xFFFFA726);
     } else {
-      barColor = const Color(0xFFEF5350); // red
+      barColor = const Color(0xFFEF5350);
     }
 
     final Color bgColor = barColor.withValues(alpha: 0.10);
-
     final remainingLabel = _formatDurationFromSeconds(remaining);
     final totalLabel = _formatDurationFromSeconds(totalSeconds);
 
@@ -742,7 +714,6 @@ class _StudentHomeState extends State<StudentHome> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row
           Row(
             children: [
               Container(
@@ -763,7 +734,6 @@ class _StudentHomeState extends State<StudentHome> {
                 ),
               ),
               const Spacer(),
-              // Remaining time badge
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -785,8 +755,6 @@ class _StudentHomeState extends State<StudentHome> {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
@@ -797,8 +765,6 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
           const SizedBox(height: 8),
-
-          // Used / total label
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -817,14 +783,13 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  /// Cooldown banner shown when the student has hit their limit.
   Widget _buildCooldownBanner(int remainingSeconds) {
     final cooldownLabel = _formatDurationFromSeconds(remainingSeconds);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        // Warm amber gradient â€” firm but not alarming
+        // Warm amber gradient — firm but not alarming
         gradient: const LinearGradient(
           colors: [Color(0xFFFFF3E0), Color(0xFFFFF8F0)],
           begin: Alignment.topLeft,
@@ -845,7 +810,6 @@ class _StudentHomeState extends State<StudentHome> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Lock icon in circle
           Container(
             width: 44,
             height: 44,
@@ -860,14 +824,12 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
           const SizedBox(width: 14),
-
-          // Text block
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "You're on cooldown! ðŸ˜´",
+                  "You're on cooldown! 😴",
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -876,7 +838,7 @@ class _StudentHomeState extends State<StudentHome> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  "Apps will unlock again soon. Time to study! ðŸ“š",
+                  "Apps will unlock again soon. Time to study! 📚",
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.orange.shade800,
@@ -887,8 +849,6 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
           const SizedBox(width: 10),
-
-          // Live countdown pill
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -916,7 +876,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // â”€â”€ Timing banner (usage + cooldown pills) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Timing banner (usage + cooldown pills) ──────────────────────────────────
 
   Widget _buildTimingBanner() {
     return Container(
@@ -1044,7 +1004,7 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Helpers ─────────────────────────────────────────────────────────────────
 
   String _formatDuration(int hours, int minutes) {
     if (hours == 0 && minutes == 0) return '0m';
@@ -1054,18 +1014,14 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   /// Formats a raw second count into a human-readable duration string.
-  /// e.g. 3725 â†’ "1h 2m", 95 â†’ "1m 35s", 45 â†’ "45s"
+  /// e.g. 3725 → "1h 2m", 95 → "1m 35s", 45 → "45s"
   String _formatDurationFromSeconds(int seconds) {
     if (seconds <= 0) return '0s';
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
     final s = seconds % 60;
-    if (h > 0) {
-      return m > 0 ? '${h}h ${m}m' : '${h}h';
-    }
-    if (m > 0) {
-      return s > 0 ? '${m}m ${s}s' : '${m}m';
-    }
+    if (h > 0) return m > 0 ? '${h}h ${m}m' : '${h}h';
+    if (m > 0) return s > 0 ? '${m}m ${s}s' : '${m}m';
     return '${s}s';
   }
 

@@ -14,9 +14,6 @@ class MascotOverlayService {
   static const _overlayChannel = MethodChannel(
     'com.example.studymentor/overlay',
   );
-  static const _usageChannel = MethodChannel(
-    'com.example.studymentor/usage_stats',
-  );
   static const _accessibilityChannel = MethodChannel(
     'com.example.studymentor/accessibility',
   );
@@ -102,9 +99,8 @@ class MascotOverlayService {
       'studentUid': _studentUid,
     });
 
-    await _requestOverlayPermission();
-    await _requestUsageStatsPermission();
-    await _requestAccessibilityPermissionIfNeeded();
+    // Permissions are handled exclusively by PermissionGateScreen before
+    // this method is ever called. Do NOT request permissions here.
 
     await _syncStateFromNative();
 
@@ -376,6 +372,19 @@ class MascotOverlayService {
   // ── Limit-reached handling ─────────────────────────────────────────────────
 
   Future<void> _onLimitReached() async {
+    // ── Primary double-fire guard ──────────────────────────────────────────
+    // _isBlocked is set synchronously (before the first await), so Dart's
+    // single-threaded event loop guarantees a second concurrent call — e.g.
+    // PATH 1 from broadcastState and PATH 2 from startActivity on a warm
+    // resume — sees _isBlocked == true and exits cleanly without pushing a
+    // second QuizOverlayPage.
+    if (_isBlocked) {
+      debugPrint(
+        '[MascotOverlayService] _onLimitReached called while already blocked — ignoring duplicate.',
+      );
+      return;
+    }
+
     _isBlocked = true;
     _mascotState = MascotState.idle;
     debugPrint(
@@ -489,47 +498,6 @@ class MascotOverlayService {
     } on PlatformException catch (e) {
       debugPrint(
         '[MascotOverlayService] resetAccessibilityState error: ${e.message}',
-      );
-    }
-  }
-
-  // ── Permissions ────────────────────────────────────────────────────────────
-
-  Future<void> _requestOverlayPermission() async {
-    try {
-      await _overlayChannel.invokeMethod('requestOverlayPermission');
-    } on PlatformException catch (e) {
-      debugPrint(
-        '[MascotOverlayService] overlay permission error: ${e.message}',
-      );
-    }
-  }
-
-  Future<void> _requestUsageStatsPermission() async {
-    try {
-      await _usageChannel.invokeMethod('requestUsageStatsPermission');
-    } on PlatformException catch (e) {
-      debugPrint(
-        '[MascotOverlayService] usage stats permission error: ${e.message}',
-      );
-    }
-  }
-
-  Future<void> _requestAccessibilityPermissionIfNeeded() async {
-    try {
-      final isEnabled = await _accessibilityChannel.invokeMethod<bool>(
-        'isAccessibilityEnabled',
-      );
-      if (isEnabled != true) {
-        await _accessibilityChannel.invokeMethod(
-          'requestAccessibilityPermission',
-        );
-      } else {
-        debugPrint('[MascotOverlayService] Accessibility already enabled.');
-      }
-    } on PlatformException catch (e) {
-      debugPrint(
-        '[MascotOverlayService] accessibility permission error: ${e.message}',
       );
     }
   }
