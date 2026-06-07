@@ -35,8 +35,6 @@ class MascotOverlayService {
 
   // ── Quiz trigger stream ────────────────────────────────────────────────────
 
-  // Re-created lazily so it is never closed when a cold-launch onLimitReached
-  // arrives before init() has been called.
   bool _pendingQuizTrigger = false;
   StreamController<void>? _quizController;
 
@@ -95,9 +93,6 @@ class MascotOverlayService {
       'apps': _monitoredPackages.toList(),
     });
 
-    // Permissions are handled exclusively by PermissionGateScreen before
-    // this method is ever called. Do NOT request permissions here.
-
     await _syncStateFromNative();
 
     final settings = await _getSettings();
@@ -126,9 +121,7 @@ class MascotOverlayService {
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
     _quizDismissedForThisCooldown = false;
-    // Close the existing controller so listeners are cleaned up, but do NOT
-    // set _quizController to null — _quizStream will lazily create a new one
-    // if needed (e.g. for a subsequent session).
+    _quizShownForThisCooldown = false;
     _quizController?.close();
     debugPrint('[MascotOverlayService] Stopped.');
   }
@@ -172,38 +165,68 @@ class MascotOverlayService {
   MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
 
-  // ── Quiz-dismissed flag ────────────────────────────────────────────────────
+  // ── Quiz state ─────────────────────────────────────────────────────────────
 
-  /// Set to true when the student dismisses the quiz without completing it
-  /// during a cooldown period. Cleared by [_onUnblocked] when the cooldown
-  /// ends, and by [markQuizCompleted] when the student finishes the quiz.
-  ///
-  /// While true, [shouldShowQuiz] returns false so that warm-resume re-arms
-  /// and cold-launch recovery do not re-show the quiz for the same cooldown.
+  /// True when the student explicitly dismissed the quiz (tapped away without
+  /// finishing). Persisted to native SharedPreferences so it survives process
+  /// death. Cleared when the cooldown ends or a fresh cooldown starts.
   bool _quizDismissedForThisCooldown = false;
 
-  /// Called by [StudentScreen] when the QuizOverlayPage route pops without
-  /// the student completing the quiz (i.e. dismissed via the close button or
-  /// the testing back button). Suppresses re-triggers for this cooldown cycle.
+  /// True once the quiz overlay has been pushed onto the navigator at least
+  /// once during this cooldown. Persisted to native SharedPreferences.
+  ///
+  /// On cold relaunch we use this together with [_quizDismissedForThisCooldown]
+  /// to decide what to do:
+  ///   • dismissed=true              → suppress (student already said no)
+  ///   • dismissed=false, shown=true → quiz was visible when the app was
+  ///                                   killed — show it again
+  ///   • dismissed=false, shown=false → normal first trigger this cooldown
+  bool _quizShownForThisCooldown = false;
+
+  /// Called by [StudentScreen] immediately after pushing the QuizOverlayPage.
+  /// Records that the quiz was shown so a cold relaunch can re-show it if the
+  /// student had not yet dismissed it.
+  void markQuizShown() {
+    _quizShownForThisCooldown = true;
+    // Fire-and-forget — failure here is non-critical.
+    _timerServiceChannel.invokeMethod('markQuizShown').catchError((_) {});
+    debugPrint('[MascotOverlayService] Quiz marked as shown.');
+  }
+
+  /// Called by [StudentScreen] when the QuizOverlayPage pops without the
+  /// student completing it. Suppresses re-triggers for this cooldown cycle.
   void markQuizDismissed() {
     _quizDismissedForThisCooldown = true;
+    _quizShownForThisCooldown =
+        true; // implied — can only dismiss after showing
+    _timerServiceChannel
+        .invokeMethod('setQuizDismissed', {'dismissed': true})
+        .catchError((_) {});
     debugPrint(
       '[MascotOverlayService] Quiz dismissed — suppressing re-triggers '
       'until cooldown ends.',
     );
   }
 
-  /// Called by [StudentScreen] when the QuizOverlayPage route pops after the
-  /// student successfully completes the quiz (reached [QuizResultsLoaded] and
-  /// tapped Done). Allows a future re-trigger if the student hits the limit
-  /// again after the cooldown resets.
+  /// Called by [StudentScreen] when the QuizOverlayPage pops after the student
+  /// successfully completes the quiz. Clears both flags.
   void markQuizCompleted() {
     _quizDismissedForThisCooldown = false;
+    _quizShownForThisCooldown = false;
+    _timerServiceChannel
+        .invokeMethod('setQuizDismissed', {'dismissed': false})
+        .catchError((_) {});
     debugPrint('[MascotOverlayService] Quiz completed.');
   }
 
-  /// True when the quiz should be shown: the student is blocked AND has not
-  /// already dismissed the quiz for this cooldown cycle.
+  /// True when the quiz should be shown:
+  ///   • The student is in a cooldown AND
+  ///   • The student has NOT explicitly dismissed the quiz this cooldown.
+  ///
+  /// Note: [_quizShownForThisCooldown] alone does NOT suppress the quiz —
+  /// only an explicit dismissal does. This ensures that if the app is killed
+  /// while the quiz is open (without the student tapping dismiss), the quiz
+  /// reappears on the next launch.
   bool get shouldShowQuiz => _isBlocked && !_quizDismissedForThisCooldown;
 
   // ── Native timer service helpers ───────────────────────────────────────────
@@ -255,16 +278,32 @@ class MascotOverlayService {
       _isBlocked = (state['isBlocked'] as bool?) ?? false;
       _remainingCooldownSeconds = (state['cooldownRemaining'] as int?) ?? 0;
 
+      // ── Restore quiz state from native prefs ───────────────────────────────
+      // These survive process death so we know exactly what state the quiz was
+      // in when the app was last killed.
+      _quizDismissedForThisCooldown =
+          (state['quizDismissed'] as bool?) ?? false;
+      _quizShownForThisCooldown = (state['quizShown'] as bool?) ?? false;
+
       if (_isBlocked) {
         await _accessibilityChannel.invokeMethod('setBlocked', {
           'blocked': true,
         });
 
-        // ── Cold-launch recovery ────────────────────────────────────────────
-        // Only fire the quiz trigger if the student has not already dismissed
-        // the quiz for this cooldown cycle. This prevents the quiz from
-        // reappearing on every cold launch while the cooldown is still running.
+        // ── Cold-launch quiz recovery ──────────────────────────────────────
+        //
+        // Decision table:
+        //   dismissed=true              → do NOT show (student said no)
+        //   dismissed=false, shown=true → SHOW (quiz was open when app died)
+        //   dismissed=false, shown=false → SHOW (normal first trigger)
+        //
+        // In all "SHOW" cases we fire the quiz trigger as normal.
         if (!_quizDismissedForThisCooldown) {
+          debugPrint(
+            '[MascotOverlayService] Cold-launch recovery: blocked=true, '
+            'dismissed=false (shown=$_quizShownForThisCooldown) — '
+            'firing quiz trigger.',
+          );
           if (_quizStream.hasListener) {
             _quizStream.add(null);
           } else {
@@ -281,7 +320,9 @@ class MascotOverlayService {
       debugPrint(
         '[MascotOverlayService] Restored state from native — '
         'usage: $_totalUsageSeconds s, blocked: $_isBlocked, '
-        'cooldown remaining: $_remainingCooldownSeconds s.',
+        'cooldown remaining: $_remainingCooldownSeconds s, '
+        'quizDismissed: $_quizDismissedForThisCooldown, '
+        'quizShown: $_quizShownForThisCooldown.',
       );
     } on PlatformException catch (e) {
       debugPrint('[MascotOverlayService] getTimerState error: ${e.message}');
@@ -395,6 +436,7 @@ class MascotOverlayService {
     _isBlocked = true;
     _quizDismissedForThisCooldown =
         false; // fresh cooldown — reset dismiss flag
+    _quizShownForThisCooldown = false; // fresh cooldown — quiz not yet shown
     _mascotState = MascotState.idle;
     debugPrint(
       '[MascotOverlayService] Limit reached — '
@@ -423,6 +465,7 @@ class MascotOverlayService {
     _totalUsageSeconds = 0;
     _mascotState = MascotState.idle;
     _quizDismissedForThisCooldown = false; // cooldown over — always reset
+    _quizShownForThisCooldown = false; // cooldown over — always reset
 
     await _hideUsageNotification();
     await _hideCooldownNotification();

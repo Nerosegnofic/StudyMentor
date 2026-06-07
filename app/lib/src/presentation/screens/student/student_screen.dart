@@ -49,25 +49,19 @@ class _StudentScreenState extends State<StudentScreen>
   bool _initializing = true;
 
   /// True while we are checking whether all permissions are granted.
-  /// Kept separate from [_initializing] so the two async paths are clear.
   bool _checkingPermissions = true;
 
   /// Once set to true, the permission gate is complete and the main
   /// student shell (nav bar + screens) is rendered.
   bool _permissionsGranted = false;
 
-  /// True when a quiz trigger arrived while the shell was not yet ready
-  /// (i.e. [_initializing] or [_checkingPermissions] was still true, or
-  /// [_permissionsGranted] was false). Flushed by [_onShellReady].
+  /// True when a quiz trigger arrived while the shell was not yet ready.
+  /// Flushed by [_onShellReady].
   bool _pendingQuizAfterInit = false;
 
   /// Defense-in-depth guard against double-push of QuizOverlayPage.
   /// Set to true immediately before pushing, cleared in the .then() callback
-  /// after the route pops. Prevents a second quiz push if a duplicate
-  /// onLimitReached signal arrives while the quiz is already on the stack
-  /// (e.g. a race between the broadcastState path and the startActivity path
-  /// on a warm resume that slips past the _isBlocked guard in
-  /// MascotOverlayService).
+  /// after the route pops.
   bool _quizIsOpen = false;
 
   /// Stable repository instance — created once in initState.
@@ -103,22 +97,15 @@ class _StudentScreenState extends State<StudentScreen>
     DataConnectProvider().updateLastActiveAt().catchError((_) {});
     _loadCoinsAndLevel();
 
-    // Run the permission check independently of MascotOverlayService.init()
-    // so both can proceed in parallel.
     _checkPermissions();
   }
 
   /// Checks whether all required permissions are already granted.
-  /// If they are, skips the gate entirely. If not, the gate screen handles
-  /// the flow and calls [_onPermissionsGranted] when done.
   Future<void> _checkPermissions() async {
     final missing = await PermissionService.firstMissingPermission();
     if (!mounted) return;
 
     if (missing == null) {
-      // All permissions are already granted — skip the gate.
-      // Activate student mode here since PermissionGateScreen (which normally
-      // does this) is being bypassed entirely on this path.
       await DeviceAdminService.onPermissionsGranted();
       setState(() {
         _checkingPermissions = false;
@@ -126,13 +113,10 @@ class _StudentScreenState extends State<StudentScreen>
       });
       _onShellReady();
     } else {
-      // Show the gate screen.
       setState(() {
         _checkingPermissions = false;
         _permissionsGranted = false;
       });
-      // Shell is not ready yet (permission gate is shown); _onShellReady()
-      // will be called by _onPermissionsGranted() once the gate completes.
     }
   }
 
@@ -183,17 +167,15 @@ class _StudentScreenState extends State<StudentScreen>
     });
 
     // Warm-resume re-arm: if the limit was hit while the app was backgrounded
-    // the quiz trigger may never have been delivered (or the shell wasn't ready
-    // to receive it). Fire the quiz now only if the service says we're still
-    // blocked AND the student has not already dismissed the quiz for this
-    // cooldown cycle.
+    // the quiz trigger may never have been delivered. Fire the quiz now only if
+    // the service says we should show it (blocked AND not dismissed).
     if (_permissionsGranted &&
         !_initializing &&
         !_checkingPermissions &&
         !_quizIsOpen &&
         MascotOverlayService.instance.shouldShowQuiz) {
       debugPrint(
-        '[StudentScreen] warm-resume: isBlocked=true and no quiz open — re-arming.',
+        '[StudentScreen] warm-resume: shouldShowQuiz=true and no quiz open — re-arming.',
       );
       _openQuizOverlay();
     }
@@ -211,12 +193,9 @@ class _StudentScreenState extends State<StudentScreen>
 
   /// Called by the [MascotOverlayService] quiz stream whenever the student
   /// hits their usage limit.
-  ///
-  /// If the shell is not yet ready (still initialising or waiting on
-  /// permissions), the trigger is buffered and replayed by [_onShellReady].
   void _onQuizTriggered() {
     // If the student already dismissed the quiz for this cooldown cycle,
-    // suppress the trigger entirely — no buffering, no opening.
+    // suppress the trigger entirely.
     if (!MascotOverlayService.instance.shouldShowQuiz) {
       debugPrint(
         '[StudentScreen] quiz trigger suppressed — already dismissed '
@@ -238,12 +217,9 @@ class _StudentScreenState extends State<StudentScreen>
   }
 
   /// Called once both async init paths have completed AND permissions are
-  /// granted. Flushes any buffered quiz trigger via [addPostFrameCallback] so
-  /// the shell widget tree has had at least one frame to build before a route
-  /// is pushed on top of it.
+  /// granted. Flushes any buffered quiz trigger.
   void _onShellReady() {
     if (!mounted) return;
-    // Only flush when both async paths are done and the shell is visible.
     if (_initializing || _checkingPermissions || !_permissionsGranted) return;
 
     if (_pendingQuizAfterInit && MascotOverlayService.instance.shouldShowQuiz) {
@@ -255,8 +231,6 @@ class _StudentScreenState extends State<StudentScreen>
         if (mounted) _openQuizOverlay();
       });
     } else if (_pendingQuizAfterInit) {
-      // Trigger was buffered but the student already dismissed the quiz for
-      // this cooldown — drop it silently.
       _pendingQuizAfterInit = false;
       debugPrint(
         '[StudentScreen] shell ready — buffered quiz trigger dropped '
@@ -268,13 +242,6 @@ class _StudentScreenState extends State<StudentScreen>
   void _openQuizOverlay() {
     if (!mounted) return;
 
-    // ── Defense-in-depth guard ─────────────────────────────────────────────
-    // The primary guard lives in MascotOverlayService._onLimitReached()
-    // (the _isBlocked early-return). This flag catches any duplicate signal
-    // that slips through — e.g. a race between broadcastState PATH 1 and the
-    // startActivity PATH 2 on a warm resume where both arrive after _isBlocked
-    // has already been set to true by the first call but before the stream
-    // listener fires for the second.
     if (_quizIsOpen) {
       debugPrint(
         '[StudentScreen] _openQuizOverlay called while quiz is already open — ignoring duplicate.',
@@ -283,6 +250,11 @@ class _StudentScreenState extends State<StudentScreen>
     }
 
     _quizIsOpen = true;
+
+    // Tell native that the quiz is now on screen so a cold relaunch while the
+    // quiz is visible (without the student dismissing) will re-show the quiz.
+    MascotOverlayService.instance.markQuizShown();
+
     Navigator.of(context)
         .push(
           MaterialPageRoute<bool?>(
