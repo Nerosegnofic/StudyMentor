@@ -376,6 +376,15 @@ extend type Student {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_COUNT)
   """
+  ✨ Count the number of rows in the `Student` table where the `level` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  level_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Student.level", purpose: QUERY_COUNT)
+  """
   ✨ Count the number of rows in the `Student` table where the `parentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   parentUid_count(
@@ -466,6 +475,15 @@ extend type Student {
     distinct: Boolean = false
   ): Int @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_SUM)
   """
+  ✨ Sum the `level` field in the `Student` table.
+  """
+  level_sum(
+    """
+    Set to true to sum the distinct values.
+    """
+    distinct: Boolean = false
+  ): Int @fdc_generated(from: "Student.level", purpose: QUERY_SUM)
+  """
   ✨ Sum the `totalCoins` field in the `Student` table.
   """
   totalCoins_sum(
@@ -520,6 +538,15 @@ extend type Student {
     distinct: Boolean = false
   ): Float @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_AVG)
   """
+  ✨ Average the `level` field in the `Student` table.
+  """
+  level_avg(
+    """
+    Set to true to average the distinct values.
+    """
+    distinct: Boolean = false
+  ): Float @fdc_generated(from: "Student.level", purpose: QUERY_AVG)
+  """
   ✨ Average the `totalCoins` field in the `Student` table.
   """
   totalCoins_avg(
@@ -568,6 +595,10 @@ extend type Student {
   """
   lastActiveAt_min: Timestamp @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_MIN)
   """
+  ✨ Minimum of the `level` field in the `Student` table.
+  """
+  level_min: Int @fdc_generated(from: "Student.level", purpose: QUERY_MIN)
+  """
   ✨ Minimum of the `totalCoins` field in the `Student` table.
   """
   totalCoins_min: Int @fdc_generated(from: "Student.totalCoins", purpose: QUERY_MIN)
@@ -595,6 +626,10 @@ extend type Student {
   ✨ Maximum of the `lastActiveAt` field in the `Student` table.
   """
   lastActiveAt_max: Timestamp @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `level` field in the `Student` table.
+  """
+  level_max: Int @fdc_generated(from: "Student.level", purpose: QUERY_MAX)
   """
   ✨ Maximum of the `totalCoins` field in the `Student` table.
   """
@@ -625,6 +660,15 @@ extend type StudentAvatar {
   ✨ Count the number of rows in the `StudentAvatar` table.
   """
   _count: Int! @fdc_generated(from: "StudentAvatar.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentAvatar` table where the `avatarConfig` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  avatarConfig_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentAvatar.avatarConfig", purpose: QUERY_COUNT)
   """
   ✨ Count the number of rows in the `StudentAvatar` table where the `equippedAccessory` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """

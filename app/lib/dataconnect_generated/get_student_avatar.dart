@@ -28,6 +28,7 @@ class GetStudentAvatarStudentAvatar {
   final String? equippedAccessory;
   final String? equippedBackground;
   final String? equippedSpecial;
+  final String? avatarConfig;
   GetStudentAvatarStudentAvatar.fromJson(dynamic json):
   
   gender = nativeFromJson<String>(json['gender']),
@@ -38,7 +39,8 @@ class GetStudentAvatarStudentAvatar {
   equippedShoes = json['equippedShoes'] == null ? null : nativeFromJson<String>(json['equippedShoes']),
   equippedAccessory = json['equippedAccessory'] == null ? null : nativeFromJson<String>(json['equippedAccessory']),
   equippedBackground = json['equippedBackground'] == null ? null : nativeFromJson<String>(json['equippedBackground']),
-  equippedSpecial = json['equippedSpecial'] == null ? null : nativeFromJson<String>(json['equippedSpecial']);
+  equippedSpecial = json['equippedSpecial'] == null ? null : nativeFromJson<String>(json['equippedSpecial']),
+  avatarConfig = json['avatarConfig'] == null ? null : nativeFromJson<String>(json['avatarConfig']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -57,11 +59,12 @@ class GetStudentAvatarStudentAvatar {
     equippedShoes == otherTyped.equippedShoes && 
     equippedAccessory == otherTyped.equippedAccessory && 
     equippedBackground == otherTyped.equippedBackground && 
-    equippedSpecial == otherTyped.equippedSpecial;
+    equippedSpecial == otherTyped.equippedSpecial && 
+    avatarConfig == otherTyped.avatarConfig;
     
   }
   @override
-  int get hashCode => Object.hashAll([gender.hashCode, skinTone.hashCode, equippedHair.hashCode, equippedOutfit.hashCode, equippedBottom.hashCode, equippedShoes.hashCode, equippedAccessory.hashCode, equippedBackground.hashCode, equippedSpecial.hashCode]);
+  int get hashCode => Object.hashAll([gender.hashCode, skinTone.hashCode, equippedHair.hashCode, equippedOutfit.hashCode, equippedBottom.hashCode, equippedShoes.hashCode, equippedAccessory.hashCode, equippedBackground.hashCode, equippedSpecial.hashCode, avatarConfig.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -89,6 +92,9 @@ class GetStudentAvatarStudentAvatar {
     if (equippedSpecial != null) {
       json['equippedSpecial'] = nativeToJson<String?>(equippedSpecial);
     }
+    if (avatarConfig != null) {
+      json['avatarConfig'] = nativeToJson<String?>(avatarConfig);
+    }
     return json;
   }
 
@@ -102,6 +108,7 @@ class GetStudentAvatarStudentAvatar {
     this.equippedAccessory,
     this.equippedBackground,
     this.equippedSpecial,
+    this.avatarConfig,
   });
 }
 

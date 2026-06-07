@@ -300,6 +300,7 @@ class DataConnectProvider {
       'equipped_accessory': a.equippedAccessory,
       'equipped_background': a.equippedBackground,
       'equipped_special': a.equippedSpecial,
+      'avatar_config': a.avatarConfig,
     };
   }
 
@@ -323,6 +324,7 @@ class DataConnectProvider {
     String? equippedAccessory,
     String? equippedBackground,
     String? equippedSpecial,
+    String? avatarConfig,
   }) async {
     await _connector
         .upsertStudentAvatar(
@@ -337,6 +339,7 @@ class DataConnectProvider {
         .equippedAccessory(equippedAccessory)
         .equippedBackground(equippedBackground)
         .equippedSpecial(equippedSpecial)
+        .avatarConfig(avatarConfig)
         .execute();
   }
 

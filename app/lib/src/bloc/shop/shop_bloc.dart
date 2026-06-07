@@ -137,11 +137,12 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
         skinTone: newConfig.skinTone,
         equippedHair: newConfig.equippedHair,
         equippedOutfit: newConfig.equippedOutfit,
-        equippedBottom: newConfig.equippedBottom,
-        equippedShoes: newConfig.equippedShoes,
+        equippedBottom: newConfig.equippedHairColor,
+        equippedShoes: newConfig.equippedOutfitColor,
         equippedAccessory: newConfig.equippedAccessory,
         equippedBackground: newConfig.equippedBackground,
-        equippedSpecial: newConfig.equippedSpecial,
+        equippedSpecial: newConfig.equippedFacialHair,
+        avatarConfig: newConfig.extrasJson,
       );
     } catch (_) {
       // Roll back on failure
@@ -165,11 +166,12 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
         skinTone: event.newConfig.skinTone,
         equippedHair: event.newConfig.equippedHair,
         equippedOutfit: event.newConfig.equippedOutfit,
-        equippedBottom: event.newConfig.equippedBottom,
-        equippedShoes: event.newConfig.equippedShoes,
+        equippedBottom: event.newConfig.equippedHairColor,
+        equippedShoes: event.newConfig.equippedOutfitColor,
         equippedAccessory: event.newConfig.equippedAccessory,
         equippedBackground: event.newConfig.equippedBackground,
-        equippedSpecial: event.newConfig.equippedSpecial,
+        equippedSpecial: event.newConfig.equippedFacialHair,
+        avatarConfig: event.newConfig.extrasJson,
       );
     } catch (_) {
       // Silently fail; avatar is visual-only
@@ -182,11 +184,15 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     return switch (item.category) {
       ItemCategory.hair => config.copyWith(equippedHair: item.id),
       ItemCategory.outfit => config.copyWith(equippedOutfit: item.id),
-      ItemCategory.bottom => config.copyWith(equippedBottom: item.id),
-      ItemCategory.shoes => config.copyWith(equippedShoes: item.id),
+      ItemCategory.hairColor => config.copyWith(equippedHairColor: item.id),
+      ItemCategory.outfitColor => config.copyWith(equippedOutfitColor: item.id),
       ItemCategory.accessory => config.copyWith(equippedAccessory: item.id),
-      ItemCategory.background => config.copyWith(equippedBackground: item.id),
-      ItemCategory.special => config.copyWith(equippedSpecial: item.id),
+      ItemCategory.facialHair => config.copyWith(equippedFacialHair: item.id),
+      ItemCategory.facialHairColor => config.copyWith(equippedFacialHairColor: item.id),
+      ItemCategory.eyes => config.copyWith(equippedEyes: item.id),
+      ItemCategory.eyebrow => config.copyWith(equippedEyebrow: item.id),
+      ItemCategory.mouth => config.copyWith(equippedMouth: item.id),
+      ItemCategory.skinTone => config.copyWith(equippedSkinTone: item.id),
     };
   }
 
@@ -194,11 +200,15 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     return switch (category) {
       ItemCategory.hair => config.copyWith(equippedHair: null),
       ItemCategory.outfit => config.copyWith(equippedOutfit: null),
-      ItemCategory.bottom => config.copyWith(equippedBottom: null),
-      ItemCategory.shoes => config.copyWith(equippedShoes: null),
+      ItemCategory.hairColor => config.copyWith(equippedHairColor: null),
+      ItemCategory.outfitColor => config.copyWith(equippedOutfitColor: null),
       ItemCategory.accessory => config.copyWith(equippedAccessory: null),
-      ItemCategory.background => config.copyWith(equippedBackground: null),
-      ItemCategory.special => config.copyWith(equippedSpecial: null),
+      ItemCategory.facialHair => config.copyWith(equippedFacialHair: null),
+      ItemCategory.facialHairColor => config.copyWith(equippedFacialHairColor: null),
+      ItemCategory.eyes => config.copyWith(equippedEyes: null),
+      ItemCategory.eyebrow => config.copyWith(equippedEyebrow: null),
+      ItemCategory.mouth => config.copyWith(equippedMouth: null),
+      ItemCategory.skinTone => config.copyWith(equippedSkinTone: null),
     };
   }
 }

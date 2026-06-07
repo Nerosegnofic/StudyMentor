@@ -7,7 +7,7 @@ import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../../utils/student_rank_utils.dart';
 import '../../widgets/avatar_widget.dart';
-import 'student_avatar_customization.dart';
+import 'shop/custom_shop_screen.dart';
 import 'student_settings.dart';
 
 class StudentProfile extends StatefulWidget {
@@ -149,9 +149,10 @@ class _StudentProfileState extends State<StudentProfile> {
                     MaterialPageRoute(
                       builder: (_) => BlocProvider.value(
                         value: shopBloc,
-                        child: StudentAvatarCustomization(
-                          uid: widget.uid,
-                          config: _avatarConfig,
+                        child: CustomShopScreen(
+                          studentUid: widget.uid,
+                          currentCoins: _totalCoins,
+                          currentLevel: _level,
                         ),
                       ),
                     ),
@@ -171,7 +172,7 @@ class _StudentProfileState extends State<StudentProfile> {
                 ),
               ],
             ),
-            child: AvatarWidget(config: _avatarConfig, size: 96),
+            child: AvatarWidget(config: _avatarConfig, size: 96.0),
           ),
         ),
         Positioned(

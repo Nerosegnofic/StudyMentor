@@ -11,7 +11,6 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
 import '../../widgets/parent_verification_dialog.dart';
-import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/permission_service.dart';
@@ -20,7 +19,8 @@ import '../../../data/providers/dataconnect_provider.dart';
 import 'permission_gate_screen.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
-import 'student_shop.dart';
+import 'student_profile.dart';
+import 'shop/custom_shop_screen.dart';
 import 'student_profile.dart';
 
 /// Base URL for the AI Engine.
@@ -150,6 +150,7 @@ class _StudentScreenState extends State<StudentScreen>
         final avatarMap = results[1];
         setState(() {
           _coins = (profile['total_coins'] as int?) ?? 0;
+          // _coins = 200; test value 
           _xp = (profile['total_xp'] as int?) ?? 0;
           _level = (_xp ~/ 500) + 1;
           if (avatarMap != null) {
@@ -315,20 +316,11 @@ class _StudentScreenState extends State<StudentScreen>
                       index: _selectedIndex,
                       children: [
                         StudentHome(fullName: widget.fullName, uid: widget.uid),
-                        StudentShop(
-                          uid: widget.uid,
-                          coins: _coins,
-                          level: _level,
-                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
-            bottomNavigationBar: StudentNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: (index) => setState(() => _selectedIndex = index),
             ),
           ),
         ),
@@ -382,7 +374,7 @@ class _StudentScreenState extends State<StudentScreen>
                 ],
               ),
               child: ClipOval(
-                child: AvatarWidget(config: _avatarConfig, size: 43),
+                child: AvatarWidget(config: _avatarConfig, size: 43.0),
               ),
             ),
           ),
@@ -393,10 +385,29 @@ class _StudentScreenState extends State<StudentScreen>
             label: _formatNum(_xp),
           ),
           const SizedBox(width: 8),
-          _navPill(
-            icon: Icons.monetization_on_rounded,
-            iconColor: const Color(0xFFFFA000),
-            label: _formatNum(_coins),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<ShopBloc>(),
+                    child: CustomShopScreen(
+                      studentUid: widget.uid,
+                      currentCoins: _coins,
+                      currentLevel: _level,
+                    ),
+                  ),
+                ),
+              ).then((_) {
+                if (mounted) _loadCoinsAndLevel();
+              });
+            },
+            child: _navPill(
+              icon: Icons.monetization_on_rounded,
+              iconColor: const Color(0xFFFFA000),
+              label: _formatNum(_coins),
+            ),
           ),
           const SizedBox(width: 6),
           Stack(

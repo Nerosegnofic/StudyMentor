@@ -109,6 +109,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthAuthenticated(user));
       }
     } catch (e) {
+      debugPrint('[AUTH DEBUG] Login error: $e');
       emit(AuthError(_mapException(e)));
     }
   }
