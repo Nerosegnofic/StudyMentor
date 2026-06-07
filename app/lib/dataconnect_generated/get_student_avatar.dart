@@ -7,8 +7,8 @@ class GetStudentAvatarVariablesBuilder {
   GetStudentAvatarVariablesBuilder(this._dataConnect, {required  this.studentUid,});
   Deserializer<GetStudentAvatarData> dataDeserializer = (dynamic json)  => GetStudentAvatarData.fromJson(jsonDecode(json));
   Serializer<GetStudentAvatarVariables> varsSerializer = (GetStudentAvatarVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetStudentAvatarData, GetStudentAvatarVariables>> execute() {
-    return ref().execute();
+  Future<QueryResult<GetStudentAvatarData, GetStudentAvatarVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
+    return ref().execute(fetchPolicy: fetchPolicy);
   }
 
   QueryRef<GetStudentAvatarData, GetStudentAvatarVariables> ref() {

@@ -7,8 +7,8 @@ class GetStudentWithParentVariablesBuilder {
   GetStudentWithParentVariablesBuilder(this._dataConnect, {required  this.uid,});
   Deserializer<GetStudentWithParentData> dataDeserializer = (dynamic json)  => GetStudentWithParentData.fromJson(jsonDecode(json));
   Serializer<GetStudentWithParentVariables> varsSerializer = (GetStudentWithParentVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetStudentWithParentData, GetStudentWithParentVariables>> execute() {
-    return ref().execute();
+  Future<QueryResult<GetStudentWithParentData, GetStudentWithParentVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
+    return ref().execute(fetchPolicy: fetchPolicy);
   }
 
   QueryRef<GetStudentWithParentData, GetStudentWithParentVariables> ref() {

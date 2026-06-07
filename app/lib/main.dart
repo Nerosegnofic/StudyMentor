@@ -133,35 +133,32 @@ class RootPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-      // React to every meaningful auth transition to keep the native side
-      // in sync. We use listenWhen to avoid redundant native calls on
-      // unrelated state changes (e.g. AppConfigLoading, InstalledAppsSyncing).
       listenWhen: (prev, curr) =>
           curr is AuthAuthenticated ||
           curr is AuthUnauthenticated ||
           curr is AuthEmailUnverified,
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is AuthAuthenticated) {
           final isStudent = state.user.role.toLowerCase() != 'parent';
-          if (isStudent) {
-            // Student just logged in — enable accessibility guard and
-            // request Device Admin if not already granted.
-            DeviceAdminService.onStudentLogin();
-          } else {
-            // Parent logged in — disable the guard.
-            DeviceAdminService.onStudentLogout();
+          if (!isStudent) {
+            // Parent logged in — ensure the Settings guard is disabled.
+            await DeviceAdminService.onStudentLogout();
           }
+          // Do NOT activate student mode for students here. The Settings block
+          // must not be enabled until ALL required permissions have been
+          // granted — otherwise the student is locked out of Settings mid-flow
+          // and cannot enable the remaining permissions.
+          //
+          // Student mode (isStudentLoggedIn = true) is activated by
+          // PermissionGateScreen once every permission is confirmed, just
+          // before navigating to student_home.
         } else if (state is AuthUnauthenticated ||
             state is AuthEmailUnverified) {
           // Logged out or unverified — disable the guard.
-          DeviceAdminService.onStudentLogout();
+          await DeviceAdminService.onStudentLogout();
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
-        // AuthLoading only triggers a root rebuild during the true cold-start
-        // flow (AuthInitial → AuthLoading). Any AuthLoading emitted mid-session
-        // (e.g. during student creation) is ignored here, preventing RootPage
-        // from replacing the parent dashboard with an infinite spinner.
         buildWhen: (prev, curr) =>
             curr is AuthInitial ||
             (curr is AuthLoading && prev is AuthInitial) ||

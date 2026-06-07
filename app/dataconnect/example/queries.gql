@@ -9,7 +9,6 @@ query GetUserByUid($uid: String!) @auth(level: USER) {
   }
 }
 
-# ── CHANGED: added username ───────────────────────────────────────────────────
 query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
   students(where: { parent: { uid: { eq: $parentUid } } }) {
     uid
@@ -71,12 +70,10 @@ mutation DeleteAllInstalledAppsForStudent($studentUid: String!) @auth(level: USE
 
 # ── Student Profile ───────────────────────────────────────────────────────────
 
-# ── CHANGED: added username ───────────────────────────────────────────────────
 query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Students are authorized to read their own profile data.") {
   student(key: { uid: $uid }) {
     uid
     username
-    friendCode
     totalXp
     totalCoins
     gradeLevel
@@ -87,97 +84,9 @@ query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Stude
 
 # ── Username Uniqueness Check ─────────────────────────────────────────────────
 
-# Used by dataconnect_provider.dart before InsertStudent to detect duplicate
-# usernames before the @unique constraint on the Student table rejects the
-# insert with an opaque gRPC error. Returns at most 1 row — we only need to
-# know whether any student already holds this username.
-# ── CHANGED: returns `username` (already known to caller) instead of `uid`
-#    to avoid exposing identifiers purely for an existence check. insecureReason
-#    corrected to reflect client-side usage during student registration. ────────
 query GetStudentByUsername($username: String!) @auth(level: USER, insecureReason: "Username uniqueness is checked client-side during student registration; no identifier is exposed beyond the username the caller already holds.") {
   students(where: { username: { eq: $username } }, limit: 1) {
     username
-  }
-}
-
-# ── Leaderboard ───────────────────────────────────────────────────────────────
-
-# ── CHANGED: replaced user { fullName } with username (leaderboard shows username) ──
-query GetWeeklyLeaderboard @auth(level: USER, insecureReason: "Leaderboard is visible to all authenticated students.") {
-  students(orderBy: [{ weeklyXp: DESC }, { totalXp: DESC }], limit: 100) {
-    uid
-    username
-    weeklyXp
-    totalXp
-    lastActiveAt
-  }
-}
-
-# ── CHANGED: added username ───────────────────────────────────────────────────
-query GetStudentByFriendCode($friendCode: String!) @auth(level: USER, insecureReason: "Friend code lookup requires knowing the exact code.") {
-  students(where: { friendCode: { eq: $friendCode } }, limit: 1) {
-    uid
-    username
-    friendCode
-    user {
-      fullName
-    }
-  }
-}
-
-query GetSentFriendRequests($fromStudentUid: String!) @auth(level: USER, insecureReason: "Students can view their own sent requests.") {
-  friendRequests(
-    where: { fromStudentUid: { eq: $fromStudentUid } }
-    orderBy: [{ createdAt: DESC }]
-  ) {
-    id
-    toFriendCode
-    toStudentName
-    status
-    createdAt
-  }
-}
-
-# ── CHANGED: added username to the friend sub-selection ──────────────────────
-query GetFriendsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Students can view their own friends list.") {
-  friendships(where: { studentUid: { eq: $studentUid } }) {
-    id
-    friendUid
-    friend {
-      uid
-      username
-      totalXp
-      weeklyXp
-      lastActiveAt
-      user {
-        fullName
-      }
-    }
-  }
-}
-
-# ── Parent: Friend Request Approval ──────────────────────────────────────────
-
-query GetPendingFriendRequestsForParent($parentUid: String!) @auth(level: USER, insecureReason: "Parents are authorized to view their children's pending friend requests.") {
-  friendRequests(
-    where: {
-      fromStudent: { parent: { uid: { eq: $parentUid } } }
-      status: { eq: "pending_parent_approval" }
-    }
-    orderBy: [{ createdAt: DESC }]
-  ) {
-    id
-    toFriendCode
-    toStudentName
-    toStudentUid
-    createdAt
-    fromStudentUid
-    fromStudent {
-      uid
-      user {
-        fullName
-      }
-    }
   }
 }
 
@@ -226,21 +135,6 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
     id
     packageName
     appLabel
-  }
-}
-
-# ── Sibling Leaderboard ───────────────────────────────────────────────────────
-
-query GetSiblingLeaderboard($parentUid: String!) @auth(level: USER, insecureReason: "Students can view their siblings' leaderboard.") {
-  students(
-    where: { parent: { uid: { eq: $parentUid } } }
-    orderBy: [{ weeklyXp: DESC }, { totalXp: DESC }]
-  ) {
-    uid
-    username
-    weeklyXp
-    totalXp
-    lastActiveAt
   }
 }
 
