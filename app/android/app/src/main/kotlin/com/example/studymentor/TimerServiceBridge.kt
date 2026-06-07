@@ -148,19 +148,61 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                     }
 
                     "getTimerState" -> {
-                        val prefs   = UsageTimerService.prefs(activity)
-                        val total   = prefs.getInt("total_usage_seconds", 0)
-                        val blocked = prefs.getBoolean("is_blocked", false)
-                        val cdRem   = prefs.getInt("cooldown_remaining_seconds", 0)
-                        val limit   = prefs.getInt("usage_limit_seconds", 1800)
+                        val prefs         = UsageTimerService.prefs(activity)
+                        val total         = prefs.getInt("total_usage_seconds", 0)
+                        val blocked       = prefs.getBoolean("is_blocked", false)
+                        val cdRem         = prefs.getInt("cooldown_remaining_seconds", 0)
+                        val limit         = prefs.getInt("usage_limit_seconds", 1800)
+                        // ── Quiz state ────────────────────────────────────────
+                        // quizDismissed: student explicitly tapped away without finishing
+                        // quizShown:     quiz was pushed onto the screen at least once
+                        //
+                        // On cold relaunch the Dart layer uses these to decide:
+                        //   dismissed=true  → suppress the quiz for this cooldown
+                        //   dismissed=false, shown=true  → quiz was open when app died,
+                        //                                  show it again
+                        //   dismissed=false, shown=false → normal first trigger
+                        val quizDismissed = prefs.getBoolean(UsageTimerService.KEY_QUIZ_DISMISSED, false)
+                        val quizShown     = prefs.getBoolean(UsageTimerService.KEY_QUIZ_SHOWN, false)
                         result.success(
                             mapOf(
                                 "totalUsage"        to total,
                                 "isBlocked"         to blocked,
                                 "cooldownRemaining" to cdRem,
                                 "usageLimit"        to limit,
+                                "quizDismissed"     to quizDismissed,
+                                "quizShown"         to quizShown,
                             ),
                         )
+                    }
+
+                    // ── Quiz state mutations ───────────────────────────────────
+                    // Called by Flutter's MascotOverlayService when the quiz
+                    // overlay is pushed or popped so native prefs stay in sync.
+
+                    "setQuizDismissed" -> {
+                        // Student explicitly dismissed (tapped away without finishing).
+                        val dismissed = call.argument<Boolean>("dismissed") ?: false
+                        UsageTimerService.prefs(activity)
+                            .edit()
+                            .putBoolean(UsageTimerService.KEY_QUIZ_DISMISSED, dismissed)
+                            // Dismissing implies the quiz was shown at some point.
+                            .putBoolean(UsageTimerService.KEY_QUIZ_SHOWN, if (dismissed) true
+                                else UsageTimerService.prefs(activity)
+                                         .getBoolean(UsageTimerService.KEY_QUIZ_SHOWN, false))
+                            .apply()
+                        timerService?.setQuizDismissed(dismissed)
+                        result.success(null)
+                    }
+
+                    "markQuizShown" -> {
+                        // Quiz overlay has been pushed — mark as shown without dismissing.
+                        UsageTimerService.prefs(activity)
+                            .edit()
+                            .putBoolean(UsageTimerService.KEY_QUIZ_SHOWN, true)
+                            .apply()
+                        timerService?.markQuizShown()
+                        result.success(null)
                     }
 
                     "setTimerNotificationEnabled" -> {
@@ -197,10 +239,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
 
         // If UsageTimerService is already running (e.g. the Activity was
         // destroyed and recreated while the foreground service stayed alive),
-        // restore the binder reference immediately. This covers the
-        // swipe-to-dismiss-then-reopen case where Flutter's MascotOverlayService
-        // does not call startTimerService again because it considers the service
-        // already running.
+        // restore the binder reference immediately.
         tryBindExistingService()
     }
 
@@ -213,9 +252,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
 
     /**
      * Called from Activity.onResume to restore the service binding if it was
-     * lost without a full process restart (e.g. Activity recreation due to a
-     * configuration change or system-initiated recreation). Safe to call when
-     * already bound — it is a no-op in that case.
+     * lost without a full process restart. Safe to call when already bound.
      */
     fun rebindIfNeeded() {
         if (!serviceBound) {
@@ -240,11 +277,6 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
         }
     }
 
-    /**
-     * Binds to UsageTimerService explicitly — used when Flutter has just
-     * started the service via startTimerService and we need the binder for
-     * direct method calls.
-     */
     private fun bindService() {
         if (!serviceBound) {
             activity.bindService(
@@ -255,13 +287,6 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
         }
     }
 
-    /**
-     * Attempts to bind to UsageTimerService if it is already running, without
-     * starting it. Uses flags=0 (no BIND_AUTO_CREATE) so Android will NOT
-     * launch the service if it is not already alive — the bind simply fails
-     * silently and onServiceConnected is never called. This is intentional:
-     * service startup is always initiated by Flutter via startTimerService.
-     */
     private fun tryBindExistingService() {
         if (!serviceBound) {
             activity.bindService(
