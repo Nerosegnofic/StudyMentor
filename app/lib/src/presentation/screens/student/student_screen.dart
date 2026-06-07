@@ -56,6 +56,11 @@ class _StudentScreenState extends State<StudentScreen>
   /// student shell (nav bar + screens) is rendered.
   bool _permissionsGranted = false;
 
+  /// True when a quiz trigger arrived while the shell was not yet ready
+  /// (i.e. [_initializing] or [_checkingPermissions] was still true, or
+  /// [_permissionsGranted] was false). Flushed by [_onShellReady].
+  bool _pendingQuizAfterInit = false;
+
   /// Defense-in-depth guard against double-push of QuizOverlayPage.
   /// Set to true immediately before pushing, cleared in the .then() callback
   /// after the route pops. Prevents a second quiz push if a duplicate
@@ -85,12 +90,13 @@ class _StudentScreenState extends State<StudentScreen>
 
     // listenForQuiz must be called BEFORE init() so the stream has a listener
     // when _syncStateFromNative() fires the quiz trigger inside init().
-    _quizSub = MascotOverlayService.instance.listenForQuiz(_openQuizOverlay);
+    _quizSub = MascotOverlayService.instance.listenForQuiz(_onQuizTriggered);
 
     MascotOverlayService.instance.init().then((_) {
       MascotOverlayService.instance.start();
       if (mounted) {
         setState(() => _initializing = false);
+        _onShellReady();
       }
     });
 
@@ -118,12 +124,15 @@ class _StudentScreenState extends State<StudentScreen>
         _checkingPermissions = false;
         _permissionsGranted = true;
       });
+      _onShellReady();
     } else {
       // Show the gate screen.
       setState(() {
         _checkingPermissions = false;
         _permissionsGranted = false;
       });
+      // Shell is not ready yet (permission gate is shown); _onShellReady()
+      // will be called by _onPermissionsGranted() once the gate completes.
     }
   }
 
@@ -131,6 +140,7 @@ class _StudentScreenState extends State<StudentScreen>
   void _onPermissionsGranted() {
     if (!mounted) return;
     setState(() => _permissionsGranted = true);
+    _onShellReady();
   }
 
   /// Called by [PermissionGateScreen] when the user taps "Sign out".
@@ -171,6 +181,22 @@ class _StudentScreenState extends State<StudentScreen>
         );
       }
     });
+
+    // Warm-resume re-arm: if the limit was hit while the app was backgrounded
+    // the quiz trigger may never have been delivered (or the shell wasn't ready
+    // to receive it). Fire the quiz now only if the service says we're still
+    // blocked AND the student has not already dismissed the quiz for this
+    // cooldown cycle.
+    if (_permissionsGranted &&
+        !_initializing &&
+        !_checkingPermissions &&
+        !_quizIsOpen &&
+        MascotOverlayService.instance.shouldShowQuiz) {
+      debugPrint(
+        '[StudentScreen] warm-resume: isBlocked=true and no quiz open — re-arming.',
+      );
+      _openQuizOverlay();
+    }
   }
 
   @override
@@ -182,6 +208,62 @@ class _StudentScreenState extends State<StudentScreen>
   }
 
   // ── Quiz overlay ──────────────────────────────────────────────────────────
+
+  /// Called by the [MascotOverlayService] quiz stream whenever the student
+  /// hits their usage limit.
+  ///
+  /// If the shell is not yet ready (still initialising or waiting on
+  /// permissions), the trigger is buffered and replayed by [_onShellReady].
+  void _onQuizTriggered() {
+    // If the student already dismissed the quiz for this cooldown cycle,
+    // suppress the trigger entirely — no buffering, no opening.
+    if (!MascotOverlayService.instance.shouldShowQuiz) {
+      debugPrint(
+        '[StudentScreen] quiz trigger suppressed — already dismissed '
+        'for this cooldown.',
+      );
+      return;
+    }
+
+    final shellReady =
+        !_initializing && !_checkingPermissions && _permissionsGranted;
+    if (!shellReady) {
+      debugPrint(
+        '[StudentScreen] quiz trigger arrived before shell was ready — buffering.',
+      );
+      _pendingQuizAfterInit = true;
+      return;
+    }
+    _openQuizOverlay();
+  }
+
+  /// Called once both async init paths have completed AND permissions are
+  /// granted. Flushes any buffered quiz trigger via [addPostFrameCallback] so
+  /// the shell widget tree has had at least one frame to build before a route
+  /// is pushed on top of it.
+  void _onShellReady() {
+    if (!mounted) return;
+    // Only flush when both async paths are done and the shell is visible.
+    if (_initializing || _checkingPermissions || !_permissionsGranted) return;
+
+    if (_pendingQuizAfterInit && MascotOverlayService.instance.shouldShowQuiz) {
+      _pendingQuizAfterInit = false;
+      debugPrint(
+        '[StudentScreen] shell ready — flushing buffered quiz trigger.',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openQuizOverlay();
+      });
+    } else if (_pendingQuizAfterInit) {
+      // Trigger was buffered but the student already dismissed the quiz for
+      // this cooldown — drop it silently.
+      _pendingQuizAfterInit = false;
+      debugPrint(
+        '[StudentScreen] shell ready — buffered quiz trigger dropped '
+        '(quiz dismissed for this cooldown).',
+      );
+    }
+  }
 
   void _openQuizOverlay() {
     if (!mounted) return;
@@ -203,12 +285,21 @@ class _StudentScreenState extends State<StudentScreen>
     _quizIsOpen = true;
     Navigator.of(context)
         .push(
-          MaterialPageRoute<void>(
+          MaterialPageRoute<bool?>(
             fullscreenDialog: true,
             builder: (_) => QuizOverlayPage(repository: _aiRepo),
           ),
         )
-        .then((_) => _quizIsOpen = false);
+        .then((completed) {
+          _quizIsOpen = false;
+          // completed == true  → student reached QuizResultsLoaded and tapped Done.
+          // completed == null/false → student dismissed without finishing.
+          if (completed == true) {
+            MascotOverlayService.instance.markQuizCompleted();
+          } else {
+            MascotOverlayService.instance.markQuizDismissed();
+          }
+        });
   }
 
   // ── Verification dialog ───────────────────────────────────────────────────

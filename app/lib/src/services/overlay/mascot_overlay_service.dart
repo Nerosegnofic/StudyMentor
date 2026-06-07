@@ -125,6 +125,7 @@ class MascotOverlayService {
     _cooldownNotificationVisible = false;
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
+    _quizDismissedForThisCooldown = false;
     // Close the existing controller so listeners are cleaned up, but do NOT
     // set _quizController to null — _quizStream will lazily create a new one
     // if needed (e.g. for a subsequent session).
@@ -170,6 +171,40 @@ class MascotOverlayService {
   int get totalUsageSeconds => _totalUsageSeconds;
   MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
+
+  // ── Quiz-dismissed flag ────────────────────────────────────────────────────
+
+  /// Set to true when the student dismisses the quiz without completing it
+  /// during a cooldown period. Cleared by [_onUnblocked] when the cooldown
+  /// ends, and by [markQuizCompleted] when the student finishes the quiz.
+  ///
+  /// While true, [shouldShowQuiz] returns false so that warm-resume re-arms
+  /// and cold-launch recovery do not re-show the quiz for the same cooldown.
+  bool _quizDismissedForThisCooldown = false;
+
+  /// Called by [StudentScreen] when the QuizOverlayPage route pops without
+  /// the student completing the quiz (i.e. dismissed via the close button or
+  /// the testing back button). Suppresses re-triggers for this cooldown cycle.
+  void markQuizDismissed() {
+    _quizDismissedForThisCooldown = true;
+    debugPrint(
+      '[MascotOverlayService] Quiz dismissed — suppressing re-triggers '
+      'until cooldown ends.',
+    );
+  }
+
+  /// Called by [StudentScreen] when the QuizOverlayPage route pops after the
+  /// student successfully completes the quiz (reached [QuizResultsLoaded] and
+  /// tapped Done). Allows a future re-trigger if the student hits the limit
+  /// again after the cooldown resets.
+  void markQuizCompleted() {
+    _quizDismissedForThisCooldown = false;
+    debugPrint('[MascotOverlayService] Quiz completed.');
+  }
+
+  /// True when the quiz should be shown: the student is blocked AND has not
+  /// already dismissed the quiz for this cooldown cycle.
+  bool get shouldShowQuiz => _isBlocked && !_quizDismissedForThisCooldown;
 
   // ── Native timer service helpers ───────────────────────────────────────────
 
@@ -226,28 +261,20 @@ class MascotOverlayService {
         });
 
         // ── Cold-launch recovery ────────────────────────────────────────────
-        // When the app is fully killed and the usage limit is hit,
-        // UsageTimerService.block() starts MainActivity with
-        // EXTRA_QUIZ_ON_LAUNCH. MainActivity.onFlutterUiDisplayed() fires
-        // dispatchQuizOnLaunch() on the very first frame — which is the auth
-        // loading spinner. At that point StudentScreen.initState() has not
-        // run yet, so the timer-service MethodChannel handler is not
-        // registered and the invokeMethod("onLimitReached") call is silently
-        // dropped.
-        //
-        // By the time _syncStateFromNative() is awaited, listenForQuiz() has
-        // already been called synchronously in StudentScreen.initState()
-        // (it executes before init()'s first await suspends the isolate), so
-        // the broadcast stream has at least one active listener. Firing the
-        // quiz trigger here reliably covers the fully-killed-app case without
-        // risk of double-firing on warm resume (where this path is never
-        // reached because StudentScreen is never torn down).
-        if (_quizStream.hasListener) {
-          _quizStream.add(null);
+        // Only fire the quiz trigger if the student has not already dismissed
+        // the quiz for this cooldown cycle. This prevents the quiz from
+        // reappearing on every cold launch while the cooldown is still running.
+        if (!_quizDismissedForThisCooldown) {
+          if (_quizStream.hasListener) {
+            _quizStream.add(null);
+          } else {
+            _pendingQuizTrigger = true;
+          }
         } else {
-          // Listener hasn't subscribed yet (shouldn't happen in normal flow,
-          // but guard with the pending-trigger mechanism just in case).
-          _pendingQuizTrigger = true;
+          debugPrint(
+            '[MascotOverlayService] Cold-launch recovery: quiz already '
+            'dismissed for this cooldown — skipping trigger.',
+          );
         }
       }
 
@@ -304,11 +331,6 @@ class MascotOverlayService {
         break;
 
       case 'onLimitReached':
-        // This may arrive from MainActivity.dispatchQuizOnLaunch() on a
-        // cold-launch (app was fully closed when the limit was hit). We must
-        // handle it regardless of whether start() has been called yet — the
-        // native timer service is already running; we just need to update
-        // Dart-side state and fire the quiz stream.
         await _onLimitReached();
         break;
 
@@ -353,7 +375,9 @@ class MascotOverlayService {
 
       case 'onQuizRequested':
         debugPrint('[MascotOverlayService] Native overlay requested quiz.');
-        _quizStream.add(null);
+        if (!_quizDismissedForThisCooldown) {
+          _quizStream.add(null);
+        }
         break;
     }
   }
@@ -361,12 +385,6 @@ class MascotOverlayService {
   // ── Limit-reached handling ─────────────────────────────────────────────────
 
   Future<void> _onLimitReached() async {
-    // ── Primary double-fire guard ──────────────────────────────────────────
-    // _isBlocked is set synchronously (before the first await), so Dart's
-    // single-threaded event loop guarantees a second concurrent call — e.g.
-    // PATH 1 from broadcastState and PATH 2 from startActivity on a warm
-    // resume — sees _isBlocked == true and exits cleanly without pushing a
-    // second QuizOverlayPage.
     if (_isBlocked) {
       debugPrint(
         '[MascotOverlayService] _onLimitReached called while already blocked — ignoring duplicate.',
@@ -375,6 +393,8 @@ class MascotOverlayService {
     }
 
     _isBlocked = true;
+    _quizDismissedForThisCooldown =
+        false; // fresh cooldown — reset dismiss flag
     _mascotState = MascotState.idle;
     debugPrint(
       '[MascotOverlayService] Limit reached — '
@@ -387,15 +407,10 @@ class MascotOverlayService {
       await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
     } catch (_) {}
 
-    // bringAppToForeground is a no-op here because we ARE the foreground —
-    // MainActivity already launched us. Keep the call for the warm-resume
-    // path where the app was backgrounded but not swiped away.
     try {
       await _overlayChannel.invokeMethod('bringAppToForeground');
     } catch (_) {}
 
-    // If nobody is listening yet, park the trigger for listenForQuiz to pick
-    // up on the cold-launch path.
     if (!_quizStream.hasListener) {
       _pendingQuizTrigger = true;
     }
@@ -407,6 +422,7 @@ class MascotOverlayService {
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
     _mascotState = MascotState.idle;
+    _quizDismissedForThisCooldown = false; // cooldown over — always reset
 
     await _hideUsageNotification();
     await _hideCooldownNotification();
