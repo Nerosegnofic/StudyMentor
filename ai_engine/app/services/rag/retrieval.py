@@ -126,6 +126,7 @@ def retrieve_context_for_quiz(
     for cfg in quiz_payload:
         skill_name = cfg["skill"]
         zone = cfg.get("zone", "frontier")
+        difficulty = cfg.get("difficulty", 3)
         budget = _ZONE_BUDGETS.get(zone, 2)
 
         topic_docs = _retrieve_with_safe_fallback(
@@ -136,14 +137,18 @@ def retrieve_context_for_quiz(
             subject_id=subject_id,
         )
 
-        # Re-rank by role priority
-        if zone == "preview":
-            # For preview, prefer explanations (objectives/intro text)
+        # Re-rank by role priority — adapted to difficulty level.
+        # Low difficulty (1-2): prefer explanations, definitions, and rules
+        # (facts the student needs to recall), NOT exercises/examples which
+        # contain complex problems that bias the LLM toward harder output.
+        # High difficulty (3+): prefer examples and exercises as before.
+        if zone == "preview" or difficulty <= 2:
+            # For preview or easy questions, prefer explanations (objectives/intro/definitions)
             topic_docs.sort(
-                key=lambda d: 0 if d.metadata.get('chunk_role') in ('explanation', 'content') else 1
+                key=lambda d: 0 if d.metadata.get('chunk_role') in ('explanation', 'content', 'rule') else 1
             )
         else:
-            # For frontier/review, prefer examples and exercises
+            # For frontier/review at medium+ difficulty, prefer examples and exercises
             topic_docs.sort(
                 key=lambda d: ROLE_PRIORITY.get(d.metadata.get('chunk_role', 'content'), 10)
             )

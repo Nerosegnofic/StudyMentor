@@ -15,34 +15,56 @@ Total questions to generate: {total_count}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIFFICULTY SCALE (CRITICAL — follow strictly)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Each difficulty level has specific cognitive requirements. Questions MUST match these criteria:
+Each difficulty level has specific cognitive requirements. Questions MUST match these criteria EXACTLY:
 
 Level 1 — Very Easy (تذكّر / Recall):
-  • Direct recall or recognition of a fact, definition, or simple value from the lesson.
-  • Single-step. No calculation or reasoning required beyond identifying the right fact.
-  • Example: "ما اسم الشكل الذي له 4 أضلاع متساوية؟"
+  • Direct recall or recognition of a SINGLE fact, definition, or value from the lesson.
+  • ZERO calculations. ZERO reasoning steps. The student only needs to REMEMBER.
+  • NO word problems. NO scenarios. NO story context. Just a direct question.
+  • The answer should be directly stated in the lesson material.
+  • ✅ CORRECT example: "ما اسم الشكل الذي له 4 أضلاع متساوية؟"
+  • ✅ CORRECT example: "ما القيمة المكانية لخانة الجزء من عشرة؟"
+  • ❌ WRONG for Level 1: "اشترى أحمد 3 كتب..." (this is a word problem → Level 3+)
+  • ❌ WRONG for Level 1: "أوجد ناتج 12 × 3" (this requires calculation → Level 2+)
+  • ❌ WRONG for Level 1: "ما الخطأ في الحل التالي..." (this requires analysis → Level 4+)
 
 Level 2 — Easy (فهم / Comprehension):
-  • Requires understanding a concept enough to apply it in a straightforward, single-step task.
-  • Simple calculations with small, friendly numbers.
-  • Example: "أوجد ناتج: 12 × 3"
+  • Requires understanding a concept enough to apply it in ONE straightforward step.
+  • Simple, single-operation calculations with small, friendly numbers.
+  • NO multi-step problems. NO word problems with story context.
+  • ✅ CORRECT example: "أوجد ناتج: 12 × 3"
+  • ✅ CORRECT example: "ما قيمة الرقم 5 في العدد 3.5؟"
+  • ❌ WRONG for Level 2: "اشترى أحمد 5 دفاتر بسعر 7 جنيهات..." (word problem → Level 3+)
+  • ❌ WRONG for Level 2: Any question requiring 2+ steps
 
 Level 3 — Medium (تطبيق / Application):
   • Two-step problem OR applying a learned rule to a new but simple scenario.
   • May involve a short word problem that sets up context before asking a question.
-  • Example: "اشترى أحمد 5 دفاتر بسعر 7 جنيهات للدفتر الواحد. كم دفع أحمد؟"
+  • ✅ CORRECT example: "اشترى أحمد 5 دفاتر بسعر 7 جنيهات للدفتر الواحد. كم دفع أحمد؟"
 
 Level 4 — Hard (تحليل / Analysis):
   • Multi-step reasoning. The student must break a problem into parts or apply multiple rules.
   • Requires choosing the correct approach, not just computing.
-  • Example: "مستطيل محيطه 30 سم وطوله ضعف عرضه. أوجد مساحته."
+  • ✅ CORRECT example: "مستطيل محيطه 30 سم وطوله ضعف عرضه. أوجد مساحته."
 
 Level 5 — Very Hard (تقييم وإبداع / Evaluation & Synthesis):
   • Complex word problems combining multiple concepts from the lesson.
   • May require comparing strategies, detecting errors, or constructing a solution plan.
-  • Example: "أيهما أكبر: مساحة مربع طول ضلعه 6 سم أم مساحة مستطيل أبعاده 4 سم × 8 سم؟ وضّح إجابتك."
+  • ✅ CORRECT example: "أيهما أكبر: مساحة مربع طول ضلعه 6 سم أم مساحة مستطيل أبعاده 4 سم × 8 سم؟ وضّح إجابتك."
 
-A question at Difficulty 1 MUST be trivially solvable. A question at Difficulty 5 MUST require significant multi-step thought. If you generate a multi-step word problem for Difficulty 1, or a single-fact recall for Difficulty 5, it is WRONG.
+⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
+  • Difficulty 1 with ANY calculation → WRONG (Level 1 is recall only, no math)
+  • Difficulty 1 with a word problem or scenario → WRONG (Level 1 is direct fact recall)
+  • Difficulty 1 or 2 with multi-step reasoning → WRONG (multi-step starts at Level 3)
+  • Difficulty 1 or 2 with error detection → WRONG (error detection is Level 4+)
+  • Difficulty 5 with a simple single-step question → WRONG (Level 5 requires synthesis)
+
+MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
+  1. Count the number of cognitive steps required to solve it.
+     - Level 1 = exactly 0 steps (just recall a fact). Level 2 = exactly 1 step.
+  2. Does the question require any calculation? Level 1 = ABSOLUTELY NO calculation.
+  3. Does the question have a story/scenario setup? Level 1 and 2 = NO story/scenario.
+  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ANSWER & OPTIONS RULES (CRITICAL)

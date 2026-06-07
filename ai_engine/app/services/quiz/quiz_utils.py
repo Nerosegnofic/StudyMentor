@@ -6,29 +6,82 @@ from app.models.domain.quiz import QuizSession as QuizSessionModel
 from app.models.domain import Question
 from app.models.schemas import QuestionSchema
 
-def generate_variance_block() -> str:
+
+# ---------------------------------------------------------------------------
+# Difficulty-aware question format pools.
+# Each tier only contains formats whose cognitive complexity matches the level.
+# ---------------------------------------------------------------------------
+_FORMATS_BY_DIFFICULTY: Dict[int, List[str]] = {
+    1: [  # Very Easy — pure recall / recognition
+        "direct fact recall (e.g., 'ما هو...؟', 'ما اسم...؟')",
+        "identify the correct definition from options",
+        "match a term to its meaning",
+        "recognize a visual representation or value",
+    ],
+    2: [  # Easy — single-step comprehension
+        "simple single-step calculation",
+        "fill-in-the-blank with one operation",
+        "identify the correct example of a concept",
+        "classify or categorize a given value",
+    ],
+    3: [  # Medium — application
+        "short word problem with a real-world Egyptian scenario",
+        "two-step calculation",
+        "apply a learned rule to a new scenario",
+        "fill-in-the-blank calculation",
+    ],
+    4: [  # Hard — analysis
+        "multi-step reasoning chain",
+        "error detection (find the mistake in this solution)",
+        "comparison between two values requiring calculation",
+        "word problem requiring multiple operations",
+    ],
+    5: [  # Very Hard — evaluation & synthesis
+        "complex multi-concept word problem",
+        "compare and evaluate two strategies",
+        "error detection with detailed justification",
+        "true/false with justification converted to MCQ",
+    ],
+}
+
+
+def generate_variance_block(difficulty_levels: List[int] = None) -> str:
     """
-    Generate a unique variance seed and question format requirements
-    for each quiz generation call. This forces the LLM to produce diverse
-    questions instead of deterministic repeats for identical inputs.
+    Generate a unique variance seed and difficulty-appropriate question format
+    requirements for each quiz generation call.
+
+    Args:
+        difficulty_levels: List of difficulty levels present in this quiz.
+                           Formats are selected only from pools matching these
+                           levels, preventing hard formats from leaking into
+                           easy questions.
     """
     seed = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-    formats = random.sample([
-        "word problem with a real-world Egyptian scenario",
-        "fill-in-the-blank calculation",
-        "error detection (find the mistake in this solution)",
-        "comparison between two values",
-        "multi-step reasoning chain",
-        "true/false with justification converted to MCQ",
-    ], k=3)
+
+    # Build per-difficulty format instructions
+    if difficulty_levels:
+        unique_levels = sorted(set(difficulty_levels))
+    else:
+        unique_levels = [3]  # Default to medium if unknown
+
+    format_lines = []
+    for level in unique_levels:
+        pool = _FORMATS_BY_DIFFICULTY.get(level, _FORMATS_BY_DIFFICULTY[3])
+        chosen = random.sample(pool, k=min(2, len(pool)))
+        label = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}.get(level, "Medium")
+        for fmt in chosen:
+            format_lines.append(f"  - For Difficulty {level} ({label}) questions: {fmt}")
+
     return (
         f"\n\nVARIANCE SEED: {seed}\n"
-        "For this specific generation, you MUST use at least these question formats:\n"
-        + "\n".join(f"  - {f}" for f in formats)
-        + "\n\nDo NOT reuse numbers from any examples in the context. "
+        "For this specific generation, use these question formats matched to each difficulty level:\n"
+        + "\n".join(format_lines)
+        + "\n\nIMPORTANT: Only use formats appropriate for each question's difficulty level. "
+        "Do NOT use multi-step or word-problem formats for Difficulty 1 or 2 questions.\n"
+        "Do NOT reuse numbers from any examples in the context. "
         "Generate fresh, novel numerical values for every question. "
         "Use Egyptian names (أحمد, فاطمة, يوسف, مريم, نور, عمر) and Egyptian contexts "
-        "(المدرسة, السوق, الحديقة, المكتبة, الملعب) in word problems."
+        "(المدرسة, السوق, الحديقة, المكتبة, الملعب) in word problems (Difficulty 3+ only)."
     )
 
 
@@ -67,7 +120,7 @@ def get_recent_question_fingerprints(
         .all()
     )
     return {
-        q.text_content[:80].strip()
+        q.text_content[:150].strip()
         for q in recent_questions
         if q.text_content
     }
@@ -102,14 +155,30 @@ def build_difficulty_map(payload: List[Dict]) -> Dict[str, int]:
     return {cfg["skill"]: cfg["difficulty"] for cfg in payload}
 
 
+def _get_tolerance(requested_difficulty: int) -> int:
+    """
+    Returns the allowed tolerance for a given requested difficulty level.
+    Extreme levels (1 = Very Easy, 5 = Very Hard) require an exact match
+    because ±1 tolerance would blur the distinction with adjacent levels.
+    Middle levels (2-4) allow ±1 tolerance.
+    """
+    if requested_difficulty in (1, 5):
+        return 0  # Exact match required for Very Easy / Very Hard
+    return 1      # ±1 tolerance for Easy / Medium / Hard
+
+
 def filter_mismatched_questions(
     questions: List[QuestionSchema],
     difficulty_map: Dict[str, int],
     tolerance: int = 1,
 ) -> Tuple[List[QuestionSchema], int]:
     """
-    Filters out questions whose difficulty doesn't match what was requested (±tolerance).
-    
+    Filters out questions whose difficulty doesn't match what was requested.
+
+    Uses adaptive tolerance: exact match for extreme difficulties (1 and 5),
+    ±1 for middle levels (2-4). The ``tolerance`` parameter is used as a
+    maximum cap but the per-level tolerance may be stricter.
+
     Returns:
         (accepted_questions, dropped_count)
     """
@@ -117,13 +186,18 @@ def filter_mismatched_questions(
     dropped = 0
     for q in questions:
         requested_diff = difficulty_map.get(q.topic)
-        if requested_diff is not None and abs(q.difficulty - requested_diff) > tolerance:
-            print(
-                f"[DifficultyGuard] Dropping question for topic='{q.topic}': "
-                f"requested difficulty={requested_diff}, got={q.difficulty}",
-                flush=True,
-            )
-            dropped += 1
+        if requested_diff is not None:
+            effective_tolerance = min(tolerance, _get_tolerance(requested_diff))
+            if abs(q.difficulty - requested_diff) > effective_tolerance:
+                print(
+                    f"[DifficultyGuard] Dropping question for topic='{q.topic}': "
+                    f"requested difficulty={requested_diff}, got={q.difficulty} "
+                    f"(tolerance={effective_tolerance})",
+                    flush=True,
+                )
+                dropped += 1
+            else:
+                accepted.append(q)
         else:
             accepted.append(q)
     return accepted, dropped

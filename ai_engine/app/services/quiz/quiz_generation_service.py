@@ -150,7 +150,9 @@ def generate_quiz_for_student(
             subject_id=target_subject_id,
         )
 
-        variance_block = generate_variance_block()
+        variance_block = generate_variance_block(
+            difficulty_levels=[cfg["difficulty"] for cfg in payload]
+        )
 
         recent_fps = get_recent_question_fingerprints(db, student_uid, target_subject_id)
         if recent_fps:
