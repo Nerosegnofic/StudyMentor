@@ -10,6 +10,7 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
+import '../../../bloc/gamification/gamification_bloc.dart';
 import '../../../data/catalog/subject_catalog.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/subject_progress_model.dart';
@@ -1056,10 +1057,15 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   void _openSubjectDetail(String subjectKey) {
+    final gardenBloc = context.read<GardenBloc>();
+    final gamificationBloc = context.read<GamificationBloc>();
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => MultiBlocProvider(
-          providers: [BlocProvider.value(value: context.read<GardenBloc>())],
+          providers: [
+            BlocProvider.value(value: gardenBloc),
+            BlocProvider.value(value: gamificationBloc),
+          ],
           child: SubjectDetailScreen(
             studentUid: widget.uid,
             subjectKey: subjectKey,

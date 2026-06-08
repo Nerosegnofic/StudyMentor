@@ -12,6 +12,8 @@ import '../../../utils/subject_xp_engine.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../widgets/plant_widget.dart';
 import 'student_quiz.dart';
+import '../../../domain/models/gamification_enums.dart';
+import '../../../bloc/gamification/gamification_bloc.dart';
 
 /// Full detail page for a single subject — plant, XP, skills, strengths/weaknesses.
 /// "Recent Performance" and charts are intentionally excluded from this version.
@@ -278,13 +280,21 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             height: 52,
             child: ElevatedButton.icon(
               onPressed: () {
-                // Navigate to the quiz overlay without a specific subject ID.
-                // The backend will auto-select based on BKT mastery data.
+                final gamificationBloc = context.read<GamificationBloc>();
+                final gardenBloc = context.read<GardenBloc>();
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     fullscreenDialog: true,
-                    builder: (_) => QuizOverlayPage(
-                      repository: AiEngineRepository.instance,
+                    builder: (_) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider.value(value: gamificationBloc),
+                        BlocProvider.value(value: gardenBloc),
+                      ],
+                      child: QuizOverlayPage(
+                        repository: AiEngineRepository.instance,
+                        studentId: widget.studentUid,
+                        contextType: QuizContext.voluntary,
+                      ),
                     ),
                   ),
                 );

@@ -57,7 +57,11 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
           answers: current.currentAnswers.values.toList(),
         ),
       );
-      emit(QuizResultsLoaded(result: response));
+      emit(QuizResultsLoaded(
+        result: response,
+        quizResponse: current.quizResponse,
+        answers: current.currentAnswers,
+      ));
     } catch (e) {
       emit(QuizError(e.toString()));
     }
