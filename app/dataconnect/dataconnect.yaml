@@ -1,5 +1,5 @@
 specVersion: "v1"
-serviceId: "studymentor-cu-service"
+serviceId: "studymentor-cu-2-service"
 location: "me-west1"
 schemas:
   - source: "./schema"
