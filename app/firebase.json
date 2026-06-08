@@ -3,20 +3,20 @@
     "platforms": {
       "android": {
         "default": {
-          "projectId": "studymentor-cu",
-          "appId": "1:24974446130:android:2c927cc98551d6faa0b62b",
+          "projectId": "studymentor-2026",
+          "appId": "1:606117093250:android:9636ccda2d7e1bddccb99b",
           "fileOutput": "android/app/google-services.json"
         }
       },
       "dart": {
         "lib/firebase_options.dart": {
-          "projectId": "studymentor-cu",
+          "projectId": "studymentor-2026",
           "configurations": {
-            "android": "1:24974446130:android:2c927cc98551d6faa0b62b",
-            "ios": "1:24974446130:ios:e40b61f69f5bac0ea0b62b",
-            "macos": "1:24974446130:ios:e40b61f69f5bac0ea0b62b",
-            "web": "1:24974446130:web:925fca71114f8e5fa0b62b",
-            "windows": "1:24974446130:web:28348518e44a0cf4a0b62b"
+            "android": "1:606117093250:android:9636ccda2d7e1bddccb99b",
+            "ios": "1:606117093250:ios:c813d962959abc21ccb99b",
+            "macos": "1:606117093250:ios:c813d962959abc21ccb99b",
+            "web": "1:606117093250:web:5d62f64a9bb3b0d4ccb99b",
+            "windows": "1:606117093250:web:39b31477394a9eb1ccb99b"
           }
         }
       }
