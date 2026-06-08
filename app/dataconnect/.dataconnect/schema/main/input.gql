@@ -890,6 +890,18 @@ input Student_Data {
   """
   lastActiveAt_update: [Timestamp_Update!] @fdc_forbiddenInVariables
   """
+  ✨ Generated from Field `Student`.`level` of type `Int!`
+  """
+  level: Int
+  """
+  ✨ `_expr` server value variant of `level` (✨ Generated from Field `Student`.`level` of type `Int!`)
+  """
+  level_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `level` (✨ Generated from Field `Student`.`level` of type `Int!`)
+  """
+  level_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
   ✨ Generated from Field `Student`.`totalCoins` of type `Int`
   """
   totalCoins: Int
@@ -1011,6 +1023,10 @@ input Student_Filter {
   """
   lastActiveAt: Timestamp_Filter
   """
+  ✨ Generated from Field `Student`.`level` of type `Int!`
+  """
+  level: Int_Filter
+  """
   ✨ Generated from Field `Student`.`totalCoins` of type `Int`
   """
   totalCoins: Int_Filter
@@ -1109,6 +1125,10 @@ input Student_Having {
   """
   lastActiveAt_count: Int_Filter
   """
+  ✨ Generated from Field `Student`.`level_count` of type `Int!`
+  """
+  level_count: Int_Filter
+  """
   ✨ Generated from Field `Student`.`parentUid_count` of type `Int!`
   """
   parentUid_count: Int_Filter
@@ -1149,6 +1169,10 @@ input Student_Having {
   """
   gradeLevel_sum: Int_Filter
   """
+  ✨ Generated from Field `Student`.`level_sum` of type `Int`
+  """
+  level_sum: Int_Filter
+  """
   ✨ Generated from Field `Student`.`totalCoins_sum` of type `Int`
   """
   totalCoins_sum: Int_Filter
@@ -1172,6 +1196,10 @@ input Student_Having {
   ✨ Generated from Field `Student`.`gradeLevel_avg` of type `Float`
   """
   gradeLevel_avg: Float_Filter
+  """
+  ✨ Generated from Field `Student`.`level_avg` of type `Float`
+  """
+  level_avg: Float_Filter
   """
   ✨ Generated from Field `Student`.`totalCoins_avg` of type `Float`
   """
@@ -1201,6 +1229,10 @@ input Student_Having {
   """
   lastActiveAt_min: Timestamp_Filter
   """
+  ✨ Generated from Field `Student`.`level_min` of type `Int`
+  """
+  level_min: Int_Filter
+  """
   ✨ Generated from Field `Student`.`totalCoins_min` of type `Int`
   """
   totalCoins_min: Int_Filter
@@ -1228,6 +1260,10 @@ input Student_Having {
   ✨ Generated from Field `Student`.`lastActiveAt_max` of type `Timestamp`
   """
   lastActiveAt_max: Timestamp_Filter
+  """
+  ✨ Generated from Field `Student`.`level_max` of type `Int`
+  """
+  level_max: Int_Filter
   """
   ✨ Generated from Field `Student`.`totalCoins_max` of type `Int`
   """
@@ -1308,6 +1344,10 @@ input Student_Order {
   """
   lastActiveAt: OrderDirection
   """
+  ✨ Generated from Field `Student`.`level` of type `Int!`
+  """
+  level: OrderDirection
+  """
   ✨ Generated from Field `Student`.`totalCoins` of type `Int`
   """
   totalCoins: OrderDirection
@@ -1343,6 +1383,10 @@ input Student_Order {
   ✨ Generated from Field `Student`.`lastActiveAt_count` of type `Int!`
   """
   lastActiveAt_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`level_count` of type `Int!`
+  """
+  level_count: OrderDirection
   """
   ✨ Generated from Field `Student`.`parentUid_count` of type `Int!`
   """
@@ -1384,6 +1428,10 @@ input Student_Order {
   """
   gradeLevel_sum: OrderDirection
   """
+  ✨ Generated from Field `Student`.`level_sum` of type `Int`
+  """
+  level_sum: OrderDirection
+  """
   ✨ Generated from Field `Student`.`totalCoins_sum` of type `Int`
   """
   totalCoins_sum: OrderDirection
@@ -1407,6 +1455,10 @@ input Student_Order {
   ✨ Generated from Field `Student`.`gradeLevel_avg` of type `Float`
   """
   gradeLevel_avg: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`level_avg` of type `Float`
+  """
+  level_avg: OrderDirection
   """
   ✨ Generated from Field `Student`.`totalCoins_avg` of type `Float`
   """
@@ -1436,6 +1488,10 @@ input Student_Order {
   """
   lastActiveAt_min: OrderDirection
   """
+  ✨ Generated from Field `Student`.`level_min` of type `Int`
+  """
+  level_min: OrderDirection
+  """
   ✨ Generated from Field `Student`.`totalCoins_min` of type `Int`
   """
   totalCoins_min: OrderDirection
@@ -1463,6 +1519,10 @@ input Student_Order {
   ✨ Generated from Field `Student`.`lastActiveAt_max` of type `Timestamp`
   """
   lastActiveAt_max: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`level_max` of type `Int`
+  """
+  level_max: OrderDirection
   """
   ✨ Generated from Field `Student`.`totalCoins_max` of type `Int`
   """
@@ -1496,6 +1556,14 @@ input StudentAvatar_Data {
   ✨ Generated from Field `StudentAvatar`.`student` of type `Student!`
   """
   student: Student_Key @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `StudentAvatar`.`avatarConfig` of type `String`
+  """
+  avatarConfig: String
+  """
+  ✨ `_expr` server value variant of `avatarConfig` (✨ Generated from Field `StudentAvatar`.`avatarConfig` of type `String`)
+  """
+  avatarConfig_expr: String_Expr @fdc_forbiddenInVariables
   """
   ✨ Generated from Field `StudentAvatar`.`equippedAccessory` of type `String`
   """
@@ -1594,6 +1662,10 @@ input StudentAvatar_Filter {
   """
   student: Student_Filter
   """
+  ✨ Generated from Field `StudentAvatar`.`avatarConfig` of type `String`
+  """
+  avatarConfig: String_Filter
+  """
   ✨ Generated from Field `StudentAvatar`.`equippedAccessory` of type `String`
   """
   equippedAccessory: String_Filter
@@ -1667,6 +1739,10 @@ input StudentAvatar_Having {
   ✨ Generated from Field `StudentAvatar`.`_count` of type `Int!`
   """
   _count: Int_Filter
+  """
+  ✨ Generated from Field `StudentAvatar`.`avatarConfig_count` of type `Int!`
+  """
+  avatarConfig_count: Int_Filter
   """
   ✨ Generated from Field `StudentAvatar`.`equippedAccessory_count` of type `Int!`
   """
@@ -1747,6 +1823,10 @@ input StudentAvatar_Order {
   """
   student: Student_Order
   """
+  ✨ Generated from Field `StudentAvatar`.`avatarConfig` of type `String`
+  """
+  avatarConfig: OrderDirection
+  """
   ✨ Generated from Field `StudentAvatar`.`equippedAccessory` of type `String`
   """
   equippedAccessory: OrderDirection
@@ -1786,6 +1866,10 @@ input StudentAvatar_Order {
   ✨ Generated from Field `StudentAvatar`.`_count` of type `Int!`
   """
   _count: OrderDirection
+  """
+  ✨ Generated from Field `StudentAvatar`.`avatarConfig_count` of type `Int!`
+  """
+  avatarConfig_count: OrderDirection
   """
   ✨ Generated from Field `StudentAvatar`.`equippedAccessory_count` of type `Int!`
   """

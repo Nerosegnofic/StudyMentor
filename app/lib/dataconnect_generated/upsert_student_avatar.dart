@@ -11,6 +11,7 @@ class UpsertStudentAvatarVariablesBuilder {
   Optional<String> _equippedAccessory = Optional.optional(nativeFromJson, nativeToJson);
   Optional<String> _equippedBackground = Optional.optional(nativeFromJson, nativeToJson);
   Optional<String> _equippedSpecial = Optional.optional(nativeFromJson, nativeToJson);
+  Optional<String> _avatarConfig = Optional.optional(nativeFromJson, nativeToJson);
 
   final FirebaseDataConnect _dataConnect;  UpsertStudentAvatarVariablesBuilder equippedHair(String? t) {
    _equippedHair.value = t;
@@ -40,6 +41,10 @@ class UpsertStudentAvatarVariablesBuilder {
    _equippedSpecial.value = t;
    return this;
   }
+  UpsertStudentAvatarVariablesBuilder avatarConfig(String? t) {
+   _avatarConfig.value = t;
+   return this;
+  }
 
   UpsertStudentAvatarVariablesBuilder(this._dataConnect, {required  this.studentUid,required  this.gender,required  this.skinTone,});
   Deserializer<UpsertStudentAvatarData> dataDeserializer = (dynamic json)  => UpsertStudentAvatarData.fromJson(jsonDecode(json));
@@ -49,7 +54,7 @@ class UpsertStudentAvatarVariablesBuilder {
   }
 
   MutationRef<UpsertStudentAvatarData, UpsertStudentAvatarVariables> ref() {
-    UpsertStudentAvatarVariables vars= UpsertStudentAvatarVariables(studentUid: studentUid,gender: gender,skinTone: skinTone,equippedHair: _equippedHair,equippedOutfit: _equippedOutfit,equippedBottom: _equippedBottom,equippedShoes: _equippedShoes,equippedAccessory: _equippedAccessory,equippedBackground: _equippedBackground,equippedSpecial: _equippedSpecial,);
+    UpsertStudentAvatarVariables vars= UpsertStudentAvatarVariables(studentUid: studentUid,gender: gender,skinTone: skinTone,equippedHair: _equippedHair,equippedOutfit: _equippedOutfit,equippedBottom: _equippedBottom,equippedShoes: _equippedShoes,equippedAccessory: _equippedAccessory,equippedBackground: _equippedBackground,equippedSpecial: _equippedSpecial,avatarConfig: _avatarConfig,);
     return _dataConnect.mutation("UpsertStudentAvatar", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -134,6 +139,7 @@ class UpsertStudentAvatarVariables {
   late final Optional<String>equippedAccessory;
   late final Optional<String>equippedBackground;
   late final Optional<String>equippedSpecial;
+  late final Optional<String>avatarConfig;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   UpsertStudentAvatarVariables.fromJson(Map<String, dynamic> json):
   
@@ -172,6 +178,10 @@ class UpsertStudentAvatarVariables {
     equippedSpecial = Optional.optional(nativeFromJson, nativeToJson);
     equippedSpecial.value = json['equippedSpecial'] == null ? null : nativeFromJson<String>(json['equippedSpecial']);
   
+  
+    avatarConfig = Optional.optional(nativeFromJson, nativeToJson);
+    avatarConfig.value = json['avatarConfig'] == null ? null : nativeFromJson<String>(json['avatarConfig']);
+  
   }
   @override
   bool operator ==(Object other) {
@@ -192,11 +202,12 @@ class UpsertStudentAvatarVariables {
     equippedShoes == otherTyped.equippedShoes && 
     equippedAccessory == otherTyped.equippedAccessory && 
     equippedBackground == otherTyped.equippedBackground && 
-    equippedSpecial == otherTyped.equippedSpecial;
+    equippedSpecial == otherTyped.equippedSpecial && 
+    avatarConfig == otherTyped.avatarConfig;
     
   }
   @override
-  int get hashCode => Object.hashAll([studentUid.hashCode, gender.hashCode, skinTone.hashCode, equippedHair.hashCode, equippedOutfit.hashCode, equippedBottom.hashCode, equippedShoes.hashCode, equippedAccessory.hashCode, equippedBackground.hashCode, equippedSpecial.hashCode]);
+  int get hashCode => Object.hashAll([studentUid.hashCode, gender.hashCode, skinTone.hashCode, equippedHair.hashCode, equippedOutfit.hashCode, equippedBottom.hashCode, equippedShoes.hashCode, equippedAccessory.hashCode, equippedBackground.hashCode, equippedSpecial.hashCode, avatarConfig.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -225,6 +236,9 @@ class UpsertStudentAvatarVariables {
     if(equippedSpecial.state == OptionalState.set) {
       json['equippedSpecial'] = equippedSpecial.toJson();
     }
+    if(avatarConfig.state == OptionalState.set) {
+      json['avatarConfig'] = avatarConfig.toJson();
+    }
     return json;
   }
 
@@ -239,6 +253,7 @@ class UpsertStudentAvatarVariables {
     required this.equippedAccessory,
     required this.equippedBackground,
     required this.equippedSpecial,
+    required this.avatarConfig,
   });
 }
 
