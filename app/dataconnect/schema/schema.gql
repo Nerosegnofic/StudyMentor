@@ -32,6 +32,7 @@ type Student @table(name: "students", key: ["uid"]) {
   currentStreak: Int @default(expr: "0")
   weeklyXp: Int @default(expr: "0")
   lastActiveAt: Timestamp
+  level: Int! @default(expr: "1")
 }
 
 # One row per app installed on a student's device.
@@ -118,4 +119,5 @@ type StudentAvatar @table(name: "student_avatars", key: ["studentUid"]) {
   equippedAccessory: String @col(dataType: "varchar(50)")
   equippedBackground: String @col(dataType: "varchar(50)")
   equippedSpecial: String @col(dataType: "varchar(50)")
+  avatarConfig: String @col(dataType: "text")
 }

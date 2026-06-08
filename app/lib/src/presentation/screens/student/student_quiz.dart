@@ -17,6 +17,10 @@ import '../../../data/catalog/subject_catalog.dart';
 // ---------------------------------------------------------------------------
 // Full-screen Scaffold pushed by StudentScreen when the mascot overlay fires.
 // It owns its own QuizBloc so it doesn't interfere with the rest of the app.
+//
+// Pop return value convention:
+//   true  → student completed the quiz (reached results screen, tapped Done)
+//   false / null → student dismissed without completing
 
 class QuizOverlayPage extends StatelessWidget {
   final AiEngineRepository repository;
@@ -71,7 +75,11 @@ class _QuizOverlayScaffold extends StatelessWidget {
               if (state is QuizResultsLoaded || state is QuizError) {
                 return IconButton(
                   icon: const Icon(Icons.close, color: Color(0xFF4A6CF7)),
-                  onPressed: () => Navigator.of(context).pop(),
+                  // Results close: pop with true (completed).
+                  // Error close: pop with false (did not complete).
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(state is QuizResultsLoaded ? true : false),
                 );
               }
               return const SizedBox.shrink();
@@ -262,7 +270,8 @@ class _AutoStartPanel extends StatelessWidget {
             const Divider(color: Color(0xFFFFCDD2)),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              // Pop with false = dismissed, not completed.
+              onPressed: () => Navigator.of(context).pop(false),
               icon: const Icon(Icons.home_outlined, color: Color(0xFFE53935)),
               label: const Text(
                 'Redirect to student home\n(FOR TESTING PURPOSES ONLY. DO NOT SHIP TO PRODUCTION!)',
@@ -528,9 +537,14 @@ class _QuestionCard extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: _difficultyColor(question.difficulty).withOpacity(0.12),
+                  color: _difficultyColor(
+                    question.difficulty,
+                  ).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -543,7 +557,10 @@ class _QuestionCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8EDFF),
                   borderRadius: BorderRadius.circular(8),
@@ -770,7 +787,8 @@ class _ResultsView extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: () => Navigator.of(context).pop(),
+            // Pop with true = completed successfully.
+            onPressed: () => Navigator.of(context).pop(true),
             icon: const Icon(Icons.check_circle_outline),
             label: const Text(
               'Done',

@@ -13,6 +13,7 @@ import '../../../data/repositories/gamification_repository_impl.dart';
 
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/garden/garden_bloc.dart';
+import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
 import '../../widgets/gamification/stat_badge.dart';
@@ -53,24 +54,23 @@ class _StudentScreenState extends State<StudentScreen>
   int _level = 1;
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
-  /// True while MascotOverlayService.init() is in progress.
+  /// True while _initMascotService() is in progress.
   bool _initializing = true;
 
   /// True while we are checking whether all permissions are granted.
-  /// Kept separate from [_initializing] so the two async paths are clear.
   bool _checkingPermissions = true;
 
   /// Once set to true, the permission gate is complete and the main
   /// student shell (nav bar + screens) is rendered.
   bool _permissionsGranted = false;
 
+  /// True when a quiz trigger arrived while the shell was not yet ready.
+  /// Flushed by [_onShellReady].
+  bool _pendingQuizAfterInit = false;
+
   /// Defense-in-depth guard against double-push of QuizOverlayPage.
   /// Set to true immediately before pushing, cleared in the .then() callback
-  /// after the route pops. Prevents a second quiz push if a duplicate
-  /// onLimitReached signal arrives while the quiz is already on the stack
-  /// (e.g. a race between the broadcastState path and the startActivity path
-  /// on a warm resume that slips past the _isBlocked guard in
-  /// MascotOverlayService).
+  /// after the route pops.
   bool _quizIsOpen = false;
 
   /// Stable repository instance — created once in initState.
@@ -103,43 +103,70 @@ class _StudentScreenState extends State<StudentScreen>
     )..add(LoadGamificationDataRequested(studentId: widget.uid))
      ..add(CheckDailyLoginRewardRequested(studentId: widget.uid));
 
-    // listenForQuiz must be called BEFORE init() so the stream has a listener
-    // when _syncStateFromNative() fires the quiz trigger inside init().
-    _quizSub = MascotOverlayService.instance.listenForQuiz(_openQuizOverlay);
+    _quizSub = MascotOverlayService.instance.listenForQuiz(_onQuizTriggered);
 
-    MascotOverlayService.instance.init(studentUid: widget.uid).then((_) {
-      MascotOverlayService.instance.start();
-      if (mounted) {
-        setState(() => _initializing = false);
-      }
-    });
+    _initMascotService();
 
     DataConnectProvider().updateLastActiveAt().catchError((_) {});
     _loadCoinsAndLevel();
 
-    // Run the permission check independently of MascotOverlayService.init()
-    // so both can proceed in parallel.
+    // Sync the installed-app inventory on every login so DataConnect always
+    // has an up-to-date list for this account. The repository's diff logic
+    // ensures only changed apps are written, so this is cheap when nothing
+    // has changed.
+    context.read<AuthBloc>().add(
+      SyncInstalledAppsRequested(studentUid: widget.uid),
+    );
+
     _checkPermissions();
   }
 
-  /// Checks whether all required permissions are already granted.
-  /// If they are, skips the gate entirely. If not, the gate screen handles
-  /// the flow and calls [_onPermissionsGranted] when done.
+  Future<void> _initMascotService() async {
+    try {
+      await MascotOverlayService.instance.init();
+    } catch (e) {
+      debugPrint('[StudentScreen] MascotOverlayService.init() failed: $e');
+      if (mounted) setState(() => _initializing = false);
+      return;
+    }
+
+    if (mounted) {
+      try {
+        final repo = context.read<AuthBloc>().repository;
+        final (:config, :rules) = await repo.getAppConfigForStudent(widget.uid);
+        if (mounted) {
+          await MascotOverlayService.instance.updateMonitoredApps(
+            rules,
+            config: config ?? const StudentConfigModel(),
+          );
+        }
+      } catch (e) {
+        debugPrint(
+          '[StudentScreen] Config pre-load failed, using defaults: $e',
+        );
+      }
+    }
+
+    MascotOverlayService.instance.start();
+
+    if (mounted) {
+      setState(() => _initializing = false);
+      _onShellReady();
+    }
+  }
+
   Future<void> _checkPermissions() async {
     final missing = await PermissionService.firstMissingPermission();
     if (!mounted) return;
 
     if (missing == null) {
-      // All permissions are already granted — skip the gate.
-      // Activate student mode here since PermissionGateScreen (which normally
-      // does this) is being bypassed entirely on this path.
       await DeviceAdminService.onPermissionsGranted();
       setState(() {
         _checkingPermissions = false;
         _permissionsGranted = true;
       });
+      _onShellReady();
     } else {
-      // Show the gate screen.
       setState(() {
         _checkingPermissions = false;
         _permissionsGranted = false;
@@ -147,13 +174,12 @@ class _StudentScreenState extends State<StudentScreen>
     }
   }
 
-  /// Called by [PermissionGateScreen] when all permissions have been confirmed.
   void _onPermissionsGranted() {
     if (!mounted) return;
     setState(() => _permissionsGranted = true);
+    _onShellReady();
   }
 
-  /// Called by [PermissionGateScreen] when the user taps "Sign out".
   void _onGateSignOut() {
     context.read<AuthBloc>().add(LogoutRequested());
   }
@@ -184,6 +210,8 @@ class _StudentScreenState extends State<StudentScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     DataConnectProvider().updateLastActiveAt().catchError((_) {});
+
+    // Sync on resume only when the native side flags a package change.
     InstalledAppsService.instance.isInventoryDirty().then((dirty) {
       if (dirty && mounted) {
         context.read<AuthBloc>().add(
@@ -191,6 +219,17 @@ class _StudentScreenState extends State<StudentScreen>
         );
       }
     });
+
+    if (_permissionsGranted &&
+        !_initializing &&
+        !_checkingPermissions &&
+        !_quizIsOpen &&
+        MascotOverlayService.instance.shouldShowQuiz) {
+      debugPrint(
+        '[StudentScreen] warm-resume: shouldShowQuiz=true and no quiz open — re-arming.',
+      );
+      _openQuizOverlay();
+    }
   }
 
   @override
@@ -206,16 +245,51 @@ class _StudentScreenState extends State<StudentScreen>
 
   // ── Quiz overlay ──────────────────────────────────────────────────────────
 
+  void _onQuizTriggered() {
+    if (!MascotOverlayService.instance.shouldShowQuiz) {
+      debugPrint(
+        '[StudentScreen] quiz trigger suppressed — already dismissed '
+        'for this cooldown.',
+      );
+      return;
+    }
+
+    final shellReady =
+        !_initializing && !_checkingPermissions && _permissionsGranted;
+    if (!shellReady) {
+      debugPrint(
+        '[StudentScreen] quiz trigger arrived before shell was ready — buffering.',
+      );
+      _pendingQuizAfterInit = true;
+      return;
+    }
+    _openQuizOverlay();
+  }
+
+  void _onShellReady() {
+    if (!mounted) return;
+    if (_initializing || _checkingPermissions || !_permissionsGranted) return;
+
+    if (_pendingQuizAfterInit && MascotOverlayService.instance.shouldShowQuiz) {
+      _pendingQuizAfterInit = false;
+      debugPrint(
+        '[StudentScreen] shell ready — flushing buffered quiz trigger.',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openQuizOverlay();
+      });
+    } else if (_pendingQuizAfterInit) {
+      _pendingQuizAfterInit = false;
+      debugPrint(
+        '[StudentScreen] shell ready — buffered quiz trigger dropped '
+        '(quiz dismissed for this cooldown).',
+      );
+    }
+  }
+
   void _openQuizOverlay() {
     if (!mounted) return;
 
-    // ── Defense-in-depth guard ─────────────────────────────────────────────
-    // The primary guard lives in MascotOverlayService._onLimitReached()
-    // (the _isBlocked early-return). This flag catches any duplicate signal
-    // that slips through — e.g. a race between broadcastState PATH 1 and the
-    // startActivity PATH 2 on a warm resume where both arrive after _isBlocked
-    // has already been set to true by the first call but before the stream
-    // listener fires for the second.
     if (_quizIsOpen) {
       debugPrint(
         '[StudentScreen] _openQuizOverlay called while quiz is already open — ignoring duplicate.',
@@ -224,9 +298,12 @@ class _StudentScreenState extends State<StudentScreen>
     }
 
     _quizIsOpen = true;
+
+    MascotOverlayService.instance.markQuizShown();
+
     Navigator.of(context)
         .push(
-          MaterialPageRoute<void>(
+          MaterialPageRoute<bool?>(
             fullscreenDialog: true,
             builder: (_) => MultiBlocProvider(
               providers: [
@@ -241,7 +318,14 @@ class _StudentScreenState extends State<StudentScreen>
             ),
           ),
         )
-        .then((_) => _quizIsOpen = false);
+        .then((completed) {
+          _quizIsOpen = false;
+          if (completed == true) {
+            MascotOverlayService.instance.markQuizCompleted();
+          } else {
+            MascotOverlayService.instance.markQuizDismissed();
+          }
+        });
   }
 
   // ── Verification dialog ───────────────────────────────────────────────────
@@ -287,7 +371,6 @@ class _StudentScreenState extends State<StudentScreen>
 
   @override
   Widget build(BuildContext context) {
-    // ── Phase 1: MascotOverlayService is still initialising ─────────────────
     if (_initializing || _checkingPermissions) {
       return const Scaffold(
         backgroundColor: Color(0xFFF5F7FA),
@@ -295,7 +378,6 @@ class _StudentScreenState extends State<StudentScreen>
       );
     }
 
-    // ── Phase 2: One or more permissions are missing ─────────────────────────
     if (!_permissionsGranted) {
       return BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -310,7 +392,6 @@ class _StudentScreenState extends State<StudentScreen>
       );
     }
 
-    // ── Phase 3: All permissions granted — show the full student shell ───────
     return MultiBlocProvider(
       providers: [
         BlocProvider<ShopBloc>.value(value: _shopBloc),
@@ -330,6 +411,13 @@ class _StudentScreenState extends State<StudentScreen>
           listeners: [
             BlocListener<AuthBloc, AuthState>(
               listener: (context, state) {
+                if (state is AppRulesLoaded && state.studentUid == widget.uid) {
+                  MascotOverlayService.instance.updateMonitoredApps(
+                    state.rules,
+                    config: state.config,
+                  );
+                }
+
                 if (state is StudentLogoutVerificationRequired) {
                   _showVerificationDialog();
                 }

@@ -55,9 +55,9 @@ class _StudentHomeState extends State<StudentHome> {
     context.read<AuthBloc>().add(
       LoadStudentAppConfigRequested(studentUid: widget.uid),
     );
-    context.read<AuthBloc>().add(
-      SyncInstalledAppsRequested(studentUid: widget.uid),
-    );
+    // Installed-app sync is intentionally NOT dispatched here.
+    // It is triggered once per login session from StudentScreen.initState(),
+    // and on resume when the native dirty flag is set (package change).
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
     _loadStreak();
 

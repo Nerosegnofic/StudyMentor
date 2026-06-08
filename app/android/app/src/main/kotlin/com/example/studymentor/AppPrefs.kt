@@ -15,4 +15,16 @@ object AppPrefs {
 
     /** Persisted by DeviceAdminPlugin.setPermissionSetupMode. */
     const val KEY_PERMISSION_SETUP = "is_in_permission_setup"
+
+    /**
+     * Persisted by UsageTimerService whenever block() / unblock() is called.
+     * Read by StudyMentorAccessibilityService on onServiceConnected() so that
+     * the blocked state is immediately restored without waiting for
+     * UsageTimerService to finish restarting after a process kill.
+     *
+     * This lives in AppPrefs (studymentor_prefs) rather than the timer-service
+     * prefs (studymentor_timer_prefs) so that both services can read it from
+     * the same file without a cross-prefs dependency.
+     */
+    const val KEY_IS_BLOCKED = "is_blocked_shared"
 }
