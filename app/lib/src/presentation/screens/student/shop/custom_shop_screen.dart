@@ -302,6 +302,9 @@ class _CustomShopScreenState extends State<CustomShopScreen>
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () {
+              context.read<ShopBloc>().add(
+                SaveAvatarRequested(studentUid: widget.studentUid),
+              );
               Navigator.pop(context);
             },
             backgroundColor: const Color(0xFF4A6CF7),

@@ -69,3 +69,13 @@ class AvatarCustomizationChanged extends ShopEvent {
   @override
   List<Object?> get props => [studentUid, newConfig.gender, newConfig.skinTone];
 }
+
+/// Persist the current avatar config to Firebase — fired once when the user taps Done.
+class SaveAvatarRequested extends ShopEvent {
+  final String studentUid;
+
+  const SaveAvatarRequested({required this.studentUid});
+
+  @override
+  List<Object?> get props => [studentUid];
+}

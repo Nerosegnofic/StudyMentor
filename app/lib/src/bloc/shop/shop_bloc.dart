@@ -16,6 +16,7 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     on<PurchaseItemRequested>(_onPurchase);
     on<EquipItemToggled>(_onEquipToggle);
     on<AvatarCustomizationChanged>(_onCustomizationChanged);
+    on<SaveAvatarRequested>(_onSaveAvatar);
   }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -127,27 +128,8 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
         ? _unequip(event.currentConfig, event.item.category)
         : _equip(event.currentConfig, event.item);
 
-    // Optimistic update
+    // Local update only — Firebase is written when the user taps Done.
     emit(current.copyWith(avatarConfig: newConfig));
-
-    try {
-      await _provider.upsertStudentAvatar(
-        studentUid: event.studentUid,
-        gender: newConfig.gender,
-        skinTone: newConfig.skinTone,
-        equippedHair: newConfig.equippedHair,
-        equippedOutfit: newConfig.equippedOutfit,
-        equippedBottom: newConfig.equippedHairColor,
-        equippedShoes: newConfig.equippedOutfitColor,
-        equippedAccessory: newConfig.equippedAccessory,
-        equippedBackground: newConfig.equippedBackground,
-        equippedSpecial: newConfig.equippedFacialHair,
-        avatarConfig: newConfig.extrasJson,
-      );
-    } catch (_) {
-      // Roll back on failure
-      emit(current.copyWith(avatarConfig: event.currentConfig));
-    }
   }
 
   Future<void> _onCustomizationChanged(
@@ -157,21 +139,29 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     final current = state;
     if (current is! ShopLoaded) return;
 
+    // Local update only — Firebase is written when the user taps Done.
     emit(current.copyWith(avatarConfig: event.newConfig));
+  }
 
+  Future<void> _onSaveAvatar(
+    SaveAvatarRequested event,
+    Emitter<ShopState> emit,
+  ) async {
+    final current = state;
+    if (current is! ShopLoaded) return;
     try {
       await _provider.upsertStudentAvatar(
         studentUid: event.studentUid,
-        gender: event.newConfig.gender,
-        skinTone: event.newConfig.skinTone,
-        equippedHair: event.newConfig.equippedHair,
-        equippedOutfit: event.newConfig.equippedOutfit,
-        equippedBottom: event.newConfig.equippedHairColor,
-        equippedShoes: event.newConfig.equippedOutfitColor,
-        equippedAccessory: event.newConfig.equippedAccessory,
-        equippedBackground: event.newConfig.equippedBackground,
-        equippedSpecial: event.newConfig.equippedFacialHair,
-        avatarConfig: event.newConfig.extrasJson,
+        gender: current.avatarConfig.gender,
+        skinTone: current.avatarConfig.skinTone,
+        equippedHair: current.avatarConfig.equippedHair,
+        equippedOutfit: current.avatarConfig.equippedOutfit,
+        equippedBottom: current.avatarConfig.equippedHairColor,
+        equippedShoes: current.avatarConfig.equippedOutfitColor,
+        equippedAccessory: current.avatarConfig.equippedAccessory,
+        equippedBackground: current.avatarConfig.equippedBackground,
+        equippedSpecial: current.avatarConfig.equippedFacialHair,
+        avatarConfig: current.avatarConfig.extrasJson,
       );
     } catch (_) {
       // Silently fail; avatar is visual-only
