@@ -487,8 +487,28 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             }
 
             "setBlocked" -> {
-                StudyMentorAccessibilityService.isBlocked =
-                    call.argument<Boolean>("blocked") ?: false
+                val blocked = call.argument<Boolean>("blocked") ?: false
+                StudyMentorAccessibilityService.isBlocked = blocked
+
+                // Keep AppPrefs in sync so StudyMentorAccessibilityService.
+                // onServiceConnected() restores the correct blocked state on
+                // process restart, regardless of which code path sets this flag.
+                //
+                // Without this write, the Flutter _resetAccessibilityState()
+                // call (setBlocked=false) on app resume would overwrite the
+                // in-memory flag correctly but leave AppPrefs.KEY_IS_BLOCKED=true
+                // from the previous block() call — causing the accessibility
+                // service to re-enforce the block the next time it reconnects.
+                //
+                // Conversely, the original bug: setBlocked(false) was called on
+                // Flutter engine startup before UsageTimerService had finished
+                // restarting, clearing the in-memory flag while AppPrefs still
+                // held true. Now both are always written together.
+                activity.getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+                    .edit()
+                    .putBoolean(AppPrefs.KEY_IS_BLOCKED, blocked)
+                    .apply()
+
                 result.success(null)
             }
 

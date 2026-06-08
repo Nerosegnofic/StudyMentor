@@ -113,7 +113,16 @@ class MascotOverlayService {
     await _hideUsageNotification();
     await _hideCooldownNotification();
     await _hideOverlayNative();
-    await _resetAccessibilityState();
+    // NOTE: _resetAccessibilityState() is intentionally NOT called here.
+    //
+    // stop() is invoked when the parent logs in (student session ends), not
+    // when the cooldown genuinely ends. Calling setBlocked(false) here would
+    // write AppPrefs.KEY_IS_BLOCKED=false even while a cooldown is still
+    // active, causing the accessibility service to stop blocking apps the next
+    // time it reconnects (e.g. after an OEM process kill).
+    //
+    // The accessibility blocked state is only cleared by _onUnblocked(), which
+    // fires when UsageTimerService confirms the cooldown has actually expired.
     _isBlocked = false;
     _overlayVisible = false;
     _usageNotificationVisible = false;
@@ -286,6 +295,11 @@ class MascotOverlayService {
       _quizShownForThisCooldown = (state['quizShown'] as bool?) ?? false;
 
       if (_isBlocked) {
+        // Tell the accessibility service the student is still blocked.
+        // This is safe here because _syncStateFromNative reads the ground-truth
+        // from native SharedPreferences (written by UsageTimerService.block()),
+        // so we are confirming a block that native already persisted — not
+        // introducing a new one.
         await _accessibilityChannel.invokeMethod('setBlocked', {
           'blocked': true,
         });
@@ -470,6 +484,9 @@ class MascotOverlayService {
     await _hideUsageNotification();
     await _hideCooldownNotification();
     await _hideOverlayNative();
+    // _resetAccessibilityState() is safe here and only here: the cooldown has
+    // genuinely ended (confirmed by UsageTimerService), so clearing the blocked
+    // flag in both memory and AppPrefs is correct.
     await _resetAccessibilityState();
     debugPrint('[MascotOverlayService] Cooldown ended — student is free.');
   }
