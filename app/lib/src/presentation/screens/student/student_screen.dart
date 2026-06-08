@@ -411,7 +411,7 @@ class _StudentScreenState extends State<StudentScreen>
           listeners: [
             BlocListener<AuthBloc, AuthState>(
               listener: (context, state) {
-                if (state is AppRulesLoaded && state.studentUid == widget.uid) {
+                if (state is LegacyAppRulesLoaded && state.studentUid == widget.uid) {
                   MascotOverlayService.instance.updateMonitoredApps(
                     state.rules,
                     config: state.config,
