@@ -1281,6 +1281,10 @@ class UpsertStudentAvatarVariablesBuilder {
    _equippedSpecial.value = t;
    return this;
   }
+  UpsertStudentAvatarVariablesBuilder avatarConfig(String? t) {
+   _avatarConfig.value = t;
+   return this;
+  }
 
   ...
 }
@@ -1296,6 +1300,7 @@ ExampleConnector.instance.upsertStudentAvatar(
 .equippedAccessory(equippedAccessory)
 .equippedBackground(equippedBackground)
 .equippedSpecial(equippedSpecial)
+.avatarConfig(avatarConfig)
 .execute();
 ```
 

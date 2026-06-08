@@ -119,6 +119,7 @@ query GetStudentAvatar($studentUid: String!) @auth(level: USER, insecureReason: 
     equippedAccessory
     equippedBackground
     equippedSpecial
+    avatarConfig
   }
 }
 

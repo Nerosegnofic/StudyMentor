@@ -8,6 +8,7 @@ import '../../../bloc/shop/shop_bloc.dart';
 
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/garden/garden_bloc.dart';
+import '../../../domain/models/app_config_model.dart'; // ← ADDED
 import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
 import '../../widgets/parent_verification_dialog.dart';
@@ -46,24 +47,23 @@ class _StudentScreenState extends State<StudentScreen>
   int _gradeLevel = 5;
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
-  /// True while MascotOverlayService.init() is in progress.
+  /// True while _initMascotService() is in progress.
   bool _initializing = true;
 
   /// True while we are checking whether all permissions are granted.
-  /// Kept separate from [_initializing] so the two async paths are clear.
   bool _checkingPermissions = true;
 
   /// Once set to true, the permission gate is complete and the main
   /// student shell (nav bar + screens) is rendered.
   bool _permissionsGranted = false;
 
+  /// True when a quiz trigger arrived while the shell was not yet ready.
+  /// Flushed by [_onShellReady].
+  bool _pendingQuizAfterInit = false;
+
   /// Defense-in-depth guard against double-push of QuizOverlayPage.
   /// Set to true immediately before pushing, cleared in the .then() callback
-  /// after the route pops. Prevents a second quiz push if a duplicate
-  /// onLimitReached signal arrives while the quiz is already on the stack
-  /// (e.g. a race between the broadcastState path and the startActivity path
-  /// on a warm resume that slips past the _isBlocked guard in
-  /// MascotOverlayService).
+  /// after the route pops.
   bool _quizIsOpen = false;
 
   /// Stable repository instance — created once in initState.
@@ -84,43 +84,114 @@ class _StudentScreenState extends State<StudentScreen>
 
     _aiRepo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
 
-    // listenForQuiz must be called BEFORE init() so the stream has a listener
-    // when _syncStateFromNative() fires the quiz trigger inside init().
-    _quizSub = MascotOverlayService.instance.listenForQuiz(_openQuizOverlay);
+    // listenForQuiz must be called BEFORE _initMascotService() so the stream
+    // has a listener when _syncStateFromNative() fires the quiz trigger inside
+    // init().
+    _quizSub = MascotOverlayService.instance.listenForQuiz(_onQuizTriggered);
 
-    MascotOverlayService.instance.init().then((_) {
-      MascotOverlayService.instance.start();
-      if (mounted) {
-        setState(() => _initializing = false);
-      }
-    });
+    // ── CHANGED ─────────────────────────────────────────────────────────────
+    // Previously this was:
+    //   MascotOverlayService.instance.init().then((_) {
+    //     MascotOverlayService.instance.start();
+    //     ...
+    //   });
+    //
+    // That called init() with empty defaults and immediately fired
+    // startTimerService to native with an empty monitored-apps list and
+    // 0-second limits. The real config only arrived later (via StudentHome →
+    // AppRulesLoaded → updateMonitoredApps), and only quickly on restart
+    // (Firebase cache hit). On fresh login the delay was long enough for the
+    // student to notice services were not working.
+    //
+    // _initMascotService() loads the student's actual config from the
+    // repository *before* start() is called, so the timer service is launched
+    // with the correct parameters from its very first tick.
+    _initMascotService();
+    // ── END CHANGE ───────────────────────────────────────────────────────────
 
     DataConnectProvider().updateLastActiveAt().catchError((_) {});
     _loadCoinsAndLevel();
 
-    // Run the permission check independently of MascotOverlayService.init()
-    // so both can proceed in parallel.
     _checkPermissions();
   }
 
+  // ── ADDED ──────────────────────────────────────────────────────────────────
+  /// Initialises MascotOverlayService and starts the native timer service.
+  ///
+  /// The student's app config (monitored apps, usage/cooldown limits) is
+  /// fetched from the repository *before* start() is called so the timer
+  /// service is launched with the correct parameters from its very first tick —
+  /// not the empty defaults that were causing the "services don't work until
+  /// restart" bug.
+  ///
+  /// Root cause of that bug:
+  ///   • init() was called with no arguments → _monitoredPackages = {},
+  ///     _config = defaults (all zero seconds)
+  ///   • start() immediately fired startTimerService to native with an empty
+  ///     monitored-apps list and 0-second limits
+  ///   • The real config arrived later (StudentHome → AppRulesLoaded →
+  ///     updateMonitoredApps), but only quickly on restart (Firebase cache);
+  ///     on fresh login the delay was long enough for the user to notice.
+  Future<void> _initMascotService() async {
+    // Step 1 — register channel handlers and sync state from native prefs.
+    // init() is still called with empty defaults here; we overwrite them in
+    // step 2 before start() is called, so nothing is sent to native yet.
+    try {
+      await MascotOverlayService.instance.init();
+    } catch (e) {
+      debugPrint('[StudentScreen] MascotOverlayService.init() failed: $e');
+      if (mounted) setState(() => _initializing = false);
+      return;
+    }
+
+    // Step 2 — load the student's actual app config before starting the timer.
+    // updateMonitoredApps() updates _monitoredPackages and _config in the
+    // singleton. Because _running is still false at this point it skips the
+    // native updateTimerConfig call — that is intentional. start() below reads
+    // the now-correct values and passes them to startTimerService.
+    if (mounted) {
+      try {
+        final repo = context.read<AuthBloc>().repository;
+        final (:config, :rules) = await repo.getAppConfigForStudent(widget.uid);
+        if (mounted) {
+          await MascotOverlayService.instance.updateMonitoredApps(
+            rules,
+            config: config ?? const StudentConfigModel(),
+          );
+        }
+      } catch (e) {
+        // Non-fatal — proceed with empty defaults. The BlocListener in the
+        // student shell will call updateMonitoredApps() again once
+        // AppRulesLoaded is emitted by StudentHome.
+        debugPrint(
+          '[StudentScreen] Config pre-load failed, using defaults: $e',
+        );
+      }
+    }
+
+    // Step 3 — now start the native timer service with the correct config.
+    MascotOverlayService.instance.start();
+
+    if (mounted) {
+      setState(() => _initializing = false);
+      _onShellReady();
+    }
+  }
+  // ── END ADDED ──────────────────────────────────────────────────────────────
+
   /// Checks whether all required permissions are already granted.
-  /// If they are, skips the gate entirely. If not, the gate screen handles
-  /// the flow and calls [_onPermissionsGranted] when done.
   Future<void> _checkPermissions() async {
     final missing = await PermissionService.firstMissingPermission();
     if (!mounted) return;
 
     if (missing == null) {
-      // All permissions are already granted — skip the gate.
-      // Activate student mode here since PermissionGateScreen (which normally
-      // does this) is being bypassed entirely on this path.
       await DeviceAdminService.onPermissionsGranted();
       setState(() {
         _checkingPermissions = false;
         _permissionsGranted = true;
       });
+      _onShellReady();
     } else {
-      // Show the gate screen.
       setState(() {
         _checkingPermissions = false;
         _permissionsGranted = false;
@@ -132,6 +203,7 @@ class _StudentScreenState extends State<StudentScreen>
   void _onPermissionsGranted() {
     if (!mounted) return;
     setState(() => _permissionsGranted = true);
+    _onShellReady();
   }
 
   /// Called by [PermissionGateScreen] when the user taps "Sign out".
@@ -173,6 +245,20 @@ class _StudentScreenState extends State<StudentScreen>
         );
       }
     });
+
+    // Warm-resume re-arm: if the limit was hit while the app was backgrounded
+    // the quiz trigger may never have been delivered. Fire the quiz now only if
+    // the service says we should show it (blocked AND not dismissed).
+    if (_permissionsGranted &&
+        !_initializing &&
+        !_checkingPermissions &&
+        !_quizIsOpen &&
+        MascotOverlayService.instance.shouldShowQuiz) {
+      debugPrint(
+        '[StudentScreen] warm-resume: shouldShowQuiz=true and no quiz open — re-arming.',
+      );
+      _openQuizOverlay();
+    }
   }
 
   @override
@@ -184,6 +270,54 @@ class _StudentScreenState extends State<StudentScreen>
   }
 
   // ── Quiz overlay ──────────────────────────────────────────────────────────
+
+  /// Called by the [MascotOverlayService] quiz stream whenever the student
+  /// hits their usage limit.
+  void _onQuizTriggered() {
+    // If the student already dismissed the quiz for this cooldown cycle,
+    // suppress the trigger entirely.
+    if (!MascotOverlayService.instance.shouldShowQuiz) {
+      debugPrint(
+        '[StudentScreen] quiz trigger suppressed — already dismissed '
+        'for this cooldown.',
+      );
+      return;
+    }
+
+    final shellReady =
+        !_initializing && !_checkingPermissions && _permissionsGranted;
+    if (!shellReady) {
+      debugPrint(
+        '[StudentScreen] quiz trigger arrived before shell was ready — buffering.',
+      );
+      _pendingQuizAfterInit = true;
+      return;
+    }
+    _openQuizOverlay();
+  }
+
+  /// Called once both async init paths have completed AND permissions are
+  /// granted. Flushes any buffered quiz trigger.
+  void _onShellReady() {
+    if (!mounted) return;
+    if (_initializing || _checkingPermissions || !_permissionsGranted) return;
+
+    if (_pendingQuizAfterInit && MascotOverlayService.instance.shouldShowQuiz) {
+      _pendingQuizAfterInit = false;
+      debugPrint(
+        '[StudentScreen] shell ready — flushing buffered quiz trigger.',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openQuizOverlay();
+      });
+    } else if (_pendingQuizAfterInit) {
+      _pendingQuizAfterInit = false;
+      debugPrint(
+        '[StudentScreen] shell ready — buffered quiz trigger dropped '
+        '(quiz dismissed for this cooldown).',
+      );
+    }
+  }
 
   void _openQuizOverlay() {
     if (!mounted) return;
@@ -202,9 +336,14 @@ class _StudentScreenState extends State<StudentScreen>
     }
 
     _quizIsOpen = true;
+
+    // Tell native that the quiz is now on screen so a cold relaunch while the
+    // quiz is visible (without the student dismissing) will re-show the quiz.
+    MascotOverlayService.instance.markQuizShown();
+
     Navigator.of(context)
         .push(
-          MaterialPageRoute<void>(
+          MaterialPageRoute<bool?>(
             fullscreenDialog: true,
             builder: (_) => QuizOverlayPage(
               repository: _aiRepo,
@@ -212,7 +351,16 @@ class _StudentScreenState extends State<StudentScreen>
             ),
           ),
         )
-        .then((_) => _quizIsOpen = false);
+        .then((completed) {
+          _quizIsOpen = false;
+          // completed == true  → student reached QuizResultsLoaded and tapped Done.
+          // completed == null/false → student dismissed without finishing.
+          if (completed == true) {
+            MascotOverlayService.instance.markQuizCompleted();
+          } else {
+            MascotOverlayService.instance.markQuizDismissed();
+          }
+        });
   }
 
   // ── Verification dialog ───────────────────────────────────────────────────
@@ -298,6 +446,20 @@ class _StudentScreenState extends State<StudentScreen>
         },
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
+            // ── ADDED ──────────────────────────────────────────────────────
+            // Keep the native timer service in sync whenever the parent
+            // updates the student's app rules while the student is active.
+            // This covers the live-update path: parent opens StudentConfig,
+            // saves new rules → AppRulesLoaded is emitted → we push the
+            // corrected config to the already-running timer service.
+            if (state is AppRulesLoaded && state.studentUid == widget.uid) {
+              MascotOverlayService.instance.updateMonitoredApps(
+                state.rules,
+                config: state.config,
+              );
+            }
+            // ── END ADDED ──────────────────────────────────────────────────
+
             if (state is StudentLogoutVerificationRequired) {
               _showVerificationDialog();
             }
