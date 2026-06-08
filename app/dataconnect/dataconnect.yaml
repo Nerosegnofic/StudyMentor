@@ -1,13 +1,13 @@
 specVersion: "v1"
-serviceId: "studymentor-cu-service"
+serviceId: "studymentor-2026-service"
 location: "me-west1"
 schemas:
   - source: "./schema"
     datasource:
       postgresql:
-        database: "studymentor-cu-database"
+        database: "studymentor-2026-database"
         cloudSql:
-          instanceId: "studymentor-cu-instance"
+          instanceId: "studymentor-2026-instance"
           # schemaValidation: "STRICT"     # STRICT mode makes Postgres schema match Data Connect exactly.
           # schemaValidation: "COMPATIBLE" # COMPATIBLE mode makes Postgres schema compatible with Data Connect.
 connectorDirs: ["./example"]

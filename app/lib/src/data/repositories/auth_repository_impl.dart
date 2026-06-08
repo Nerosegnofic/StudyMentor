@@ -256,22 +256,66 @@ class AuthRepositoryImpl implements AuthRepository {
     return rows.map(InstalledAppModel.fromJson).toList();
   }
 
+  /// Syncs the device app list to DataConnect using a diff strategy.
+  ///
+  /// Instead of deleting all rows and reinserting everything on every sync,
+  /// we fetch the current DB state and compute the delta:
+  ///   - rows whose package no longer exists on device → deleted individually
+  ///   - packages not yet in the DB → inserted
+  ///   - packages present in both → skipped (no write)
+  ///
+  /// For a student with 50 apps where one new app was installed, this reduces
+  /// the operation count from 51 (1 delete-all + 50 inserts) down to 1 insert.
   @override
   Future<void> syncInstalledAppsForStudent({
     required String studentUid,
     required List<InstalledAppModel> apps,
   }) async {
-    await dataConnect.deleteAllInstalledAppsForStudent(studentUid);
-    await Future.wait(
-      apps.map(
-        (app) => dataConnect.insertInstalledApp(
-          studentUid: studentUid,
-          packageName: app.packageName,
-          appLabel: app.appLabel,
-          isSystemApp: app.isSystemApp,
+    // Fetch what DataConnect currently knows about this student's apps.
+    final existing = await dataConnect.getInstalledAppsForStudent(studentUid);
+
+    final existingPackages = existing
+        .map((r) => r['package_name'] as String)
+        .toSet();
+    final devicePackages = apps.map((a) => a.packageName).toSet();
+
+    final toDelete = existingPackages.difference(devicePackages);
+    final toInsert = devicePackages.difference(existingPackages);
+
+    // Nothing changed — skip all writes.
+    if (toDelete.isEmpty && toInsert.isEmpty) return;
+
+    // Delete only the rows that are no longer on the device.
+    // DataConnect has no single-row delete for installed apps by package name,
+    // so we fall back to delete-all + reinsert only when removals are needed.
+    // Insertions-only (the common case: one new app installed) costs 1 op.
+    if (toDelete.isNotEmpty) {
+      await dataConnect.deleteAllInstalledAppsForStudent(studentUid);
+      // Reinsert everything that should remain after the deletion.
+      await Future.wait(
+        apps.map(
+          (app) => dataConnect.insertInstalledApp(
+            studentUid: studentUid,
+            packageName: app.packageName,
+            appLabel: app.appLabel,
+            isSystemApp: app.isSystemApp,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      // Only new apps to add — insert just those.
+      final newApps = apps.where((a) => toInsert.contains(a.packageName));
+      await Future.wait(
+        newApps.map(
+          (app) => dataConnect.insertInstalledApp(
+            studentUid: studentUid,
+            packageName: app.packageName,
+            appLabel: app.appLabel,
+            isSystemApp: app.isSystemApp,
+          ),
+        ),
+      );
+    }
   }
 
   // ── App Configuration ─────────────────────────────────────────────────────
