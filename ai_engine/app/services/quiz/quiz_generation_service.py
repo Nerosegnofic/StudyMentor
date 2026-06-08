@@ -12,6 +12,7 @@ from app.repositories import (
     create_quiz_session,
     upsert_student_subject_profile_last_quizzed,
     save_questions,
+    get_recent_question_fingerprints,
 )
 from app.services.quiz.builder import build_quiz_payload
 from app.services.rag.retrieval import retrieve_context_for_quiz
@@ -19,13 +20,14 @@ from app.services.rag.generation.context import GeneratorContext
 from app.services.rag.generation.gemini_strategy import GeminiStrategy
 from app.services.quiz.quiz_bank_service import build_quiz_from_bank
 from app.core.exceptions import LLMGenerationError, QuizBankInsufficientError, InsufficientContextError
-from app.services.quiz.quiz_utils import (
+from app.services.quiz.utils import (
     generate_variance_block,
-    get_recent_question_fingerprints,
     shuffle_question_options,
     build_difficulty_map,
     filter_mismatched_questions,
 )
+from app.services.quiz.strategy_resolver import resolve_subject_strategy
+from app.core.prompts import build_quiz_prompt
 
 DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
 
@@ -62,6 +64,10 @@ def generate_quiz_for_student(
 
     target_subject_id = subject.subject_id
     target_subject_name = subject.name
+
+    # ── Resolve Subject Strategy (once) ──────────────────────────────
+    strategy = resolve_subject_strategy(target_subject_name)
+    quiz_prompt = build_quiz_prompt(strategy)
 
     # Resolve grade label for prompt (e.g., 5 → "5th")
     student_grade_label = GRADE_LABELS.get(request_body.student_grade, f"{request_body.student_grade}th")
@@ -151,7 +157,8 @@ def generate_quiz_for_student(
         )
 
         variance_block = generate_variance_block(
-            difficulty_levels=[cfg["difficulty"] for cfg in payload]
+            strategy=strategy,
+            difficulty_levels=[cfg["difficulty"] for cfg in payload],
         )
 
         recent_fps = get_recent_question_fingerprints(db, student_uid, target_subject_id)
@@ -201,10 +208,12 @@ def generate_quiz_for_student(
             print(f"[Debug] Failed to write to {debug_path}: {e}")
 
         response = generator_context.execute_generation(
+            quiz_prompt=quiz_prompt,
             topic_instructions=topic_instructions,
             total_count=request_body.total_questions,
             context=context,
             student_grade=student_grade_label,
+            subject_name=target_subject_name,
             variance_block=variance_block,
         )
 
@@ -221,10 +230,12 @@ def generate_quiz_for_student(
                 flush=True,
             )
             response = generator_context.execute_generation(
+                quiz_prompt=quiz_prompt,
                 topic_instructions=topic_instructions,
                 total_count=request_body.total_questions,
                 context=context,
                 student_grade=student_grade_label,
+                subject_name=target_subject_name,
                 variance_block=variance_block,
             )
             accepted_questions, dropped_count = filter_mismatched_questions(

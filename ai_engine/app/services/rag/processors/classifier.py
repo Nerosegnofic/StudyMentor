@@ -103,6 +103,17 @@ class ChunkClassifier:
             if number_ratio > 0.3 and len(words) > 10:
                 substantive_score += 10 # High boost for data-rich chunks
 
+        # NEW: Text-rich content indicators (language subjects, science explanations)
+        # A chunk with multiple sentences and paragraphs is likely substantive content
+        # (reading passages, stories, explanations) even without math symbols.
+        sentence_endings = len(re.findall(r'[.!?؟!。]', text))
+        if sentence_endings >= 3 and len(words) > 30:
+            substantive_score += 8  # Reading passages, stories, explanations
+
+        # Dialogue/conversation patterns (common in English textbooks)
+        if re.search(r'[""\'"].+?[""\'"]|[«»].+?[«»]', text):
+            substantive_score += 4
+
         # Final Classification
         content_type = "substantive" if substantive_score >= structural_score else "structural"
         

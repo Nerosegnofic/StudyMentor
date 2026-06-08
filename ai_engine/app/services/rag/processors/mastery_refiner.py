@@ -137,12 +137,16 @@ RULES:
 
 5. NORMALIZE unit names: Consolidate duplicates (e.g., "الوحدة الثانية" and "الوحدة الثانية: العلاقات بين الأعداد" should be merged into one canonical name).
 
-6. LANGUAGE: Keep the EXACT language of the textbook (Arabic). Do NOT translate to English.
+6. LANGUAGE: Keep the EXACT language of the textbook. If the textbook is in English, write skills in English. If Arabic, write skills in Arabic. Do NOT translate.
 
 7. REMOVE filler/generic points like "أستطيع أن أتحقق من معقولية إجاباتي" UNLESS they are the only point for a lesson.
 
 8. SKILL TEXT FORMAT: Write skills as concise noun phrases describing the ability, NOT as "أستطيع أن..." sentences.
-   Example: Instead of "أستطيع أن أقرب الأعداد العشرية" → Use "تقريب الأعداد العشرية إلى أقرب جزء من عشرة أو مائة أو ألف"
+   Example (Math): Instead of "أستطيع أن أقرب الأعداد العشرية" → Use "تقريب الأعداد العشرية إلى أقرب جزء من عشرة أو مائة أو ألف"
+   Example (English): Instead of "Read and identify sight words" + "Spell sight words" → Use "Reading and spelling sight words"
+   Example (Arabic): Instead of "أن يميز التلميذ بين التاء المربوطة والمفتوحة" + "أن يكتب التاء المربوطة" → Use "التمييز بين التاء المربوطة والمفتوحة وكتابتهما"
+   Example (Science): Instead of "أن يتعرف التلميذ على أجزاء النبات" + "أن يصف وظيفة كل جزء" → Use "التعرف على أجزاء النبات ووظائفها"
+   Example (Social Studies): Instead of "أن يحدد الطالب عاصمة مصر" + "أن يذكر موقع مصر الجغرافي" → Use "تحديد عاصمة مصر وموقعها الجغرافي"
 
 9. SKILL IDs: Generate a unique skill_id for each skill using the format: u{unit_number}_l{lesson_number}_s{skill_index}
    Example: u1_l1_s1, u1_l1_s2, u1_l2_s1, etc.

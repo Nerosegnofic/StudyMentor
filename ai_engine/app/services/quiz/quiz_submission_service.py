@@ -90,7 +90,7 @@ def process_quiz_submission(
         db_question.submitted_at = datetime.utcnow()
 
         difficulty = db_question.difficulty
-        skill_name = db_question.skill.name if db_question.skill else "General Math"
+        skill_name = db_question.skill.name if db_question.skill else "General"
         skill_state = get_student_skill_state(db, student_uid, skill_name)
 
         # G23: Skip BKT mastery progression for suspiciously fast correct answers.

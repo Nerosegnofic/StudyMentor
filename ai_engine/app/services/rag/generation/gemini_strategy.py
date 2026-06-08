@@ -1,4 +1,5 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.exceptions import OutputParserException
 from pydantic import ValidationError
 from tenacity import (
@@ -9,7 +10,6 @@ from tenacity import (
 )
 
 from app.models.schemas import GenerateQuizResponse
-from app.core.prompts import QUIZ_GENERATION_PROMPT
 from app.core.config import settings
 from app.core.exceptions import LLMGenerationError
 from app.services.rag.generation.base import QuizGeneratorStrategy
@@ -29,10 +29,12 @@ class GeminiStrategy(QuizGeneratorStrategy):
 
     def generate(
         self,
+        quiz_prompt: ChatPromptTemplate,
         topic_instructions: str,
         total_count: int,
         context: str,
         student_grade: str = "5th",
+        subject_name: str = "",
         variance_block: str = "",
     ) -> GenerateQuizResponse:
         llm = ChatGoogleGenerativeAI(
@@ -41,12 +43,13 @@ class GeminiStrategy(QuizGeneratorStrategy):
             temperature=0.7,
         )
         structured_llm = llm.with_structured_output(GenerateQuizResponse)
-        chain = QUIZ_GENERATION_PROMPT | structured_llm
+        chain = quiz_prompt | structured_llm
         inputs = {
             "topic_instructions": topic_instructions,
             "total_count": total_count,
             "context": context,
             "student_grade": student_grade,
+            "subject_name": subject_name,
             "variance_block": variance_block,
         }
 

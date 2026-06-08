@@ -2,6 +2,7 @@ from app.models.schemas import GenerateQuizResponse
 from app.services.rag.generation.base import QuizGeneratorStrategy
 from app.services.rag.generation.cohere_strategy import CohereStrategy
 from app.core.exceptions import LLMGenerationError
+from langchain_core.prompts import ChatPromptTemplate
 
 
 class GeneratorContext:
@@ -24,18 +25,22 @@ class GeneratorContext:
 
     def execute_generation(
         self,
+        quiz_prompt: ChatPromptTemplate,
         topic_instructions: str,
         total_count: int,
         context: str,
         student_grade: str = "5th",
+        subject_name: str = "",
         variance_block: str = "",
     ) -> GenerateQuizResponse:
         # LLMGenerationError propagates up — the controller handles it
         response = self._strategy.generate(
+            quiz_prompt=quiz_prompt,
             topic_instructions=topic_instructions,
             total_count=total_count,
             context=context,
             student_grade=student_grade,
+            subject_name=subject_name,
             variance_block=variance_block,
         )
 

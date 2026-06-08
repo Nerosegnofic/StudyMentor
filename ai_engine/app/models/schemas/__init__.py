@@ -1,4 +1,4 @@
-from .quiz_schemas import (
+from .quiz import (
     GenerateQuizRequest,
     QuestionSchema,
     GenerateQuizResponse,
