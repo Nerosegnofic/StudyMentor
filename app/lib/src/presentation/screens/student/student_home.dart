@@ -55,18 +55,8 @@ class _StudentHomeState extends State<StudentHome> {
       LoadStudentAppConfigRequested(studentUid: widget.uid),
     );
     // Installed-app sync is intentionally NOT dispatched here.
-    //
-    // The sync is triggered by two well-defined events:
-    //   1. App resume after a package change — StudentScreen.didChangeAppLifecycleState
-    //      checks the dirty flag (set by PackageChangedReceiver on the native side)
-    //      and dispatches SyncInstalledAppsRequested only when something actually
-    //      changed. This is the primary sync path.
-    //   2. First login (dirty flag will be true from the moment the student account
-    //      is created, so the resume path covers it on first launch too).
-    //
-    // Dispatching unconditionally here caused 51 DataConnect operations (1 delete-all
-    // + 50 inserts) on every StudentHome mount regardless of whether anything had
-    // changed — removed in favour of the dirty-flag-gated path above.
+    // It is triggered once per login session from StudentScreen.initState(),
+    // and on resume when the native dirty flag is set (package change).
     context.read<GardenBloc>().add(LoadGardenRequested(studentUid: widget.uid));
     _loadStreak();
 
