@@ -362,7 +362,7 @@ class ExampleConnector {
   static ConnectorConfig connectorConfig = ConnectorConfig(
     'me-west1',
     'example',
-    'studymentor-cu-2-service',
+    'studymentor-2026-service',
   );
 
   ExampleConnector({required this.dataConnect});
