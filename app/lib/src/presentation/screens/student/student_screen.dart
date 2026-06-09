@@ -103,7 +103,9 @@ class _StudentScreenState extends State<StudentScreen>
 
   Future<void> _initMascotService() async {
     try {
-      await MascotOverlayService.instance.init();
+      // FIX: pass studentUid so the native service can detect account switches
+      // and reset timer state when a different student logs in.
+      await MascotOverlayService.instance.init(studentUid: widget.uid);
     } catch (e) {
       debugPrint('[StudentScreen] MascotOverlayService.init() failed: $e');
       if (mounted) setState(() => _initializing = false);
@@ -117,6 +119,7 @@ class _StudentScreenState extends State<StudentScreen>
         if (mounted) {
           await MascotOverlayService.instance.updateMonitoredApps(
             rules,
+            studentUid: widget.uid, // FIX: forward uid for account-switch guard
             config: config ?? const StudentConfigModel(),
           );
         }
@@ -376,8 +379,12 @@ class _StudentScreenState extends State<StudentScreen>
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AppRulesLoaded && state.studentUid == widget.uid) {
+              // FIX: forward studentUid so the account-switch guard fires
+              // if the parent changes rules while a different student is
+              // somehow in scope.
               MascotOverlayService.instance.updateMonitoredApps(
                 state.rules,
+                studentUid: widget.uid,
                 config: state.config,
               );
             }

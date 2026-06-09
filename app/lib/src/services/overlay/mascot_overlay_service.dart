@@ -33,6 +33,13 @@ class MascotOverlayService {
   int _remainingCooldownSeconds = 0;
   int _totalUsageSeconds = 0;
 
+  // ── Student UID ────────────────────────────────────────────────────────────
+
+  /// The UID of the student whose timer is currently active.
+  /// Passed to the native timer service so it can detect account switches
+  /// and reset usage/cooldown state automatically.
+  String? _studentUid;
+
   // ── Quiz trigger stream ────────────────────────────────────────────────────
 
   bool _pendingQuizTrigger = false;
@@ -79,10 +86,18 @@ class MascotOverlayService {
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
+  /// Initialises the overlay service for [studentUid].
+  ///
+  /// [studentUid] is forwarded to the native timer service on every
+  /// [startTimerService] / [updateTimerConfig] call so that the service can
+  /// detect when a different student logs in and reset usage/cooldown state
+  /// automatically — preventing timer state from leaking across accounts.
   Future<void> init({
+    required String studentUid,
     List<AppRuleModel> rules = const [],
     StudentConfigModel config = const StudentConfigModel(),
   }) async {
+    _studentUid = studentUid;
     _monitoredPackages = {for (var r in rules) r.packageName};
     _config = config;
 
@@ -122,13 +137,16 @@ class MascotOverlayService {
     // time it reconnects (e.g. after an OEM process kill).
     //
     // The accessibility blocked state is only cleared by _onUnblocked(), which
-    // fires when UsageTimerService confirms the cooldown has actually expired.
+    // fires when UsageTimerService confirms the cooldown has actually expired,
+    // or by _syncStateFromNative() on the NEXT student's login, which now
+    // unconditionally syncs the flag to that student's own cooldown state.
     _isBlocked = false;
     _overlayVisible = false;
     _usageNotificationVisible = false;
     _cooldownNotificationVisible = false;
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
+    _studentUid = null;
     _quizDismissedForThisCooldown = false;
     _quizShownForThisCooldown = false;
     _quizController?.close();
@@ -137,8 +155,10 @@ class MascotOverlayService {
 
   Future<void> updateMonitoredApps(
     List<AppRuleModel> rules, {
+    required String studentUid,
     StudentConfigModel config = const StudentConfigModel(),
   }) async {
+    _studentUid = studentUid;
     _monitoredPackages = {for (var r in rules) r.packageName};
     _config = config;
 
@@ -243,6 +263,7 @@ class MascotOverlayService {
   Future<void> _startNativeTimerService() async {
     try {
       await _timerServiceChannel.invokeMethod('startTimerService', {
+        'studentUid': _studentUid ?? '',
         'monitoredApps': _monitoredPackages.toList(),
         'usageLimitSecs': _usageLimitSecondsFromConfig(),
         'cooldownLimitSecs': _cooldownLimitSecondsFromConfig(),
@@ -265,6 +286,7 @@ class MascotOverlayService {
   Future<void> _updateNativeTimerConfig() async {
     try {
       await _timerServiceChannel.invokeMethod('updateTimerConfig', {
+        'studentUid': _studentUid ?? '',
         'monitoredApps': _monitoredPackages.toList(),
         'usageLimitSecs': _usageLimitSecondsFromConfig(),
         'cooldownLimitSecs': _cooldownLimitSecondsFromConfig(),
@@ -294,16 +316,22 @@ class MascotOverlayService {
           (state['quizDismissed'] as bool?) ?? false;
       _quizShownForThisCooldown = (state['quizShown'] as bool?) ?? false;
 
-      if (_isBlocked) {
-        // Tell the accessibility service the student is still blocked.
-        // This is safe here because _syncStateFromNative reads the ground-truth
-        // from native SharedPreferences (written by UsageTimerService.block()),
-        // so we are confirming a block that native already persisted — not
-        // introducing a new one.
-        await _accessibilityChannel.invokeMethod('setBlocked', {
-          'blocked': true,
-        });
+      // ── FIX: unconditionally sync the accessibility blocked state ──────────
+      //
+      // Previously this call was inside `if (_isBlocked)` and only ever sent
+      // setBlocked(true). That meant switching to an account that is NOT in
+      // cooldown left the accessibility service's isBlocked flag stale from
+      // the previous account's session, causing all restricted apps to remain
+      // blocked for the newly logged-in account.
+      //
+      // By moving the call outside the guard and passing _isBlocked directly,
+      // we always clear the stale flag when the incoming account is free, and
+      // still set it correctly when the incoming account is in cooldown.
+      await _accessibilityChannel.invokeMethod('setBlocked', {
+        'blocked': _isBlocked,
+      });
 
+      if (_isBlocked) {
         // ── Cold-launch quiz recovery ──────────────────────────────────────
         //
         // Decision table:
