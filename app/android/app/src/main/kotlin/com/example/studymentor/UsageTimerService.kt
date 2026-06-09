@@ -21,61 +21,62 @@ import androidx.core.app.NotificationCompat
  * and persists all state to SharedPreferences on every tick so that even a
  * process kill + restart recovers correctly.
  *
- * ┌─────────────────────────────────────────────────────────┐
- * │  Timer state owned here (native, survives app death)    │
- * │    • totalUsageSeconds   – cumulative restricted usage  │
- * │    • isBlocked           – in cooldown?                 │
- * │    • cooldownRemaining   – seconds left in cooldown     │
- * │    • quizDismissed       – student dismissed quiz?      │
- * └─────────────────────────────────────────────────────────┘
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │  Per-student timer state (keyed by UID — never shared across accounts) │
+ * │    • <uid>_total_usage_seconds     – cumulative restricted usage        │
+ * │    • <uid>_is_blocked              – in cooldown?                       │
+ * │    • <uid>_cooldown_remaining_secs – seconds left in cooldown           │
+ * │    • <uid>_quiz_dismissed          – student dismissed quiz?            │
+ * │    • <uid>_quiz_shown              – quiz shown at least once?          │
+ * │    • <uid>_usage_limit_seconds     – configured usage cap               │
+ * │    • <uid>_cooldown_limit_seconds  – configured cooldown length         │
+ * │    • <uid>_monitored_apps          – set of monitored package names     │
+ * ├─────────────────────────────────────────────────────────────────────────┤
+ * │  Device-wide keys (NOT prefixed — shared by all accounts on device)    │
+ * │    • active_student_uid            – UID currently running the timer    │
+ * │    • student_logged_in             – is any student logged in?          │
+ * │    • timer_notification_enabled    – user preference                    │
+ * │    • cooldown_notification_enabled – user preference                    │
+ * └─────────────────────────────────────────────────────────────────────────┘
  *
- * The Flutter layer (MascotOverlayService) starts/stops this service via
- * the "com.example.studymentor/timer_service" MethodChannel and receives
- * state updates through the same channel via [TimerServiceBridge].
+ * When ACTION_START is received:
+ *  - If the incoming UID differs from activeStudentUid, we load the incoming
+ *    student's previously saved state (if any). The previous student's state
+ *    is already fully persisted (written on every tick), so nothing is lost.
+ *    Nothing is ever wiped: each student's data lives under its own key prefix.
  *
  * Compatibility: Android 8 (API 26) – Android 15+ (API 35).
  */
 class UsageTimerService : Service() {
 
-    // ── Companion ─────────────────────────────────────────────────────────────
-
     companion object {
-        // Intent actions
+        // ── Intent actions ────────────────────────────────────────────────────
         const val ACTION_START   = "ACTION_START_TIMER"
         const val ACTION_STOP    = "ACTION_STOP_TIMER"
         const val ACTION_UNBLOCK = "ACTION_UNBLOCK"
 
-        // Intent extras
+        // ── Intent extras ─────────────────────────────────────────────────────
         const val EXTRA_MONITORED_APPS      = "EXTRA_MONITORED_APPS"
         const val EXTRA_USAGE_LIMIT_SECS    = "EXTRA_USAGE_LIMIT_SECS"
         const val EXTRA_COOLDOWN_LIMIT_SECS = "EXTRA_COOLDOWN_LIMIT_SECS"
         const val EXTRA_STUDENT_LOGGED_IN   = "EXTRA_STUDENT_LOGGED_IN"
+        const val EXTRA_STUDENT_UID         = "EXTRA_STUDENT_UID"
+        const val EXTRA_QUIZ_ON_LAUNCH      = "EXTRA_QUIZ_ON_LAUNCH"
 
-        /**
-         * Boolean extra attached to the MainActivity launch Intent when the
-         * usage limit is reached while the app is not in the foreground.
-         * MainActivity reads this on onCreate / onNewIntent and fires
-         * onLimitReached back into Flutter so the quiz screen is shown
-         * regardless of whether the app was already open or cold-launched.
-         */
-        const val EXTRA_QUIZ_ON_LAUNCH = "EXTRA_QUIZ_ON_LAUNCH"
-
-        // Foreground service notification — active (usage / cooldown)
+        // ── Foreground service notification channels ───────────────────────────
         private const val FG_NOTIF_CHANNEL_ID        = "studymentor_timer_service"
         private const val FG_NOTIF_CHANNEL_NAME      = "StudyMentor Timer"
-        // Foreground service notification — idle placeholder (IMPORTANCE_MIN)
         private const val FG_NOTIF_CHANNEL_IDLE_ID   = "studymentor_timer_idle"
         private const val FG_NOTIF_CHANNEL_IDLE_NAME = "StudyMentor"
         private const val FG_NOTIF_ID                = 8001
 
-        // ── Threshold alert notification channels ─────────────────────────────
-        private const val ALERT_CHANNEL_ID   = "studymentor_usage_alerts"
-        private const val ALERT_CHANNEL_NAME = "Usage Alerts"
-
+        // ── Threshold alert notification channels ──────────────────────────────
+        private const val ALERT_CHANNEL_ID            = "studymentor_usage_alerts"
+        private const val ALERT_CHANNEL_NAME          = "Usage Alerts"
         private const val COOLDOWN_ALERT_CHANNEL_ID   = "studymentor_cooldown_alerts"
         private const val COOLDOWN_ALERT_CHANNEL_NAME = "Cooldown Alerts"
 
-        // Notification IDs — must match OverlayPlugin so they replace each other
+        // ── Notification IDs ───────────────────────────────────────────────────
         private const val ALERT_NOTIF_ID_5MIN          = 7002
         private const val ALERT_NOTIF_ID_1MIN          = 7003
         private const val ALERT_NOTIF_ID_10S           = 7004
@@ -83,43 +84,62 @@ class UsageTimerService : Service() {
         private const val COOLDOWN_ALERT_NOTIF_ID_1MIN = 7007
         private const val COOLDOWN_ALERT_NOTIF_ID_10S  = 7008
 
-        // SharedPreferences
-        private const val PREFS_NAME             = "studymentor_timer_prefs"
-        private const val KEY_TOTAL_USAGE        = "total_usage_seconds"
-        private const val KEY_IS_BLOCKED         = "is_blocked"
-        private const val KEY_COOLDOWN_REMAINING = "cooldown_remaining_seconds"
+        // ── SharedPreferences file ─────────────────────────────────────────────
+        private const val PREFS_NAME = "studymentor_timer_prefs"
+
+        // ── Device-wide keys (NOT prefixed with UID) ───────────────────────────
+        private const val KEY_ACTIVE_STUDENT_UID = "active_student_uid"
         private const val KEY_STUDENT_LOGGED_IN  = "student_logged_in"
-        private const val KEY_USAGE_LIMIT        = "usage_limit_seconds"
-        private const val KEY_COOLDOWN_LIMIT     = "cooldown_limit_seconds"
-        private const val KEY_MONITORED_APPS     = "monitored_apps"
         const val KEY_TIMER_NOTIF_ENABLED        = "timer_notification_enabled"
         const val KEY_COOLDOWN_NOTIF_ENABLED     = "cooldown_notification_enabled"
 
-        // ── Quiz dismissed flag ───────────────────────────────────────────────
-        // Persisted so that a cold relaunch (swipe-to-dismiss + reopen) respects
-        // the student's decision to dismiss the quiz during this cooldown cycle.
-        //
-        // Three-state semantics stored as two booleans:
-        //   KEY_QUIZ_DISMISSED = false, KEY_QUIZ_SHOWN = false
-        //     → quiz has not been shown yet this cooldown (show it)
-        //   KEY_QUIZ_DISMISSED = false, KEY_QUIZ_SHOWN = true
-        //     → quiz was shown but not explicitly dismissed (show it again on relaunch)
-        //   KEY_QUIZ_DISMISSED = true,  KEY_QUIZ_SHOWN = true
-        //     → student explicitly dismissed the quiz (do NOT show it again)
-        const val KEY_QUIZ_DISMISSED = "quiz_dismissed_for_cooldown"
-        const val KEY_QUIZ_SHOWN     = "quiz_shown_for_cooldown"
+        // ── Per-student key suffixes ───────────────────────────────────────────
+        // Never read these raw — always go through studentKey(uid, SUFFIX_*).
+        private const val SUFFIX_TOTAL_USAGE        = "total_usage_seconds"
+        private const val SUFFIX_IS_BLOCKED         = "is_blocked"
+        private const val SUFFIX_COOLDOWN_REMAINING = "cooldown_remaining_seconds"
+        private const val SUFFIX_USAGE_LIMIT        = "usage_limit_seconds"
+        private const val SUFFIX_COOLDOWN_LIMIT     = "cooldown_limit_seconds"
+        private const val SUFFIX_MONITORED_APPS     = "monitored_apps"
+        private const val SUFFIX_QUIZ_DISMISSED     = "quiz_dismissed_for_cooldown"
+        private const val SUFFIX_QUIZ_SHOWN         = "quiz_shown_for_cooldown"
 
-        // State snapshot broadcast (used by TimerServiceBridge to push to Flutter)
-        const val BROADCAST_STATE_UPDATE    = "com.example.studymentor.TIMER_STATE_UPDATE"
-        const val EXTRA_TOTAL_USAGE         = "total_usage"
-        const val EXTRA_IS_BLOCKED          = "is_blocked"
-        const val EXTRA_COOLDOWN_REM        = "cooldown_remaining"
-        const val EXTRA_THRESHOLD_ALERT     = "threshold_alert_seconds" // -1 = none
-        const val EXTRA_MONITORED_IN_FG     = "monitored_in_foreground"
+        // Public aliases kept for TimerServiceBridge compatibility.
+        // Bridge calls prefs(context) then reads quiz state; it now needs to
+        // pair these suffixes with the active UID via studentKey().
+        const val KEY_QUIZ_DISMISSED = SUFFIX_QUIZ_DISMISSED
+        const val KEY_QUIZ_SHOWN     = SUFFIX_QUIZ_SHOWN
 
-        /** Returns the SharedPreferences used by this service (accessible from Flutter bridge). */
+        // ── Broadcast action & extras ──────────────────────────────────────────
+        const val BROADCAST_STATE_UPDATE = "com.example.studymentor.TIMER_STATE_UPDATE"
+        const val EXTRA_TOTAL_USAGE      = "total_usage"
+        const val EXTRA_IS_BLOCKED       = "is_blocked"
+        const val EXTRA_COOLDOWN_REM     = "cooldown_remaining"
+        const val EXTRA_THRESHOLD_ALERT  = "threshold_alert_seconds"
+        const val EXTRA_MONITORED_IN_FG  = "monitored_in_foreground"
+
+        // ── Helpers ────────────────────────────────────────────────────────────
+
+        /**
+         * Builds the per-student SharedPreferences key for [suffix] scoped to
+         * [uid]. Falls back to the bare suffix when uid is blank so reads still
+         * return a defined default rather than an unexpected crash.
+         */
+        fun studentKey(uid: String, suffix: String): String =
+            if (uid.isBlank()) suffix else "${uid}_${suffix}"
+
+        /** Returns the SharedPreferences file used by this service. */
         fun prefs(context: Context): SharedPreferences =
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+        /**
+         * Returns the currently active student UID stored in prefs, or "".
+         * Useful for callers (e.g. TimerServiceBridge) that need the UID to
+         * build per-student keys without holding a reference to the running
+         * service.
+         */
+        fun activeUid(context: Context): String =
+            prefs(context).getString(KEY_ACTIVE_STUDENT_UID, "") ?: ""
     }
 
     // ── Binder ────────────────────────────────────────────────────────────────
@@ -131,7 +151,7 @@ class UsageTimerService : Service() {
     private val binder = LocalBinder()
     override fun onBind(intent: Intent?): IBinder = binder
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // ── In-memory state ───────────────────────────────────────────────────────
 
     private var isRunning             = false
     private var totalUsageSecs        = 0
@@ -145,23 +165,15 @@ class UsageTimerService : Service() {
     private var timerNotifEnabled     = true
     private var cooldownNotifEnabled  = true
 
-    // ── Quiz dismissed state ──────────────────────────────────────────────────
+    /** UID of the student whose timer state is currently loaded in memory. */
+    private var activeStudentUid = ""
 
-    /**
-     * True when the student explicitly dismissed the quiz without completing it.
-     * Persisted to SharedPreferences so it survives process death.
-     * Cleared when the cooldown ends ([unblock]) or a new cooldown starts ([block]).
-     */
+    // ── Quiz state ────────────────────────────────────────────────────────────
+
     private var quizDismissedForCooldown = false
+    private var quizShownForCooldown     = false
 
-    /**
-     * True once the quiz has been shown at least once during this cooldown.
-     * Persisted so that on cold relaunch we know the quiz was already triggered
-     * and should be shown again (unless the student dismissed it).
-     */
-    private var quizShownForCooldown = false
-
-    // One-shot threshold alert tracking (reset on unblock)
+    // One-shot threshold alert tracking (reset on unblock / account switch)
     private val firedUsageThresholds    = mutableSetOf<Int>()
     private val firedCooldownThresholds = mutableSetOf<Int>()
 
@@ -185,24 +197,58 @@ class UsageTimerService : Service() {
         prefs = prefs(applicationContext)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         ensureAllNotifChannels()
-        restoreState()
+
+        // Restore the previously active student's state so the service is
+        // immediately ready if the OS restarts it after a kill.
+        val savedUid = prefs.getString(KEY_ACTIVE_STUDENT_UID, "") ?: ""
+        if (savedUid.isNotEmpty()) {
+            activeStudentUid = savedUid
+            restoreStudentState(savedUid)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
+                val incomingUid = intent.getStringExtra(EXTRA_STUDENT_UID).orEmpty()
+
+                if (incomingUid.isNotEmpty() && incomingUid != activeStudentUid) {
+                    // ── Account switch ─────────────────────────────────────────
+                    // The outgoing student's state is already fully persisted
+                    // (written on every tick and on block/unblock), so we can
+                    // switch immediately without any extra save step.
+                    // Load the incoming student's own previously saved state.
+                    // restoreStudentState() unconditionally syncs both
+                    // AppPrefs.KEY_IS_BLOCKED and
+                    // StudyMentorAccessibilityService.isBlocked to match the
+                    // incoming student's actual cooldown state, so no stale
+                    // block from the outgoing account leaks into this session.
+                    activeStudentUid = incomingUid
+                    prefs.edit().putString(KEY_ACTIVE_STUDENT_UID, incomingUid).apply()
+                    restoreStudentState(incomingUid)
+                    firedUsageThresholds.clear()
+                    firedCooldownThresholds.clear()
+                }
+
+                // Apply config overrides from the intent (always wins over
+                // saved state so the parent's latest settings take effect).
                 intent.getStringArrayListExtra(EXTRA_MONITORED_APPS)?.let {
                     monitoredApps = it.toMutableSet()
                     saveMonitoredApps()
                 }
                 intent.getIntExtra(EXTRA_USAGE_LIMIT_SECS, -1).takeIf { it >= 0 }?.let {
                     usageLimitSecs = it
-                    prefs.edit().putInt(KEY_USAGE_LIMIT, it).apply()
+                    prefs.edit()
+                        .putInt(studentKey(activeStudentUid, SUFFIX_USAGE_LIMIT), it)
+                        .apply()
                 }
                 intent.getIntExtra(EXTRA_COOLDOWN_LIMIT_SECS, -1).takeIf { it >= 0 }?.let {
                     cooldownLimitSecs = it
-                    prefs.edit().putInt(KEY_COOLDOWN_LIMIT, it).apply()
+                    prefs.edit()
+                        .putInt(studentKey(activeStudentUid, SUFFIX_COOLDOWN_LIMIT), it)
+                        .apply()
                 }
+
                 studentLoggedIn = intent.getBooleanExtra(EXTRA_STUDENT_LOGGED_IN, true)
                 prefs.edit().putBoolean(KEY_STUDENT_LOGGED_IN, studentLoggedIn).apply()
 
@@ -218,7 +264,7 @@ class UsageTimerService : Service() {
             ACTION_UNBLOCK -> unblock()
 
             null -> {
-                // Restarted by OS after kill — restore and resume
+                // Restarted by OS after kill — state already restored in onCreate().
                 startForegroundWithNotification()
                 if (studentLoggedIn && !isRunning) {
                     isRunning = true
@@ -248,9 +294,7 @@ class UsageTimerService : Service() {
             if (cooldownRemSecs > 0) {
                 cooldownRemSecs--
                 thresholdAlert = checkCooldownThreshold(cooldownRemSecs)
-                if (thresholdAlert >= 0) {
-                    postCooldownThresholdAlert(thresholdAlert)
-                }
+                if (thresholdAlert >= 0) postCooldownThresholdAlert(thresholdAlert)
             }
             if (cooldownRemSecs <= 0) {
                 unblock()
@@ -270,9 +314,7 @@ class UsageTimerService : Service() {
                 totalUsageSecs++
                 val remaining = (usageLimitSecs - totalUsageSecs).coerceAtLeast(0)
                 thresholdAlert = checkUsageThreshold(remaining)
-                if (thresholdAlert >= 0) {
-                    postUsageThresholdAlert(thresholdAlert)
-                }
+                if (thresholdAlert >= 0) postUsageThresholdAlert(thresholdAlert)
 
                 if (totalUsageSecs >= usageLimitSecs) {
                     block()
@@ -294,10 +336,15 @@ class UsageTimerService : Service() {
     private fun block() {
         isBlocked                = true
         cooldownRemSecs          = cooldownLimitSecs
-        quizDismissedForCooldown = false  // fresh cooldown — always reset dismissed flag
-        quizShownForCooldown     = false  // fresh cooldown — quiz not yet shown
+        quizDismissedForCooldown = false
+        quizShownForCooldown     = false
         firedUsageThresholds.clear()
         StudyMentorAccessibilityService.isBlocked = true
+
+        applicationContext
+            .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, true).apply()
+
         persistState()
         broadcastState(thresholdAlert = -1, limitReached = true)
         updateFgNotification()
@@ -318,11 +365,16 @@ class UsageTimerService : Service() {
         cooldownRemSecs          = 0
         totalUsageSecs           = 0
         monitoredInForeground    = false
-        quizDismissedForCooldown = false  // cooldown over — always reset
-        quizShownForCooldown     = false  // cooldown over — always reset
+        quizDismissedForCooldown = false
+        quizShownForCooldown     = false
         firedUsageThresholds.clear()
         firedCooldownThresholds.clear()
         StudyMentorAccessibilityService.isBlocked = false
+
+        applicationContext
+            .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, false).apply()
+
         persistState()
         broadcastState(-1)
         updateFgNotification()
@@ -330,34 +382,26 @@ class UsageTimerService : Service() {
 
     // ── Quiz dismissed flag — public setters ──────────────────────────────────
 
-    /**
-     * Called from [TimerServiceBridge] when Flutter reports the student
-     * explicitly dismissed the quiz (tapped away without completing).
-     * Also marks the quiz as having been shown.
-     */
     fun setQuizDismissed(dismissed: Boolean) {
         quizDismissedForCooldown = dismissed
         if (dismissed) quizShownForCooldown = true
         prefs.edit()
-            .putBoolean(KEY_QUIZ_DISMISSED, quizDismissedForCooldown)
-            .putBoolean(KEY_QUIZ_SHOWN, quizShownForCooldown)
+            .putBoolean(studentKey(activeStudentUid, SUFFIX_QUIZ_DISMISSED), quizDismissedForCooldown)
+            .putBoolean(studentKey(activeStudentUid, SUFFIX_QUIZ_SHOWN), quizShownForCooldown)
             .apply()
     }
 
-    /**
-     * Called from [TimerServiceBridge] when Flutter reports the quiz was
-     * shown (pushed onto the navigator). Marks it as shown without dismissing.
-     */
     fun markQuizShown() {
         quizShownForCooldown = true
-        prefs.edit().putBoolean(KEY_QUIZ_SHOWN, true).apply()
+        prefs.edit()
+            .putBoolean(studentKey(activeStudentUid, SUFFIX_QUIZ_SHOWN), true)
+            .apply()
     }
 
     // ── Threshold helpers ─────────────────────────────────────────────────────
 
     private fun checkUsageThreshold(remaining: Int): Int {
-        val thresholds = listOf(300, 60, 10)
-        for (t in thresholds) {
+        for (t in listOf(300, 60, 10)) {
             if (!firedUsageThresholds.contains(t) && remaining == t) {
                 firedUsageThresholds.add(t)
                 return remaining
@@ -367,8 +411,7 @@ class UsageTimerService : Service() {
     }
 
     private fun checkCooldownThreshold(remaining: Int): Int {
-        val thresholds = listOf(300, 60, 10)
-        for (t in thresholds) {
+        for (t in listOf(300, 60, 10)) {
             if (!firedCooldownThresholds.contains(t) && remaining == t) {
                 firedCooldownThresholds.add(t)
                 return remaining
@@ -395,7 +438,6 @@ class UsageTimerService : Service() {
 
     private fun postUsageThresholdAlert(remainingSeconds: Int) {
         data class AlertInfo(val notifId: Int, val title: String, val body: String)
-
         val alert = when {
             remainingSeconds >= 270 -> AlertInfo(
                 ALERT_NOTIF_ID_5MIN,
@@ -413,26 +455,21 @@ class UsageTimerService : Service() {
                 "Your usage limit is almost up!",
             )
         }
-
         val notification = NotificationCompat.Builder(applicationContext, ALERT_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle(alert.title)
-            .setContentText(alert.body)
-            .setOngoing(false)
-            .setAutoCancel(true)
+            .setContentTitle(alert.title).setContentText(alert.body)
+            .setOngoing(false).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(mainActivityPendingIntent(alert.notifId))
             .build()
-
         notificationManager?.notify(alert.notifId, notification)
     }
 
     private fun postCooldownThresholdAlert(remainingSeconds: Int) {
         data class AlertInfo(val notifId: Int, val title: String, val body: String)
-
         val alert = when {
             remainingSeconds >= 270 -> AlertInfo(
                 COOLDOWN_ALERT_NOTIF_ID_5MIN,
@@ -450,20 +487,16 @@ class UsageTimerService : Service() {
                 "Your cooldown is ending in 10 seconds!",
             )
         }
-
         val notification = NotificationCompat.Builder(applicationContext, COOLDOWN_ALERT_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(alert.title)
-            .setContentText(alert.body)
-            .setOngoing(false)
-            .setAutoCancel(true)
+            .setContentTitle(alert.title).setContentText(alert.body)
+            .setOngoing(false).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(mainActivityPendingIntent(alert.notifId))
             .build()
-
         notificationManager?.notify(alert.notifId, notification)
     }
 
@@ -472,30 +505,23 @@ class UsageTimerService : Service() {
     private fun ensureAllNotifChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val activeChannel = NotificationChannel(
-                FG_NOTIF_CHANNEL_ID,
-                FG_NOTIF_CHANNEL_NAME,
+                FG_NOTIF_CHANNEL_ID, FG_NOTIF_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
                 description = "Shows time remaining while a restricted app is in use"
-                setShowBadge(false)
-                setSound(null, null)
-                enableVibration(false)
+                setShowBadge(false); setSound(null, null); enableVibration(false)
                 lockscreenVisibility = Notification.VISIBILITY_SECRET
             }
             val idleChannel = NotificationChannel(
-                FG_NOTIF_CHANNEL_IDLE_ID,
-                FG_NOTIF_CHANNEL_IDLE_NAME,
+                FG_NOTIF_CHANNEL_IDLE_ID, FG_NOTIF_CHANNEL_IDLE_NAME,
                 NotificationManager.IMPORTANCE_MIN,
             ).apply {
                 description = "Required background service notification"
-                setShowBadge(false)
-                setSound(null, null)
-                enableVibration(false)
+                setShowBadge(false); setSound(null, null); enableVibration(false)
                 lockscreenVisibility = Notification.VISIBILITY_SECRET
             }
             val usageAlertChannel = NotificationChannel(
-                ALERT_CHANNEL_ID,
-                ALERT_CHANNEL_NAME,
+                ALERT_CHANNEL_ID, ALERT_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
                 description = "Alerts when the usage limit is almost reached"
@@ -504,8 +530,7 @@ class UsageTimerService : Service() {
                 enableVibration(true)
             }
             val cooldownAlertChannel = NotificationChannel(
-                COOLDOWN_ALERT_CHANNEL_ID,
-                COOLDOWN_ALERT_CHANNEL_NAME,
+                COOLDOWN_ALERT_CHANNEL_ID, COOLDOWN_ALERT_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
                 description = "Alerts when the cooldown period is almost over"
@@ -513,7 +538,6 @@ class UsageTimerService : Service() {
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 enableVibration(true)
             }
-
             notificationManager?.createNotificationChannel(activeChannel)
             notificationManager?.createNotificationChannel(idleChannel)
             notificationManager?.createNotificationChannel(usageAlertChannel)
@@ -543,53 +567,39 @@ class UsageTimerService : Service() {
                     val m = (cooldownRemSecs % 3600) / 60
                     val s = cooldownRemSecs % 60
                     "Cooldown — apps locked" to String.format("%02d:%02d:%02d", h, m, s)
-                } else {
-                    "StudyMentor is running..." to ""
-                }
+                } else "StudyMentor is running..." to ""
             }
             monitoredInForeground -> {
                 if (timerNotifEnabled) {
                     val rem = (usageLimitSecs - totalUsageSecs).coerceAtLeast(0)
-                    val h = rem / 3600
-                    val m = (rem % 3600) / 60
-                    val s = rem % 60
+                    val h = rem / 3600; val m = (rem % 3600) / 60; val s = rem % 60
                     "Time remaining" to String.format("%02d:%02d:%02d", h, m, s)
-                } else {
-                    "StudyMentor is running..." to ""
-                }
+                } else "StudyMentor is running..." to ""
             }
             else -> "StudyMentor is running..." to ""
         }
 
         val channelId = if (!isBlocked && !monitoredInForeground)
-            FG_NOTIF_CHANNEL_IDLE_ID
-        else
-            FG_NOTIF_CHANNEL_ID
+            FG_NOTIF_CHANNEL_IDLE_ID else FG_NOTIF_CHANNEL_ID
 
         return NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
+            .setContentTitle(title).setContentText(body)
+            .setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
             .setPriority(
                 if (!isBlocked && !monitoredInForeground)
                     NotificationCompat.PRIORITY_MIN
-                else
-                    NotificationCompat.PRIORITY_LOW,
+                else NotificationCompat.PRIORITY_LOW,
             )
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
-            .setContentIntent(pi)
-            .build()
+            .setContentIntent(pi).build()
     }
 
     private fun startForegroundWithNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
-                FG_NOTIF_ID,
-                buildFgNotification(),
+                FG_NOTIF_ID, buildFgNotification(),
                 android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
             )
         } else {
@@ -624,41 +634,73 @@ class UsageTimerService : Service() {
 
     // ── State persistence ─────────────────────────────────────────────────────
 
-    private fun restoreState() {
-        totalUsageSecs           = prefs.getInt(KEY_TOTAL_USAGE, 0)
-        isBlocked                = prefs.getBoolean(KEY_IS_BLOCKED, false)
-        cooldownRemSecs          = prefs.getInt(KEY_COOLDOWN_REMAINING, 0)
-        usageLimitSecs           = prefs.getInt(KEY_USAGE_LIMIT, 1800)
-        cooldownLimitSecs        = prefs.getInt(KEY_COOLDOWN_LIMIT, 600)
-        studentLoggedIn          = prefs.getBoolean(KEY_STUDENT_LOGGED_IN, false)
-        monitoredApps            = prefs.getStringSet(KEY_MONITORED_APPS, emptySet())
+    /**
+     * Loads all per-student timer counters from SharedPreferences for [uid].
+     *
+     * Called on service start (onCreate) to recover the previously active
+     * student, and on account switch to load the incoming student's own saved
+     * data. Config values (limits, monitored apps) are loaded too, but will be
+     * overwritten by values arriving in the ACTION_START Intent right after.
+     *
+     * FIX: AppPrefs.KEY_IS_BLOCKED and StudyMentorAccessibilityService.isBlocked
+     * are now set unconditionally to match the restored student's actual
+     * cooldown state. Previously they were only set when isBlocked == true,
+     * which meant that switching to an account that was NOT in cooldown left
+     * both flags stale from the previous account's block() call, causing all
+     * restricted apps to remain blocked for the newly logged-in account.
+     */
+    private fun restoreStudentState(uid: String) {
+        totalUsageSecs           = prefs.getInt(studentKey(uid, SUFFIX_TOTAL_USAGE), 0)
+        isBlocked                = prefs.getBoolean(studentKey(uid, SUFFIX_IS_BLOCKED), false)
+        cooldownRemSecs          = prefs.getInt(studentKey(uid, SUFFIX_COOLDOWN_REMAINING), 0)
+        usageLimitSecs           = prefs.getInt(studentKey(uid, SUFFIX_USAGE_LIMIT), 1800)
+        cooldownLimitSecs        = prefs.getInt(studentKey(uid, SUFFIX_COOLDOWN_LIMIT), 600)
+        monitoredApps            = prefs.getStringSet(studentKey(uid, SUFFIX_MONITORED_APPS), emptySet())
                                        ?.toMutableSet() ?: mutableSetOf()
-        timerNotifEnabled        = prefs.getBoolean(KEY_TIMER_NOTIF_ENABLED, true)
-        cooldownNotifEnabled     = prefs.getBoolean(KEY_COOLDOWN_NOTIF_ENABLED, true)
-        quizDismissedForCooldown = prefs.getBoolean(KEY_QUIZ_DISMISSED, false)
-        quizShownForCooldown     = prefs.getBoolean(KEY_QUIZ_SHOWN, false)
+        quizDismissedForCooldown = prefs.getBoolean(studentKey(uid, SUFFIX_QUIZ_DISMISSED), false)
+        quizShownForCooldown     = prefs.getBoolean(studentKey(uid, SUFFIX_QUIZ_SHOWN), false)
 
-        if (isBlocked) {
-            StudyMentorAccessibilityService.isBlocked = true
-        }
+        // Device-wide prefs (not per-student)
+        studentLoggedIn      = prefs.getBoolean(KEY_STUDENT_LOGGED_IN, false)
+        timerNotifEnabled    = prefs.getBoolean(KEY_TIMER_NOTIF_ENABLED, true)
+        cooldownNotifEnabled = prefs.getBoolean(KEY_COOLDOWN_NOTIF_ENABLED, true)
+
+        // Unconditionally sync the shared blocked flag and the in-memory
+        // accessibility-service static to match the incoming student's actual
+        // cooldown state. This clears any stale block left by the previous
+        // account: if Account 1 was in cooldown and Account 2 is not,
+        // isBlocked is now false and both flags are cleared immediately.
+        StudyMentorAccessibilityService.isBlocked = isBlocked
+        applicationContext
+            .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, isBlocked).apply()
     }
 
+    /**
+     * Writes all per-student timer counters to SharedPreferences under the
+     * [activeStudentUid] prefix. Called on every tick and on block/unblock so
+     * state survives process death or an unexpected account switch.
+     */
     private fun persistState() {
+        if (activeStudentUid.isBlank()) return // safety: no UID → nothing to persist
         prefs.edit()
-            .putInt(KEY_TOTAL_USAGE, totalUsageSecs)
-            .putBoolean(KEY_IS_BLOCKED, isBlocked)
-            .putInt(KEY_COOLDOWN_REMAINING, cooldownRemSecs)
-            .putInt(KEY_USAGE_LIMIT, usageLimitSecs)
-            .putInt(KEY_COOLDOWN_LIMIT, cooldownLimitSecs)
-            .putBoolean(KEY_STUDENT_LOGGED_IN, studentLoggedIn)
-            .putBoolean(KEY_QUIZ_DISMISSED, quizDismissedForCooldown)
-            .putBoolean(KEY_QUIZ_SHOWN, quizShownForCooldown)
+            .putInt(studentKey(activeStudentUid, SUFFIX_TOTAL_USAGE),        totalUsageSecs)
+            .putBoolean(studentKey(activeStudentUid, SUFFIX_IS_BLOCKED),     isBlocked)
+            .putInt(studentKey(activeStudentUid, SUFFIX_COOLDOWN_REMAINING), cooldownRemSecs)
+            .putInt(studentKey(activeStudentUid, SUFFIX_USAGE_LIMIT),        usageLimitSecs)
+            .putInt(studentKey(activeStudentUid, SUFFIX_COOLDOWN_LIMIT),     cooldownLimitSecs)
+            .putBoolean(studentKey(activeStudentUid, SUFFIX_QUIZ_DISMISSED), quizDismissedForCooldown)
+            .putBoolean(studentKey(activeStudentUid, SUFFIX_QUIZ_SHOWN),     quizShownForCooldown)
+            .putString(KEY_ACTIVE_STUDENT_UID, activeStudentUid)
             .apply()
         saveMonitoredApps()
     }
 
     private fun saveMonitoredApps() {
-        prefs.edit().putStringSet(KEY_MONITORED_APPS, monitoredApps).apply()
+        if (activeStudentUid.isBlank()) return
+        prefs.edit()
+            .putStringSet(studentKey(activeStudentUid, SUFFIX_MONITORED_APPS), monitoredApps)
+            .apply()
     }
 
     // ── Broadcast ─────────────────────────────────────────────────────────────
@@ -682,12 +724,12 @@ class UsageTimerService : Service() {
 
     // ── Public accessors ──────────────────────────────────────────────────────
 
-    fun getTotalUsageSecs()          = totalUsageSecs
-    fun getIsBlocked()               = isBlocked
-    fun getCooldownRemSecs()         = cooldownRemSecs
-    fun getUsageLimitSecs()          = usageLimitSecs
-    fun getQuizDismissed()           = quizDismissedForCooldown
-    fun getQuizShown()               = quizShownForCooldown
+    fun getTotalUsageSecs()  = totalUsageSecs
+    fun getIsBlocked()       = isBlocked
+    fun getCooldownRemSecs() = cooldownRemSecs
+    fun getUsageLimitSecs()  = usageLimitSecs
+    fun getQuizDismissed()   = quizDismissedForCooldown
+    fun getQuizShown()       = quizShownForCooldown
 
     fun setTimerNotifEnabled(enabled: Boolean) {
         timerNotifEnabled = enabled
