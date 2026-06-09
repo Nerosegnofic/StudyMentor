@@ -29,10 +29,10 @@ class StudentHome extends StatefulWidget {
   const StudentHome({super.key, required this.fullName, required this.uid});
 
   @override
-  State<StudentHome> createState() => _StudentHomeState();
+  State<StudentHome> createState() => StudentHomeState();
 }
 
-class _StudentHomeState extends State<StudentHome> {
+class StudentHomeState extends State<StudentHome> {
   String? _parentFullName;
   List<AppRuleModel> _appRules = [];
   StudentConfigModel _config = const StudentConfigModel();
@@ -40,6 +40,7 @@ class _StudentHomeState extends State<StudentHome> {
   final Map<String, String?> _iconCache = {};
 
   int _streak = 0;
+  int _quizzesCompletedToday = 0;
 
   // Last known garden data — persists across BLoC state changes.
   Map<String, SubjectProgressModel> _gardenCache = {};
@@ -81,10 +82,23 @@ class _StudentHomeState extends State<StudentHome> {
           _streak = (profile['current_streak'] as int?) ?? 0;
         });
       }
-    } catch (_) {}
+    } catch (e, s) {
+      debugPrint('[StudentHome] _loadStreak gamification error: $e\n$s');
+    }
+
+    try {
+      final snapshot = await DataConnectProvider().getDailySnapshot(widget.uid);
+      if (mounted) {
+        setState(() {
+          _quizzesCompletedToday = snapshot.quizzesCompletedToday;
+        });
+      }
+    } catch (e, s) {
+      debugPrint('[StudentHome] _loadStreak daily snapshot error: $e\n$s');
+    }
   }
 
-  Future<void> _refresh() async {
+  Future<void> refresh() async {
     setState(() {
       _parentFullName = null;
       _rulesLoading = true;
@@ -152,7 +166,7 @@ class _StudentHomeState extends State<StudentHome> {
         ),
       ],
       child: RefreshIndicator(
-        onRefresh: _refresh,
+        onRefresh: refresh,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
@@ -476,7 +490,7 @@ class _StudentHomeState extends State<StudentHome> {
     final streakLabel = _streak == 1 ? '1 day' : '$_streak days';
     return Row(
       children: [
-        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '0')),
+        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '$_quizzesCompletedToday')),
         const SizedBox(width: 10),
         Expanded(
           child: _statCard(
@@ -619,6 +633,8 @@ class _StudentHomeState extends State<StudentHome> {
   // ── App rules section ───────────────────────────────────────────────────────
 
   Widget _buildAppRulesSection() {
+    final activeRules = _appRules.where((r) => !r.isPaused).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -643,7 +659,7 @@ class _StudentHomeState extends State<StudentHome> {
           style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
         ),
         const SizedBox(height: 14),
-        if (!_rulesLoading && _appRules.isEmpty)
+        if (!_rulesLoading && activeRules.isEmpty)
           _buildNoRulesPlaceholder()
         else if (!_rulesLoading) ...[
           // ── Screen-time card (always visible when rules exist) ───────────────
@@ -651,7 +667,7 @@ class _StudentHomeState extends State<StudentHome> {
           const SizedBox(height: 12),
           _buildTimingBanner(),
           const SizedBox(height: 12),
-          ..._appRules.map(_buildRuleRow),
+          ...activeRules.map(_buildRuleRow),
         ],
       ],
     );

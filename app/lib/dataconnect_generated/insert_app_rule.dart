@@ -4,10 +4,14 @@ class InsertAppRuleVariablesBuilder {
   String studentUid;
   String packageName;
   String appLabel;
-  bool isPaused;
+  Optional<bool> _isPaused = Optional.optional(nativeFromJson, nativeToJson);
 
-  final FirebaseDataConnect _dataConnect;
-  InsertAppRuleVariablesBuilder(this._dataConnect, {required  this.studentUid,required  this.packageName,required  this.appLabel,required  this.isPaused,});
+  final FirebaseDataConnect _dataConnect;  InsertAppRuleVariablesBuilder isPaused(bool? t) {
+   _isPaused.value = t;
+   return this;
+  }
+
+  InsertAppRuleVariablesBuilder(this._dataConnect, {required  this.studentUid,required  this.packageName,required  this.appLabel,});
   Deserializer<InsertAppRuleData> dataDeserializer = (dynamic json)  => InsertAppRuleData.fromJson(jsonDecode(json));
   Serializer<InsertAppRuleVariables> varsSerializer = (InsertAppRuleVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<InsertAppRuleData, InsertAppRuleVariables>> execute() {
@@ -15,7 +19,7 @@ class InsertAppRuleVariablesBuilder {
   }
 
   MutationRef<InsertAppRuleData, InsertAppRuleVariables> ref() {
-    InsertAppRuleVariables vars= InsertAppRuleVariables(studentUid: studentUid,packageName: packageName,appLabel: appLabel,isPaused: isPaused,);
+    InsertAppRuleVariables vars= InsertAppRuleVariables(studentUid: studentUid,packageName: packageName,appLabel: appLabel,isPaused: _isPaused,);
     return _dataConnect.mutation("InsertAppRule", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -93,14 +97,22 @@ class InsertAppRuleVariables {
   final String studentUid;
   final String packageName;
   final String appLabel;
-  final bool isPaused;
+  late final Optional<bool>isPaused;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   InsertAppRuleVariables.fromJson(Map<String, dynamic> json):
   
   studentUid = nativeFromJson<String>(json['studentUid']),
   packageName = nativeFromJson<String>(json['packageName']),
-  appLabel = nativeFromJson<String>(json['appLabel']),
-  isPaused = nativeFromJson<bool>(json['isPaused'] ?? false);
+  appLabel = nativeFromJson<String>(json['appLabel']) {
+  
+  
+  
+  
+  
+    isPaused = Optional.optional(nativeFromJson, nativeToJson);
+    isPaused.value = json['isPaused'] == null ? null : nativeFromJson<bool>(json['isPaused']);
+  
+  }
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -113,7 +125,7 @@ class InsertAppRuleVariables {
     final InsertAppRuleVariables otherTyped = other as InsertAppRuleVariables;
     return studentUid == otherTyped.studentUid && 
     packageName == otherTyped.packageName && 
-    appLabel == otherTyped.appLabel &&
+    appLabel == otherTyped.appLabel && 
     isPaused == otherTyped.isPaused;
     
   }
@@ -126,7 +138,9 @@ class InsertAppRuleVariables {
     json['studentUid'] = nativeToJson<String>(studentUid);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
-    json['isPaused'] = nativeToJson<bool>(isPaused);
+    if(isPaused.state == OptionalState.set) {
+      json['isPaused'] = isPaused.toJson();
+    }
     return json;
   }
 

@@ -106,7 +106,7 @@ class UpsertStudentConfigVariables {
   usageMinutes = nativeFromJson<int>(json['usageMinutes']),
   cooldownHours = nativeFromJson<int>(json['cooldownHours']),
   cooldownMinutes = nativeFromJson<int>(json['cooldownMinutes']),
-  quizCount = nativeFromJson<String>(json['quizCount'] ?? 'auto');
+  quizCount = nativeFromJson<String>(json['quizCount']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -121,7 +121,7 @@ class UpsertStudentConfigVariables {
     usageHours == otherTyped.usageHours && 
     usageMinutes == otherTyped.usageMinutes && 
     cooldownHours == otherTyped.cooldownHours && 
-    cooldownMinutes == otherTyped.cooldownMinutes &&
+    cooldownMinutes == otherTyped.cooldownMinutes && 
     quizCount == otherTyped.quizCount;
     
   }

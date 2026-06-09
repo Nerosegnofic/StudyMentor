@@ -125,7 +125,7 @@ class GamificationService:
         print(
             f"[Gamification] student={student_uid} "
             f"xp_earned={total_xp} coins_earned={total_coins} "
-            f"level={old_level}→{new_level} level_up={did_level_up}",
+            f"level={old_level}->{new_level} level_up={did_level_up}",
             flush=True,
         )
 
@@ -296,6 +296,8 @@ class GamificationService:
 
         # Fetch next level info
         from app.repositories.gamification_repo import get_all_levels
+        from app.models.domain.quiz import QuestionResponse
+        
         levels = get_all_levels(db)
         level_name = "Seedling"
         next_level_xp = None
@@ -330,6 +332,12 @@ class GamificationService:
                 next_milestone_days_away = m - row.current_streak
                 break
 
+        total_questions_answered = (
+            db.query(QuestionResponse)
+            .filter(QuestionResponse.student_uid == student_uid)
+            .count()
+        )
+
         return {
             "student_uid": student_uid,
             "xp_total": row.xp_total,
@@ -343,4 +351,5 @@ class GamificationService:
             "last_quiz_date": row.last_quiz_date.isoformat() if row.last_quiz_date else None,
             "next_milestone": next_milestone,
             "next_milestone_days_away": next_milestone_days_away,
+            "total_questions_answered": total_questions_answered,
         }

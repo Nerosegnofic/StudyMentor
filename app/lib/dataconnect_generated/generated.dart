@@ -22,19 +22,13 @@ part 'insert_app_rule.dart';
 
 part 'delete_all_app_rules_for_student.dart';
 
-part 'update_last_active_at.dart';
-
 part 'upsert_student_settings.dart';
 
 part 'insert_support_ticket.dart';
 
 part 'insert_student_owned_item.dart';
 
-part 'update_student_coins.dart';
-
 part 'upsert_student_avatar.dart';
-
-part 'update_student_xp_and_coins.dart';
 
 part 'delete_all_owned_items_for_student.dart';
 
@@ -199,18 +193,13 @@ class ExampleConnector {
   }
   
   
-  InsertAppRuleVariablesBuilder insertAppRule ({required String studentUid, required String packageName, required String appLabel, required bool isPaused, }) {
-    return InsertAppRuleVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,isPaused: isPaused,);
+  InsertAppRuleVariablesBuilder insertAppRule ({required String studentUid, required String packageName, required String appLabel, }) {
+    return InsertAppRuleVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,);
   }
   
   
   DeleteAllAppRulesForStudentVariablesBuilder deleteAllAppRulesForStudent ({required String studentUid, }) {
     return DeleteAllAppRulesForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  UpdateLastActiveAtVariablesBuilder updateLastActiveAt () {
-    return UpdateLastActiveAtVariablesBuilder(dataConnect, );
   }
   
   
@@ -229,18 +218,8 @@ class ExampleConnector {
   }
   
   
-  UpdateStudentCoinsVariablesBuilder updateStudentCoins ({required int totalCoins, }) {
-    return UpdateStudentCoinsVariablesBuilder(dataConnect, totalCoins: totalCoins,);
-  }
-  
-  
   UpsertStudentAvatarVariablesBuilder upsertStudentAvatar ({required String studentUid, required String gender, required String skinTone, }) {
     return UpsertStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,gender: gender,skinTone: skinTone,);
-  }
-  
-  
-  UpdateStudentXpAndCoinsVariablesBuilder updateStudentXpAndCoins ({required int totalXp, required int weeklyXp, required int totalCoins, required int totalQuestionsAnswered, required int currentStreak, required int level, Timestamp? lastActiveAt, }) {
-    return UpdateStudentXpAndCoinsVariablesBuilder(dataConnect, totalXp: totalXp,weeklyXp: weeklyXp,totalCoins: totalCoins,totalQuestionsAnswered: totalQuestionsAnswered,currentStreak: currentStreak,level: level,lastActiveAt: lastActiveAt,);
   }
   
   

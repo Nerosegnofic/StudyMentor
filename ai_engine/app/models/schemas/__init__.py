@@ -18,7 +18,10 @@ from .gamification_schemas import (
     GamificationProfileResponse,
     LevelSchema,
     LevelsResponse,
+    DailyLoginRequest,
     DailyLoginResponse,
+    SpendCoinsRequest,
+    SpendCoinsResponse,
     QuizRewardsSummary,
 )
 
@@ -38,6 +41,9 @@ __all__ = [
     "GamificationProfileResponse",
     "LevelSchema",
     "LevelsResponse",
+    "DailyLoginRequest",
     "DailyLoginResponse",
+    "SpendCoinsRequest",
+    "SpendCoinsResponse",
     "QuizRewardsSummary",
 ]

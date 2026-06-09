@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'mascot_state.dart';
 import '../../domain/models/app_config_model.dart';
 import '../../services/settings_service.dart';
@@ -86,8 +87,19 @@ class MascotOverlayService {
     StudentConfigModel config = const StudentConfigModel(),
   }) async {
     _studentUid = studentUid;
-    _monitoredPackages = {for (var r in rules) r.packageName};
+    _monitoredPackages = {for (var r in rules) if (!r.isPaused) r.packageName};
     _config = config;
+
+    // Save the paused packages to SharedPreferences so the native side can also see them independently
+    if (_studentUid != null && _studentUid!.isNotEmpty) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final pausedPackages = rules.where((r) => r.isPaused).map((r) => r.packageName).toList();
+        await prefs.setStringList('paused_packages_$_studentUid', pausedPackages);
+      } catch (e) {
+        debugPrint('[MascotOverlayService] Failed to save paused packages to prefs in init: $e');
+      }
+    }
 
     _overlayChannel.setMethodCallHandler(_handleOverlayCallback);
     _timerServiceChannel.setMethodCallHandler(_handleTimerServiceCallback);
@@ -147,8 +159,19 @@ class MascotOverlayService {
     if (studentUid != null) {
       _studentUid = studentUid;
     }
-    _monitoredPackages = {for (var r in rules) r.packageName};
+    _monitoredPackages = {for (var r in rules) if (!r.isPaused) r.packageName};
     _config = config;
+
+    // Save the paused packages to SharedPreferences so the native side can also see them independently
+    if (_studentUid != null && _studentUid!.isNotEmpty) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final pausedPackages = rules.where((r) => r.isPaused).map((r) => r.packageName).toList();
+        await prefs.setStringList('paused_packages_$_studentUid', pausedPackages);
+      } catch (e) {
+        debugPrint('[MascotOverlayService] Failed to save paused packages to prefs: $e');
+      }
+    }
 
     try {
       await _accessibilityChannel.invokeMethod('setMonitoredApps', {
@@ -382,8 +405,7 @@ class MascotOverlayService {
   int _usageLimitSecondsFromConfig() =>
       (_config.usageHours * 3600) + (_config.usageMinutes * 60);
 
-  int _cooldownLimitSecondsFromConfig() =>
-      (_config.cooldownHours * 3600) + (_config.cooldownMinutes * 60);
+  int _cooldownLimitSecondsFromConfig() => 30; // 30 seconds for fast testing
 
   // ── Native → Dart callback: timer service ─────────────────────────────────
 

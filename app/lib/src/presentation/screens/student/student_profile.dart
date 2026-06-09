@@ -58,7 +58,7 @@ class _StudentProfileState extends State<StudentProfile> {
           _totalXp = (gamification['xp_total'] as int?) ?? 0;
           _totalCoins = (gamification['coins_total'] as int?) ?? 0;
           _currentStreak = (gamification['current_streak'] as int?) ?? 0;
-          _totalQuestionsAnswered = 0; // Deprecated backend tracked stat
+          _totalQuestionsAnswered = (gamification['total_questions_answered'] as int?) ?? 0;
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }

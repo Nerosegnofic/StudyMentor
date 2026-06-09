@@ -254,9 +254,11 @@ class UsageTimerService : Service() {
 
         val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         val pausedAppsValue = flutterPrefs.all["flutter.paused_packages_$studentUid"]
-        val isPaused = when (pausedAppsValue) {
+        val isPaused = foreground != null && when (pausedAppsValue) {
             is Set<*> -> pausedAppsValue.contains(foreground)
-            is String -> pausedAppsValue.contains("\"$foreground\"")
+            is List<*> -> pausedAppsValue.contains(foreground)
+            is Collection<*> -> pausedAppsValue.contains(foreground)
+            is String -> pausedAppsValue.contains("\"$foreground\"") || pausedAppsValue.contains(foreground)
             else -> false
         }
         val isForegroundMonitored = foreground != null && monitoredApps.contains(foreground) && !isPaused

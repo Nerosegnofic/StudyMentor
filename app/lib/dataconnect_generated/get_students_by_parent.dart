@@ -23,16 +23,12 @@ class GetStudentsByParentStudents {
   final String username;
   final GetStudentsByParentStudentsUser user;
   final int? gradeLevel;
-  final int? totalXp;
-  final int? totalCoins;
   GetStudentsByParentStudents.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
   username = nativeFromJson<String>(json['username']),
   user = GetStudentsByParentStudentsUser.fromJson(json['user']),
-  gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']),
-  totalXp = json['totalXp'] == null ? null : nativeFromJson<int>(json['totalXp']),
-  totalCoins = json['totalCoins'] == null ? null : nativeFromJson<int>(json['totalCoins']);
+  gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -46,13 +42,11 @@ class GetStudentsByParentStudents {
     return uid == otherTyped.uid && 
     username == otherTyped.username && 
     user == otherTyped.user && 
-    gradeLevel == otherTyped.gradeLevel && 
-    totalXp == otherTyped.totalXp && 
-    totalCoins == otherTyped.totalCoins;
+    gradeLevel == otherTyped.gradeLevel;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, user.hashCode, gradeLevel.hashCode, totalXp.hashCode, totalCoins.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, user.hashCode, gradeLevel.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -63,12 +57,6 @@ class GetStudentsByParentStudents {
     if (gradeLevel != null) {
       json['gradeLevel'] = nativeToJson<int?>(gradeLevel);
     }
-    if (totalXp != null) {
-      json['totalXp'] = nativeToJson<int?>(totalXp);
-    }
-    if (totalCoins != null) {
-      json['totalCoins'] = nativeToJson<int?>(totalCoins);
-    }
     return json;
   }
 
@@ -77,8 +65,6 @@ class GetStudentsByParentStudents {
     required this.username,
     required this.user,
     this.gradeLevel,
-    this.totalXp,
-    this.totalCoins,
   });
 }
 

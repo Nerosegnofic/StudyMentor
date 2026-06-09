@@ -51,8 +51,6 @@ mutation InsertStudent(
       parentUid: $parentUid
       username: $username
       gradeLevel: $gradeLevel
-      totalXp: 0
-      totalCoins: 0
     }
   )
 }

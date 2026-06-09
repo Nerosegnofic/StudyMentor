@@ -19,6 +19,7 @@ class GamificationProfileResponse(BaseModel):
     last_quiz_date: Optional[str] = None
     next_milestone: Optional[int] = None
     next_milestone_days_away: Optional[int] = None
+    total_questions_answered: int = 0
 
 
 class LevelSchema(BaseModel):

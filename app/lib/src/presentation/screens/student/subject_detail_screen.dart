@@ -14,6 +14,9 @@ import '../../widgets/plant_widget.dart';
 import 'student_quiz.dart';
 import '../../../domain/models/gamification_enums.dart';
 import '../../../bloc/gamification/gamification_bloc.dart';
+import '../../../domain/models/app_config_model.dart';
+import '../../../domain/models/quiz_count.dart';
+import '../../../bloc/auth/auth_bloc.dart';
 
 /// Full detail page for a single subject — plant, XP, skills, strengths/weaknesses.
 /// "Recent Performance" and charts are intentionally excluded from this version.
@@ -32,6 +35,8 @@ class SubjectDetailScreen extends StatefulWidget {
 }
 
 class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
+  StudentConfigModel _config = const StudentConfigModel();
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +46,19 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         subjectKey: widget.subjectKey,
       ),
     );
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    try {
+      final repo = context.read<AuthBloc>().repository;
+      final (:config, :rules) = await repo.getAppConfigForStudent(widget.studentUid);
+      if (mounted && config != null) {
+        setState(() {
+          _config = config;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -294,6 +312,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         repository: AiEngineRepository.instance,
                         studentId: widget.studentUid,
                         contextType: QuizContext.voluntary,
+                        totalQuestions: switch (_config.quizCount) {
+                          Auto() => 5,
+                          Fixed(:final count) => count,
+                        },
                       ),
                     ),
                   ),

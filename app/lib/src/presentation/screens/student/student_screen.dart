@@ -5,6 +5,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/shop/shop_bloc.dart';
+import '../../../bloc/shop/shop_state.dart';
 import '../../../bloc/gamification/gamification_bloc.dart';
 import '../../../bloc/gamification/gamification_event.dart';
 import '../../../bloc/gamification/gamification_state.dart';
@@ -437,10 +438,30 @@ class _StudentScreenState extends State<StudentScreen>
             ),
             BlocListener<GamificationBloc, GamificationState>(
               listener: (context, state) {
+                if (state is GamificationLoaded) {
+                  setState(() {
+                    _coins = state.profile.coinsTotal;
+                    _xp = state.profile.xpTotal;
+                    _level = state.profile.currentLevel;
+                    _streak = state.profile.currentStreak;
+                  });
+                }
                 if (state is GamificationRewardProcessed) {
+                  setState(() {
+                    _coins = state.profile.coinsTotal;
+                    _xp = state.profile.xpTotal;
+                    _level = state.profile.currentLevel;
+                    _streak = state.profile.currentStreak;
+                  });
                   RewardToast.show(context, state.xpEarned, state.coinsEarned);
                   if (state.leveledUpTo != null) {
-                    LevelUpModal.show(context, state.leveledUpTo!);
+                    LevelUpModal.show(
+                      context,
+                      kGamificationLevels.firstWhere(
+                        (l) => l.levelNumber == state.leveledUpTo,
+                        orElse: () => kGamificationLevels.first,
+                      ),
+                    );
                   }
                   if (state.milestoneHit != null) {
                     StreakMilestoneModal.show(
@@ -450,6 +471,15 @@ class _StudentScreenState extends State<StudentScreen>
                       currentStreak: state.profile.currentStreak,
                     );
                   }
+                }
+              },
+            ),
+            BlocListener<ShopBloc, ShopState>(
+              listener: (context, state) {
+                if (state is ShopLoaded) {
+                  setState(() {
+                    _coins = state.coins;
+                  });
                 }
               },
             ),
@@ -539,52 +569,68 @@ class _StudentScreenState extends State<StudentScreen>
           const Spacer(),
           BlocBuilder<GamificationBloc, GamificationState>(
             builder: (context, state) {
-              final int xp;
               final int coins;
               final int level;
-              final int streak;
               if (state is GamificationLoaded) {
-                xp = state.profile.xpTotal;
                 coins = state.profile.coinsTotal;
                 level = state.profile.currentLevel;
-                streak = state.profile.currentStreak;
               } else if (state is GamificationRewardProcessed) {
-                xp = state.profile.xpTotal;
                 coins = state.profile.coinsTotal;
                 level = state.profile.currentLevel;
-                streak = state.profile.currentStreak;
               } else {
-                xp = _xp;
                 coins = _coins;
                 level = _level;
-                streak = _streak;
               }
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  StatBadge(
-                    emoji: '⚡',
-                    value: _formatNum(xp),
-                    accentColor: const Color(0xFFE6A800),
-                    backgroundColor: const Color(0xFFFFF8E7),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F7FF),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE0E6FF)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star_rounded, color: Color(0xFF4A6CF7), size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Lv. $level',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1A1F3C),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  StatBadge(
-                    emoji: '🪙',
-                    value: _formatNum(coins),
-                    accentColor: const Color(0xFFFFA000),
-                    backgroundColor: const Color(0xFFFFF8E7),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8E1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFFFE082)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🪙', style: TextStyle(fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatNum(coins),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFF57F17),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  StatBadge(
-                    emoji: '⭐',
-                    value: 'Lv.$level',
-                    accentColor: const Color(0xFF4CAF50),
-                    backgroundColor: const Color(0xFFE8F5E9),
-                  ),
-                  const SizedBox(width: 8),
-                  if (streak > 0)
-                    StreakDisplay(currentStreak: streak),
                 ],
               );
             },

@@ -46,7 +46,7 @@ type AppRule @table(name: "app_rules", key: ["id"]) {
   studentUid: String!
   packageName: String! @col(dataType: "varchar(255)")
   appLabel: String! @col(dataType: "varchar(255)")
-  isPaused: Boolean! @default(expr: "false")
+  isPaused: Boolean @default(expr: "false")
 }
 
 # One row per student holding the global usage and cooldown time limits.
@@ -57,7 +57,7 @@ type StudentConfig @table(name: "student_configs", key: ["studentUid"]) {
   usageMinutes: Int! @default(expr: "30")
   cooldownHours: Int! @default(expr: "0")
   cooldownMinutes: Int! @default(expr: "10")
-  quizCount: String! @col(dataType: "varchar(4)") @default(expr: "'auto'")
+  quizCount: String @col(dataType: "varchar(4)") @default(expr: "'auto'")
 }
 
 # Per-student app preferences (notifications, sounds, music).

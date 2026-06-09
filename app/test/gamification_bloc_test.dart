@@ -5,7 +5,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:studymentor/src/domain/models/gamification_enums.dart';
-import 'package:studymentor/src/domain/models/gamification_models.dart';
 import 'package:studymentor/src/bloc/gamification/gamification_bloc.dart';
 import 'package:studymentor/src/bloc/gamification/gamification_event.dart';
 import 'package:studymentor/src/bloc/gamification/gamification_state.dart';
@@ -86,11 +85,14 @@ void main() {
       act: (bloc) => bloc.add(
         const ProcessQuizRewardsRequested(
           studentId: 'student-bloc-1',
-          score: 3,
-          totalQuestions: 5,
-          timeTaken: Duration(minutes: 10),
-          context: QuizContext.voluntary,
-          isComeback: false,
+          rewards: {
+            'xp_earned': 30,
+            'coins_earned': 5,
+            'xp_total': 30,
+            'coins_total': 5,
+            'new_level': 1,
+            'did_level_up': false,
+          },
         ),
       ),
       expect: () => [
@@ -113,21 +115,19 @@ void main() {
       act: (bloc) => bloc.add(
         const ProcessQuizRewardsRequested(
           studentId: 'student-bloc-2',
-          score: 10,
-          totalQuestions: 10,
-          timeTaken: Duration(minutes: 5),
-          context: QuizContext.voluntary,
-          isComeback: false,
+          rewards: {
+            'xp_earned': 150,
+            'coins_earned': 20,
+            'xp_total': 150,
+            'coins_total': 20,
+            'new_level': 2,
+            'did_level_up': true,
+          },
         ),
       ),
       expect: () => [
         isA<GamificationRewardProcessed>()
-            .having((s) => s.leveledUpTo, 'leveledUpTo', isNotNull)
-            .having(
-              (s) => s.leveledUpTo!.levelName,
-              'levelName',
-              'Sprout',
-            ),
+            .having((s) => s.leveledUpTo, 'leveledUpTo', 2),
         isA<GamificationLoaded>(),
       ],
     );
@@ -139,11 +139,14 @@ void main() {
       act: (bloc) => bloc.add(
         const ProcessQuizRewardsRequested(
           studentId: 'student-bloc-3',
-          score: 5,
-          totalQuestions: 5,
-          timeTaken: Duration(minutes: 3),
-          context: QuizContext.forced,
-          isComeback: true,
+          rewards: {
+            'xp_earned': 50,
+            'coins_earned': 10,
+            'xp_total': 50,
+            'coins_total': 10,
+            'new_level': 1,
+            'did_level_up': false,
+          },
         ),
       ),
       expect: () => [
@@ -151,7 +154,7 @@ void main() {
         isA<GamificationLoaded>().having(
           (s) => s.profile.coinsTotal,
           'coinsTotal',
-          10, // 5 base + 5 freedom
+          10,
         ),
       ],
     );

@@ -89,8 +89,6 @@ class DataConnectProvider {
             'full_name': s.user.fullName,
             'email': s.user.email,
             'grade_level': s.gradeLevel,
-            'total_xp': s.totalXp,
-            'total_coins': s.totalCoins,
             'is_email_verified': s.user.isEmailVerified,
           },
         )
@@ -130,7 +128,7 @@ class DataConnectProvider {
   getAppConfigForStudent(String studentUid) async {
     final result = await _connector
         .getAppConfigForStudent(studentUid: studentUid)
-        .execute();
+        .execute(fetchPolicy: QueryFetchPolicy.serverOnly);
 
     final raw = result.data.studentConfig;
     final config = raw == null
@@ -174,8 +172,8 @@ class DataConnectProvider {
           studentUid: studentUid,
           packageName: packageName,
           appLabel: appLabel,
-          isPaused: isPaused,
         )
+        .isPaused(isPaused)
         .execute();
   }
 

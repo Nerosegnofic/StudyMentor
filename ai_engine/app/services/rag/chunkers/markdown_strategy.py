@@ -72,7 +72,7 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         
         merge_count = len(all_sub_chunks) - len(merged_chunks)
         if merge_count > 0:
-            print(f"[{document_id}] Merged {merge_count} small chunks ({len(all_sub_chunks)} → {len(merged_chunks)}).", flush=True)
+            print(f"[{document_id}] Merged {merge_count} small chunks ({len(all_sub_chunks)} -> {len(merged_chunks)}).", flush=True)
         
         # 5. Sequential context tracking + role detection + classification
         tracker = SequentialContextTracker()

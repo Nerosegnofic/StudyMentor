@@ -15,8 +15,8 @@ class StreakDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StatBadge(
-      emoji: '🔥',
-      value: currentStreak == 1 ? '1 day' : '$currentStreak days',
+      icon: Icons.local_fire_department_rounded,
+      value: '$currentStreak',
       accentColor: accentColor,
     );
   }

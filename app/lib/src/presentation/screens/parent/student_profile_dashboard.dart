@@ -46,6 +46,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
 
   int _xp = 0;
   int _coins = 0;
+  int _streak = 0;
   bool _loadingGamification = true;
 
   @override
@@ -70,6 +71,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
         setState(() {
           _xp = (profile['xp_total'] as int?) ?? 0;
           _coins = (profile['coins_total'] as int?) ?? 0;
+          _streak = (profile['current_streak'] as int?) ?? 0;
           _loadingGamification = false;
         });
       }
@@ -99,6 +101,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
                     initial: _initial,
                     xp: _xp,
                     coins: _coins,
+                    streak: _streak,
                   ),
                   const SizedBox(height: 16),
 
@@ -184,12 +187,14 @@ class _HeroProfileCard extends StatelessWidget {
   final String initial;
   final int xp;
   final int coins;
+  final int streak;
   
   const _HeroProfileCard({
     required this.student,
     required this.initial,
     required this.xp,
     required this.coins,
+    required this.streak,
   });
 
   String get _gradeLabel {
@@ -248,7 +253,7 @@ class _HeroProfileCard extends StatelessWidget {
             children: [
               _GamPill(icon: '⚡', value: '$xp'),
               const SizedBox(width: 12),
-              _GamPill(icon: '🔥', value: '7'),
+              _GamPill(icon: '🔥', value: '$streak'),
               const SizedBox(width: 12),
               _GamPill(icon: '🪙', value: '$coins'),
             ],

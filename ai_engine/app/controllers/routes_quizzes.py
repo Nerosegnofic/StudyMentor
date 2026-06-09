@@ -87,35 +87,44 @@ async def generate_quiz(
         # ------------------------------------------------------------------ #
         active_session = get_active_quiz_session(db, student_uid, target_subject_id)
         if active_session:
-            cached_questions = get_questions_for_session(db, active_session.session_id)
-            # Only reuse the session if its questions are still available (not yet scrubbed)
-            if cached_questions and all(q.text_content is not None for q in cached_questions):
+            if active_session.total_questions == request_body.total_questions:
+                cached_questions = get_questions_for_session(db, active_session.session_id)
+                # Only reuse the session if its questions are still available (not yet scrubbed)
+                if cached_questions and all(q.text_content is not None for q in cached_questions):
+                    print(
+                        f"[QuizCache] Returning cached session {active_session.session_id} "
+                        f"for student={student_uid}, subject_id={target_subject_id}",
+                        flush=True,
+                    )
+                    question_schemas = [
+                        QuestionSchema(
+                            question_id=str(q.question_id),
+                            topic=q.skill.name if q.skill else "General",
+                            question_text=q.text_content,
+                            options=q.options,
+                            correct_answer=q.correct_answer,
+                            explanation=q.explanation or "",
+                            difficulty=int(q.difficulty),
+                            hints=q.hints or [],
+                        )
+                        for q in cached_questions
+                    ]
+                    return GenerateQuizResponse(
+                        quiz_session_id=str(active_session.session_id),
+                        selected_subject_id=target_subject_id,
+                        selected_subject_name=target_subject_name,
+                        quiz_title=f"اختبار {target_subject_name}",
+                        questions=question_schemas,
+                        quiz_source="CACHED",
+                    )
+            else:
                 print(
-                    f"[QuizCache] Returning cached session {active_session.session_id} "
-                    f"for student={student_uid}, subject_id={target_subject_id}",
+                    f"[QuizCache] Closing stale active session {active_session.session_id} "
+                    f"due to count mismatch (expected {request_body.total_questions}, got {active_session.total_questions})",
                     flush=True,
                 )
-                question_schemas = [
-                    QuestionSchema(
-                        question_id=str(q.question_id),
-                        topic=q.skill.name if q.skill else "General",
-                        question_text=q.text_content,
-                        options=q.options,
-                        correct_answer=q.correct_answer,
-                        explanation=q.explanation or "",
-                        difficulty=int(q.difficulty),
-                        hints=q.hints or [],
-                    )
-                    for q in cached_questions
-                ]
-                return GenerateQuizResponse(
-                    quiz_session_id=str(active_session.session_id),
-                    selected_subject_id=target_subject_id,
-                    selected_subject_name=target_subject_name,
-                    quiz_title=f"اختبار {target_subject_name}",
-                    questions=question_schemas,
-                    quiz_source="CACHED",
-                )
+                active_session.end_time = datetime.utcnow()
+                db.commit()
 
         # ------------------------------------------------------------------ #
         # Step 1: Get the student's BKT mastery profile
