@@ -69,6 +69,7 @@ async def upload_document(
         filename=file.filename,
         subject_id=resolved_subject_id,
         firebase_uid=firebase_uid,
+        subject_name=subject_name,
     )
 
     return DocumentUploadResponse(

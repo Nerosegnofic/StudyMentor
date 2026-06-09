@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     COHERE_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
     POSTGRES_CONNECTION: Optional[str] = None
-    FIREBASE_PROJECT_ID: str = "studymentor-cu"
+    FIREBASE_PROJECT_ID: str = "studymentor-2026"
     FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = None
 
     # --- AI Model Configuration ---
@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # - "gemini-2.5-flash" (Recommended default: fast, cheap, highly capable)
     # - "gemini-2.5-pro" (Better for complex logic, deeper reasoning, and complex parsing)
     GEMINI_MODEL: str = "gemini-3.5-flash"
+    GEMINI_FALLBACK_MODEL: Optional[str] = "gemini-2.5-flash"
 
     # Cohere Models:
     # - "command-r-08-2024" (Current default)

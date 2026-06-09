@@ -21,7 +21,8 @@ def process_and_ingest_document(
     file_content: bytes, 
     filename: str, 
     subject_id: int = 1,
-    firebase_uid: str = None
+    firebase_uid: str = None,
+    subject_name: str = "",
 ):
     """
     Orchestrates the RAG ingestion pipeline:
@@ -46,7 +47,7 @@ def process_and_ingest_document(
             os.makedirs("debug_output", exist_ok=True)
             debug_prefix = f"debug_output/{document_id}"
 
-            full_text = parser_context.execute_parse(document_id, temp_file_path)
+            full_text = parser_context.execute_parse(document_id, temp_file_path, subject_name=subject_name)
 
             # Optional: to read from cache instead of re-parsing
             # with open(f"debug_output/{document_id}_parsed.md", "r", encoding="utf-8") as f:

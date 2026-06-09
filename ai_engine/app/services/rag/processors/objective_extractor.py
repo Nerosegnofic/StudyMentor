@@ -4,12 +4,14 @@ Objective Extractor for Egyptian Primary School Textbooks.
 Extracts learning objectives from the parsed markdown output using
 regex pattern matching on known section structures.
 
-Supports three textbook formats:
+Supports multiple textbook formats across ALL subjects:
   1. Arabic Math (سلاح التلميذ): المفاهيم sections with lesson-grouped objectives
-  2. English (المعاصر Connect): Learning Outcomes sections grouped by skill
+  2. English (المعاصر Connect / Ministry Connect): Learning Outcomes sections
   3. Ministry Techbook (Discovery Education): هدف التعلم / أهداف التعلم per-lesson
+  4. Self-Assessment sections: "Now I can..." / "الآن يمكنني..." skill lists
+  5. Science / Social Studies / Arabic Language: أهداف التعلم, نتائج التعلم
 
-The extractor works on the CLEAN markdown.
+Language-neutral: works with Arabic-only, English-only, and bilingual textbooks.
 
 Returns structured data: list of dicts with 'unit', 'lesson', 'objectives'.
 """
@@ -52,19 +54,47 @@ _EN_OBJECTIVES_HEADER = re.compile(
     r'|By\s+the\s+[Ee]nd\s+of\s+(?:this|the)\s+(?:lesson|unit|chapter)'
     r'|In\s+this\s+(?:lesson|unit|chapter)\s+you\s+will'
     r'|Students?\s+will\s+be\s+able\s+to'
+    r'|Scope\s+and\s+Sequence'
     r')\s*:?\s*$', re.MULTILINE | re.IGNORECASE
+)
+
+# Matches: Self-assessment section headers (end-of-unit skill checklists)
+_SELF_ASSESSMENT_HEADER = re.compile(
+    r'^(?:#{1,4}\s*)?(?:'
+    # English self-assessment
+    r'(?:Self[- ]?Assessment|Now\s+I\s+[Cc]an|I\s+[Cc]an\s+now)'
+    r'|(?:Review|Quick\s+Review|Unit\s+Review)'
+    # Arabic self-assessment
+    r'|التقييم\s+الذاتي'
+    r'|الآن\s+(?:يمكنني|أستطيع)'
+    r'|مراجعة\s*(?:سريعة|الوحدة)?'
+    r')\s*:?\s*\.{0,3}\s*$', re.MULTILINE | re.IGNORECASE
+)
+
+# Matches: self-assessment skill items ("Now I can..." / "الآن يمكنني...")
+_SELF_ASSESSMENT_ITEM = re.compile(
+    r'^\s*[-•*]?\s*(?:'
+    # English: "Identify vocabulary...", "Use adverbs...", any capitalized verb phrase
+    r'(?:Now\s+I\s+can\s+)?(?:Identify|Use|Read|Write|Listen|Speak|Describe|Explain|Compare|Match|Complete|Draw|Label|Name|Apply|Recognize|Understand|Discuss|Ask|Answer|Tell|Say|Practice|Make|Create)\s+.{10,}'
+    r'|'
+    # Arabic: plain text skill descriptions (no bullet needed)
+    r'(?:تحديد|استخدام|قراءة|كتابة|الاستماع|التحدث|وصف|شرح|مقارنة|التعرف|فهم|مناقشة)\s+.{10,}'
+    r')$', re.MULTILINE | re.IGNORECASE
 )
 
 # Matches: Arabic objective section headers (all publishers, all subjects)
 # Uses #{0,6} to handle arbitrary markdown header depth from OCR.
+# Includes translated variants that LlamaParse may produce.
 _AR_OBJECTIVES_HEADER = re.compile(
     r'^#{0,6}\s*(?:'
     r'(?:أهداف|هدف)\s+(?:التعلم|الدرس|الوحدة)'
     r'|نواتج\s+التعلم'
+    r'|نتائج\s+التعلم'               # LlamaParse-translated "Learning Outcomes"
     r'|الأهداف\s*(?:السلوكية|التعليمية|الإجرائية)?'
     r'|مخرجات\s+التعلم'
     r'|ماذا\s+(?:سنتعلم|ستتعلم|نتعلم)'
     r'|ماذا\s+سوف\s+(?:نتعلم|أتعلم)'
+    r'|المهارات\s*(?:اللغوية)?'      # "Language Skills" — common in English/Arabic textbooks
     r')\s*[:\?؟]?\s*$', re.MULTILINE
 )
 
@@ -92,13 +122,13 @@ _NEXT_SECTION = re.compile(
 # ---------------------------------------------------------------------------
 
 _UNIT_HEADER = re.compile(
-    rf'^#{{1,6}}\s*(?:الوحدة)\s*(?:[\(\[<{{]?\s*\d+\s*[\)\]>}}]?|(?:{_ORDINALS_FEM}))',
-    re.MULTILINE
+    rf'^#{{1,6}}\s*(?:الوحدة|Unit|Chapter|Module)\s*(?:[\(\[\<{{]?\s*\d+\s*[\)\]\>}}]?|(?:{_ORDINALS_FEM}))',
+    re.MULTILINE | re.IGNORECASE
 )
 
 _LESSON_HEADER = re.compile(
-    rf'^#{{1,6}}\s*(?:الدرس(?:ان|وس)?)\s*(?:[\(\[<{{]?\s*[\d\s،,\-/]+\s*[\)\]>}}]?|(?:{_ORDINALS_MASC}))',
-    re.MULTILINE
+    rf'^#{{1,6}}\s*(?:الدرس(?:ان|وس)?|Lesson)\s*(?:[\(\[\<{{]?\s*[\d\s،,\-/]+\s*[\)\]\>}}]?|(?:{_ORDINALS_MASC}))',
+    re.MULTILINE | re.IGNORECASE
 )
 
 # ---------------------------------------------------------------------------
@@ -152,9 +182,10 @@ _AR_GENERIC_OBJECTIVE = re.compile(
 # English Objective Patterns (all publishers)
 # ---------------------------------------------------------------------------
 
-# Skill category headers
+# Skill category headers (used in English textbook "Learning Outcomes" sections)
 _EN_SKILL_CATEGORY = re.compile(
-    r'^(Speaking|Listening|Reading|Writing|Grammar|Vocabulary|Phonics|Spelling)\s*$',
+    r'^(?:#{1,4}\s*)?(Speaking|Listening|Reading|Writing|Grammar|Vocabulary|Phonics|Spelling|'
+    r'التحدث|الاستماع|القراءة|الكتابة|النحو|المفردات)\s*:?\s*$',
     re.MULTILINE | re.IGNORECASE
 )
 
@@ -164,7 +195,9 @@ _EN_OBJECTIVE = re.compile(
     r'[A-Z][a-z].+'           # Capitalized verb phrase: "Read and answer..."
     r'|Students?\s+will\s+.+' # "Students will be able to..."
     r'|Be\s+able\s+to\s+.+'  # "Be able to identify..."
-    r'|(?:Identify|Recognize|Understand|Describe|Explain|Apply|Analyze|Evaluate|Create|Compare|Classify|Demonstrate|Use|Write|Read|Listen|Speak|Match|Complete|Draw|Label|Name|List|Define|State|Discuss|Solve|Calculate)\s+.+'
+    r'|(?:Identify|Recognize|Understand|Describe|Explain|Apply|Analyze|Evaluate|Create|Compare|Classify|Demonstrate|Use|Write|Read|Listen|Speak|Match|Complete|Draw|Label|Name|List|Define|State|Discuss|Solve|Calculate|Ask|Answer|Tell|Practice|Make)\s+.+'
+    # Arabic verb-phrase bullets (for translated or bilingual sections)
+    r'|(?:طرح|الإجابة|استخدام|التعرف|تحديد|وصف|مناقشة|إكمال|كتابة|قراءة|التمييز|التحدث|الاستماع|إعادة)\s+.+'
     r')$', re.MULTILINE | re.IGNORECASE
 )
 
@@ -428,20 +461,59 @@ def extract_english_objectives(text: str) -> List[dict]:
     """
     Extract objectives from English textbook format.
     
-    Structure:
-        Learning Outcomes
-        Speaking
-        - Ask and answer questions about ...
-        Reading
-        - Answer comprehension questions ...
+    Supports:
+        1. "Learning Outcomes" sections with skill categories (Speaking, Reading, etc.)
+        2. Generic objective headers ("By the end of this lesson...")
+        3. Bilingual sections where headers are Arabic but bullets are English/Arabic
     
-    Returns: [{'unit': 'General', 'lesson': skill, 'objectives': [...]}]
+    Tracks the current unit/lesson context so objectives are properly grouped.
+    
+    Returns: [{'unit': ..., 'lesson': ..., 'objectives': [...]}]
     """
     results = []
     
+    # Track current unit/lesson context across the document
+    current_unit = "General"
+    current_lesson = "General"
+    
+    # Pre-scan for unit/lesson headers to build context
+    lines = text.split('\n')
+    unit_lesson_context = {}  # line_index -> (unit, lesson)
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        # English/bilingual unit header
+        unit_match = re.search(
+            r'(?:Unit|الوحدة)\s*(?:[\(\[<{]?\s*\d+\s*[\)\]>}]?)',
+            stripped, re.IGNORECASE
+        )
+        if unit_match and stripped.startswith('#'):
+            current_unit = stripped.lstrip('#').strip()
+            # Try to get the full title after colon
+            title_match = re.match(r'.+?(?::|:)\s*(.+)$', current_unit)
+            if title_match:
+                current_unit = current_unit  # Keep full title
+        
+        lesson_match = re.search(
+            r'(?:Lesson|الدرس)\s*(?:[\(\[<{]?\s*\d+\s*[\)\]>}]?)',
+            stripped, re.IGNORECASE
+        )
+        if lesson_match and (stripped.startswith('#') or stripped.startswith('**')):
+            current_lesson = stripped.lstrip('#').strip().strip('*').strip()
+        
+        unit_lesson_context[i] = (current_unit, current_lesson)
+    
+    # Reset for extraction pass
     for match in _EN_OBJECTIVES_HEADER.finditer(text):
+        # Find which line this header is on
+        header_pos = match.start()
+        header_line_idx = text[:header_pos].count('\n')
+        
+        # Get the unit/lesson context at this position
+        ctx = unit_lesson_context.get(header_line_idx, ("General", "General"))
+        section_unit, section_lesson = ctx
+        
         start = match.end()
-        current_skill = "General"
+        current_skill = section_lesson if section_lesson != "General" else "General"
         blank_count = 0
         current_objectives = []
         
@@ -457,9 +529,11 @@ def extract_english_objectives(text: str) -> List[dict]:
             else:
                 blank_count = 0
             
-            # Stop if we hit lesson/unit content
-            if re.match(r'^(Lesson|UNIT|#)', stripped, re.IGNORECASE):
-                break
+            # Stop if we hit a new major section
+            if re.match(r'^#{1,3}\s+(?!#)', stripped):
+                # But not if it's a skill category header like ### Speaking
+                if not _EN_SKILL_CATEGORY.match(stripped):
+                    break
             if stripped.startswith('|'):
                 break
             
@@ -469,7 +543,7 @@ def extract_english_objectives(text: str) -> List[dict]:
                 # Save previous skill
                 if current_objectives:
                     results.append({
-                        'unit': 'General',
+                        'unit': section_unit,
                         'lesson': current_skill,
                         'objectives': current_objectives,
                     })
@@ -477,7 +551,7 @@ def extract_english_objectives(text: str) -> List[dict]:
                 current_objectives = []
                 continue
             
-            # Check for English objective bullet
+            # Check for English/bilingual objective bullet
             obj_match = _EN_OBJECTIVE.match(line)
             if obj_match:
                 current_objectives.append(obj_match.group(1).strip())
@@ -485,10 +559,85 @@ def extract_english_objectives(text: str) -> List[dict]:
         # Save the last skill group
         if current_objectives:
             results.append({
-                'unit': 'General',
+                'unit': section_unit,
                 'lesson': current_skill,
                 'objectives': current_objectives,
             })
+    
+    return results
+
+
+def extract_self_assessment_objectives(text: str) -> List[dict]:
+    """
+    Extract skill objectives from self-assessment / review sections.
+    
+    Many Egyptian textbooks (especially English subject) list skills at the
+    end of each unit as self-assessment checklists:
+        ## التقييم الذاتي / Self-Assessment
+        الآن يمكنني ... / Now I can ...
+        - Identify vocabulary related to Nile River life.
+        - Use adverbs of frequency.
+        - تحديد المفردات المتعلقة بالحياة في نهر النيل.
+    
+    These are often the ONLY explicit skill declarations in English textbooks.
+    
+    Returns: [{'unit': ..., 'lesson': 'Self-Assessment', 'objectives': [...]}]
+    """
+    results = []
+    
+    # Track current unit context
+    current_unit = "General"
+    
+    lines = text.split('\n')
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        
+        # Track unit headers
+        unit_match = re.search(
+            r'(?:Unit|الوحدة)\s*(?:[\(\[<{]?\s*\d+\s*[\)\]>}]?)',
+            stripped, re.IGNORECASE
+        )
+        if unit_match and stripped.startswith('#'):
+            current_unit = stripped.lstrip('#').strip()
+        
+        # Check for self-assessment header
+        if _SELF_ASSESSMENT_HEADER.match(stripped):
+            objectives = []
+            
+            for j in range(i + 1, min(i + 40, len(lines))):
+                obj_line = lines[j].strip()
+                
+                # Stop at next major section
+                if obj_line.startswith('#') and not _SELF_ASSESSMENT_HEADER.match(obj_line):
+                    break
+                if obj_line.startswith('---'):
+                    break
+                
+                # Skip empty lines and noise
+                if not obj_line or obj_line in ('نعم', 'لا', 'Yes', 'No'):
+                    continue
+                # Skip checklist markers
+                if re.match(r'^[-•*]?\s*(?:حصلت عليه|لست متأكد|أحتاج مساعد|Got it|Not sure|Need help)', obj_line, re.IGNORECASE):
+                    continue
+                # Skip star ratings
+                if re.match(r'^[✰★☆⭐\s]+$', obj_line):
+                    continue
+                
+                # Match self-assessment items
+                item_match = _SELF_ASSESSMENT_ITEM.match(obj_line)
+                if item_match:
+                    obj_text = obj_line.lstrip('-•* ').strip()
+                    # Clean "Now I can" prefix
+                    obj_text = re.sub(r'^(?:Now\s+I\s+can|الآن\s+(?:يمكنني|أستطيع))\s*\.{0,3}\s*', '', obj_text, flags=re.IGNORECASE).strip()
+                    if len(obj_text) > 10:  # Skip too-short fragments
+                        objectives.append(obj_text)
+            
+            if objectives:
+                results.append({
+                    'unit': current_unit,
+                    'lesson': 'Self-Assessment',
+                    'objectives': objectives,
+                })
     
     return results
 
@@ -498,6 +647,9 @@ def extract_all_objectives(text: str) -> List[dict]:
     Extract all learning objectives from a textbook markdown.
     Automatically detects the textbook format and extracts accordingly.
     Deduplicates objectives by (unit, lesson, objective_text).
+    
+    Supports ALL subjects: Math, English, Arabic Language, Science,
+    Social Studies, and any other Egyptian primary school subject.
     
     Returns a list of dicts, each with:
         {
@@ -512,13 +664,17 @@ def extract_all_objectives(text: str) -> List[dict]:
     arabic = extract_arabic_objectives(text)
     all_objectives.extend(arabic)
     
-    # Try generic Arabic extraction (أهداف التعلم, نواتج التعلم, etc.)
+    # Try generic Arabic extraction (أهداف التعلم, نواتج التعلم, نتائج التعلم, etc.)
     generic_ar = extract_ministry_objectives(text)
     all_objectives.extend(generic_ar)
     
-    # Try English extraction
+    # Try English extraction (Learning Outcomes, Objectives, etc.)
     english = extract_english_objectives(text)
     all_objectives.extend(english)
+    
+    # Try self-assessment extraction ("Now I can...", "التقييم الذاتي", etc.)
+    self_assess = extract_self_assessment_objectives(text)
+    all_objectives.extend(self_assess)
     
     # Deduplicate: merge groups with same (unit, lesson) and remove duplicate texts
     seen_keys = {}  # (unit, lesson) -> list of unique objectives
