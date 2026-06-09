@@ -133,8 +133,11 @@ class _StudentHomeState extends State<StudentHome> {
                 _config = state.config;
                 _rulesLoading = false;
               });
+              // FIX: pass studentUid so the native service detects account
+              // switches and resets timer state for the correct student.
               MascotOverlayService.instance.updateMonitoredApps(
                 state.rules,
+                studentUid: widget.uid,
                 config: state.config,
               );
               _loadIcons(state.rules);
