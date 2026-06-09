@@ -31,8 +31,8 @@ class GrowthStageUtils {
     if (level >= 5) return GrowthStage.fullBloom;
     if (level == 4) return GrowthStage.mediumPlant;
     if (level == 3) return GrowthStage.smallPlant;
-    if (level >= 1) return GrowthStage.sprout; // Level 1–2: visible sprout
-    return GrowthStage.seed;                    // Level 0: brand-new seed mound
+    if (level == 2) return GrowthStage.sprout;
+    return GrowthStage.seed; // level 0 and 1
   }
 
   /// Scale factor for the plant widget: [0.3 – 1.0].

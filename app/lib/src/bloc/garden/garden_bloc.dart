@@ -8,8 +8,8 @@ import 'garden_event.dart';
 import 'garden_state.dart';
 
 /// XP values that put each catalog subject at a distinct growth stage on first load.
-/// Index matches [SubjectCatalog.all]: Math=1, Science=2, History=3, English=4.
-const List<int> _seedXpByIndex = [0, 100, 300, 700];
+/// Index matches [SubjectCatalog.all]: Math, Science, History, English, Arabic.
+const List<int> _seedXpByIndex = [0, 100, 300, 700, 1500];
 
 class GardenBloc extends Bloc<GardenEvent, GardenState> {
   final DataConnectProvider _provider;
@@ -32,11 +32,27 @@ class GardenBloc extends Bloc<GardenEvent, GardenState> {
     try {
       var rows = await _provider.getAllSubjectProgress(event.studentUid);
 
-      // ── First-time seed ──────────────────────────────────────────────────
-      // If no subject progress exists yet for this student, write demo data
-      // so all four plants appear at levels 1–4 (each a distinct growth stage).
-      if (rows.isEmpty) {
-        await _seedDemoData(event.studentUid);
+      // ── Seed missing subjects ─────────────────────────────────────────────
+      // Seed any catalog subject that has no progress row yet (covers both
+      // first-time users and cases where new subjects are added to the catalog).
+      final existing = rows.map((r) => r.subjectKey).toSet();
+      final missing = SubjectCatalog.all
+          .asMap()
+          .entries
+          .where((e) => !existing.contains(e.value.key))
+          .toList();
+      if (missing.isNotEmpty) {
+        await Future.wait([
+          for (final entry in missing)
+            _provider.upsertSubjectProgress(
+              studentUid: event.studentUid,
+              subjectKey: entry.value.key,
+              totalXp: entry.key < _seedXpByIndex.length ? _seedXpByIndex[entry.key] : 0,
+              level: SubjectXpEngine.levelFromXp(
+                entry.key < _seedXpByIndex.length ? _seedXpByIndex[entry.key] : 0,
+              ),
+            ),
+        ]);
         rows = await _provider.getAllSubjectProgress(event.studentUid);
       }
 
@@ -47,20 +63,6 @@ class GardenBloc extends Bloc<GardenEvent, GardenState> {
     } catch (e) {
       emit(GardenError(e.toString()));
     }
-  }
-
-  /// Writes one row per catalog subject with XP values that produce levels 1–4.
-  Future<void> _seedDemoData(String studentUid) async {
-    final catalog = SubjectCatalog.all;
-    await Future.wait([
-      for (int i = 0; i < catalog.length && i < _seedXpByIndex.length; i++)
-        _provider.upsertSubjectProgress(
-          studentUid: studentUid,
-          subjectKey: catalog[i].key,
-          totalXp: _seedXpByIndex[i],
-          level: SubjectXpEngine.levelFromXp(_seedXpByIndex[i]),
-        ),
-    ]);
   }
 
   // ── Load skills for one subject ─────────────────────────────────────────────

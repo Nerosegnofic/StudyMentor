@@ -66,6 +66,15 @@ class SubjectCatalog {
       lightColor: Color(0xFFF3E5F5),
       skillKeys: ['reading', 'writing', 'grammar', 'vocabulary', 'comprehension'],
     ),
+    SubjectDefinition(
+      key: 'arabic',
+      name: 'Arabic',
+      emoji: '📖',
+      plantType: PlantType.tree,
+      primaryColor: Color(0xFF00695C),
+      lightColor: Color(0xFFE0F2F1),
+      skillKeys: ['reading', 'writing', 'grammar', 'vocabulary', 'comprehension'],
+    ),
   ];
 
   static final Map<String, SubjectDefinition> _byKey = {

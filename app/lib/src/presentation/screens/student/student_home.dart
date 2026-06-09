@@ -42,6 +42,8 @@ class _StudentHomeState extends State<StudentHome> {
   // Last known garden data — persists across BLoC state changes.
   Map<String, SubjectProgressModel> _gardenCache = {};
 
+  final ScrollController _gardenScrollController = ScrollController();
+
   // ── Screen-time live refresh ───────────────────────────────────────────────
   Timer? _usageTicker;
 
@@ -68,6 +70,7 @@ class _StudentHomeState extends State<StudentHome> {
   @override
   void dispose() {
     _usageTicker?.cancel();
+    _gardenScrollController.dispose();
     super.dispose();
   }
 
@@ -245,35 +248,62 @@ class _StudentHomeState extends State<StudentHome> {
           );
         }
 
-        final subjects = SubjectCatalog.all.take(3).toList();
+        final subjects = SubjectCatalog.all;
         return _gardenShell(
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFC5E8A8), Color(0xFFB8DFA0)],
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-            ),
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: subjects.map((subject) {
-                final progress =
-                    _gardenCache[subject.key] ??
-                    SubjectProgressModel.empty(widget.uid, subject.key);
-                return Expanded(
-                  child: GardenSubjectCard(
-                    subject: subject,
-                    progress: progress,
-                    onTap: () => _openSubjectDetail(subject.key),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Each card keeps exactly the width it had with 3 subjects.
+              final cardWidth = (constraints.maxWidth - 32 - 16) / 3;
+              return Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFFC5E8A8), Color(0xFFB8DFA0)],
                   ),
-                );
-              }).toList(),
-            ),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+                ),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
+                child: ScrollbarTheme(
+                  data: ScrollbarThemeData(
+                    thumbColor: WidgetStateProperty.all(
+                      const Color(0xFF4CAF50).withValues(alpha: 0.75),
+                    ),
+                    trackColor: WidgetStateProperty.all(
+                      const Color(0xFFB8DFA0).withValues(alpha: 0.5),
+                    ),
+                    thickness: WidgetStateProperty.all(4),
+                    radius: const Radius.circular(4),
+                    crossAxisMargin: 2,
+                  ),
+                  child: Scrollbar(
+                    controller: _gardenScrollController,
+                    thumbVisibility: subjects.length > 3,
+                    child: SingleChildScrollView(
+                      controller: _gardenScrollController,
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: subjects.map((subject) {
+                          final progress =
+                              _gardenCache[subject.key] ??
+                              SubjectProgressModel.empty(widget.uid, subject.key);
+                          return SizedBox(
+                            width: cardWidth,
+                            child: GardenSubjectCard(
+                              subject: subject,
+                              progress: progress,
+                              onTap: () => _openSubjectDetail(subject.key),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
