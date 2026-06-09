@@ -28,9 +28,8 @@ class _StudentProfileState extends State<StudentProfile> {
   int _currentStreak = 0;
   int _totalQuestionsAnswered = 0;
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
-
-  int get _level => StudentRankUtils.levelFromXp(_totalXp);
-  String get _rank => StudentRankUtils.rankFromLevel(_level);
+  int _level = 1;
+  String _rank = 'Seedling';
 
   @override
   void initState() {
@@ -49,9 +48,9 @@ class _StudentProfileState extends State<StudentProfile> {
         dataconnect.getStudentAvatar(widget.uid),
       ]);
 
-      final profile = results[0] as Map<String, dynamic>;
+      final _ = results[0];
       final gamification = results[1] as Map<String, dynamic>;
-      final avatarMap = results[2] as Map<String, dynamic>?;
+      final Map<String, dynamic>? avatarMap = results[2];
 
       if (mounted) {
         setState(() {
@@ -59,6 +58,8 @@ class _StudentProfileState extends State<StudentProfile> {
           _totalCoins = (gamification['coins_total'] as int?) ?? 0;
           _currentStreak = (gamification['current_streak'] as int?) ?? 0;
           _totalQuestionsAnswered = (gamification['total_questions_answered'] as int?) ?? 0;
+          _level = (gamification['current_level'] as int?) ?? StudentRankUtils.levelFromXp(_totalXp);
+          _rank = (gamification['level_name'] as String?) ?? StudentRankUtils.rankFromLevel(_level);
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
