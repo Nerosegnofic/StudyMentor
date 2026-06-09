@@ -6,9 +6,11 @@ class UpdateStudentXpAndCoinsVariablesBuilder {
   int totalCoins;
   int totalQuestionsAnswered;
   int currentStreak;
+  int level;
+  Timestamp? lastActiveAt;
 
   final FirebaseDataConnect _dataConnect;
-  UpdateStudentXpAndCoinsVariablesBuilder(this._dataConnect, {required  this.totalXp,required  this.weeklyXp,required  this.totalCoins,required  this.totalQuestionsAnswered,required  this.currentStreak,});
+  UpdateStudentXpAndCoinsVariablesBuilder(this._dataConnect, {required  this.totalXp,required  this.weeklyXp,required  this.totalCoins,required  this.totalQuestionsAnswered,required  this.currentStreak,required  this.level,this.lastActiveAt,});
   Deserializer<UpdateStudentXpAndCoinsData> dataDeserializer = (dynamic json)  => UpdateStudentXpAndCoinsData.fromJson(jsonDecode(json));
   Serializer<UpdateStudentXpAndCoinsVariables> varsSerializer = (UpdateStudentXpAndCoinsVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<UpdateStudentXpAndCoinsData, UpdateStudentXpAndCoinsVariables>> execute() {
@@ -16,7 +18,7 @@ class UpdateStudentXpAndCoinsVariablesBuilder {
   }
 
   MutationRef<UpdateStudentXpAndCoinsData, UpdateStudentXpAndCoinsVariables> ref() {
-    UpdateStudentXpAndCoinsVariables vars= UpdateStudentXpAndCoinsVariables(totalXp: totalXp,weeklyXp: weeklyXp,totalCoins: totalCoins,totalQuestionsAnswered: totalQuestionsAnswered,currentStreak: currentStreak,);
+    UpdateStudentXpAndCoinsVariables vars= UpdateStudentXpAndCoinsVariables(totalXp: totalXp,weeklyXp: weeklyXp,totalCoins: totalCoins,totalQuestionsAnswered: totalQuestionsAnswered,currentStreak: currentStreak,level: level,lastActiveAt: lastActiveAt,);
     return _dataConnect.mutation("UpdateStudentXpAndCoins", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -98,6 +100,8 @@ class UpdateStudentXpAndCoinsVariables {
   final int totalCoins;
   final int totalQuestionsAnswered;
   final int currentStreak;
+  final int level;
+  final Timestamp? lastActiveAt;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   UpdateStudentXpAndCoinsVariables.fromJson(Map<String, dynamic> json):
   
@@ -105,7 +109,9 @@ class UpdateStudentXpAndCoinsVariables {
   weeklyXp = nativeFromJson<int>(json['weeklyXp']),
   totalCoins = nativeFromJson<int>(json['totalCoins']),
   totalQuestionsAnswered = nativeFromJson<int>(json['totalQuestionsAnswered']),
-  currentStreak = nativeFromJson<int>(json['currentStreak']);
+  currentStreak = nativeFromJson<int>(json['currentStreak']),
+  level = json['level'] == null ? 1 : nativeFromJson<int>(json['level']),
+  lastActiveAt = json['lastActiveAt'] == null ? null : Timestamp.fromJson(json['lastActiveAt']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -120,11 +126,13 @@ class UpdateStudentXpAndCoinsVariables {
     weeklyXp == otherTyped.weeklyXp && 
     totalCoins == otherTyped.totalCoins && 
     totalQuestionsAnswered == otherTyped.totalQuestionsAnswered && 
-    currentStreak == otherTyped.currentStreak;
+    currentStreak == otherTyped.currentStreak &&
+    level == otherTyped.level &&
+    lastActiveAt == otherTyped.lastActiveAt;
     
   }
   @override
-  int get hashCode => Object.hashAll([totalXp.hashCode, weeklyXp.hashCode, totalCoins.hashCode, totalQuestionsAnswered.hashCode, currentStreak.hashCode]);
+  int get hashCode => Object.hashAll([totalXp.hashCode, weeklyXp.hashCode, totalCoins.hashCode, totalQuestionsAnswered.hashCode, currentStreak.hashCode, level.hashCode, lastActiveAt.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -134,6 +142,10 @@ class UpdateStudentXpAndCoinsVariables {
     json['totalCoins'] = nativeToJson<int>(totalCoins);
     json['totalQuestionsAnswered'] = nativeToJson<int>(totalQuestionsAnswered);
     json['currentStreak'] = nativeToJson<int>(currentStreak);
+    json['level'] = nativeToJson<int>(level);
+    if (lastActiveAt != null) {
+      json['lastActiveAt'] = lastActiveAt!.toJson();
+    }
     return json;
   }
 
@@ -143,6 +155,8 @@ class UpdateStudentXpAndCoinsVariables {
     required this.totalCoins,
     required this.totalQuestionsAnswered,
     required this.currentStreak,
+    required this.level,
+    this.lastActiveAt,
   });
 }
 

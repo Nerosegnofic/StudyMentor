@@ -36,6 +36,7 @@ from app.repositories import (
 )
 from app.services.quiz.builder import build_quiz_payload
 from app.services.evaluation.bkt_engine import BKTEngine
+from app.services.gamification import GamificationService
 from app.models.domain import Question, QuestionResponse
 
 DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
@@ -44,6 +45,7 @@ router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
 
 generator_context = GeneratorContext(strategy=GeminiStrategy())
 bkt_engine = BKTEngine()
+gamification_service = GamificationService()
 
 
 @router.post("/generate", response_model=GenerateQuizResponse)
@@ -299,6 +301,7 @@ async def submit_quiz(
 
         triggered_punishment = False
         correct_answers = 0
+        total_time_ms = 0
 
         for ans in request.answers:
             # G22c: Cross-session guard — reject answers referencing foreign questions
@@ -326,6 +329,7 @@ async def submit_quiz(
             )
             save_question_response(db, db_response)
             db_question.submitted_at = datetime.utcnow()
+            total_time_ms += ans.time_taken_ms
 
             difficulty = db_question.difficulty
             skill_name = db_question.skill.name if db_question.skill else "General Math"
@@ -365,6 +369,18 @@ async def submit_quiz(
             quiz_session.score = score
             quiz_session.end_time = datetime.utcnow()
 
+        # ── Gamification rewards ──────────────────────────────────────
+        rewards = gamification_service.process_quiz_rewards(
+            db,
+            student_uid,
+            quiz_session.session_id,
+            correct_answers=correct_answers,
+            total_questions=total_submitted,
+            total_time_ms=total_time_ms,
+            quiz_context=quiz_session.quiz_context or "VOLUNTARY",
+            client_local_date=request.client_local_date,
+        )
+
         db.commit()
 
         if score >= 85:
@@ -381,6 +397,7 @@ async def submit_quiz(
             score=score,
             total_questions=total_submitted,
             feedback=feedback,
+            rewards=rewards,
         )
 
     except HTTPException:

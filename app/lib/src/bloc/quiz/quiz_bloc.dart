@@ -55,6 +55,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
         QuizSubmissionRequest(
           quizSessionId: event.quizSessionId,
           answers: current.currentAnswers.values.toList(),
+          clientLocalDate: DateTime.now().toIso8601String().split('T')[0],
         ),
       );
       emit(QuizResultsLoaded(

@@ -107,15 +107,18 @@ class StudentAnswer {
 class QuizSubmissionRequest {
   final String quizSessionId;
   final List<StudentAnswer> answers;
+  final String clientLocalDate;
 
   const QuizSubmissionRequest({
     required this.quizSessionId,
     required this.answers,
+    required this.clientLocalDate,
   });
 
   Map<String, dynamic> toJson() => {
         'quiz_session_id': quizSessionId,
         'answers': answers.map((a) => a.toJson()).toList(),
+        'client_local_date': clientLocalDate,
       };
 }
 
@@ -123,11 +126,13 @@ class QuizSubmissionResponse {
   final double score;
   final int totalQuestions;
   final String feedback;
+  final Map<String, dynamic>? rewards;
 
   const QuizSubmissionResponse({
     required this.score,
     required this.totalQuestions,
     required this.feedback,
+    this.rewards,
   });
 
   factory QuizSubmissionResponse.fromJson(Map<String, dynamic> json) {
@@ -135,6 +140,7 @@ class QuizSubmissionResponse {
       score: (json['score'] as num).toDouble(),
       totalQuestions: json['total_questions'] as int,
       feedback: json['feedback'] as String,
+      rewards: json['rewards'] as Map<String, dynamic>?,
     );
   }
 }
@@ -161,7 +167,7 @@ class AiEngineRepository {
   /// - Physical device → your machine's LAN IP, e.g. `http://192.168.x.x:8000`
   ///
   /// Change this single constant when switching environments.
-  static const String defaultBaseUrl = 'http://192.168.100.18:8000';
+  static const String defaultBaseUrl = 'http://192.168.1.6:8000';
 
   /// Lazy singleton — created on first access, reused everywhere.
   static final AiEngineRepository instance = AiEngineRepository(
@@ -278,5 +284,58 @@ class AiEngineRepository {
 
     return DocumentUploadResponse.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  // -------------------------------------------------------------------------
+  // Gamification endpoints
+  // -------------------------------------------------------------------------
+
+  /// `GET /gamification/student/{uid}/profile` — fetch XP, coins, level.
+  Future<Map<String, dynamic>> getGamificationProfile(String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/v1/gamification/student/$studentUid/profile'),
+      headers: headers,
+    );
+    _assertSuccess(response, 'getGamificationProfile');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// `POST /gamification/student/{uid}/daily-login` — award daily bonus.
+  Future<Map<String, dynamic>> checkDailyLogin(String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final clientLocalDate = DateTime.now().toIso8601String().split('T')[0];
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/gamification/student/$studentUid/daily-login'),
+      headers: headers,
+      body: jsonEncode({'client_local_date': clientLocalDate}),
+    );
+    _assertSuccess(response, 'checkDailyLogin');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// `POST /gamification/student/{uid}/spend-coins` — deduct coins.
+  Future<int> spendCoins(String studentUid, int amount, String reason) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/gamification/student/$studentUid/spend-coins'),
+      headers: headers,
+      body: jsonEncode({'amount': amount, 'reason': reason}),
+    );
+    _assertSuccess(response, 'spendCoins');
+    final data = jsonDecode(response.body);
+    return data['coins_total'] as int;
+  }
+
+  /// `GET /gamification/levels` — fetch static level definitions.
+  Future<List<Map<String, dynamic>>> getLevels() async {
+    final headers = await _getJsonHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/v1/gamification/levels'),
+      headers: headers,
+    );
+    _assertSuccess(response, 'getLevels');
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return (body['levels'] as List).cast<Map<String, dynamic>>();
   }
 }

@@ -28,7 +28,7 @@ class SubjectsSkillsScreen extends StatefulWidget {
 }
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
-  static const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
+  static const _kAiEngineBaseUrl = 'http://192.168.1.6:8000';
 
   @override
   void initState() {

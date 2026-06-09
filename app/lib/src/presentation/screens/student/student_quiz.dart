@@ -116,11 +116,7 @@ class _QuizOverlayScaffold extends StatelessWidget {
             context.read<GamificationBloc>().add(
                   ProcessQuizRewardsRequested(
                     studentId: studentId,
-                    score: scoreCount,
-                    totalQuestions: state.result.totalQuestions,
-                    timeTaken: totalDuration,
-                    context: contextType,
-                    isComeback: false,
+                    rewards: state.result.rewards,
                   ),
                 );
 

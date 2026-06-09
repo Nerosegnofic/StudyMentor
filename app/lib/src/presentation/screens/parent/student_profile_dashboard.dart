@@ -12,6 +12,7 @@ import '../../../bloc/reports/reports_bloc.dart';
 import '../../../bloc/reports/reports_event.dart';
 import '../../../bloc/reports/reports_state.dart';
 import '../../../domain/models/student_model.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import 'student_config_screen.dart';
 import 'subjects_skills_screen.dart';
 import 'reports_analysis_screen.dart';
@@ -43,6 +44,10 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
       ? widget.student.fullName[0].toUpperCase()
       : '?';
 
+  int _xp = 0;
+  int _coins = 0;
+  bool _loadingGamification = true;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +59,23 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
     context.read<ReportsBloc>().add(
           LoadWeeklyReportRequested(studentUid: widget.student.uid),
         );
+        
+    _loadGamification();
+  }
+
+  Future<void> _loadGamification() async {
+    try {
+      final profile = await AiEngineRepository.instance.getGamificationProfile(widget.student.uid);
+      if (mounted) {
+        setState(() {
+          _xp = (profile['xp_total'] as int?) ?? 0;
+          _coins = (profile['coins_total'] as int?) ?? 0;
+          _loadingGamification = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingGamification = false);
+    }
   }
 
   @override
@@ -72,7 +94,12 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
               child: Column(
                 children: [
                   // 1 — Hero Profile Card
-                  _HeroProfileCard(student: widget.student, initial: _initial),
+                  _HeroProfileCard(
+                    student: widget.student,
+                    initial: _initial,
+                    xp: _xp,
+                    coins: _coins,
+                  ),
                   const SizedBox(height: 16),
 
                   // 2 — Quick Stats 2x2 Grid (BLoC-driven)
@@ -155,7 +182,15 @@ class _StickyHeader extends StatelessWidget {
 class _HeroProfileCard extends StatelessWidget {
   final StudentModel student;
   final String initial;
-  const _HeroProfileCard({required this.student, required this.initial});
+  final int xp;
+  final int coins;
+  
+  const _HeroProfileCard({
+    required this.student,
+    required this.initial,
+    required this.xp,
+    required this.coins,
+  });
 
   String get _gradeLabel {
     final g = student.gradeLevel;
@@ -211,11 +246,11 @@ class _HeroProfileCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _GamPill(icon: '⚡', value: '${student.totalXp ?? 0}'),
+              _GamPill(icon: '⚡', value: '$xp'),
               const SizedBox(width: 12),
               _GamPill(icon: '🔥', value: '7'),
               const SizedBox(width: 12),
-              _GamPill(icon: '🪙', value: '${student.totalCoins ?? 0}'),
+              _GamPill(icon: '🪙', value: '$coins'),
             ],
           ),
           const SizedBox(height: 14),

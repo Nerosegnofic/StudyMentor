@@ -26,6 +26,8 @@ class GetStudentProfileStudent {
   final int? gradeLevel;
   final int? totalQuestionsAnswered;
   final int? currentStreak;
+  final int? level;
+  final Timestamp? lastActiveAt;
   GetStudentProfileStudent.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
@@ -34,7 +36,9 @@ class GetStudentProfileStudent {
   totalCoins = json['totalCoins'] == null ? null : nativeFromJson<int>(json['totalCoins']),
   gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']),
   totalQuestionsAnswered = json['totalQuestionsAnswered'] == null ? null : nativeFromJson<int>(json['totalQuestionsAnswered']),
-  currentStreak = json['currentStreak'] == null ? null : nativeFromJson<int>(json['currentStreak']);
+  currentStreak = json['currentStreak'] == null ? null : nativeFromJson<int>(json['currentStreak']),
+  level = json['level'] == null ? null : nativeFromJson<int>(json['level']),
+  lastActiveAt = json['lastActiveAt'] == null ? null : Timestamp.fromJson(json['lastActiveAt']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -51,11 +55,13 @@ class GetStudentProfileStudent {
     totalCoins == otherTyped.totalCoins && 
     gradeLevel == otherTyped.gradeLevel && 
     totalQuestionsAnswered == otherTyped.totalQuestionsAnswered && 
-    currentStreak == otherTyped.currentStreak;
+    currentStreak == otherTyped.currentStreak &&
+    level == otherTyped.level &&
+    lastActiveAt == otherTyped.lastActiveAt;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, totalXp.hashCode, totalCoins.hashCode, gradeLevel.hashCode, totalQuestionsAnswered.hashCode, currentStreak.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, totalXp.hashCode, totalCoins.hashCode, gradeLevel.hashCode, totalQuestionsAnswered.hashCode, currentStreak.hashCode, level.hashCode, lastActiveAt.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -77,6 +83,12 @@ class GetStudentProfileStudent {
     if (currentStreak != null) {
       json['currentStreak'] = nativeToJson<int?>(currentStreak);
     }
+    if (level != null) {
+      json['level'] = nativeToJson<int?>(level);
+    }
+    if (lastActiveAt != null) {
+      json['lastActiveAt'] = lastActiveAt!.toJson();
+    }
     return json;
   }
 
@@ -88,6 +100,8 @@ class GetStudentProfileStudent {
     this.gradeLevel,
     this.totalQuestionsAnswered,
     this.currentStreak,
+    this.level,
+    this.lastActiveAt,
   });
 }
 

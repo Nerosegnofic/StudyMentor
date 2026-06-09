@@ -10,6 +10,7 @@ import '../../../bloc/gamification/gamification_event.dart';
 import '../../../bloc/gamification/gamification_state.dart';
 import '../../../domain/models/gamification_enums.dart';
 import '../../../data/repositories/gamification_repository_impl.dart';
+import '../../../data/constants/gamification_levels.dart';
 
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/garden/garden_bloc.dart';
@@ -18,6 +19,8 @@ import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
 import '../../widgets/gamification/stat_badge.dart';
 import '../../widgets/gamification/level_up_modal.dart';
+import '../../widgets/gamification/streak_display.dart';
+import '../../widgets/gamification/streak_milestone_modal.dart';
 import '../../utils/reward_toast.dart';
 import '../../widgets/parent_verification_dialog.dart';
 import '../../widgets/student_navigation_bar.dart';
@@ -25,6 +28,7 @@ import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/permission_service.dart';
 import '../../../services/device_admin_service.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import 'permission_gate_screen.dart';
 import 'student_home.dart';
@@ -34,7 +38,7 @@ import 'student_profile.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
-const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
+const _kAiEngineBaseUrl = 'http://192.168.1.6:8000';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -52,6 +56,7 @@ class _StudentScreenState extends State<StudentScreen>
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
+  int _streak = 0;
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   /// True while _initMascotService() is in progress.
@@ -107,7 +112,6 @@ class _StudentScreenState extends State<StudentScreen>
 
     _initMascotService();
 
-    DataConnectProvider().updateLastActiveAt().catchError((_) {});
     _loadCoinsAndLevel();
 
     // Sync the installed-app inventory on every login so DataConnect always
@@ -186,18 +190,20 @@ class _StudentScreenState extends State<StudentScreen>
 
   Future<void> _loadCoinsAndLevel() async {
     try {
-      final provider = DataConnectProvider();
+      final dataconnect = DataConnectProvider();
+      final aiEngine = AiEngineRepository.instance;
       final results = await Future.wait([
-        provider.getStudentProfile(widget.uid),
-        provider.getStudentAvatar(widget.uid),
+        aiEngine.getGamificationProfile(widget.uid),
+        dataconnect.getStudentAvatar(widget.uid),
       ]);
       if (mounted) {
         final profile = results[0] as Map<String, dynamic>;
-        final avatarMap = results[1];
+        final avatarMap = results[1] as Map<String, dynamic>?;
         setState(() {
-          _coins = (profile['total_coins'] as int?) ?? 0;
-          _xp = (profile['total_xp'] as int?) ?? 0;
-          _level = (_xp ~/ 500) + 1;
+          _coins = (profile['coins_total'] as int?) ?? 0;
+          _xp = (profile['xp_total'] as int?) ?? 0;
+          _level = (profile['current_level'] as int?) ?? levelForXp(_xp).levelNumber;
+          _streak = (profile['current_streak'] as int?) ?? 0;
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
@@ -209,7 +215,6 @@ class _StudentScreenState extends State<StudentScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    DataConnectProvider().updateLastActiveAt().catchError((_) {});
 
     // Sync on resume only when the native side flags a package change.
     InstalledAppsService.instance.isInventoryDirty().then((dirty) {
@@ -437,6 +442,14 @@ class _StudentScreenState extends State<StudentScreen>
                   if (state.leveledUpTo != null) {
                     LevelUpModal.show(context, state.leveledUpTo!);
                   }
+                  if (state.milestoneHit != null) {
+                    StreakMilestoneModal.show(
+                      context,
+                      milestoneDays: state.milestoneHit!,
+                      coinReward: 20, // Milestone coin reward amount
+                      currentStreak: state.profile.currentStreak,
+                    );
+                  }
                 }
               },
             ),
@@ -529,14 +542,22 @@ class _StudentScreenState extends State<StudentScreen>
               final int xp;
               final int coins;
               final int level;
+              final int streak;
               if (state is GamificationLoaded) {
                 xp = state.profile.xpTotal;
                 coins = state.profile.coinsTotal;
                 level = state.profile.currentLevel;
+                streak = state.profile.currentStreak;
+              } else if (state is GamificationRewardProcessed) {
+                xp = state.profile.xpTotal;
+                coins = state.profile.coinsTotal;
+                level = state.profile.currentLevel;
+                streak = state.profile.currentStreak;
               } else {
                 xp = _xp;
                 coins = _coins;
                 level = _level;
+                streak = _streak;
               }
               return Row(
                 mainAxisSize: MainAxisSize.min,
@@ -561,6 +582,9 @@ class _StudentScreenState extends State<StudentScreen>
                     accentColor: const Color(0xFF4CAF50),
                     backgroundColor: const Color(0xFFE8F5E9),
                   ),
+                  const SizedBox(width: 8),
+                  if (streak > 0)
+                    StreakDisplay(currentStreak: streak),
                 ],
               );
             },

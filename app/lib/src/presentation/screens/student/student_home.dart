@@ -12,6 +12,7 @@ import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../bloc/gamification/gamification_bloc.dart';
 import '../../../data/catalog/subject_catalog.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/subject_progress_model.dart';
 import '../../../services/installed_apps_service.dart';
@@ -74,8 +75,7 @@ class _StudentHomeState extends State<StudentHome> {
 
   Future<void> _loadStreak() async {
     try {
-      final provider = DataConnectProvider();
-      final profile = await provider.getStudentProfile(widget.uid);
+      final profile = await AiEngineRepository.instance.getGamificationProfile(widget.uid);
       if (mounted) {
         setState(() {
           _streak = (profile['current_streak'] as int?) ?? 0;

@@ -26,14 +26,8 @@ type Student @table(name: "students", key: ["uid"]) {
   parent: Parent!
   username: String! @col(dataType: "varchar(50)") @unique
   gradeLevel: Int
-  totalXp: Int @default(expr: "0")
-  totalCoins: Int @default(expr: "0")
-  totalQuestionsAnswered: Int @default(expr: "0")
-  currentStreak: Int @default(expr: "0")
-  weeklyXp: Int @default(expr: "0")
-  lastActiveAt: Timestamp
-  level: Int! @default(expr: "1")
 }
+
 
 # One row per app installed on a student's device.
 type InstalledApp @table(name: "installed_apps", key: ["id"], singular: "installedApp", plural: "installedApps") {

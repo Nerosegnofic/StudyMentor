@@ -93,12 +93,7 @@ mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
   appRule_deleteMany(where: { studentUid: { eq: $studentUid } })
 }
 
-mutation UpdateLastActiveAt @auth(level: USER) {
-  student_update(
-    key: { uid_expr: "auth.uid" }
-    data: { lastActiveAt_expr: "request.time" }
-  )
-}
+
 
 # ── Student Settings ──────────────────────────────────────────────────────────
 
@@ -150,12 +145,7 @@ mutation InsertStudentOwnedItem(
   )
 }
 
-mutation UpdateStudentCoins($totalCoins: Int!) @auth(level: USER) {
-  student_update(
-    key: { uid_expr: "auth.uid" }
-    data: { totalCoins: $totalCoins }
-  )
-}
+
 
 mutation UpsertStudentAvatar(
   $studentUid: String!
@@ -187,24 +177,7 @@ mutation UpsertStudentAvatar(
   )
 }
 
-mutation UpdateStudentXpAndCoins(
-  $totalXp: Int!
-  $weeklyXp: Int!
-  $totalCoins: Int!
-  $totalQuestionsAnswered: Int!
-  $currentStreak: Int!
-) @auth(level: USER) {
-  student_update(
-    key: { uid_expr: "auth.uid" }
-    data: {
-      totalXp: $totalXp
-      weeklyXp: $weeklyXp
-      totalCoins: $totalCoins
-      totalQuestionsAnswered: $totalQuestionsAnswered
-      currentStreak: $currentStreak
-    }
-  )
-}
+
 
 # ── Student Account Deletion (parent-side) ───────────────────────────────────
 

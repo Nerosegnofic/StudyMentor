@@ -3,33 +3,59 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/repositories/auth_repository.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/snapshot/snapshot_bloc.dart';
 import '../../../bloc/snapshot/snapshot_event.dart';
 import '../../../bloc/snapshot/snapshot_state.dart';
 
 /// Dummy stats for the card — gateway logic: quizzes, study time, accuracy.
 /// Real backend fields can replace these later.
-class ChildCard extends StatelessWidget {
+class ChildCard extends StatefulWidget {
   final StudentModel student;
   final VoidCallback? onTap;
 
   const ChildCard({super.key, required this.student, this.onTap});
 
   @override
+  State<ChildCard> createState() => _ChildCardState();
+}
+
+class _ChildCardState extends State<ChildCard> {
+  int _xp = 0;
+  int _coins = 0;
+  int _streakDays = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGamification();
+  }
+
+  Future<void> _loadGamification() async {
+    try {
+      final profile = await AiEngineRepository.instance.getGamificationProfile(widget.student.uid);
+      if (mounted) {
+        setState(() {
+          _xp = (profile['xp_total'] as int?) ?? 0;
+          _coins = (profile['coins_total'] as int?) ?? 0;
+          _streakDays = (profile['current_streak'] as int?) ?? 0;
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final initial = student.fullName.isNotEmpty
-        ? student.fullName[0].toUpperCase()
+    final initial = widget.student.fullName.isNotEmpty
+        ? widget.student.fullName[0].toUpperCase()
         : '?';
 
     return BlocProvider<SnapshotBloc>(
       create: (context) => SnapshotBloc(
         repository: context.read<AuthRepository>(),
-      )..add(LoadDailySnapshotRequested(studentUid: student.uid)),
+      )..add(LoadDailySnapshotRequested(studentUid: widget.student.uid)),
       child: BlocBuilder<SnapshotBloc, SnapshotState>(
         builder: (context, state) {
-          int xp = student.totalXp ?? 245;
-          int streakDays = 7;
-          int coins = student.totalCoins ?? 120;
           int quizzesPassed = 0;
           int studyTimeMinutes = 0;
           int dailyAccuracyPercent = 0;
@@ -41,7 +67,7 @@ class ChildCard extends StatelessWidget {
           }
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 15),
         decoration: BoxDecoration(
@@ -78,7 +104,7 @@ class ChildCard extends StatelessWidget {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    student.fullName,
+                    widget.student.fullName,
                     style: GoogleFonts.cairo(
                       color: const Color(0xFF1E293B),
                       fontWeight: FontWeight.bold,
@@ -98,17 +124,17 @@ class ChildCard extends StatelessWidget {
                 children: [
                   _StatCol(
                     icon: Icons.star_rounded,
-                    value: '$xp XP',
+                    value: '$_xp XP',
                     label: 'Experience',
                   ),
                   _StatCol(
                     icon: Icons.local_fire_department_rounded,
-                    value: '$streakDays Days',
+                    value: '$_streakDays Days',
                     label: 'Streak',
                   ),
                   _StatCol(
                     icon: Icons.monetization_on_rounded,
-                    value: '$coins',
+                    value: '$_coins',
                     label: 'Coins',
                   ),
                 ],

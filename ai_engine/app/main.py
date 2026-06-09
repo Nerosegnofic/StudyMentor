@@ -11,6 +11,7 @@ from app.controllers.routes_documents import router as documents_router
 from app.controllers.routes_quizzes import router as quizzes_router
 from app.controllers.routes_analytics import router as analytics_router
 from app.controllers.routes_student import router as student_router
+from app.controllers.routes_gamification import router as gamification_router
 from app.core.database import get_vector_store, init_db, SessionLocal
 from app.core.cleanup import start_scheduler, shutdown_scheduler
 from app.core.auth import init_firebase, get_current_user_optional
@@ -28,6 +29,13 @@ async def lifespan(app: FastAPI):
     try:
         init_firebase()   # Raises RuntimeError if Firebase fails (intentional)
         init_db()
+        # Seed static gamification levels on first startup
+        from app.repositories.gamification_repo import seed_levels
+        _seed_db = SessionLocal()
+        try:
+            seed_levels(_seed_db)
+        finally:
+            _seed_db.close()
         _ = get_vector_store()
         db = SessionLocal()
         try:
@@ -63,6 +71,7 @@ app.include_router(documents_router, prefix="/api/v1")
 app.include_router(quizzes_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(student_router, prefix="/api/v1")
+app.include_router(gamification_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

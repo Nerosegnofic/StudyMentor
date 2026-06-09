@@ -19,30 +19,15 @@ class LoadGamificationDataRequested extends GamificationEvent {
 
 class ProcessQuizRewardsRequested extends GamificationEvent {
   final String studentId;
-  final int score;
-  final int totalQuestions;
-  final Duration timeTaken;
-  final QuizContext context;
-  final bool isComeback;
+  final Map<String, dynamic>? rewards;
 
   const ProcessQuizRewardsRequested({
     required this.studentId,
-    required this.score,
-    required this.totalQuestions,
-    required this.timeTaken,
-    required this.context,
-    required this.isComeback,
+    this.rewards,
   });
 
   @override
-  List<Object?> get props => [
-        studentId,
-        score,
-        totalQuestions,
-        timeTaken,
-        context,
-        isComeback,
-      ];
+  List<Object?> get props => [studentId, rewards];
 }
 
 class CheckDailyLoginRewardRequested extends GamificationEvent {

@@ -5,11 +5,18 @@ import 'package:studymentor/src/domain/models/gamification_models.dart';
 import 'package:studymentor/src/domain/models/reward_result.dart';
 import 'package:studymentor/src/domain/repositories/gamification_repository.dart';
 import 'package:studymentor/src/data/constants/gamification_levels.dart';
+import 'package:studymentor/src/data/repositories/ai_engine_repository.dart';
 
+/// Server-authoritative gamification repository.
+///
+/// All reward calculations now happen on the backend (FastAPI).
+/// The client fetches the profile from the gamification API and
+/// receives rewards as part of the quiz submission response.
 class GamificationRepositoryImpl implements GamificationRepository {
-  // ── In-memory mock store (will be replaced with Firestore) ──────────
-  final Map<String, StudentGamificationModel> _store = {};
-  final Map<String, DateTime> _lastLoginStore = {};
+  final AiEngineRepository _api;
+
+  GamificationRepositoryImpl({AiEngineRepository? api})
+      : _api = api ?? AiEngineRepository.instance;
 
   // ═══════════════════════════════════════════════════════════════════════
   //  PUBLIC API
@@ -19,9 +26,13 @@ class GamificationRepositoryImpl implements GamificationRepository {
   Future<StudentGamificationModel> getStudentGamification(
     String studentId,
   ) async {
-    // Return existing state or a fresh Level-1 profile.
-    return _store[studentId] ??
-        StudentGamificationModel(studentId: studentId);
+    try {
+      final profile = await _api.getGamificationProfile(studentId);
+      return StudentGamificationModel.fromJson(profile);
+    } catch (_) {
+      // Fallback: return defaults if the backend is unreachable.
+      return StudentGamificationModel(studentId: studentId);
+    }
   }
 
   @override
@@ -33,137 +44,48 @@ class GamificationRepositoryImpl implements GamificationRepository {
     required QuizContext context,
     required bool isComeback,
   }) async {
-    // 1. Fetch current state.
-    final current = await getStudentGamification(studentId);
-    final oldLevel = levelForXp(current.xpTotal);
+    // ──────────────────────────────────────────────────────────────────
+    // NOTE: Rewards are now computed server-side inside routes_quizzes.py
+    // on quiz submission.  This method is kept for backward compatibility
+    // but the real source of truth is the `rewards` field in the
+    // QuizSubmissionResponse returned by submitQuiz().
+    //
+    // When the UI calls this method (e.g., after receiving submission
+    // results), we simply re-fetch the latest profile from the backend
+    // and return it — no client-side math.
+    // ──────────────────────────────────────────────────────────────────
+    final profile = await _api.getGamificationProfile(studentId);
+    final updated = StudentGamificationModel.fromJson(profile);
 
-    // 2. Calculate rewards.
-    final xpEarned = calculateQuizXp(
-      score: score,
-      totalQuestions: totalQuestions,
-      timeTaken: timeTaken,
-      context: context,
-      isComeback: isComeback,
-    );
-    final coinsEarned = calculateQuizCoins(context: context);
-
-    // 3. Build updated profile.
-    final newXpTotal = current.xpTotal + xpEarned;
-    final newCoinsTotal = current.coinsTotal + coinsEarned;
-    final newLevel = levelForXp(newXpTotal);
-
-    final updated = current.copyWith(
-      xpTotal: newXpTotal,
-      coinsTotal: newCoinsTotal,
-      currentLevel: newLevel.levelNumber,
-    );
-
-    // 4. Simulate a backend save.
-    await Future.delayed(const Duration(milliseconds: 800));
-    _store[studentId] = updated;
-
-    // 5. Return result with optional level-up.
-    final didLevelUp = newLevel.levelNumber > oldLevel.levelNumber;
+    // We can't precisely know if a level-up happened here, but the
+    // quiz submission response.rewards.did_level_up field has that info.
+    // The BLoC layer should use the submission response for level-up toasts.
     return RewardResult(
       updatedProfile: updated,
-      xpEarned: xpEarned,
-      coinsEarned: coinsEarned,
-      newLevel: didLevelUp ? newLevel : null,
+      xpEarned: 0,  // Real value lives in submission response
+      coinsEarned: 0,
+      newLevel: null,
     );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  //  MATH LOGIC (internal)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// Calculates the total XP earned from a single quiz.
-  ///
-  /// Breakdown:
-  /// • +10  per correct answer
-  /// • +50  perfect bonus   (score == totalQuestions)
-  /// • +5   speed bonus     (finished under 1 min per question)
-  /// • +20  comeback bonus  (student returning after absence)
-  /// • +5   persistence     (quiz was parent-forced, student pushed through)
-  int calculateQuizXp({
-    required int score,
-    required int totalQuestions,
-    required Duration timeTaken,
-    required QuizContext context,
-    required bool isComeback,
-  }) {
-    // ── Defensive clamping ──────────────────────────────────────────────
-    final clampedTotal = totalQuestions < 0 ? 0 : totalQuestions;
-    final clampedScore = score.clamp(0, clampedTotal);
-
-    int xp = 0;
-
-    // Base XP: +10 per correct answer.
-    xp += clampedScore * 10;
-
-    // Perfect bonus: all answers correct.
-    if (clampedTotal > 0 && clampedScore == clampedTotal) {
-      xp += 50;
-    }
-
-    // Speed bonus: finished within the target time (1 min per question).
-    if (clampedTotal > 0) {
-      final targetDuration = Duration(minutes: clampedTotal);
-      if (timeTaken > Duration.zero && timeTaken <= targetDuration) {
-        xp += 5;
-      }
-    }
-
-    // Comeback bonus.
-    if (isComeback) {
-      xp += 20;
-    }
-
-    // Persistence bonus: forced context means the student was told to study.
-    if (context == QuizContext.forced) {
-      xp += 5;
-    }
-
-    return xp;
-  }
-
-  /// Calculates the total Coins earned from a single quiz.
-  ///
-  /// Breakdown:
-  /// • +5  base completion reward
-  /// • +5  freedom bonus (quiz was forced, rewarding compliance)
-  int calculateQuizCoins({required QuizContext context}) {
-    int coins = 5; // Base completion reward.
-
-    if (context == QuizContext.forced) {
-      coins += 5; // Freedom bonus.
-    }
-
-    return coins;
   }
 
   @override
   Future<RewardResult?> checkAndAwardDailyLogin(String studentId) async {
-    final today = DateTime.now();
-    final lastLogin = _lastLoginStore[studentId];
-    if (lastLogin != null &&
-        lastLogin.year == today.year &&
-        lastLogin.month == today.month &&
-        lastLogin.day == today.day) {
+    try {
+      final result = await _api.checkDailyLogin(studentId);
+      final awarded = result['awarded'] as bool? ?? false;
+      if (!awarded) return null;
+
+      final profile = await _api.getGamificationProfile(studentId);
+      final updated = StudentGamificationModel.fromJson(profile);
+
+      return RewardResult(
+        updatedProfile: updated,
+        xpEarned: 0,
+        coinsEarned: result['coins_earned'] as int? ?? 3,
+        newLevel: null,
+      );
+    } catch (_) {
       return null;
     }
-    _lastLoginStore[studentId] = today;
-
-    final current = await getStudentGamification(studentId);
-    final updated = current.copyWith(
-      coinsTotal: current.coinsTotal + 3,
-    );
-    _store[studentId] = updated;
-
-    return RewardResult(
-      updatedProfile: updated,
-      xpEarned: 0,
-      coinsEarned: 3,
-      newLevel: null,
-    );
   }
 }

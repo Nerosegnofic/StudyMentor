@@ -239,8 +239,8 @@ class ExampleConnector {
   }
   
   
-  UpdateStudentXpAndCoinsVariablesBuilder updateStudentXpAndCoins ({required int totalXp, required int weeklyXp, required int totalCoins, required int totalQuestionsAnswered, required int currentStreak, }) {
-    return UpdateStudentXpAndCoinsVariablesBuilder(dataConnect, totalXp: totalXp,weeklyXp: weeklyXp,totalCoins: totalCoins,totalQuestionsAnswered: totalQuestionsAnswered,currentStreak: currentStreak,);
+  UpdateStudentXpAndCoinsVariablesBuilder updateStudentXpAndCoins ({required int totalXp, required int weeklyXp, required int totalCoins, required int totalQuestionsAnswered, required int currentStreak, required int level, Timestamp? lastActiveAt, }) {
+    return UpdateStudentXpAndCoinsVariablesBuilder(dataConnect, totalXp: totalXp,weeklyXp: weeklyXp,totalCoins: totalCoins,totalQuestionsAnswered: totalQuestionsAnswered,currentStreak: currentStreak,level: level,lastActiveAt: lastActiveAt,);
   }
   
   

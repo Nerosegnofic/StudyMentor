@@ -28,17 +28,21 @@ class GamificationRewardProcessed extends GamificationState {
   final StudentGamificationModel profile;
   final int xpEarned;
   final int coinsEarned;
-  final LevelModel? leveledUpTo;
+  final int? leveledUpTo;
+  final bool streakIncremented;
+  final int? milestoneHit;
 
   const GamificationRewardProcessed({
     required this.profile,
     required this.xpEarned,
     required this.coinsEarned,
     this.leveledUpTo,
+    this.streakIncremented = false,
+    this.milestoneHit,
   });
 
   @override
-  List<Object?> get props => [profile, xpEarned, coinsEarned, leveledUpTo];
+  List<Object?> get props => [profile, xpEarned, coinsEarned, leveledUpTo, streakIncremented, milestoneHit];
 }
 
 class GamificationError extends GamificationState {

@@ -1,5 +1,6 @@
 // lib/src/data/providers/dataconnect_provider.dart
 
+import 'package:firebase_data_connect/firebase_data_connect.dart';
 import '../../../dataconnect_generated/generated.dart';
 import '../../domain/models/app_config_model.dart';
 import '../../domain/models/user_model.dart';
@@ -244,11 +245,7 @@ class DataConnectProvider {
     return {
       'uid': s.uid,
       'username': s.username,
-      'total_xp': s.totalXp,
-      'total_coins': s.totalCoins,
       'grade_level': s.gradeLevel,
-      'total_questions_answered': s.totalQuestionsAnswered,
-      'current_streak': s.currentStreak,
     };
   }
 
@@ -281,12 +278,6 @@ class DataConnectProvider {
           backgroundMusicEnabled: backgroundMusicEnabled,
         )
         .execute();
-  }
-
-  // ── Last Active ───────────────────────────────────────────────────────────
-
-  Future<void> updateLastActiveAt() async {
-    await _connector.updateLastActiveAt().execute();
   }
 
   // ── Avatar Shop ───────────────────────────────────────────────────────────
@@ -351,28 +342,6 @@ class DataConnectProvider {
         .equippedAccessory(equippedAccessory)
         .equippedBackground(equippedBackground)
         .equippedSpecial(equippedSpecial)
-        .execute();
-  }
-
-  Future<void> updateStudentCoins(int totalCoins) async {
-    await _connector.updateStudentCoins(totalCoins: totalCoins).execute();
-  }
-
-  Future<void> updateStudentXpAndCoins({
-    required int totalXp,
-    required int weeklyXp,
-    required int totalCoins,
-    required int totalQuestionsAnswered,
-    required int currentStreak,
-  }) async {
-    await _connector
-        .updateStudentXpAndCoins(
-          totalXp: totalXp,
-          weeklyXp: weeklyXp,
-          totalCoins: totalCoins,
-          totalQuestionsAnswered: totalQuestionsAnswered,
-          currentStreak: currentStreak,
-        )
         .execute();
   }
 
