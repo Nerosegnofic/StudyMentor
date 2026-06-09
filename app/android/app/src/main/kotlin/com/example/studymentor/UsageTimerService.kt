@@ -83,7 +83,7 @@ class UsageTimerService : Service() {
         private const val COOLDOWN_ALERT_NOTIF_ID_1MIN = 7007
         private const val COOLDOWN_ALERT_NOTIF_ID_10S  = 7008
 
-        // SharedPreferences
+        // SharedPreferences — timer-specific prefs file
         private const val PREFS_NAME             = "studymentor_timer_prefs"
         private const val KEY_TOTAL_USAGE        = "total_usage_seconds"
         private const val KEY_IS_BLOCKED         = "is_blocked"
@@ -298,6 +298,15 @@ class UsageTimerService : Service() {
         quizShownForCooldown     = false  // fresh cooldown — quiz not yet shown
         firedUsageThresholds.clear()
         StudyMentorAccessibilityService.isBlocked = true
+
+        // Write the shared blocked flag so StudyMentorAccessibilityService can
+        // restore it independently on onServiceConnected, eliminating the window
+        // where UsageTimerService is still restarting after an OEM process kill
+        // but the accessibility service is already back online with isBlocked=false.
+        applicationContext
+            .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, true).apply()
+
         persistState()
         broadcastState(thresholdAlert = -1, limitReached = true)
         updateFgNotification()
@@ -323,6 +332,13 @@ class UsageTimerService : Service() {
         firedUsageThresholds.clear()
         firedCooldownThresholds.clear()
         StudyMentorAccessibilityService.isBlocked = false
+
+        // Clear the shared blocked flag so the accessibility service knows
+        // restrictions are lifted even before the next onServiceConnected.
+        applicationContext
+            .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, false).apply()
+
         persistState()
         broadcastState(-1)
         updateFgNotification()
@@ -640,6 +656,11 @@ class UsageTimerService : Service() {
 
         if (isBlocked) {
             StudyMentorAccessibilityService.isBlocked = true
+            // Also ensure the shared prefs flag is in sync in case it was somehow
+            // out of step (e.g. a crash between persistState and the AppPrefs write).
+            applicationContext
+                .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, true).apply()
         }
     }
 

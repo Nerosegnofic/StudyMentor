@@ -127,11 +127,20 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         instance = this
 
-        // Restore persisted flags so the Settings guard is immediately active
-        // if the service was killed and restarted while a student was logged in.
+        // Restore persisted flags so the Settings guard and app-blocking guard
+        // are immediately active if the service was killed and restarted while
+        // a student was logged in.
+        //
+        // KEY_IS_BLOCKED is read from AppPrefs (studymentor_prefs) — the shared
+        // prefs file that UsageTimerService also writes to on every block() /
+        // unblock() call. This eliminates the window where UsageTimerService is
+        // still restarting (after an OEM process kill on swipe-to-dismiss) but
+        // the accessibility service has already come back online with isBlocked
+        // defaulting to false, causing restrictions to briefly lift.
         val prefs = getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
-        isStudentLoggedIn = prefs.getBoolean(AppPrefs.KEY_STUDENT_MODE, false)
+        isStudentLoggedIn   = prefs.getBoolean(AppPrefs.KEY_STUDENT_MODE, false)
         isInPermissionSetup = prefs.getBoolean(AppPrefs.KEY_PERMISSION_SETUP, false)
+        isBlocked           = prefs.getBoolean(AppPrefs.KEY_IS_BLOCKED, false)
 
         serviceInfo = AccessibilityServiceInfo().apply {
             eventTypes          = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
