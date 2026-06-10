@@ -33,6 +33,7 @@ from app.repositories import (
     save_question_response,
     get_active_quiz_session,
     get_questions_for_session,
+    upsert_garden_plant,
 )
 from app.services.quiz.builder import build_quiz_payload
 from app.services.evaluation.bkt_engine import BKTEngine
@@ -366,6 +367,15 @@ async def submit_quiz(
             quiz_session.end_time = datetime.utcnow()
 
         db.commit()
+
+        # Update garden plant mastery snapshot for the quizzed subject.
+        # Done after commit so BKT states are fully persisted first.
+        if quiz_session and quiz_session.subject_id:
+            try:
+                upsert_garden_plant(db, student_uid, quiz_session.subject_id)
+                db.commit()
+            except Exception:
+                db.rollback()  # Garden update failure must never fail the quiz response
 
         if score >= 85:
             feedback = "ممتاز! لقد أبليت بلاءً حسناً."

@@ -3,6 +3,7 @@ from .bkt_repo import get_student_skill_state
 from .analytics_repo import get_all_student_skill_states, get_subject_mastery_hierarchy, get_subject_stats, get_priority_subject
 from .subject_repo import get_subject_by_id
 from .quiz_repo import create_quiz_session, upsert_student_subject_profile_last_quizzed, save_questions, get_quiz_session_by_id, get_question_by_id, save_question_response, get_active_quiz_session, get_questions_for_session
+from .garden_repo import upsert_garden_plant, get_garden_for_student
 
 __all__ = [
     "save_skills_from_mastery_data",
@@ -23,4 +24,6 @@ __all__ = [
     "save_question_response",
     "get_active_quiz_session",
     "get_questions_for_session",
+    "upsert_garden_plant",
+    "get_garden_for_student",
 ]
