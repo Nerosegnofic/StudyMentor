@@ -10,13 +10,11 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
-import '../../../data/catalog/subject_catalog.dart';
 import '../../../data/providers/dataconnect_provider.dart';
-import '../../../domain/models/subject_progress_model.dart';
+import '../../../domain/models/garden_plant_model.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../domain/models/app_config_model.dart';
-import '../../../utils/subject_xp_engine.dart';
 import '../../widgets/garden_subject_card.dart';
 import 'subject_detail_screen.dart';
 
@@ -40,7 +38,7 @@ class _StudentHomeState extends State<StudentHome> {
   int _streak = 0;
 
   // Last known garden data — persists across BLoC state changes.
-  Map<String, SubjectProgressModel> _gardenCache = {};
+  List<GardenPlantModel> _gardenCache = [];
 
   final ScrollController _gardenScrollController = ScrollController();
 
@@ -150,7 +148,7 @@ class _StudentHomeState extends State<StudentHome> {
         BlocListener<GardenBloc, GardenState>(
           listener: (context, state) {
             if (state is GardenLoaded) {
-              setState(() => _gardenCache = state.subjectProgress);
+              setState(() => _gardenCache = state.plants);
             }
           },
         ),
@@ -251,53 +249,68 @@ class _StudentHomeState extends State<StudentHome> {
           );
         }
 
-        final subjects = SubjectCatalog.all;
+        // ── Empty state ──────────────────────────────────────────────────
+        if (_gardenCache.isEmpty) {
+          return _gardenShell(
+            child: SizedBox(
+              height: 180,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.eco_outlined,
+                        size: 40, color: Colors.green.shade300),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Ask a parent to add your subjects',
+                      style: TextStyle(
+                          fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         return _gardenShell(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // Each card keeps exactly the width it had with 3 subjects.
-              final cardWidth = (constraints.maxWidth - 32 - 16) / 3;
+              final availableWidth = constraints.maxWidth - 32;
+              final cardWidth = availableWidth / 3;
               return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFC5E8A8), Color(0xFFB8DFA0)],
+                  color: Color(0xFFB8DFA0),
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(12),
                   ),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
                 ),
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
+                padding: const EdgeInsets.fromLTRB(4, 14, 4, 4),
                 child: ScrollbarTheme(
                   data: ScrollbarThemeData(
                     thumbColor: WidgetStateProperty.all(
-                      const Color(0xFF4CAF50).withValues(alpha: 0.75),
+                      Colors.white.withValues(alpha: 0.6),
                     ),
-                    trackColor: WidgetStateProperty.all(
-                      const Color(0xFFB8DFA0).withValues(alpha: 0.5),
-                    ),
-                    thickness: WidgetStateProperty.all(4),
+                    thickness: WidgetStateProperty.all(3),
                     radius: const Radius.circular(4),
-                    crossAxisMargin: 2,
                   ),
                   child: Scrollbar(
                     controller: _gardenScrollController,
-                    thumbVisibility: subjects.length > 3,
+                    thumbVisibility: _gardenCache.length > 3,
                     child: SingleChildScrollView(
                       controller: _gardenScrollController,
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        children: subjects.map((subject) {
-                          final progress =
-                              _gardenCache[subject.key] ??
-                              SubjectProgressModel.empty(widget.uid, subject.key);
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: _gardenCache.map((plant) {
                           return SizedBox(
                             width: cardWidth,
                             child: GardenSubjectCard(
-                              subject: subject,
-                              progress: progress,
-                              onTap: () => _openSubjectDetail(subject.key),
+                              plant: plant,
+                              onTap: () => _openSubjectDetail(plant),
                             ),
                           );
                         }).toList(),
@@ -429,11 +442,9 @@ class _StudentHomeState extends State<StudentHome> {
 
   double _overallGardenProgress() {
     if (_gardenCache.isEmpty) return 0.0;
-    double total = 0;
-    for (final p in _gardenCache.values) {
-      total += SubjectXpEngine.levelProgress(p.totalXp).clamp(0.0, 1.0);
-    }
-    return total / _gardenCache.length;
+    final avg = _gardenCache.fold(0.0, (sum, p) => sum + p.masteryPercent) /
+        _gardenCache.length;
+    return (avg / 100).clamp(0.0, 1.0);
   }
 
   // ── Owl mascot ──────────────────────────────────────────────────────────────
@@ -1076,15 +1087,14 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  void _openSubjectDetail(String subjectKey) {
+  void _openSubjectDetail(GardenPlantModel plant) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => MultiBlocProvider(
-          providers: [BlocProvider.value(value: context.read<GardenBloc>())],
-          child: SubjectDetailScreen(
-            studentUid: widget.uid,
-            subjectKey: subjectKey,
-          ),
+        builder: (_) => SubjectDetailScreen(
+          studentUid: widget.uid,
+          subjectId: plant.subjectId,
+          subjectName: plant.subjectName,
+          masteryPercent: plant.masteryPercent,
         ),
       ),
     );

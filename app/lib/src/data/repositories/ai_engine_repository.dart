@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../catalog/document_models.dart';
+import '../../domain/models/garden_plant_model.dart';
+import '../../domain/models/skill_detail_model.dart';
 
 // ---------------------------------------------------------------------------
 // Quiz DTOs (mirrors ai_engine/app/models/schemas/quiz_schemas.py)
@@ -161,7 +163,7 @@ class AiEngineRepository {
   /// - Physical device → your machine's LAN IP, e.g. `http://192.168.x.x:8000`
   ///
   /// Change this single constant when switching environments.
-  static const String defaultBaseUrl = 'http://192.168.100.18:8000';
+  static const String defaultBaseUrl = 'http://192.168.0.219:8000';
 
   /// Lazy singleton — created on first access, reused everywhere.
   static final AiEngineRepository instance = AiEngineRepository(
@@ -233,6 +235,38 @@ class AiEngineRepository {
     _assertSuccess(response, 'submitQuiz');
     return QuizSubmissionResponse.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  // -------------------------------------------------------------------------
+  // Garden endpoints
+  // -------------------------------------------------------------------------
+
+  /// `GET /garden` — returns all subjects for the student with mastery snapshots.
+  Future<List<GardenPlantModel>> getGarden() async {
+    final headers = await _getJsonHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/v1/garden'),
+      headers: headers,
+    );
+    _assertSuccess(response, 'getGarden');
+    final list = jsonDecode(response.body) as List;
+    return list
+        .map((e) => GardenPlantModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// `GET /garden/{subjectId}/skills` — flat skill list with mastery for the detail screen.
+  Future<List<SkillDetailModel>> getSubjectSkills(int subjectId) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/v1/garden/$subjectId/skills'),
+      headers: headers,
+    );
+    _assertSuccess(response, 'getSubjectSkills');
+    final list = jsonDecode(response.body) as List;
+    return list
+        .map((e) => SkillDetailModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // -------------------------------------------------------------------------

@@ -1,28 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../bloc/garden/garden_bloc.dart';
-import '../../../bloc/garden/garden_event.dart';
-import '../../../bloc/garden/garden_state.dart';
-import '../../../data/catalog/subject_catalog.dart';
-import '../../../domain/models/skill_progress_model.dart';
-import '../../../domain/models/subject_progress_model.dart';
-import '../../../services/mastery_service.dart';
-import '../../../utils/growth_stage_utils.dart';
-import '../../../utils/subject_xp_engine.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../domain/models/skill_detail_model.dart';
+import '../../../utils/growth_stage_utils.dart';
 import '../../widgets/plant_widget.dart';
 import 'student_quiz.dart';
 
-/// Full detail page for a single subject — plant, XP, skills, strengths/weaknesses.
-/// "Recent Performance" and charts are intentionally excluded from this version.
+const _kGreen = Color(0xFF2E7D32);
+const _kGreenLight = Color(0xFFE8F5E9);
+
 class SubjectDetailScreen extends StatefulWidget {
   final String studentUid;
-  final String subjectKey;
+  final int subjectId;
+  final String subjectName;
+  final double masteryPercent;
 
   const SubjectDetailScreen({
     super.key,
     required this.studentUid,
-    required this.subjectKey,
+    required this.subjectId,
+    required this.subjectName,
+    required this.masteryPercent,
   });
 
   @override
@@ -30,66 +27,53 @@ class SubjectDetailScreen extends StatefulWidget {
 }
 
 class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
+  late Future<List<SkillDetailModel>> _skillsFuture;
+
   @override
   void initState() {
     super.initState();
-    context.read<GardenBloc>().add(
-      LoadSubjectSkillsRequested(
-        studentUid: widget.studentUid,
-        subjectKey: widget.subjectKey,
-      ),
-    );
+    _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
   }
 
   @override
   Widget build(BuildContext context) {
-    final subject = SubjectCatalog.byKey(widget.subjectKey);
-    if (subject == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Subject')),
-        body: const Center(child: Text('Subject not found')),
-      );
-    }
+    final stage = GrowthStageUtils.fromMastery(widget.masteryPercent);
 
     return Scaffold(
-      backgroundColor: subject.lightColor,
+      backgroundColor: _kGreenLight,
       appBar: AppBar(
-        backgroundColor: subject.lightColor,
+        backgroundColor: _kGreenLight,
         elevation: 0,
         title: Text(
-          '${subject.name} Garden',
-          style: TextStyle(
-            color: subject.primaryColor,
+          '${widget.subjectName} Garden',
+          style: const TextStyle(
+            color: _kGreen,
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
         ),
-        iconTheme: IconThemeData(color: subject.primaryColor),
+        iconTheme: const IconThemeData(color: _kGreen),
       ),
-      body: BlocBuilder<GardenBloc, GardenState>(
-        builder: (context, state) {
-          if (state is GardenLoading) {
-            return Center(
-              child: CircularProgressIndicator(color: subject.primaryColor),
-            );
+      body: FutureBuilder<List<SkillDetailModel>>(
+        future: _skillsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: _kGreen));
           }
-          if (state is GardenError) {
+          if (snapshot.hasError) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Could not load data.\n${state.message}',
+                  'Could not load skills.\n${snapshot.error}',
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.red),
                 ),
               ),
             );
           }
-          if (state is SubjectSkillsLoaded && state.subjectKey == widget.subjectKey) {
-            return _buildContent(context, subject, state.progress, state.skills);
-          }
-          // Fallback: still loading or different subject key in state
-          return Center(child: CircularProgressIndicator(color: subject.primaryColor));
+          final skills = snapshot.data ?? [];
+          return _buildContent(context, stage, skills);
         },
       ),
     );
@@ -97,17 +81,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
   Widget _buildContent(
     BuildContext context,
-    SubjectDefinition subject,
-    SubjectProgressModel progress,
-    List<SkillProgressModel> skills,
+    GrowthStage stage,
+    List<SkillDetailModel> skills,
   ) {
-    final stage = GrowthStageUtils.fromLevel(progress.level);
-    final progressFraction = SubjectXpEngine.levelProgress(progress.totalXp);
-    final xpToNext = SubjectXpEngine.xpToNextLevel(progress.totalXp);
-    final nextLevel = SubjectXpEngine.xpForNextLevel(progress.level);
-    final overallMastery = MasteryService.overallMastery(skills);
-    final strongSkills = MasteryService.strongSkills(skills);
-    final weakSkills = MasteryService.weakSkills(skills);
+    final strongSkills = skills.where((s) => s.isStrong).toList();
+    final weakSkills = skills.where((s) => s.isWeak).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -115,85 +93,18 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Plant hero ──────────────────────────────────────────────────
-          _PlantHeroSection(subject: subject, stage: stage, mastery: overallMastery),
+          _PlantHeroSection(
+            subjectName: widget.subjectName,
+            stage: stage,
+            masteryPercent: widget.masteryPercent,
+          ),
           const SizedBox(height: 20),
 
-          // ── Growth Progress card ─────────────────────────────────────────
-          _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Growth Progress',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(fontSize: 13),
-                        children: [
-                          TextSpan(
-                            text: 'Level ${progress.level}',
-                            style: const TextStyle(color: Color(0xFF8B93A7)),
-                          ),
-                          const TextSpan(text: '  →  '),
-                          TextSpan(
-                            text: 'Level ${progress.level + 1}',
-                            style: TextStyle(
-                              color: subject.primaryColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: progressFraction,
-                    minHeight: 14,
-                    backgroundColor: subject.primaryColor.withOpacity(0.15),
-                    valueColor: AlwaysStoppedAnimation<Color>(subject.primaryColor),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${progress.totalXp} XP',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                    ),
-                    if (nextLevel != null)
-                      Text(
-                        '${nextLevel} XP',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                      ),
-                  ],
-                ),
-                if (xpToNext > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '$xpToNext XP more to reach the next level!',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: subject.primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
+          // ── Growth progress card ──────────────────────────────────────────
+          _buildGrowthProgressCard(widget.masteryPercent),
+          const SizedBox(height: 12),
 
-          // ── Mastery health ───────────────────────────────────────────────
+          // ── Mastery card ─────────────────────────────────────────────────
           _Card(
             child: Row(
               children: [
@@ -201,16 +112,17 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: GrowthStageUtils.healthColor(overallMastery).withOpacity(0.15),
+                    color: GrowthStageUtils.healthColor(widget.masteryPercent)
+                        .withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    overallMastery >= 75
+                    widget.masteryPercent >= 75
                         ? Icons.local_florist_rounded
-                        : overallMastery >= 50
+                        : widget.masteryPercent >= 50
                             ? Icons.spa_rounded
                             : Icons.energy_savings_leaf_rounded,
-                    color: GrowthStageUtils.healthColor(overallMastery),
+                    color: GrowthStageUtils.healthColor(widget.masteryPercent),
                     size: 24,
                   ),
                 ),
@@ -219,15 +131,15 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      MasteryService.masteryLabel(overallMastery),
+                      _masteryLabel(widget.masteryPercent),
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: GrowthStageUtils.healthColor(overallMastery),
+                        color: GrowthStageUtils.healthColor(widget.masteryPercent),
                       ),
                     ),
                     Text(
-                      'Overall mastery: ${overallMastery.toStringAsFixed(0)}%',
+                      'Overall mastery: ${widget.masteryPercent.toStringAsFixed(0)}%',
                       style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                     ),
                   ],
@@ -241,20 +153,22 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           if (skills.isNotEmpty) ...[
             const Text(
               'Skills',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1A2E)),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1A2E)),
             ),
             const SizedBox(height: 12),
-            ...skills.map((skill) => _SkillRow(skill: skill, subjectColor: subject.primaryColor)),
+            ...skills.map((s) => _SkillRow(skill: s)),
             const SizedBox(height: 20),
           ],
 
           // ── Strengths ─────────────────────────────────────────────────────
           if (strongSkills.isNotEmpty) ...[
             _SectionHeader(
-              icon: Icons.star_rounded,
-              label: 'Strengths',
-              color: const Color(0xFF34A853),
-            ),
+                icon: Icons.star_rounded,
+                label: 'Strengths',
+                color: const Color(0xFF34A853)),
             const SizedBox(height: 8),
             _SkillChipRow(skills: strongSkills, color: const Color(0xFF34A853)),
             const SizedBox(height: 18),
@@ -263,10 +177,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           // ── Weaknesses ────────────────────────────────────────────────────
           if (weakSkills.isNotEmpty) ...[
             _SectionHeader(
-              icon: Icons.fitness_center_rounded,
-              label: 'Needs Practice',
-              color: const Color(0xFFEA4335),
-            ),
+                icon: Icons.fitness_center_rounded,
+                label: 'Needs Practice',
+                color: const Color(0xFFEA4335)),
             const SizedBox(height: 8),
             _SkillChipRow(skills: weakSkills, color: const Color(0xFFEA4335)),
             const SizedBox(height: 24),
@@ -278,8 +191,6 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             height: 52,
             child: ElevatedButton.icon(
               onPressed: () {
-                // Navigate to the quiz overlay without a specific subject ID.
-                // The backend will auto-select based on BKT mastery data.
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     fullscreenDialog: true,
@@ -290,9 +201,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: subject.primaryColor,
+                backgroundColor: _kGreen,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
               ),
               icon: const Icon(Icons.play_arrow_rounded, size: 22),
@@ -302,29 +214,117 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrowthProgressCard(double mastery) {
+    const levelStep = 20.0; // 100% / 5 levels
+    final currentLevel = (mastery / levelStep).floor().clamp(0, 4) + 1;
+    final isMax = currentLevel >= 5;
+    final levelStart = (currentLevel - 1) * levelStep;
+    final levelEnd = currentLevel * levelStep;
+    final progress = isMax ? 1.0 : ((mastery - levelStart) / levelStep).clamp(0.0, 1.0);
+    final remaining = (levelEnd - mastery).clamp(0.0, levelStep);
+
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Growth Progress',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1A2E),
+                ),
+              ),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Level $currentLevel  ',
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    ),
+                    TextSpan(
+                      text: isMax ? 'MAX ✨' : 'Level ${currentLevel + 1}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: _kGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: const AlwaysStoppedAnimation<Color>(_kGreen),
+            ),
+          ),
           const SizedBox(height: 8),
-          Center(
-            child: Text(
-              'Complete quizzes to earn XP and grow your plant!',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${mastery.toStringAsFixed(0)}%',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
+              if (!isMax)
+                Text(
+                  '${levelEnd.toStringAsFixed(0)}%',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isMax
+                ? 'You\'ve reached the maximum level! 🌟'
+                : '${remaining.toStringAsFixed(0)}% more to reach Level ${currentLevel + 1}!',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _kGreen,
             ),
           ),
         ],
       ),
     );
   }
+
+  static String _masteryLabel(double mastery) {
+    if (mastery >= 80) return 'Flourishing';
+    if (mastery >= 60) return 'Growing Well';
+    if (mastery >= 40) return 'Making Progress';
+    if (mastery >= 20) return 'Just Started';
+    return 'Not Started Yet';
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sub-widgets
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _PlantHeroSection extends StatelessWidget {
-  final SubjectDefinition subject;
+  final String subjectName;
   final GrowthStage stage;
-  final double mastery;
+  final double masteryPercent;
 
-  const _PlantHeroSection({required this.subject, required this.stage, required this.mastery});
+  const _PlantHeroSection({
+    required this.subjectName,
+    required this.stage,
+    required this.masteryPercent,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -332,26 +332,20 @@ class _PlantHeroSection extends StatelessWidget {
       width: double.infinity,
       height: 200,
       decoration: BoxDecoration(
-        color: subject.lightColor,
+        color: _kGreenLight,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          PlantWidget(
-            plantType: subject.plantType,
-            stage: stage,
-            primaryColor: subject.primaryColor,
-            masteryPercent: mastery,
-            size: 160,
-          ),
+          PlantWidget(stage: stage, size: 160),
           Positioned(
             top: 12,
             left: 12,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: subject.primaryColor,
+                color: _kGreen,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -359,6 +353,30 @@ class _PlantHeroSection extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: GrowthStageUtils.healthColor(masteryPercent)
+                    .withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: GrowthStageUtils.healthColor(masteryPercent)
+                      .withOpacity(0.4),
+                ),
+              ),
+              child: Text(
+                '${masteryPercent.toStringAsFixed(0)}%',
+                style: TextStyle(
+                  color: GrowthStageUtils.healthColor(masteryPercent),
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -399,7 +417,8 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  const _SectionHeader({required this.icon, required this.label, required this.color});
+  const _SectionHeader(
+      {required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -407,27 +426,22 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: color),
-        ),
+        Text(label,
+            style: TextStyle(
+                fontSize: 15, fontWeight: FontWeight.w700, color: color)),
       ],
     );
   }
 }
 
 class _SkillRow extends StatelessWidget {
-  final SkillProgressModel skill;
-  final Color subjectColor;
-
-  const _SkillRow({required this.skill, required this.subjectColor});
+  final SkillDetailModel skill;
+  const _SkillRow({required this.skill});
 
   @override
   Widget build(BuildContext context) {
-    final mastery = skill.masteryPercent;
-    final healthColor = GrowthStageUtils.healthColor(mastery);
-    final name = SubjectCatalog.skillName(skill.skillKey);
-    final attempted = skill.totalAttempts > 0;
+    final healthColor = GrowthStageUtils.healthColor(skill.masteryPercent);
+    final attempted = !skill.isUntouched;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -436,14 +450,15 @@ class _SkillRow extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: attempted ? healthColor.withOpacity(0.3) : Colors.grey.shade200,
+          color: attempted
+              ? healthColor.withOpacity(0.3)
+              : Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 1)),
         ],
       ),
       child: Row(
@@ -452,12 +467,18 @@ class _SkillRow extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: attempted ? healthColor.withOpacity(0.12) : Colors.grey.shade100,
+              color: attempted
+                  ? healthColor.withOpacity(0.12)
+                  : Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
             child: Icon(
               attempted
-                  ? (skill.isStrong ? Icons.emoji_events_rounded : skill.isWeak ? Icons.fitness_center_rounded : Icons.trending_up_rounded)
+                  ? (skill.isStrong
+                      ? Icons.emoji_events_rounded
+                      : skill.isWeak
+                          ? Icons.fitness_center_rounded
+                          : Icons.trending_up_rounded)
                   : Icons.lock_outline_rounded,
               color: attempted ? healthColor : Colors.grey.shade400,
               size: 18,
@@ -469,41 +490,35 @@ class _SkillRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  skill.name,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: attempted ? const Color(0xFF1A1A2E) : Colors.grey.shade400,
+                    color: attempted
+                        ? const Color(0xFF1A1A2E)
+                        : Colors.grey.shade400,
                   ),
                 ),
                 if (attempted)
                   Text(
-                    '${skill.correctAnswers}/${skill.totalAttempts} correct  ·  ${mastery.toStringAsFixed(0)}%',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    '${skill.masteryPercent.toStringAsFixed(0)}% mastery  ·  ${skill.attempts} attempts',
+                    style:
+                        TextStyle(fontSize: 11, color: Colors.grey.shade500),
                   )
                 else
-                  Text(
-                    'Not started yet',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-                  ),
+                  Text('Not started yet',
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.grey.shade400)),
               ],
             ),
           ),
           if (attempted)
-            SizedBox(
-              width: 44,
-              child: Column(
-                children: [
-                  Text(
-                    '${mastery.toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: healthColor,
-                    ),
-                  ),
-                ],
-              ),
+            Text(
+              '${skill.masteryPercent.toStringAsFixed(0)}%',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: healthColor),
             ),
         ],
       ),
@@ -512,9 +527,8 @@ class _SkillRow extends StatelessWidget {
 }
 
 class _SkillChipRow extends StatelessWidget {
-  final List<SkillProgressModel> skills;
+  final List<SkillDetailModel> skills;
   final Color color;
-
   const _SkillChipRow({required this.skills, required this.color});
 
   @override
@@ -524,19 +538,19 @@ class _SkillChipRow extends StatelessWidget {
       runSpacing: 6,
       children: skills
           .map((s) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: color.withOpacity(0.3)),
                 ),
                 child: Text(
-                  SubjectCatalog.skillName(s.skillKey),
+                  s.name,
                   style: TextStyle(
-                    fontSize: 11,
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
+                      fontSize: 11,
+                      color: color,
+                      fontWeight: FontWeight.w600),
                 ),
               ))
           .toList(),
