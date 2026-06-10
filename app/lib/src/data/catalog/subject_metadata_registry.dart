@@ -111,9 +111,9 @@ class SubjectMetadataRegistry {
     }
 
     // 2. Deterministic Generation (The Fallback)
-    final int hash = subjectKey.hashCode.abs();
+    final int hash = keyLower.hashCode.abs();
     
-    final String name = _toTitleCase(subjectKey);
+    final String name = _toTitleCase(keyLower);
     final String emoji = _fallbackEmojis[hash % _fallbackEmojis.length];
     
     // TODO: Override this with advanced Garden Logic on merge.
