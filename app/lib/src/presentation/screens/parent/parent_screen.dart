@@ -1,3 +1,5 @@
+// lib/src/presentation/screens/parent/parent_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +8,7 @@ import '../../../bloc/auth/auth_event.dart';
 import '../../widgets/parent_navigation_bar.dart';
 import 'add_student_screen.dart';
 import 'parent_dashboard.dart';
+import 'parent_permission_gate_screen.dart';
 import 'parent_settings.dart';
 import 'parent_students.dart';
 import 'parent_help_center.dart';
@@ -22,6 +25,9 @@ class ParentScreen extends StatefulWidget {
 
 class _ParentScreenState extends State<ParentScreen> {
   int _selectedIndex = 1;
+
+  // False until the parent has passed (or skipped) the permission gate.
+  bool _permissionsCleared = false;
 
   void _onTabSelected(int index) {
     if (index == 3) {
@@ -54,6 +60,13 @@ class _ParentScreenState extends State<ParentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show the permission gate until it's cleared.
+    if (!_permissionsCleared) {
+      return ParentPermissionGateScreen(
+        onAllGranted: () => setState(() => _permissionsCleared = true),
+      );
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
