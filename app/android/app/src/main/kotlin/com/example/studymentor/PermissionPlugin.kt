@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import android.text.TextUtils
 import io.flutter.embedding.engine.FlutterEngine
@@ -22,7 +23,7 @@ import io.flutter.plugin.common.MethodChannel
  *
  * Permission names match [RequiredPermission.name] values defined in Dart:
  *   systemAlertWindow, packageUsageStats, postNotifications,
- *   accessibilityService, deviceAdmin
+ *   accessibilityService, deviceAdmin, batteryOptimization
  */
 class PermissionPlugin(private val activity: MainActivity) {
 
@@ -66,6 +67,7 @@ class PermissionPlugin(private val activity: MainActivity) {
             "postNotifications"    -> checkPostNotifications()
             "accessibilityService" -> checkAccessibilityService()
             "deviceAdmin"          -> checkDeviceAdmin()
+            "batteryOptimization"  -> checkBatteryOptimization()
             else -> false
         }
     }
@@ -147,6 +149,20 @@ class PermissionPlugin(private val activity: MainActivity) {
         return dpm.isAdminActive(adminComponent)
     }
 
+    /**
+     * Battery optimisation — PowerManager.isIgnoringBatteryOptimizations().
+     *
+     * Returns true when the app is on the system's battery-optimisation
+     * whitelist (i.e. Android will NOT kill our background services for
+     * battery reasons). Available on API 23+ (Marshmallow); always returns
+     * true on older devices where Doze does not exist.
+     */
+    private fun checkBatteryOptimization(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+        val pm = activity.getSystemService(Context.POWER_SERVICE) as PowerManager
+        return pm.isIgnoringBatteryOptimizations(activity.packageName)
+    }
+
     // ── Settings launchers ────────────────────────────────────────────────────
 
     private fun openSettings(permission: String) {
@@ -156,6 +172,7 @@ class PermissionPlugin(private val activity: MainActivity) {
             "postNotifications"    -> openNotificationSettings()
             "accessibilityService" -> openAccessibilitySettings()
             "deviceAdmin"          -> openDeviceAdminSettings()
+            "batteryOptimization"  -> openBatteryOptimizationSettings()
         }
     }
 
@@ -171,12 +188,10 @@ class PermissionPlugin(private val activity: MainActivity) {
     /** Opens the Usage Access (App usage access) list. */
     private fun openUsageAccessSettings() {
         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-        // On some OEMs this deep-links directly to our app entry.
         intent.data = Uri.parse("package:${activity.packageName}")
         try {
             activity.startActivity(intent)
         } catch (e: Exception) {
-            // Fallback — open the list without the package deep-link.
             activity.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
     }
@@ -220,5 +235,44 @@ class PermissionPlugin(private val activity: MainActivity) {
         }
         @Suppress("DEPRECATION")
         activity.startActivityForResult(intent, DeviceAdminPlugin.REQUEST_CODE_ENABLE_ADMIN)
+    }
+
+    /**
+     * Opens the battery optimisation detail screen for this app directly.
+     *
+     * On API 23+ we use ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS with a
+     * package URI, which opens a single-tap system dialog — the fastest UX.
+     *
+     * Fallback: ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS opens the full
+     * "Battery optimization" list so the user can find the app manually.
+     * This is needed on some OEMs (e.g. Xiaomi MIUI) that block the direct
+     * intent, and is the only option below API 23 (Doze unavailable → no-op).
+     */
+    private fun openBatteryOptimizationSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val intent = Intent(
+                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:${activity.packageName}"),
+                )
+                activity.startActivity(intent)
+                return
+            } catch (e: Exception) {
+                // Direct intent not supported on this device — fall through.
+            }
+        }
+        // Fallback: open the battery optimisation list.
+        try {
+            activity.startActivity(
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            )
+        } catch (e: Exception) {
+            // Last resort: open app info page.
+            activity.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:${activity.packageName}")
+                }
+            )
+        }
     }
 }
