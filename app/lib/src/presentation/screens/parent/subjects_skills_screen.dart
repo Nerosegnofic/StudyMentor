@@ -1,0 +1,604 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../bloc/document/document_upload_bloc.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../domain/models/student_model.dart';
+import '../../../domain/models/student_model.dart';
+import '../../../domain/models/subject_summary_model.dart';
+import 'parent_subject_detail_screen.dart';
+import '../../../bloc/subject/subject_bloc.dart';
+import '../../../bloc/subject/subject_event.dart';
+import '../../../bloc/subject/subject_state.dart';
+import '../../../bloc/subject_detail/subject_detail_bloc.dart';
+import '../../../bloc/subject_detail/subject_detail_event.dart';
+import '../../../domain/repositories/auth_repository.dart';
+import '../student/student_documents.dart';
+
+// SubjectData removed, using SubjectSummaryModel directly
+
+
+class SubjectsSkillsScreen extends StatefulWidget {
+  final StudentModel student;
+
+  const SubjectsSkillsScreen({super.key, required this.student});
+
+  @override
+  State<SubjectsSkillsScreen> createState() => _SubjectsSkillsScreenState();
+}
+
+class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
+  static const _kAiEngineBaseUrl = 'http://192.168.1.6:8000';
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
+  }
+
+  void _openDocumentUpload(BuildContext context, List<String> existingKeys) {
+    final repo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) => DocumentUploadBloc(repository: repo),
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF5F7FF),
+            appBar: AppBar(
+              title: const Text(
+                'Upload Curriculum',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+            body: StudentDocumentUploadScreen(
+              studentUid: widget.student.uid,
+              existingSubjectKeys: existingKeys,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: BlocListener<SubjectBloc, SubjectState>(
+        listener: (context, state) {
+          if (state is SubjectRemoved || state is SubjectAdded) {
+            context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
+          }
+        },
+        child: BlocBuilder<SubjectBloc, SubjectState>(
+          buildWhen: (prev, curr) =>
+              curr is SubjectsLoading || curr is SubjectsLoaded || curr is SubjectsError,
+          builder: (context, state) {
+            if (state is SubjectsLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state is SubjectsError) {
+              return Center(child: Text(state.message));
+            }
+            final subjects = state is SubjectsLoaded ? state.subjects : <SubjectSummaryModel>[];
+            final existingKeys = subjects.map((s) => s.subjectKey).toList();
+
+            return Column(
+              children: [
+                _buildHeader(context, existingKeys),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: subjects.length,
+                    itemBuilder: (context, index) {
+                      return _buildSubjectCard(context, subjects[index]);
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, List<String> existingKeys) {
+    return Container(
+      color: const Color(0xFF2196F3),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: 16,
+        left: 16,
+        right: 16,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          Text(
+            "Subjects & Skills",
+            style: GoogleFonts.cairo(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          InkWell(
+            onTap: () => _showAddSubjectModal(context, existingKeys),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, color: Color(0xFF2196F3)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubjectCard(BuildContext context, SubjectSummaryModel subject) {
+    final title = subject.subjectKey[0].toUpperCase() + subject.subjectKey.substring(1);
+    final subtitle = "${subject.skillsCount} skills tracked";
+    final progress = subject.masteryPercent;
+    
+    Color color;
+    try {
+      color = Color(int.parse(subject.colorHex.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      color = Colors.blue;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (ctx) => ParentSubjectDetailScreen(
+                studentUid: widget.student.uid,
+                subjectKey: subject.subjectKey,
+                subjectName: title, 
+                color: color,
+              ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.05),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Left-hand Icon block exactly as it is
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.book, color: color),
+            ),
+            const SizedBox(width: 16),
+            // Right-hand content area: flex-column taking up remaining space (Expanded)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: GoogleFonts.roboto(
+                                color: const Color(0xFF1E293B),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: GoogleFonts.roboto(
+                                color: const Color(0xFF64748B),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onSelected: (value) {
+                          if (value == 'remove') {
+                            _showRemoveConfirmationDialog(context, subject);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          PopupMenuItem<String>(
+                            value: 'remove',
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.delete,
+                                  color: Color(0xFFE53935),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Remove Subject",
+                                  style: GoogleFonts.roboto(
+                                    color: const Color(0xFFE53935),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Bottom Row: Progress bar + Percentage text
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final maxWidth = constraints.maxWidth;
+                            return Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [
+                                Container(
+                                  width: maxWidth,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE2E8F0),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                Container(
+                                  width: maxWidth * (progress / 100),
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2196F3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "$progress%",
+                        style: GoogleFonts.roboto(
+                          color: const Color(0xFF2196F3),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showRemoveConfirmationDialog(BuildContext context, SubjectSummaryModel subject) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Remove ${subject.subjectKey}?",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    color: const Color(0xFF1E293B),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Are you sure you want to stop tracking this subject? This will remove it from your dashboard.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.roboto(
+                    color: const Color(0xFF64748B),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          foregroundColor: const Color(0xFF64748B),
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          shape: const StadiumBorder(),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          "Cancel",
+                          style: GoogleFonts.roboto(
+                            color: const Color(0xFF64748B),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE53935),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          shape: const StadiumBorder(),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          "Remove",
+                          style: GoogleFonts.roboto(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<SubjectBloc>().add(
+        RemoveSubjectRequested(studentUid: widget.student.uid, subjectKey: subject.subjectKey)
+      );
+    }
+  }
+
+  void _showAddSubjectModal(BuildContext context, List<String> existingKeys) {
+    context.read<SubjectBloc>().add(LoadAvailableSubjectsRequested());
+    final selectedKeys = <String>{};
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: "Search subjects...",
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: BlocBuilder<SubjectBloc, SubjectState>(
+                      buildWhen: (prev, curr) => curr is SubjectsLoading || curr is AvailableSubjectsLoaded,
+                      builder: (context, state) {
+                        if (state is SubjectsLoading) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (state is AvailableSubjectsLoaded) {
+                          final subjects = state.subjects.where((s) => !existingKeys.contains(s.subjectKey)).toList();
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 1.5,
+                            ),
+                            itemCount: subjects.length,
+                            itemBuilder: (context, index) {
+                              final subject = subjects[index];
+                              final isSelected = selectedKeys.contains(subject.subjectKey);
+                              return GestureDetector(
+                                onTap: () {
+                                  setModalState(() {
+                                    if (isSelected) {
+                                      selectedKeys.remove(subject.subjectKey);
+                                    } else {
+                                      selectedKeys.add(subject.subjectKey);
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? const Color(0xFFE3F2FD) : const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected ? const Color(0xFF2196F3) : const Color(0xFFE2E8F0),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        subject.subjectKey.substring(0, 1).toUpperCase() + subject.subjectKey.substring(1),
+                                        style: GoogleFonts.roboto(
+                                          color: const Color(0xFF1E293B),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (selectedKeys.isNotEmpty) {
+                                modalContext.read<SubjectBloc>().add(
+                                  AddSubjectsRequested(
+                                    studentUid: widget.student.uid,
+                                    selectedKeys: selectedKeys.toList(),
+                                  ),
+                                );
+                                Navigator.pop(modalContext);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2196F3),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              "Add Selected (${selectedKeys.length})",
+                              style: GoogleFonts.cairo(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(modalContext);
+                              _openDocumentUpload(context, existingKeys);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF2196F3),
+                              side: const BorderSide(color: Color(0xFF2196F3), width: 1),
+                              backgroundColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'Upload Curriculum',
+                              style: GoogleFonts.roboto(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2196F3),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

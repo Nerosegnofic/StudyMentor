@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast, Date, text
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from datetime import datetime, timedelta
@@ -184,3 +184,52 @@ async def get_overall_analytics(
         "overall_mastery": overall_mastery,
         "activity_heatmap": activity_heatmap,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DELETE /analytics/subjects/{subject_name}   — Wipe custom subject securely
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.delete("/subjects/{subject_name}")
+async def delete_subject(
+    subject_name: str,
+    db: Session = Depends(get_db),
+    student_uid: str = Depends(get_current_user),
+):
+    """
+    Deletes a custom subject and its vector embeddings securely.
+    Global subjects cannot be deleted. History in QuizSession is preserved (subject_id set to NULL).
+    """
+    subject = db.query(Subject).filter(
+        Subject.name == subject_name,
+        Subject.student_uid == student_uid
+    ).first()
+
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found or access denied.")
+
+    if subject.is_global:
+        raise HTTPException(status_code=403, detail="Students cannot delete global subjects.")
+
+    try:
+        # Wipe PGVector chunks
+        db.execute(
+            text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'subject_id' = :subject_id"),
+            {"subject_id": str(subject.subject_id)}
+        )
+
+        # Disassociate QuizSessions to preserve gamification audit logs
+        db.execute(
+            text("UPDATE quiz_sessions SET subject_id = NULL WHERE subject_id = :subject_id"),
+            {"subject_id": subject.subject_id}
+        )
+
+        # Delete Subject (relies on SQLAlchemy cascades for related skills, states, chunks)
+        db.delete(subject)
+        
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete subject: {str(e)}")
+
+    return {"status": "success", "message": f"Subject '{subject_name}' deleted successfully."}

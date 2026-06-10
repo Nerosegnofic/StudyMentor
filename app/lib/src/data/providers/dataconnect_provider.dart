@@ -1,7 +1,22 @@
 // lib/src/data/providers/dataconnect_provider.dart
 
+import 'package:firebase_data_connect/firebase_data_connect.dart';
 import '../../../dataconnect_generated/generated.dart';
 import '../../domain/models/app_config_model.dart';
+import '../../domain/models/user_model.dart';
+import '../../domain/models/student_model.dart';
+import '../../domain/models/quiz_count.dart';
+import '../../domain/models/subject_progress_model.dart';
+import '../../domain/models/skill_progress_model.dart';
+import '../../domain/models/report_models.dart';
+import '../../domain/models/subject_summary_model.dart';
+import '../../domain/models/quiz_attempt_model.dart';
+import '../../domain/models/question_detail_model.dart';
+import '../../domain/models/ai_summary_model.dart';
+import '../../domain/models/notification_model.dart';
+import '../catalog/subject_catalog.dart';
+import '../catalog/subject_metadata_registry.dart';
+import '../repositories/ai_engine_repository.dart';
 
 class DataConnectProvider {
   final _connector = ExampleConnector.instance;
@@ -76,8 +91,6 @@ class DataConnectProvider {
             'full_name': s.user.fullName,
             'email': s.user.email,
             'grade_level': s.gradeLevel,
-            'total_xp': s.totalXp,
-            'total_coins': s.totalCoins,
             'is_email_verified': s.user.isEmailVerified,
           },
         )
@@ -117,7 +130,7 @@ class DataConnectProvider {
   getAppConfigForStudent(String studentUid) async {
     final result = await _connector
         .getAppConfigForStudent(studentUid: studentUid)
-        .execute();
+        .execute(fetchPolicy: QueryFetchPolicy.serverOnly);
 
     final raw = result.data.studentConfig;
     final config = raw == null
@@ -127,6 +140,7 @@ class DataConnectProvider {
             usageMinutes: raw.usageMinutes,
             cooldownHours: raw.cooldownHours,
             cooldownMinutes: raw.cooldownMinutes,
+            quizCount: QuizCount.fromJson(raw.quizCount),
           );
 
     final rules = result.data.appRules
@@ -135,6 +149,7 @@ class DataConnectProvider {
             'id': r.id,
             'package_name': r.packageName,
             'app_label': r.appLabel,
+            'is_paused': r.isPaused,
           },
         )
         .toList();
@@ -152,6 +167,7 @@ class DataConnectProvider {
     required String studentUid,
     required String packageName,
     required String appLabel,
+    bool isPaused = false,
   }) async {
     await _connector
         .insertAppRule(
@@ -159,6 +175,7 @@ class DataConnectProvider {
           packageName: packageName,
           appLabel: appLabel,
         )
+        .isPaused(isPaused)
         .execute();
   }
 
@@ -173,6 +190,7 @@ class DataConnectProvider {
           usageMinutes: config.usageMinutes,
           cooldownHours: config.cooldownHours,
           cooldownMinutes: config.cooldownMinutes,
+          quizCount: config.quizCount.toJson(),
         )
         .execute();
   }
@@ -227,11 +245,7 @@ class DataConnectProvider {
     return {
       'uid': s.uid,
       'username': s.username,
-      'total_xp': s.totalXp,
-      'total_coins': s.totalCoins,
       'grade_level': s.gradeLevel,
-      'total_questions_answered': s.totalQuestionsAnswered,
-      'current_streak': s.currentStreak,
     };
   }
 
@@ -264,12 +278,6 @@ class DataConnectProvider {
           backgroundMusicEnabled: backgroundMusicEnabled,
         )
         .execute();
-  }
-
-  // ── Last Active ───────────────────────────────────────────────────────────
-
-  Future<void> updateLastActiveAt() async {
-    await _connector.updateLastActiveAt().execute();
   }
 
   // ── Avatar Shop ───────────────────────────────────────────────────────────
@@ -340,28 +348,6 @@ class DataConnectProvider {
         .execute();
   }
 
-  Future<void> updateStudentCoins(int totalCoins) async {
-    await _connector.updateStudentCoins(totalCoins: totalCoins).execute();
-  }
-
-  Future<void> updateStudentXpAndCoins({
-    required int totalXp,
-    required int weeklyXp,
-    required int totalCoins,
-    required int totalQuestionsAnswered,
-    required int currentStreak,
-  }) async {
-    await _connector
-        .updateStudentXpAndCoins(
-          totalXp: totalXp,
-          weeklyXp: weeklyXp,
-          totalCoins: totalCoins,
-          totalQuestionsAnswered: totalQuestionsAnswered,
-          currentStreak: currentStreak,
-        )
-        .execute();
-  }
-
   // ── Student Account Deletion (parent-side) ────────────────────────────────
 
   Future<void> deleteStudentAllData(String studentUid) async {
@@ -416,4 +402,367 @@ class DataConnectProvider {
         .execute();
   }
 
+  // ── Garden System ─────────────────────────────────────────────────────────
+
+  Future<List<SubjectProgressModel>> getAllSubjectProgress(
+    String studentUid,
+  ) async {
+    final result = await _connector
+        .getAllSubjectProgress(studentUid: studentUid)
+        .execute();
+    return result.data.subjectProgresses.map((r) {
+      return SubjectProgressModel(
+        studentUid: r.studentUid,
+        subjectKey: r.subjectKey,
+        totalXp: r.totalXp,
+        level: r.level,
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(
+          r.updatedAt.seconds * 1000,
+          isUtc: true,
+        ),
+      );
+    }).toList();
+  }
+
+  Future<List<SkillProgressModel>> getSkillsForSubject({
+    required String studentUid,
+    required String subjectKey,
+  }) async {
+    final subject = SubjectCatalog.byKey(subjectKey);
+    if (subject == null) return [];
+    
+    // Simulate real data from DataConnect
+    int index = 0;
+    return subject.skillKeys.map((key) {
+      index++;
+      final isStrong = index % 3 == 0;
+      return SkillProgressModel(
+        studentUid: studentUid,
+        subjectKey: subjectKey,
+        skillKey: key,
+        correctAnswers: isStrong ? 20 : 5,
+        wrongAnswers: isStrong ? 2 : 10,
+        totalAttempts: isStrong ? 22 : 15,
+        lastPracticedAt: DateTime.now().subtract(Duration(days: index)),
+      );
+    }).toList();
+  }
+
+  // ── Subjects & Quizzes Mocked for Sprint 2 ────────────────────────────────
+
+  Future<List<SubjectSummaryModel>> getSubjectsByStudent(String studentUid) async {
+    final progresses = await getAllSubjectProgress(studentUid);
+    return progresses.map((p) {
+      final def = SubjectMetadataRegistry.getDefinition(p.subjectKey);
+      return SubjectSummaryModel(
+        subjectKey: p.subjectKey,
+        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        skillsCount: 0,
+        masteryPercent: 0,
+        quizzesCompleted: 0,
+        totalTimeSpent: Duration.zero,
+        accuracyPercent: 0,
+      );
+    }).toList();
+  }
+
+  Future<List<SubjectSummaryModel>> getAvailableSubjects() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return SubjectCatalog.all.map((s) {
+      final def = SubjectMetadataRegistry.getDefinition(s.key);
+      return SubjectSummaryModel(
+        subjectKey: s.key,
+        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        skillsCount: s.skillKeys.length,
+        masteryPercent: 0,
+        quizzesCompleted: 0,
+        totalTimeSpent: Duration.zero,
+        accuracyPercent: 0,
+      );
+    }).toList();
+  }
+
+  Future<void> addSubjectsForStudent({required String studentUid, required List<String> subjectKeys}) async {
+    for (final key in subjectKeys) {
+      await upsertSubjectProgress(
+        studentUid: studentUid,
+        subjectKey: key,
+        totalXp: 0,
+        level: 1,
+      );
+    }
+  }
+
+  Future<void> removeSubject({required String studentUid, required String subjectKey}) async {
+    // 1. Remove from DataConnect
+    await _connector.deleteSubjectProgress(
+      studentUid: studentUid,
+      subjectKey: subjectKey,
+    ).execute();
+
+    // 2. Clear backend vectors if it's a custom subject
+    const globalKeys = ['math', 'science', 'history', 'english', 'geography', 'art', 'music'];
+    if (!globalKeys.contains(subjectKey.toLowerCase())) {
+      try {
+        await AiEngineRepository.instance.deleteSubject(subjectKey);
+      } catch (e) {
+        print('Failed to clear backend vectors for custom subject: $e');
+      }
+    }
+  }
+
+  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    final subject = SubjectCatalog.byKey(subjectKey);
+    final colorHex = subject != null 
+        ? '#${subject.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}'
+        : '#2196F3';
+        
+    return SubjectSummaryModel(
+      subjectKey: subjectKey,
+      colorHex: colorHex,
+      skillsCount: subject?.skillKeys.length ?? 0,
+      masteryPercent: 88,
+      quizzesCompleted: 24,
+      totalTimeSpent: const Duration(hours: 5, minutes: 10),
+      accuracyPercent: 85.5,
+    );
+  }
+
+  Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, String subjectKey, {int limit = 10}) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return List.generate(limit, (index) {
+      final isPassed = index % 3 != 0;
+      return QuizAttemptModel(
+        id: 'quiz_$index',
+        studentUid: studentUid,
+        subjectKey: subjectKey,
+        skillTag: 'Fractions',
+        attemptedAt: DateTime.now().subtract(Duration(days: index)),
+        correctAnswers: isPassed ? 4 : 2,
+        totalQuestions: 5,
+        duration: Duration(minutes: 2, seconds: 15 + index * 10),
+        passed: isPassed,
+        correctAnswerNumbers: isPassed ? [1, 2, 4, 5] : [1, 3],
+      );
+    });
+  }
+
+  Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return QuestionDetailModel(
+      quizAttemptId: quizAttemptId,
+      questionNumber: questionNumber,
+      isCorrect: true,
+      questionText: 'What is 8 x 7?',
+      options: const ['54', '56', '64', '42'],
+      selectedAnswer: '56',
+      correctAnswer: '56',
+    );
+  }
+
+  // ── Reports & Analytics (Mocked for Sprint 3) ───────────────────────────
+
+  Future<WeeklyReportModel> getWeeklyReport(String studentUid) async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    return WeeklyReportModel(
+      studentUid: studentUid,
+      weekStartDate: DateTime.now().subtract(const Duration(days: 7)),
+      overallAccuracyPercent: 85.0,
+      totalQuizzes: 12,
+      totalStudyTime: const Duration(hours: 4, minutes: 30),
+      currentStreakDays: 3,
+      longestStreakDays: 7,
+      accuracyTrend: const [
+        WeeklyAccuracyPoint(weekLabel: 'W1', accuracy: 70),
+        WeeklyAccuracyPoint(weekLabel: 'W2', accuracy: 72),
+        WeeklyAccuracyPoint(weekLabel: 'W3', accuracy: 78),
+        WeeklyAccuracyPoint(weekLabel: 'W4', accuracy: 80),
+        WeeklyAccuracyPoint(weekLabel: 'W5', accuracy: 82),
+        WeeklyAccuracyPoint(weekLabel: 'This Wk', accuracy: 85),
+      ],
+      subjectAllocations: const [
+        SubjectTimeAllocation(subjectKey: 'math', percentage: 45.0, colorHex: '#2E7D32'),
+        SubjectTimeAllocation(subjectKey: 'science', percentage: 30.0, colorHex: '#AD1457'),
+        SubjectTimeAllocation(subjectKey: 'english', percentage: 25.0, colorHex: '#6A1B9A'),
+      ],
+      aiInsightText: "Ahmed is showing great progress in Mathematics, improving his accuracy by 5% this week. He is still struggling slightly with fractions, but his consistency is excellent. Keep encouraging daily practice!",
+    );
+  }
+
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, String subjectKey) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return SubjectMasteryReport(
+      subjectKey: subjectKey,
+      totalMasteryPercent: 88.0,
+      masteryLabel: 'Proficient',
+      strongSkills: const [], // Mocked empty for now, UI will use them if present
+      weakSkills: const [],
+      errorAnalytics: const ErrorAnalyticModel(
+        carelessPercent: 45.0,
+        conceptGapPercent: 38.0,
+        timePressurePercent: 17.0,
+      ),
+    );
+  }
+
+  Future<StudyHabitsReport> getStudyHabitsReport(String studentUid) async {
+    await Future.delayed(const Duration(milliseconds: 700));
+    
+    // Generate mock heatmap data for the last 28 days
+    final List<HeatmapDay> heatmap = [];
+    final now = DateTime.now();
+    for (int i = 27; i >= 0; i--) {
+      heatmap.add(HeatmapDay(
+        date: now.subtract(Duration(days: i)),
+        studyMinutes: (i % 7 == 0) ? 0 : 20 + (i % 40), // semi-random data
+      ));
+    }
+
+    return StudyHabitsReport(
+      studentUid: studentUid,
+      currentStreakDays: 3,
+      longestStreakDays: 7,
+      consistencyHeatmap: heatmap,
+      correlation: const [
+        StudyVsAppCorrelationPoint(dayLabel: 'Mon', studyMinutes: 45, appUsageMinutes: 60),
+        StudyVsAppCorrelationPoint(dayLabel: 'Tue', studyMinutes: 50, appUsageMinutes: 55),
+        StudyVsAppCorrelationPoint(dayLabel: 'Wed', studyMinutes: 40, appUsageMinutes: 70),
+        StudyVsAppCorrelationPoint(dayLabel: 'Thu', studyMinutes: 60, appUsageMinutes: 40),
+        StudyVsAppCorrelationPoint(dayLabel: 'Fri', studyMinutes: 30, appUsageMinutes: 90),
+        StudyVsAppCorrelationPoint(dayLabel: 'Sat', studyMinutes: 20, appUsageMinutes: 120),
+        StudyVsAppCorrelationPoint(dayLabel: 'Sun', studyMinutes: 25, appUsageMinutes: 100),
+      ],
+    );
+  }
+
+  Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return DailyStudentSnapshotModel(
+      studentUid: studentUid,
+      quizzesCompletedToday: 3,
+      totalStudyTimeToday: const Duration(minutes: 45),
+      averageAccuracyToday: 88,
+    );
+  }
+
+  Future<void> upsertSubjectProgress({
+    required String studentUid,
+    required String subjectKey,
+    required int totalXp,
+    required int level,
+  }) async {
+    await _connector
+        .upsertSubjectProgress(
+          studentUid: studentUid,
+          subjectKey: subjectKey,
+          totalXp: totalXp,
+          level: level,
+        )
+        .execute();
+  }
+
+  Future<void> upsertSkillProgress({
+    required String studentUid,
+    required String subjectKey,
+    required String skillKey,
+    required int correctAnswers,
+    required int wrongAnswers,
+    required int totalAttempts,
+  }) async {}
+
+  Future<AiSummaryModel> getAiSummary(String parentUid) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return AiSummaryModel(
+      id: 'mock-ai-summary-1',
+      parentUid: parentUid,
+      slides: [
+        "Ahmed is on a 7-day streak! He passed 14 quizzes today, earning 245 XP.",
+        "He's excelling in Fractions but needs more practice with Decimals.",
+        "Ahmed earned 15 minutes of playtime today by completing his Science goals.",
+      ],
+      generatedAt: DateTime.now(),
+    );
+  }
+
+  Future<List<NotificationModel>> getNotificationsForParent(String parentUid) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return [
+      NotificationModel(
+        id: 'n1',
+        parentUid: parentUid,
+        type: NotificationType.screenTimeUnlocked,
+        title: 'Screen Time Unlocked',
+        subtitle: 'Ahmed earned 15 mins for passing Mathematics.',
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+        isRead: false,
+      ),
+      NotificationModel(
+        id: 'n2',
+        parentUid: parentUid,
+        type: NotificationType.needsWork,
+        title: 'Needs Work: Fractions',
+        subtitle: 'Ahmed struggled with Fractions today. Review recommended.',
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        isRead: true,
+      ),
+      NotificationModel(
+        id: 'n3',
+        parentUid: parentUid,
+        type: NotificationType.systemUpdate,
+        title: 'New Feature Available',
+        subtitle: 'You can now set custom cooldown periods.',
+        createdAt: DateTime.now().subtract(const Duration(days: 2)),
+        isRead: true,
+      ),
+    ];
+  }
+
+  Future<void> markAllNotificationsRead(String parentUid) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+
+  Future<UserModel> updateProfile({
+    required String parentUid,
+    String? newFullName,
+    String? newEmail,
+    String? currentPassword,
+    String? newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return UserModel(
+      uid: parentUid,
+      email: newEmail ?? 'parent@example.com',
+      fullName: newFullName ?? 'Parent Name',
+      role: 'parent',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 30)),
+    );
+  }
+
+  Future<void> deleteParentAccount(String currentPassword) async {
+    await Future.delayed(const Duration(seconds: 1));
+  }
+
+  Future<StudentModel> updateStudentProfile({
+    required String studentUid,
+    String? studentEmail,
+    String? newFullName,
+    String? newEmail,
+    String? currentPassword,
+    String? newPassword,
+    String? newGradeLevel,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return StudentModel(
+      uid: studentUid,
+      email: newEmail ?? studentEmail ?? 'student@example.com',
+      fullName: newFullName ?? 'Student Name',
+      username: 'student123',
+      gradeLevel: newGradeLevel != null ? int.tryParse(newGradeLevel) ?? 8 : 8,
+      totalXp: 450,
+      totalCoins: 200,
+      isEmailVerified: true,
+    );
+  }
 }

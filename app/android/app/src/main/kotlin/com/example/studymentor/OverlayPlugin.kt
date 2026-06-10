@@ -481,8 +481,13 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
             "setMonitoredApps" -> {
                 val apps = call.argument<List<String>>("apps") ?: emptyList()
+                val studentUid = call.argument<String>("studentUid") ?: ""
                 StudyMentorAccessibilityService.monitoredApps.clear()
                 StudyMentorAccessibilityService.monitoredApps.addAll(apps)
+                if (studentUid.isNotEmpty()) {
+                    val timerPrefs = UsageTimerService.prefs(activity)
+                    timerPrefs.edit().putString("student_uid", studentUid).apply()
+                }
                 result.success(null)
             }
 

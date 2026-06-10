@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
-import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/auth/auth_event.dart';
+import '../../../bloc/students/students_bloc.dart';
+import '../../../bloc/students/students_event.dart';
 import '../../widgets/parent_navigation_bar.dart';
 import 'add_student_screen.dart';
-import 'parent_dashboard.dart';
+import 'parent_home_dashboard.dart';
 import 'parent_settings.dart';
 import 'parent_students.dart';
 import 'parent_help_center.dart';
@@ -21,7 +21,8 @@ class ParentScreen extends StatefulWidget {
 }
 
 class _ParentScreenState extends State<ParentScreen> {
-  int _selectedIndex = 1;
+  // Default to tab 0 — the new Home Dashboard
+  int _selectedIndex = 0;
 
   void _onTabSelected(int index) {
     if (index == 3) {
@@ -44,11 +45,10 @@ class _ParentScreenState extends State<ParentScreen> {
         builder: (_) => AddStudentScreen(parentUid: widget.uid),
       ),
     );
-
     if (mounted) {
-      context.read<AuthBloc>().add(
-        LoadStudentsRequested(parentUid: widget.uid),
-      );
+      context.read<StudentsBloc>().add(
+          LoadStudentsRequested(parentUid: widget.uid),
+          );
     }
   }
 
@@ -61,28 +61,39 @@ class _ParentScreenState extends State<ParentScreen> {
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FF),
-        appBar: AppBar(
-          title: Text('Welcome, ${widget.fullName}'),
-          automaticallyImplyLeading: false,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
-            ),
-          ],
-        ),
+
+        // Tab 0 uses its own branded curved header — hide the standard AppBar.
+        // All other tabs keep the standard AppBar.
+        appBar: _selectedIndex == 0
+            ? null
+            : AppBar(
+                title: Text('Welcome, ${widget.fullName}'),
+                automaticallyImplyLeading: false,
+              ),
+
         body: IndexedStack(
           index: _selectedIndex,
           children: [
-            ParentDashboard(parentUid: widget.uid),
+            // Tab 0 — New premium Home Dashboard
+            ParentHomeDashboard(
+              parentUid: widget.uid,
+              fullName: widget.fullName,
+              onAddStudentPressed: _openAddStudentScreen,
+            ),
+            // Tab 1 — My Students
             ParentStudents(parentUid: widget.uid),
+            // Tab 2 — Settings
             const ParentSettings(),
           ],
         ),
+
         bottomNavigationBar: ParentNavigationBar(
           currentIndex: _selectedIndex,
           onTap: _onTabSelected,
         ),
+
+        // Tab 0 owns its own FAB via the Stack inside ParentHomeDashboard.
+        // Tab 1 keeps the original extended FAB for adding a student.
         floatingActionButton: _selectedIndex == 1
             ? FloatingActionButton.extended(
                 onPressed: _openAddStudentScreen,

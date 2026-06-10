@@ -102,6 +102,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                         val apps          = call.argument<List<String>>("monitoredApps") ?: emptyList()
                         val usageLimit    = call.argument<Int>("usageLimitSecs") ?: 1800
                         val cooldownLimit = call.argument<Int>("cooldownLimitSecs") ?: 600
+                        val studentUid    = call.argument<String>("studentUid") ?: ""
 
                         val intent = serviceIntent(ACTION_START).apply {
                             putExtra(UsageTimerService.EXTRA_STUDENT_UID,         studentUid)
@@ -112,6 +113,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                             putExtra(UsageTimerService.EXTRA_USAGE_LIMIT_SECS,    usageLimit)
                             putExtra(UsageTimerService.EXTRA_COOLDOWN_LIMIT_SECS, cooldownLimit)
                             putExtra(UsageTimerService.EXTRA_STUDENT_LOGGED_IN,   true)
+                            putExtra(UsageTimerService.EXTRA_STUDENT_UID,         studentUid)
                         }
                         startService(intent)
                         bindService()
@@ -143,6 +145,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                         val apps          = call.argument<List<String>>("monitoredApps") ?: emptyList()
                         val usageLimit    = call.argument<Int>("usageLimitSecs") ?: 1800
                         val cooldownLimit = call.argument<Int>("cooldownLimitSecs") ?: 600
+                        val studentUid    = call.argument<String>("studentUid") ?: ""
 
                         val intent = serviceIntent(ACTION_START).apply {
                             putExtra(UsageTimerService.EXTRA_STUDENT_UID,         studentUid)
@@ -153,6 +156,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                             putExtra(UsageTimerService.EXTRA_USAGE_LIMIT_SECS,    usageLimit)
                             putExtra(UsageTimerService.EXTRA_COOLDOWN_LIMIT_SECS, cooldownLimit)
                             putExtra(UsageTimerService.EXTRA_STUDENT_LOGGED_IN,   true)
+                            putExtra(UsageTimerService.EXTRA_STUDENT_UID,         studentUid)
                         }
                         startService(intent)
                         result.success(null)

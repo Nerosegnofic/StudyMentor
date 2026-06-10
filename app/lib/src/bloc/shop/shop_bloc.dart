@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import '../../data/catalog/avatar_items_catalog.dart';
+import '../../data/repositories/ai_engine_repository.dart';
 import '../../data/providers/dataconnect_provider.dart';
 import '../../domain/models/avatar_config.dart';
 import '../../domain/models/avatar_item.dart';
@@ -97,7 +98,11 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
           studentUid: event.studentUid,
           itemId: event.item.id,
         ),
-        _provider.updateStudentCoins(newCoins),
+        AiEngineRepository.instance.spendCoins(
+          event.studentUid,
+          event.item.price,
+          'SHOP_PURCHASE',
+        ),
       ]);
 
       final newOwned = {...current.ownedItemIds, event.item.id};

@@ -14,6 +14,16 @@ from .analytics_schemas import (
     RefinedMasteryResponse,
     MasteryPointSchema,
 )
+from .gamification_schemas import (
+    GamificationProfileResponse,
+    LevelSchema,
+    LevelsResponse,
+    DailyLoginRequest,
+    DailyLoginResponse,
+    SpendCoinsRequest,
+    SpendCoinsResponse,
+    QuizRewardsSummary,
+)
 
 __all__ = [
     "GenerateQuizRequest",
@@ -28,4 +38,12 @@ __all__ = [
     "RefinedUnit",
     "RefinedMasteryResponse",
     "MasteryPointSchema",
+    "GamificationProfileResponse",
+    "LevelSchema",
+    "LevelsResponse",
+    "DailyLoginRequest",
+    "DailyLoginResponse",
+    "SpendCoinsRequest",
+    "SpendCoinsResponse",
+    "QuizRewardsSummary",
 ]

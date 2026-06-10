@@ -10,12 +10,14 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
+import '../../../bloc/gamification/gamification_bloc.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/garden_plant_model.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../widgets/garden_subject_card.dart';
+import '../../../data/catalog/subject_metadata_registry.dart';
 import 'subject_detail_screen.dart';
 
 class StudentHome extends StatefulWidget {
@@ -25,10 +27,10 @@ class StudentHome extends StatefulWidget {
   const StudentHome({super.key, required this.fullName, required this.uid});
 
   @override
-  State<StudentHome> createState() => _StudentHomeState();
+  State<StudentHome> createState() => StudentHomeState();
 }
 
-class _StudentHomeState extends State<StudentHome> {
+class StudentHomeState extends State<StudentHome> {
   String? _parentFullName;
   List<AppRuleModel> _appRules = [];
   StudentConfigModel _config = const StudentConfigModel();
@@ -36,6 +38,7 @@ class _StudentHomeState extends State<StudentHome> {
   final Map<String, String?> _iconCache = {};
 
   int _streak = 0;
+  int _quizzesCompletedToday = 0;
 
   // Last known garden data — persists across BLoC state changes.
   List<GardenPlantModel> _gardenCache = [];
@@ -74,17 +77,29 @@ class _StudentHomeState extends State<StudentHome> {
 
   Future<void> _loadStreak() async {
     try {
-      final provider = DataConnectProvider();
-      final profile = await provider.getStudentProfile(widget.uid);
+      final profile = await AiEngineRepository.instance.getGamificationProfile(widget.uid);
       if (mounted) {
         setState(() {
           _streak = (profile['current_streak'] as int?) ?? 0;
         });
       }
-    } catch (_) {}
+    } catch (e, s) {
+      debugPrint('[StudentHome] _loadStreak gamification error: $e\n$s');
+    }
+
+    try {
+      final snapshot = await DataConnectProvider().getDailySnapshot(widget.uid);
+      if (mounted) {
+        setState(() {
+          _quizzesCompletedToday = snapshot.quizzesCompletedToday;
+        });
+      }
+    } catch (e, s) {
+      debugPrint('[StudentHome] _loadStreak daily snapshot error: $e\n$s');
+    }
   }
 
-  Future<void> _refresh() async {
+  Future<void> refresh() async {
     setState(() {
       _parentFullName = null;
       _rulesLoading = true;
@@ -125,7 +140,7 @@ class _StudentHomeState extends State<StudentHome> {
             if (state is ParentNameLoaded) {
               setState(() => _parentFullName = state.parentFullName);
             }
-            if (state is AppRulesLoaded && state.studentUid == widget.uid) {
+            if (state is LegacyAppRulesLoaded && state.studentUid == widget.uid) {
               setState(() {
                 _appRules = state.rules;
                 _config = state.config;
@@ -140,7 +155,7 @@ class _StudentHomeState extends State<StudentHome> {
               );
               _loadIcons(state.rules);
             }
-            if (state is AppConfigError) {
+            if (state is LegacyAppConfigError) {
               setState(() => _rulesLoading = false);
             }
           },
@@ -154,13 +169,13 @@ class _StudentHomeState extends State<StudentHome> {
         ),
       ],
       child: RefreshIndicator(
-        onRefresh: _refresh,
+        onRefresh: refresh,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Garden area ───────────────────────────────────────────────
+              // ── Garden area ───────────────────────────────────────────────────
               Container(
                 color: const Color(0xFFF8FAF6),
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -202,7 +217,7 @@ class _StudentHomeState extends State<StudentHome> {
                 ),
               ),
 
-              // ── Parent + App rules ─────────────────────────────────────────
+              // ── Parent + App rules ──────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Column(
@@ -518,7 +533,7 @@ class _StudentHomeState extends State<StudentHome> {
     final streakLabel = _streak == 1 ? '1 day' : '$_streak days';
     return Row(
       children: [
-        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '0')),
+        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '$_quizzesCompletedToday')),
         const SizedBox(width: 10),
         Expanded(
           child: _statCard(
@@ -661,6 +676,8 @@ class _StudentHomeState extends State<StudentHome> {
   // ── App rules section ───────────────────────────────────────────────────────
 
   Widget _buildAppRulesSection() {
+    final activeRules = _appRules.where((r) => !r.isPaused).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -685,14 +702,15 @@ class _StudentHomeState extends State<StudentHome> {
           style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
         ),
         const SizedBox(height: 14),
-        if (!_rulesLoading && _appRules.isEmpty)
+        if (!_rulesLoading && activeRules.isEmpty)
           _buildNoRulesPlaceholder()
         else if (!_rulesLoading) ...[
+          // ── Screen-time card (always visible when rules exist) ───────────────
           _buildScreenTimeCard(),
           const SizedBox(height: 12),
           _buildTimingBanner(),
           const SizedBox(height: 12),
-          ..._appRules.map(_buildRuleRow),
+          ...activeRules.map(_buildRuleRow),
         ],
       ],
     );
@@ -700,6 +718,9 @@ class _StudentHomeState extends State<StudentHome> {
 
   // ── Screen-time card ────────────────────────────────────────────────────────
 
+  /// Reads live data from [MascotOverlayService] and renders either:
+  ///   • A usage progress bar with remaining time, or
+  ///   • A cooldown banner with live countdown.
   Widget _buildScreenTimeCard() {
     final svc = MascotOverlayService.instance;
     final thresholdSeconds =
@@ -709,6 +730,7 @@ class _StudentHomeState extends State<StudentHome> {
       return _buildCooldownBanner(svc.remainingSeconds);
     }
 
+    // Not blocked — show remaining usage time.
     return _buildUsageBar(
       usedSeconds: svc.totalUsageSeconds,
       totalSeconds: thresholdSeconds,
@@ -721,6 +743,7 @@ class _StudentHomeState extends State<StudentHome> {
     final remaining = (totalSeconds - usedSeconds).clamp(0, totalSeconds);
     final fraction = (usedSeconds / totalSeconds).clamp(0.0, 1.0);
 
+    // Color shifts: green → amber → red as usage fills up.
     final Color barColor;
     if (fraction < 0.6) {
       barColor = const Color(0xFF34A853);
@@ -826,6 +849,7 @@ class _StudentHomeState extends State<StudentHome> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
+        // Warm amber gradient — firm but not alarming
         gradient: const LinearGradient(
           colors: [Color(0xFFFFF3E0), Color(0xFFFFF8F0)],
           begin: Alignment.topLeft,
@@ -911,6 +935,8 @@ class _StudentHomeState extends State<StudentHome> {
       ),
     );
   }
+
+  // ── Timing banner (usage + cooldown pills) ──────────────────────────────────
 
   Widget _buildTimingBanner() {
     return Container(
@@ -1047,6 +1073,8 @@ class _StudentHomeState extends State<StudentHome> {
     return '${hours}h ${minutes}m';
   }
 
+  /// Formats a raw second count into a human-readable duration string.
+  /// e.g. 3725 → "1h 2m", 95 → "1m 35s", 45 → "45s"
   String _formatDurationFromSeconds(int seconds) {
     if (seconds <= 0) return '0s';
     final h = seconds ~/ 3600;
@@ -1088,20 +1116,28 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   void _openSubjectDetail(GardenPlantModel plant) {
+    final gardenBloc = context.read<GardenBloc>();
+    final gamificationBloc = context.read<GamificationBloc>();
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SubjectDetailScreen(
-          studentUid: widget.uid,
-          subjectId: plant.subjectId,
-          subjectName: plant.subjectName,
-          masteryPercent: plant.masteryPercent,
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: gardenBloc),
+            BlocProvider.value(value: gamificationBloc),
+          ],
+          child: SubjectDetailScreen(
+            studentUid: widget.uid,
+            subjectId: plant.subjectId,
+            subjectName: plant.subjectName,
+            masteryPercent: plant.masteryPercent,
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Owl CustomPainter ──────────────────────────────────────────────────────────
+// â”€â”€ Owl CustomPainter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _OwlPainter extends CustomPainter {
   @override
@@ -1173,7 +1209,7 @@ class _OwlPainter extends CustomPainter {
   bool shouldRepaint(_OwlPainter old) => false;
 }
 
-// ── App icon widget ────────────────────────────────────────────────────────────
+// â”€â”€ App icon widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AppIcon extends StatelessWidget {
   final String? iconBase64;
@@ -1219,3 +1255,4 @@ class _AppIcon extends StatelessWidget {
     );
   }
 }
+

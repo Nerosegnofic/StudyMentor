@@ -4,6 +4,13 @@ import '../../../bloc/quiz/quiz_bloc.dart';
 import '../../../bloc/quiz/quiz_event.dart';
 import '../../../bloc/quiz/quiz_state.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../domain/models/gamification_enums.dart';
+import '../../../domain/models/quiz_xp_result.dart';
+import '../../../bloc/gamification/gamification_bloc.dart';
+import '../../../bloc/gamification/gamification_event.dart';
+import '../../../bloc/garden/garden_bloc.dart';
+import '../../../bloc/garden/garden_event.dart';
+import '../../../data/catalog/subject_catalog.dart';
 
 // ---------------------------------------------------------------------------
 // QuizOverlayPage
@@ -17,20 +24,41 @@ import '../../../data/repositories/ai_engine_repository.dart';
 
 class QuizOverlayPage extends StatelessWidget {
   final AiEngineRepository repository;
+  final String studentId;
+  final QuizContext contextType;
+  final int totalQuestions;
 
-  const QuizOverlayPage({super.key, required this.repository});
+  const QuizOverlayPage({
+    super.key,
+    required this.repository,
+    required this.studentId,
+    required this.contextType,
+    this.totalQuestions = 5,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => QuizBloc(repository: repository),
-      child: const _QuizOverlayScaffold(),
+      child: _QuizOverlayScaffold(
+        studentId: studentId,
+        contextType: contextType,
+        totalQuestions: totalQuestions,
+      ),
     );
   }
 }
 
 class _QuizOverlayScaffold extends StatelessWidget {
-  const _QuizOverlayScaffold();
+  final String studentId;
+  final QuizContext contextType;
+  final int totalQuestions;
+
+  const _QuizOverlayScaffold({
+    required this.studentId,
+    required this.contextType,
+    required this.totalQuestions,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -67,22 +95,105 @@ class _QuizOverlayScaffold extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocBuilder<QuizBloc, QuizState>(
-        builder: (context, state) {
-          if (state is QuizInitial) return const _AutoStartPanel();
-          if (state is QuizLoading) {
-            return const _LoadingView(message: 'Generating your quiz…');
+      body: BlocListener<QuizBloc, QuizState>(
+        listener: (context, state) {
+          if (state is QuizResultsLoaded) {
+            // 1. Calculate time taken
+            final totalDuration = Duration(
+              milliseconds: state.answers.values.fold(0, (sum, ans) => sum + ans.timeTakenMs),
+            );
+
+            // 2. Normalize subject and topic to get keys
+            final subjectName = state.quizResponse.selectedSubjectName;
+            final subjectKey = _getSubjectKey(subjectName);
+            final firstQuestionTopic = state.quizResponse.questions.isNotEmpty
+                ? state.quizResponse.questions[0].topic
+                : 'General';
+            final skillKey = _getSkillKey(firstQuestionTopic, subjectKey);
+            final difficultyLabel = state.quizResponse.questions.isNotEmpty
+                ? (state.quizResponse.questions[0].difficulty == 4
+                    ? 'hard'
+                    : state.quizResponse.questions[0].difficulty == 3
+                        ? 'medium'
+                        : 'easy')
+                : 'easy';
+
+            final scoreCount = (state.result.score / 100 * state.result.totalQuestions).round();
+
+            // 3. Dispatch to GamificationBloc
+            context.read<GamificationBloc>().add(
+                  ProcessQuizRewardsRequested(
+                    studentId: studentId,
+                    rewards: state.result.rewards,
+                  ),
+                );
+
+            // 4. Dispatch to GardenBloc
+            final xpResult = QuizXpResult(
+              subjectKey: subjectKey,
+              skillKey: skillKey,
+              totalQuestions: state.result.totalQuestions,
+              correctAnswers: scoreCount,
+              wrongAnswers: state.result.totalQuestions - scoreCount,
+              difficulty: difficultyLabel,
+              currentStreak: 3,
+            );
+
+            context.read<GardenBloc>().add(
+                  QuizCompletedForSubject(
+                    studentUid: studentId,
+                    result: xpResult,
+                  ),
+                );
           }
-          if (state is QuizLoaded) return _QuizActiveView(state: state);
-          if (state is QuizSubmitting) {
-            return const _LoadingView(message: 'Submitting answers…');
-          }
-          if (state is QuizResultsLoaded) return _ResultsView(state: state);
-          if (state is QuizError) return _ErrorView(message: state.message);
-          return const SizedBox.shrink();
         },
+        child: BlocBuilder<QuizBloc, QuizState>(
+          builder: (context, state) {
+            if (state is QuizInitial) return _AutoStartPanel(totalQuestions: totalQuestions);
+            if (state is QuizLoading) {
+              return const _LoadingView(message: 'Generating your quiz…');
+            }
+            if (state is QuizLoaded) return _QuizActiveView(state: state);
+            if (state is QuizSubmitting) {
+              return const _LoadingView(message: 'Submitting answers…');
+            }
+            if (state is QuizResultsLoaded) return _ResultsView(state: state);
+            if (state is QuizError) return _ErrorView(message: state.message);
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
+  }
+
+  String _getSubjectKey(String name) {
+    switch (name.toLowerCase()) {
+      case 'math':
+      case 'mathematics':
+        return 'math';
+      case 'science':
+        return 'science';
+      case 'history':
+        return 'history';
+      case 'english':
+        return 'english';
+      default:
+        return 'math';
+    }
+  }
+
+  String _getSkillKey(String topic, String subjectKey) {
+    final normalizedTopic = topic.toLowerCase().replaceAll(' ', '_');
+    final subject = SubjectCatalog.byKey(subjectKey);
+    if (subject != null) {
+      for (final skill in subject.skillKeys) {
+        if (normalizedTopic.contains(skill) || skill.contains(normalizedTopic)) {
+          return skill;
+        }
+      }
+      return subject.skillKeys.first;
+    }
+    return 'fractions';
   }
 }
 
@@ -91,7 +202,9 @@ class _QuizOverlayScaffold extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _AutoStartPanel extends StatelessWidget {
-  const _AutoStartPanel();
+  final int totalQuestions;
+
+  const _AutoStartPanel({required this.totalQuestions});
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +244,7 @@ class _AutoStartPanel extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 context.read<QuizBloc>().add(
-                  GenerateQuizEvent(totalQuestions: 5),
+                  GenerateQuizEvent(totalQuestions: totalQuestions),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -200,7 +313,7 @@ class StudentQuizScreen extends StatelessWidget {
   const StudentQuizScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const _AutoStartPanel();
+  Widget build(BuildContext context) => const _AutoStartPanel(totalQuestions: 5);
 }
 
 // ---------------------------------------------------------------------------

@@ -252,9 +252,9 @@ def refine_mastery_points(
             refined_lessons = len(refined_data)
             
             print(
-                f"[MasteryRefiner] ✓ Refinement complete: "
-                f"{raw_total} raw → {refined_total} refined points, "
-                f"{raw_lessons} → {refined_lessons} lesson groups.",
+                f"[MasteryRefiner] [SUCCESS] Refinement complete: "
+                f"{raw_total} raw -> {refined_total} refined points, "
+                f"{raw_lessons} -> {refined_lessons} lesson groups.",
                 flush=True
             )
             

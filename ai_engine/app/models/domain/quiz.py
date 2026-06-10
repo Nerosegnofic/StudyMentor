@@ -16,6 +16,7 @@ class QuizSession(Base):
     total_questions = Column(Integer, nullable=False)
     score = Column(Float, nullable=True)
     consecutive_spam_clicks = Column(Integer, default=0) # Tracks "guessing" behavior within this specific quiz session
+    quiz_context = Column(String, default="VOLUNTARY")  # VOLUNTARY | FORCED
     
     subject = relationship("Subject")
     questions = relationship("Question", back_populates="session", cascade="all, delete-orphan")

@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../domain/models/skill_detail_model.dart';
 import '../../../utils/growth_stage_utils.dart';
 import '../../widgets/plant_widget.dart';
 import 'student_quiz.dart';
+import '../../../domain/models/gamification_enums.dart';
+import '../../../bloc/gamification/gamification_bloc.dart';
+import '../../../domain/models/app_config_model.dart';
+import '../../../domain/models/quiz_count.dart';
+import '../../../bloc/auth/auth_bloc.dart';
 
 const _kGreen = Color(0xFF2E7D32);
 const _kGreenLight = Color(0xFFE8F5E9);
@@ -28,11 +34,25 @@ class SubjectDetailScreen extends StatefulWidget {
 
 class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   late Future<List<SkillDetailModel>> _skillsFuture;
+  StudentConfigModel _config = const StudentConfigModel();
 
   @override
   void initState() {
     super.initState();
     _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    try {
+      final repo = context.read<AuthBloc>().repository;
+      final (:config, :rules) = await repo.getAppConfigForStudent(widget.studentUid);
+      if (mounted && config != null) {
+        setState(() {
+          _config = config;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -191,11 +211,25 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             height: 52,
             child: ElevatedButton.icon(
               onPressed: () {
+                final gamificationBloc = context.read<GamificationBloc>();
+                final gardenBloc = context.read<GardenBloc>();
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     fullscreenDialog: true,
-                    builder: (_) => QuizOverlayPage(
-                      repository: AiEngineRepository.instance,
+                    builder: (_) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider.value(value: gamificationBloc),
+                        BlocProvider.value(value: gardenBloc),
+                      ],
+                      child: QuizOverlayPage(
+                        repository: AiEngineRepository.instance,
+                        studentId: widget.studentUid,
+                        contextType: QuizContext.voluntary,
+                        totalQuestions: switch (_config.quizCount) {
+                          Auto() => 5,
+                          Fixed(:final count) => count,
+                        },
+                      ),
                     ),
                   ),
                 );

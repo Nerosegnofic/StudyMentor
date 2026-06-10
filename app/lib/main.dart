@@ -9,9 +9,19 @@ import 'firebase_options.dart';
 import 'src/bloc/auth/auth_bloc.dart';
 import 'src/bloc/auth/auth_event.dart';
 import 'src/bloc/auth/auth_state.dart';
+import 'src/bloc/app_config/app_config_bloc.dart';
+import 'src/bloc/subject/subject_bloc.dart';
+import 'src/bloc/reports/reports_bloc.dart';
+import 'src/bloc/students/students_bloc.dart';
+import 'src/bloc/ai_summary/ai_summary_bloc.dart';
+import 'src/bloc/notifications/notifications_bloc.dart';
+import 'src/bloc/parent_profile/parent_profile_bloc.dart';
+import 'src/bloc/student_profile/student_profile_bloc.dart';
+import 'src/bloc/snapshot/snapshot_bloc.dart';
 import 'src/data/providers/dataconnect_provider.dart';
 import 'src/data/providers/firebase_auth_provider.dart';
 import 'src/data/repositories/auth_repository_impl.dart';
+import 'src/domain/repositories/auth_repository.dart';
 import 'src/presentation/screens/auth/confirm_email_screen.dart';
 import 'src/presentation/screens/auth/forgot_password_screen.dart';
 import 'src/presentation/screens/auth/login_screen.dart';
@@ -90,17 +100,47 @@ Future<void> main() async {
 }
 
 class StudyMentorApp extends StatelessWidget {
-  final dynamic authRepository;
+  final AuthRepository authRepository;
 
   const StudyMentorApp({super.key, required this.authRepository});
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider.value(
+    return RepositoryProvider<AuthRepository>.value(
       value: authRepository,
-      child: BlocProvider(
-        create: (context) =>
-            AuthBloc(repository: authRepository)..add(AppStarted()),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>(
+            create: (context) => AuthBloc(repository: authRepository)..add(AppStarted()),
+          ),
+          BlocProvider<AppConfigBloc>(
+            create: (context) => AppConfigBloc(authRepository: authRepository),
+          ),
+          BlocProvider<SubjectBloc>(
+            create: (context) => SubjectBloc(authRepository: authRepository),
+          ),
+          BlocProvider<StudentsBloc>(
+            create: (context) => StudentsBloc(repository: authRepository),
+          ),
+          BlocProvider<ReportsBloc>(
+            create: (context) => ReportsBloc(repository: authRepository),
+          ),
+          BlocProvider<AiSummaryBloc>(
+            create: (context) => AiSummaryBloc(repository: authRepository),
+          ),
+          BlocProvider<NotificationsBloc>(
+            create: (context) => NotificationsBloc(repository: authRepository),
+          ),
+          BlocProvider<ParentProfileBloc>(
+            create: (context) => ParentProfileBloc(repository: authRepository),
+          ),
+          BlocProvider<StudentProfileBloc>(
+            create: (context) => StudentProfileBloc(repository: authRepository),
+          ),
+          BlocProvider<SnapshotBloc>(
+            create: (context) => SnapshotBloc(repository: authRepository),
+          ),
+        ],
         child: MaterialApp(
           title: 'StudyMentor',
           debugShowCheckedModeBanner: false,

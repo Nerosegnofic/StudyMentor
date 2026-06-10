@@ -52,9 +52,9 @@ class PasswordResetEmailSent extends AuthState {}
 
 class StudentCreated extends AuthState {}
 
-class StudentsLoaded extends AuthState {
+class LegacyStudentsLoaded extends AuthState {
   final List<StudentModel> students;
-  StudentsLoaded(this.students);
+  LegacyStudentsLoaded(this.students);
   @override
   List<Object?> get props => [students];
 }
@@ -81,39 +81,39 @@ class ParentVerificationFailed extends AuthState {
   List<Object?> get props => [message, studentUid];
 }
 
-class ProfileUpdateLoading extends AuthState {}
+class LegacyProfileUpdateLoading extends AuthState {}
 
-class ProfileUpdateSuccess extends AuthState {
+class LegacyProfileUpdateSuccess extends AuthState {
   final UserModel updatedUser;
-  ProfileUpdateSuccess(this.updatedUser);
+  LegacyProfileUpdateSuccess(this.updatedUser);
   @override
   List<Object?> get props => [updatedUser];
 }
 
-class ProfileUpdateError extends AuthState {
+class LegacyProfileUpdateError extends AuthState {
   final String message;
-  ProfileUpdateError(this.message);
+  LegacyProfileUpdateError(this.message);
   @override
   List<Object?> get props => [message];
 }
 
-// ── App Configuration States ──────────────────────────────────────────────────
+// â”€â”€ App Configuration States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Emitted while app rules are being loaded from the database.
-/// Distinct from [AuthLoading] — does not affect the root navigation.
-class AppConfigLoading extends AuthState {}
+/// Distinct from [AuthLoading] â€” does not affect the root navigation.
+class LegacyAppConfigLoading extends AuthState {}
 
 /// Emitted when app rules and global config have been successfully loaded.
 /// [studentUid] is included so the config screen knows which student
 /// these rules belong to (safe for multi-student households).
 /// [config] falls back to [StudentConfigModel] defaults if the parent
 /// hasn't saved a config yet.
-class AppRulesLoaded extends AuthState {
+class LegacyAppRulesLoaded extends AuthState {
   final String studentUid;
   final List<AppRuleModel> rules;
   final StudentConfigModel config;
 
-  AppRulesLoaded({
+  LegacyAppRulesLoaded({
     required this.studentUid,
     required this.rules,
     required this.config,
@@ -124,20 +124,20 @@ class AppRulesLoaded extends AuthState {
 }
 
 /// Emitted while the save operation is in flight.
-class AppConfigSaving extends AuthState {}
+class LegacyAppConfigSaving extends AuthState {}
 
 /// Emitted when the save completes successfully.
-class AppConfigSaved extends AuthState {}
+class LegacyAppConfigSaved extends AuthState {}
 
 /// Emitted when any app config operation fails.
-class AppConfigError extends AuthState {
+class LegacyAppConfigError extends AuthState {
   final String message;
-  AppConfigError(this.message);
+  LegacyAppConfigError(this.message);
   @override
   List<Object?> get props => [message];
 }
 
-// ── Installed-App Inventory States ────────────────────────────────────────────
+// â”€â”€ Installed-App Inventory States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Emitted while the student device is syncing its installed-app inventory
 /// to DataConnect. Does not affect root navigation.
@@ -160,9 +160,9 @@ class InstalledAppsLoaded extends AuthState {
 }
 
 /// Emitted when a parent-triggered refresh is in flight.
-/// Distinct from [AppConfigLoading] — does not wipe the existing rules
+/// Distinct from [LegacyAppConfigLoading] â€” does not wipe the existing rules
 /// from the screen while the new data loads.
-class StudentDataRefreshing extends AuthState {}
+class LegacyStudentDataRefreshing extends AuthState {}
 
 class EmailUpdateVerificationSent extends AuthState {
   final String pendingEmail;
@@ -171,7 +171,7 @@ class EmailUpdateVerificationSent extends AuthState {
   List<Object?> get props => [pendingEmail];
 }
 
-// ── Student Deletion States ───────────────────────────────────────────────────
+// â”€â”€ Student Deletion States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class StudentDeleteLoading extends AuthState {}
 
@@ -189,7 +189,7 @@ class StudentDeleteError extends AuthState {
   List<Object?> get props => [message];
 }
 
-// ── Student Full Name Update States ──────────────────────────────────────────
+// â”€â”€ Student Full Name Update States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class StudentNameUpdateLoading extends AuthState {}
 
@@ -211,17 +211,17 @@ class StudentNameUpdateError extends AuthState {
   List<Object?> get props => [message];
 }
 
-// ── Student Profile Update States (parent-side: name + email + password) ─────
+// â”€â”€ Student Profile Update States (parent-side: name + email + password) â”€â”€â”€â”€â”€
 
-class StudentProfileUpdateLoading extends AuthState {}
+class StudentLegacyProfileUpdateLoading extends AuthState {}
 
-class StudentProfileUpdateSuccess extends AuthState {
+class StudentLegacyProfileUpdateSuccess extends AuthState {
   final String studentUid;
   final String? newFullName;
 
   /// Non-null if an email verification was sent to a new address.
   final String? pendingEmail;
-  StudentProfileUpdateSuccess({
+  StudentLegacyProfileUpdateSuccess({
     required this.studentUid,
     this.newFullName,
     this.pendingEmail,
@@ -230,22 +230,22 @@ class StudentProfileUpdateSuccess extends AuthState {
   List<Object?> get props => [studentUid, newFullName, pendingEmail];
 }
 
-class StudentProfileUpdateError extends AuthState {
+class LegacyStudentProfileUpdateError extends AuthState {
   final String message;
-  StudentProfileUpdateError(this.message);
+  LegacyStudentProfileUpdateError(this.message);
   @override
   List<Object?> get props => [message];
 }
 
-// ── Parent Account Deletion States ───────────────────────────────────────────
+// â”€â”€ Parent Account Deletion States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-class ParentAccountDeleteLoading extends AuthState {}
+class LegacyParentAccountDeleteLoading extends AuthState {}
 
-class ParentAccountDeleted extends AuthState {}
+class LegacyParentAccountDeleted extends AuthState {}
 
-class ParentAccountDeleteError extends AuthState {
+class LegacyParentAccountDeleteError extends AuthState {
   final String message;
-  ParentAccountDeleteError(this.message);
+  LegacyParentAccountDeleteError(this.message);
   @override
   List<Object?> get props => [message];
 }
@@ -256,3 +256,4 @@ class EmailVerificationSent extends AuthState {
   @override
   List<Object?> get props => [email];
 }
+

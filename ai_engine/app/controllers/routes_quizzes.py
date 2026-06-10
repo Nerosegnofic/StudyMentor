@@ -37,6 +37,7 @@ from app.repositories import (
 )
 from app.services.quiz.builder import build_quiz_payload
 from app.services.evaluation.bkt_engine import BKTEngine
+from app.services.gamification import GamificationService
 from app.models.domain import Question, QuestionResponse
 
 DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
@@ -45,6 +46,7 @@ router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
 
 generator_context = GeneratorContext(strategy=GeminiStrategy())
 bkt_engine = BKTEngine()
+gamification_service = GamificationService()
 
 
 @router.post("/generate", response_model=GenerateQuizResponse)
@@ -86,35 +88,44 @@ async def generate_quiz(
         # ------------------------------------------------------------------ #
         active_session = get_active_quiz_session(db, student_uid, target_subject_id)
         if active_session:
-            cached_questions = get_questions_for_session(db, active_session.session_id)
-            # Only reuse the session if its questions are still available (not yet scrubbed)
-            if cached_questions and all(q.text_content is not None for q in cached_questions):
+            if active_session.total_questions == request_body.total_questions:
+                cached_questions = get_questions_for_session(db, active_session.session_id)
+                # Only reuse the session if its questions are still available (not yet scrubbed)
+                if cached_questions and all(q.text_content is not None for q in cached_questions):
+                    print(
+                        f"[QuizCache] Returning cached session {active_session.session_id} "
+                        f"for student={student_uid}, subject_id={target_subject_id}",
+                        flush=True,
+                    )
+                    question_schemas = [
+                        QuestionSchema(
+                            question_id=str(q.question_id),
+                            topic=q.skill.name if q.skill else "General",
+                            question_text=q.text_content,
+                            options=q.options,
+                            correct_answer=q.correct_answer,
+                            explanation=q.explanation or "",
+                            difficulty=int(q.difficulty),
+                            hints=q.hints or [],
+                        )
+                        for q in cached_questions
+                    ]
+                    return GenerateQuizResponse(
+                        quiz_session_id=str(active_session.session_id),
+                        selected_subject_id=target_subject_id,
+                        selected_subject_name=target_subject_name,
+                        quiz_title=f"اختبار {target_subject_name}",
+                        questions=question_schemas,
+                        quiz_source="CACHED",
+                    )
+            else:
                 print(
-                    f"[QuizCache] Returning cached session {active_session.session_id} "
-                    f"for student={student_uid}, subject_id={target_subject_id}",
+                    f"[QuizCache] Closing stale active session {active_session.session_id} "
+                    f"due to count mismatch (expected {request_body.total_questions}, got {active_session.total_questions})",
                     flush=True,
                 )
-                question_schemas = [
-                    QuestionSchema(
-                        question_id=str(q.question_id),
-                        topic=q.skill.name if q.skill else "General",
-                        question_text=q.text_content,
-                        options=q.options,
-                        correct_answer=q.correct_answer,
-                        explanation=q.explanation or "",
-                        difficulty=int(q.difficulty),
-                        hints=q.hints or [],
-                    )
-                    for q in cached_questions
-                ]
-                return GenerateQuizResponse(
-                    quiz_session_id=str(active_session.session_id),
-                    selected_subject_id=target_subject_id,
-                    selected_subject_name=target_subject_name,
-                    quiz_title=f"اختبار {target_subject_name}",
-                    questions=question_schemas,
-                    quiz_source="CACHED",
-                )
+                active_session.end_time = datetime.utcnow()
+                db.commit()
 
         # ------------------------------------------------------------------ #
         # Step 1: Get the student's BKT mastery profile
@@ -300,6 +311,7 @@ async def submit_quiz(
 
         triggered_punishment = False
         correct_answers = 0
+        total_time_ms = 0
 
         for ans in request.answers:
             # G22c: Cross-session guard — reject answers referencing foreign questions
@@ -327,6 +339,7 @@ async def submit_quiz(
             )
             save_question_response(db, db_response)
             db_question.submitted_at = datetime.utcnow()
+            total_time_ms += ans.time_taken_ms
 
             difficulty = db_question.difficulty
             skill_name = db_question.skill.name if db_question.skill else "General Math"
@@ -366,6 +379,18 @@ async def submit_quiz(
             quiz_session.score = score
             quiz_session.end_time = datetime.utcnow()
 
+        # ── Gamification rewards ──────────────────────────────────────
+        rewards = gamification_service.process_quiz_rewards(
+            db,
+            student_uid,
+            quiz_session.session_id,
+            correct_answers=correct_answers,
+            total_questions=total_submitted,
+            total_time_ms=total_time_ms,
+            quiz_context=quiz_session.quiz_context or "VOLUNTARY",
+            client_local_date=request.client_local_date,
+        )
+
         db.commit()
 
         # Update garden plant mastery snapshot for the quizzed subject.
@@ -391,6 +416,7 @@ async def submit_quiz(
             score=score,
             total_questions=total_submitted,
             feedback=feedback,
+            rewards=rewards,
         )
 
     except HTTPException:

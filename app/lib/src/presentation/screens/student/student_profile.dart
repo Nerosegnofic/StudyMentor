@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/shop/shop_bloc.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../../utils/student_rank_utils.dart';
@@ -27,9 +28,8 @@ class _StudentProfileState extends State<StudentProfile> {
   int _currentStreak = 0;
   int _totalQuestionsAnswered = 0;
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
-
-  int get _level => StudentRankUtils.levelFromXp(_totalXp);
-  String get _rank => StudentRankUtils.rankFromLevel(_level);
+  int _level = 1;
+  String _rank = 'Seedling';
 
   @override
   void initState() {
@@ -39,22 +39,27 @@ class _StudentProfileState extends State<StudentProfile> {
 
   Future<void> _loadProfile() async {
     try {
-      final provider = DataConnectProvider();
+      final dataconnect = DataConnectProvider();
+      final aiEngine = AiEngineRepository.instance;
+      
       final results = await Future.wait([
-        provider.getStudentProfile(widget.uid),
-        provider.getStudentAvatar(widget.uid),
+        dataconnect.getStudentProfile(widget.uid),
+        aiEngine.getGamificationProfile(widget.uid),
+        dataconnect.getStudentAvatar(widget.uid),
       ]);
 
       final profile = results[0] as Map<String, dynamic>;
-      final avatarMap = results[1];
+      final gamification = results[1] as Map<String, dynamic>;
+      final avatarMap = results[2] as Map<String, dynamic>?;
 
       if (mounted) {
         setState(() {
-          _totalXp = (profile['total_xp'] as int?) ?? 0;
-          _totalCoins = (profile['total_coins'] as int?) ?? 0;
-          _currentStreak = (profile['current_streak'] as int?) ?? 0;
-          _totalQuestionsAnswered =
-              (profile['total_questions_answered'] as int?) ?? 0;
+          _totalXp = (gamification['xp_total'] as int?) ?? 0;
+          _totalCoins = (gamification['coins_total'] as int?) ?? 0;
+          _currentStreak = (gamification['current_streak'] as int?) ?? 0;
+          _totalQuestionsAnswered = (gamification['total_questions_answered'] as int?) ?? 0;
+          _level = (gamification['current_level'] as int?) ?? StudentRankUtils.levelFromXp(_totalXp);
+          _rank = (gamification['level_name'] as String?) ?? StudentRankUtils.rankFromLevel(_level);
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }

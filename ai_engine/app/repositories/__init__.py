@@ -4,6 +4,7 @@ from .analytics_repo import get_all_student_skill_states, get_subject_mastery_hi
 from .subject_repo import get_subject_by_id
 from .quiz_repo import create_quiz_session, upsert_student_subject_profile_last_quizzed, save_questions, get_quiz_session_by_id, get_question_by_id, save_question_response, get_active_quiz_session, get_questions_for_session
 from .garden_repo import upsert_garden_plant, get_garden_for_student
+from .gamification_repo import get_or_create_student_gamification, get_all_levels, seed_levels
 
 __all__ = [
     "save_skills_from_mastery_data",
@@ -26,4 +27,7 @@ __all__ = [
     "get_questions_for_session",
     "upsert_garden_plant",
     "get_garden_for_student",
+    "get_or_create_student_gamification",
+    "get_all_levels",
+    "seed_levels",
 ]
