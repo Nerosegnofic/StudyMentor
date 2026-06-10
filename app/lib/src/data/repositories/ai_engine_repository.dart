@@ -338,4 +338,18 @@ class AiEngineRepository {
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     return (body['levels'] as List).cast<Map<String, dynamic>>();
   }
+
+  // -------------------------------------------------------------------------
+  // Analytics endpoints
+  // -------------------------------------------------------------------------
+
+  /// `DELETE /analytics/subjects/{subject_name}` — securely wipe a custom subject
+  Future<void> deleteSubject(String subjectName) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectName'),
+      headers: headers,
+    );
+    _assertSuccess(response, 'deleteSubject');
+  }
 }

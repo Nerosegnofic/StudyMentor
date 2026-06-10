@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:bloc/bloc.dart';
 import '../../data/catalog/subject_catalog.dart';
 import '../../data/providers/dataconnect_provider.dart';
 import '../../domain/models/subject_progress_model.dart';
 import '../../domain/models/skill_progress_model.dart';
 import '../../utils/subject_xp_engine.dart';
+import '../subject/subject_bloc.dart';
+import '../subject/subject_state.dart';
 import 'garden_event.dart';
 import 'garden_state.dart';
 
@@ -13,13 +16,30 @@ const List<int> _seedXpByIndex = [0, 100, 300, 700];
 
 class GardenBloc extends Bloc<GardenEvent, GardenState> {
   final DataConnectProvider _provider;
+  final SubjectBloc subjectBloc;
+  StreamSubscription? _subjectSubscription;
+  String? _currentStudentUid;
 
-  GardenBloc({DataConnectProvider? provider})
-      : _provider = provider ?? DataConnectProvider(),
+  GardenBloc({
+    DataConnectProvider? provider,
+    required this.subjectBloc,
+  })  : _provider = provider ?? DataConnectProvider(),
         super(const GardenInitial()) {
     on<LoadGardenRequested>(_onLoad);
     on<LoadSubjectSkillsRequested>(_onLoadSkills);
     on<QuizCompletedForSubject>(_onQuizCompleted);
+
+    _subjectSubscription = subjectBloc.stream.listen((state) {
+      if ((state is SubjectAdded || state is SubjectRemoved) && _currentStudentUid != null) {
+        add(LoadGardenRequested(studentUid: _currentStudentUid!));
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _subjectSubscription?.cancel();
+    return super.close();
   }
 
   // ── Load garden ─────────────────────────────────────────────────────────────
@@ -28,6 +48,7 @@ class GardenBloc extends Bloc<GardenEvent, GardenState> {
     LoadGardenRequested event,
     Emitter<GardenState> emit,
   ) async {
+    _currentStudentUid = event.studentUid;
     emit(const GardenLoading());
     try {
       var rows = await _provider.getAllSubjectProgress(event.studentUid);

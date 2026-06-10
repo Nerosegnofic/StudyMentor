@@ -20,6 +20,7 @@ import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../utils/subject_xp_engine.dart';
 import '../../widgets/garden_subject_card.dart';
+import '../../../data/catalog/subject_metadata_registry.dart';
 import 'subject_detail_screen.dart';
 
 class StudentHome extends StatefulWidget {
@@ -261,7 +262,8 @@ class StudentHomeState extends State<StudentHome> {
           );
         }
 
-        final subjects = SubjectCatalog.all.take(3).toList();
+        final activeProgresses = _gardenCache.values.toList();
+
         return _gardenShell(
           child: Container(
             decoration: const BoxDecoration(
@@ -274,21 +276,26 @@ class StudentHomeState extends State<StudentHome> {
             ),
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: subjects.map((subject) {
-                final progress =
-                    _gardenCache[subject.key] ??
-                    SubjectProgressModel.empty(widget.uid, subject.key);
-                return Expanded(
-                  child: GardenSubjectCard(
-                    subject: subject,
-                    progress: progress,
-                    onTap: () => _openSubjectDetail(subject.key),
-                  ),
-                );
-              }).toList(),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: activeProgresses.map((progress) {
+                  final def = SubjectMetadataRegistry.getDefinition(progress.subjectKey);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: SizedBox(
+                      width: 80,
+                      child: GardenSubjectCard(
+                        subject: def,
+                        progress: progress,
+                        onTap: () => _openSubjectDetail(progress.subjectKey),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         );

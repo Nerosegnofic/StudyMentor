@@ -254,3 +254,7 @@ mutation UpsertSubjectProgress(
     }
   )
 }
+
+mutation DeleteSubjectProgress($studentUid: String!, $subjectKey: String!) @auth(level: USER) {
+  subjectProgress_delete(key: { studentUid: $studentUid, subjectKey: $subjectKey })
+}

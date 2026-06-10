@@ -50,6 +50,8 @@ part 'upsert_student_config.dart';
 
 part 'upsert_subject_progress.dart';
 
+part 'delete_subject_progress.dart';
+
 part 'get_user_by_uid.dart';
 
 part 'get_students_by_parent.dart';
@@ -270,6 +272,11 @@ class ExampleConnector {
   
   UpsertSubjectProgressVariablesBuilder upsertSubjectProgress ({required String studentUid, required String subjectKey, required int totalXp, required int level, }) {
     return UpsertSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,subjectKey: subjectKey,totalXp: totalXp,level: level,);
+  }
+  
+  
+  DeleteSubjectProgressVariablesBuilder deleteSubjectProgress ({required String studentUid, required String subjectKey, }) {
+    return DeleteSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,subjectKey: subjectKey,);
   }
   
   

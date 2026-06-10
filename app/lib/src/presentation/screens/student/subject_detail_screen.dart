@@ -4,6 +4,7 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../data/catalog/subject_catalog.dart';
+import '../../../data/catalog/subject_metadata_registry.dart' as meta;
 import '../../../domain/models/skill_progress_model.dart';
 import '../../../domain/models/subject_progress_model.dart';
 import '../../../services/mastery_service.dart';
@@ -63,13 +64,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final subject = SubjectCatalog.byKey(widget.subjectKey);
-    if (subject == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Subject')),
-        body: const Center(child: Text('Subject not found')),
-      );
-    }
+    final subject = meta.SubjectMetadataRegistry.getDefinition(widget.subjectKey);
 
     return Scaffold(
       backgroundColor: subject.lightColor,
@@ -117,7 +112,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
   Widget _buildContent(
     BuildContext context,
-    SubjectDefinition subject,
+    meta.SubjectDefinition subject,
     SubjectProgressModel progress,
     List<SkillProgressModel> skills,
   ) {
@@ -352,7 +347,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PlantHeroSection extends StatelessWidget {
-  final SubjectDefinition subject;
+  final meta.SubjectDefinition subject;
   final GrowthStage stage;
   final double mastery;
 
@@ -371,7 +366,10 @@ class _PlantHeroSection extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           PlantWidget(
-            plantType: subject.plantType,
+            plantType: PlantType.values.firstWhere(
+              (e) => e.name == subject.defaultPlantType,
+              orElse: () => PlantType.tree,
+            ),
             stage: stage,
             primaryColor: subject.primaryColor,
             masteryPercent: mastery,

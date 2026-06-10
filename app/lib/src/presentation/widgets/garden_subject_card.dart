@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/catalog/subject_catalog.dart';
+import '../../data/catalog/subject_metadata_registry.dart' as meta;
 import '../../domain/models/subject_progress_model.dart';
 import '../../utils/growth_stage_utils.dart';
 import '../../utils/subject_xp_engine.dart';
@@ -9,7 +10,7 @@ import 'plant_widget.dart';
 /// Transparent background — the garden container provides the soil colour.
 /// Plant aligns to the bottom so taller plants (higher levels) appear taller.
 class GardenSubjectCard extends StatelessWidget {
-  final SubjectDefinition subject;
+  final meta.SubjectDefinition subject;
   final SubjectProgressModel progress;
   final VoidCallback onTap;
 
@@ -57,7 +58,10 @@ class GardenSubjectCard extends StatelessWidget {
                 ),
 
                 PlantWidget(
-                  plantType: subject.plantType,
+                  plantType: PlantType.values.firstWhere(
+                    (e) => e.name == subject.defaultPlantType,
+                    orElse: () => PlantType.tree,
+                  ),
                   stage: stage,
                   primaryColor: subject.primaryColor,
                   size: 130,

@@ -15,6 +15,8 @@ import '../../domain/models/question_detail_model.dart';
 import '../../domain/models/ai_summary_model.dart';
 import '../../domain/models/notification_model.dart';
 import '../catalog/subject_catalog.dart';
+import '../catalog/subject_metadata_registry.dart';
+import '../repositories/ai_engine_repository.dart';
 
 class DataConnectProvider {
   final _connector = ExampleConnector.instance;
@@ -446,57 +448,64 @@ class DataConnectProvider {
   // ── Subjects & Quizzes Mocked for Sprint 2 ────────────────────────────────
 
   Future<List<SubjectSummaryModel>> getSubjectsByStudent(String studentUid) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      const SubjectSummaryModel(
-        subjectKey: 'math',
-        colorHex: '#2E7D32',
-        skillsCount: 5,
-        masteryPercent: 78,
-        quizzesCompleted: 12,
-        totalTimeSpent: Duration(hours: 4, minutes: 20),
-        accuracyPercent: 82.5,
-      ),
-      const SubjectSummaryModel(
-        subjectKey: 'science',
-        colorHex: '#AD1457',
-        skillsCount: 4,
-        masteryPercent: 60,
-        quizzesCompleted: 8,
-        totalTimeSpent: Duration(hours: 2, minutes: 15),
-        accuracyPercent: 65.0,
-      ),
-      const SubjectSummaryModel(
-        subjectKey: 'english',
-        colorHex: '#6A1B9A',
-        skillsCount: 5,
-        masteryPercent: 92,
-        quizzesCompleted: 20,
-        totalTimeSpent: Duration(hours: 7, minutes: 10),
-        accuracyPercent: 94.0,
-      ),
-    ];
+    final progresses = await getAllSubjectProgress(studentUid);
+    return progresses.map((p) {
+      final def = SubjectMetadataRegistry.getDefinition(p.subjectKey);
+      return SubjectSummaryModel(
+        subjectKey: p.subjectKey,
+        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        skillsCount: 0,
+        masteryPercent: 0,
+        quizzesCompleted: 0,
+        totalTimeSpent: Duration.zero,
+        accuracyPercent: 0,
+      );
+    }).toList();
   }
 
   Future<List<SubjectSummaryModel>> getAvailableSubjects() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    return SubjectCatalog.all.map((s) => SubjectSummaryModel(
-      subjectKey: s.key,
-      colorHex: '#${s.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
-      skillsCount: s.skillKeys.length,
-      masteryPercent: 0,
-      quizzesCompleted: 0,
-      totalTimeSpent: Duration.zero,
-      accuracyPercent: 0,
-    )).toList();
+    return SubjectCatalog.all.map((s) {
+      final def = SubjectMetadataRegistry.getDefinition(s.key);
+      return SubjectSummaryModel(
+        subjectKey: s.key,
+        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        skillsCount: s.skillKeys.length,
+        masteryPercent: 0,
+        quizzesCompleted: 0,
+        totalTimeSpent: Duration.zero,
+        accuracyPercent: 0,
+      );
+    }).toList();
   }
 
   Future<void> addSubjectsForStudent({required String studentUid, required List<String> subjectKeys}) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    for (final key in subjectKeys) {
+      await upsertSubjectProgress(
+        studentUid: studentUid,
+        subjectKey: key,
+        totalXp: 0,
+        level: 1,
+      );
+    }
   }
 
   Future<void> removeSubject({required String studentUid, required String subjectKey}) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    // 1. Remove from DataConnect
+    await _connector.deleteSubjectProgress(
+      studentUid: studentUid,
+      subjectKey: subjectKey,
+    ).execute();
+
+    // 2. Clear backend vectors if it's a custom subject
+    const globalKeys = ['math', 'science', 'history', 'english', 'geography', 'art', 'music'];
+    if (!globalKeys.contains(subjectKey.toLowerCase())) {
+      try {
+        await AiEngineRepository.instance.deleteSubject(subjectKey);
+      } catch (e) {
+        print('Failed to clear backend vectors for custom subject: $e');
+      }
+    }
   }
 
   Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {

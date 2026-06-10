@@ -36,7 +36,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
   }
 
-  void _openDocumentUpload(BuildContext context) {
+  void _openDocumentUpload(BuildContext context, List<String> existingKeys) {
     final repo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
     Navigator.push(
       context,
@@ -51,7 +51,10 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ),
-            body: StudentDocumentUploadScreen(studentUid: widget.student.uid),
+            body: StudentDocumentUploadScreen(
+              studentUid: widget.student.uid,
+              existingSubjectKeys: existingKeys,
+            ),
           ),
         ),
       ),
@@ -79,10 +82,11 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
               return Center(child: Text(state.message));
             }
             final subjects = state is SubjectsLoaded ? state.subjects : <SubjectSummaryModel>[];
+            final existingKeys = subjects.map((s) => s.subjectKey).toList();
 
             return Column(
               children: [
-                _buildHeader(context),
+                _buildHeader(context, existingKeys),
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -100,7 +104,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, List<String> existingKeys) {
     return Container(
       color: const Color(0xFF2196F3),
       padding: EdgeInsets.only(
@@ -125,7 +129,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
             ),
           ),
           InkWell(
-            onTap: () => _showAddSubjectModal(context),
+            onTap: () => _showAddSubjectModal(context, existingKeys),
             child: Container(
               width: 40,
               height: 40,
@@ -409,155 +413,192 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     }
   }
 
-  void _showAddSubjectModal(BuildContext context) {
+  void _showAddSubjectModal(BuildContext context, List<String> existingKeys) {
+    context.read<SubjectBloc>().add(LoadAvailableSubjectsRequested());
+    final selectedKeys = <String>{};
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.8,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
               ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: "Search subjects...",
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: const Color(0xFFF1F5F9),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  padding: const EdgeInsets.all(16),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.5,
-                  children: [
-                    _buildGridItem("Mathematics", Icons.calculate),
-                    _buildGridItem("Science", Icons.science),
-                    _buildGridItem("History", Icons.history_edu),
-                    _buildGridItem("Geography", Icons.public),
-                    _buildGridItem("Art", Icons.palette),
-                    _buildGridItem("Music", Icons.music_note),
-                  ],
-                ),
-              ),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2196F3),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          "Add Selected (0)",
-                          style: GoogleFonts.cairo(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: "Search subjects...",
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _openDocumentUpload(context);
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF2196F3),
-                          side: const BorderSide(color: Color(0xFF2196F3), width: 1),
-                          backgroundColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'Upload Curriculum',
-                          style: GoogleFonts.roboto(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF2196F3),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: BlocBuilder<SubjectBloc, SubjectState>(
+                      buildWhen: (prev, curr) => curr is SubjectsLoading || curr is AvailableSubjectsLoaded,
+                      builder: (context, state) {
+                        if (state is SubjectsLoading) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (state is AvailableSubjectsLoaded) {
+                          final subjects = state.subjects.where((s) => !existingKeys.contains(s.subjectKey)).toList();
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 1.5,
+                            ),
+                            itemCount: subjects.length,
+                            itemBuilder: (context, index) {
+                              final subject = subjects[index];
+                              final isSelected = selectedKeys.contains(subject.subjectKey);
+                              return GestureDetector(
+                                onTap: () {
+                                  setModalState(() {
+                                    if (isSelected) {
+                                      selectedKeys.remove(subject.subjectKey);
+                                    } else {
+                                      selectedKeys.add(subject.subjectKey);
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? const Color(0xFFE3F2FD) : const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected ? const Color(0xFF2196F3) : const Color(0xFFE2E8F0),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        subject.subjectKey.substring(0, 1).toUpperCase() + subject.subjectKey.substring(1),
+                                        style: GoogleFonts.roboto(
+                                          color: const Color(0xFF1E293B),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (selectedKeys.isNotEmpty) {
+                                modalContext.read<SubjectBloc>().add(
+                                  AddSubjectsRequested(
+                                    studentUid: widget.student.uid,
+                                    selectedKeys: selectedKeys.toList(),
+                                  ),
+                                );
+                                Navigator.pop(modalContext);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2196F3),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              "Add Selected (${selectedKeys.length})",
+                              style: GoogleFonts.cairo(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(modalContext);
+                              _openDocumentUpload(context, existingKeys);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF2196F3),
+                              side: const BorderSide(color: Color(0xFF2196F3), width: 1),
+                              backgroundColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'Upload Curriculum',
+                              style: GoogleFonts.roboto(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2196F3),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
-    );
-  }
-
-  Widget _buildGridItem(String name, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: const Color(0xFF64748B), size: 32),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: GoogleFonts.roboto(
-              color: const Color(0xFF1E293B),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

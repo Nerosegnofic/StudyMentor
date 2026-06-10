@@ -15,6 +15,7 @@ import '../../../data/constants/gamification_levels.dart';
 
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/garden/garden_bloc.dart';
+import '../../../bloc/subject/subject_bloc.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
@@ -103,7 +104,7 @@ class _StudentScreenState extends State<StudentScreen>
     _aiRepo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
 
     _shopBloc = ShopBloc();
-    _gardenBloc = GardenBloc();
+    _gardenBloc = GardenBloc(subjectBloc: context.read<SubjectBloc>());
     _gamificationBloc = GamificationBloc(
       repository: GamificationRepositoryImpl(),
     )..add(LoadGamificationDataRequested(studentId: widget.uid))
