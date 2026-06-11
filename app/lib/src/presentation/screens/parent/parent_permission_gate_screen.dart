@@ -9,16 +9,23 @@ import '../../../services/permission_service.dart';
 ///
 /// Parents only need one permission:
 ///
-///   1. Battery Optimization  ← may be skipped
+///   1. Battery Optimization  ← must be granted to proceed
 ///
 /// Unlike the student gate, this screen does NOT call [DeviceAdminService]
-/// (that guard is student-only). When the permission is granted or skipped,
+/// (that guard is student-only). When the permission is granted,
 /// [onAllGranted] is called to continue into the parent dashboard.
 class ParentPermissionGateScreen extends StatefulWidget {
-  /// Called when the battery-optimisation step is granted or skipped.
+  /// Called when the battery-optimisation step is granted.
   final VoidCallback onAllGranted;
 
-  const ParentPermissionGateScreen({super.key, required this.onAllGranted});
+  /// Called when the user taps "Log out" in the header.
+  final VoidCallback onSignOut;
+
+  const ParentPermissionGateScreen({
+    super.key,
+    required this.onAllGranted,
+    required this.onSignOut,
+  });
 
   @override
   State<ParentPermissionGateScreen> createState() =>
@@ -104,9 +111,6 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     }
   }
 
-  /// Skip handler — proceeds to the parent dashboard without the permission.
-  void _onSkipTap() => widget.onAllGranted();
-
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -125,6 +129,10 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   Widget _buildContent() {
     return Column(
       children: [
+        // ── Header ────────────────────────────────────────────────────────
+        _buildHeader(),
+
+        // ── Body ──────────────────────────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
@@ -148,8 +156,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                   'Keep StudyMentor running in the background so you never '
                   'miss a notification from your students. Without this, '
                   'Android may silently put the app to sleep and delay — or '
-                  'drop — important alerts. This step is recommended but '
-                  'not required.',
+                  'drop — important alerts.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -162,8 +169,6 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                 const SizedBox(height: 32),
                 _buildActionButton(),
                 if (!_currentGranted) ...[
-                  const SizedBox(height: 12),
-                  _buildSkipButton(),
                   const SizedBox(height: 16),
                   _buildSettingsHint(),
                 ],
@@ -172,6 +177,54 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
           ),
         ),
       ],
+    );
+  }
+
+  // ── Header ─────────────────────────────────────────────────────────────────
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: const BoxDecoration(color: Color(0xFF1F2937)),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        MediaQuery.of(context).padding.top + 20,
+        24,
+        24,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Setup Required',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4CAF50),
+              ),
+            ),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: widget.onSignOut,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white.withValues(alpha: 0.55),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            icon: const Icon(Icons.logout_rounded, size: 14),
+            label: const Text(
+              'Log out',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -202,19 +255,19 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
         iconColor: const Color(0xFF10B981),
         backgroundColor: const Color(0xFFECFDF5),
         borderColor: const Color(0xFF10B981),
-        text: 'Disable Battery Optimization has been enabled.',
+        text: 'Battery optimization has been disabled.',
         textColor: const Color(0xFF065F46),
       );
     }
 
     return _statusRow(
-      icon: Icons.info_outline_rounded,
-      iconColor: const Color(0xFF0EA5E9),
-      backgroundColor: const Color(0xFFE0F2FE),
-      borderColor: const Color(0xFF0EA5E9),
+      icon: Icons.lock_outline_rounded,
+      iconColor: const Color(0xFFF59E0B),
+      backgroundColor: const Color(0xFFFFFBEB),
+      borderColor: const Color(0xFFF59E0B),
       text:
-          'Tap "Open Settings" to enable it, or "Skip" to continue without it.',
-      textColor: const Color(0xFF0C4A6E),
+          'Permission not granted yet. Tap the button below to open Settings.',
+      textColor: const Color(0xFF92400E),
     );
   }
 
@@ -284,36 +337,6 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                   : Icons.settings_outlined,
               size: 18,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Skip button ────────────────────────────────────────────────────────────
-
-  Widget _buildSkipButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: TextButton(
-        onPressed: _onSkipTap,
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.grey.shade500,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: Colors.grey.shade300),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Skip for now',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            SizedBox(width: 6),
-            Icon(Icons.arrow_forward_rounded, size: 16),
           ],
         ),
       ),

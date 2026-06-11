@@ -26,7 +26,7 @@ class ParentScreen extends StatefulWidget {
 class _ParentScreenState extends State<ParentScreen> {
   int _selectedIndex = 1;
 
-  // False until the parent has passed (or skipped) the permission gate.
+  // False until the parent has granted the battery-optimisation permission.
   bool _permissionsCleared = false;
 
   void _onTabSelected(int index) {
@@ -64,6 +64,7 @@ class _ParentScreenState extends State<ParentScreen> {
     if (!_permissionsCleared) {
       return ParentPermissionGateScreen(
         onAllGranted: () => setState(() => _permissionsCleared = true),
+        onSignOut: () => context.read<AuthBloc>().add(LogoutRequested()),
       );
     }
 

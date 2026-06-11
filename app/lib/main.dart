@@ -20,6 +20,7 @@ import 'src/presentation/screens/auth/parent_register_screen.dart';
 import 'src/presentation/screens/student/student_screen.dart';
 import 'src/services/installed_apps_service.dart';
 import 'src/services/device_admin_service.dart';
+import 'src/services/local_notification_service.dart';
 
 // ── WorkManager task identifiers ─────────────────────────────────────────────
 const _kSyncTaskName = 'installedAppSync';
@@ -67,6 +68,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await LocalNotificationService.instance.init();
 
   await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
 
