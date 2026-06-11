@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models.domain import GardenPlant, Subject, Skill
+from app.models.domain import GardenPlant, Subject
 from app.repositories.analytics_repo import get_subject_stats
 
 
@@ -31,8 +31,8 @@ def upsert_garden_plant(db: Session, student_uid: str, subject_id: int) -> None:
 
 def get_garden_for_student(db: Session, student_uid: str) -> list:
     """
-    Returns all subjects accessible to the student (global + their own uploads)
-    that have at least one skill, paired with cached mastery from garden_plants.
+    Returns all subjects accessible to the student (global + their own uploads),
+    paired with cached mastery from garden_plants.
     Subjects with no quiz history return mastery_percent = 0.0.
     """
     subjects = (
@@ -40,8 +40,6 @@ def get_garden_for_student(db: Session, student_uid: str) -> list:
         .filter(
             or_(Subject.is_global == True, Subject.student_uid == student_uid)
         )
-        .join(Skill, Subject.subject_id == Skill.subject_id)
-        .distinct()
         .all()
     )
 

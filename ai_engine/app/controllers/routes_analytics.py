@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel
+from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Date, text
 from app.core.database import get_db
@@ -187,46 +189,91 @@ async def get_overall_analytics(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# POST /analytics/subjects/ensure  — Create Subject rows for assigned subjects
+# ═══════════════════════════════════════════════════════════════════════════
+
+class _EnsureSubjectsBody(BaseModel):
+    student_uid: str
+    subject_names: List[str]
+
+
+@router.post("/subjects/ensure")
+async def ensure_subjects(
+    body: _EnsureSubjectsBody,
+    db: Session = Depends(get_db),
+    _: str = Depends(get_current_user),
+):
+    """
+    Ensures a Subject row exists in the AI engine for each assigned subject name.
+    Called when a parent assigns global subjects to a student so they appear in
+    the Knowledge Garden. Skips names that already have a matching row (case-insensitive).
+    """
+    created = []
+    for name in body.subject_names:
+        existing = db.query(Subject).filter(
+            func.lower(Subject.name) == name.lower(),
+            Subject.student_uid == body.student_uid,
+        ).first()
+        if not existing:
+            db.add(Subject(name=name, student_uid=body.student_uid, is_global=False))
+            created.append(name)
+    if created:
+        db.commit()
+    return {"ensured": len(body.subject_names), "created": created}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # DELETE /analytics/subjects/{subject_name}   — Wipe custom subject securely
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.delete("/subjects/{subject_name}")
 async def delete_subject(
     subject_name: str,
+    student_uid: str = Query(..., description="UID of the student who owns the subject"),
     db: Session = Depends(get_db),
-    student_uid: str = Depends(get_current_user),
+    _: str = Depends(get_current_user),
 ):
     """
-    Deletes a custom subject and its vector embeddings securely.
-    Global subjects cannot be deleted. History in QuizSession is preserved (subject_id set to NULL).
+    Deletes a custom subject and all related data for a specific student.
+    Global subjects (is_global=True) cannot be deleted.
+    QuizSession history is preserved with subject_id set to NULL.
     """
     subject = db.query(Subject).filter(
-        Subject.name == subject_name,
-        Subject.student_uid == student_uid
+        func.lower(Subject.name) == subject_name.lower(),
+        Subject.student_uid == student_uid,
     ).first()
 
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found or access denied.")
 
-    if subject.is_global:
-        raise HTTPException(status_code=403, detail="Students cannot delete global subjects.")
+    subject_id = subject.subject_id
 
     try:
-        # Wipe PGVector chunks
+        # Wipe PGVector chunks (langchain_pg_embedding is outside ORM cascade)
         db.execute(
-            text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'subject_id' = :subject_id"),
-            {"subject_id": str(subject.subject_id)}
+            text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'subject_id' = :sid"),
+            {"sid": str(subject_id)},
         )
 
         # Disassociate QuizSessions to preserve gamification audit logs
         db.execute(
-            text("UPDATE quiz_sessions SET subject_id = NULL WHERE subject_id = :subject_id"),
-            {"subject_id": subject.subject_id}
+            text("UPDATE quiz_sessions SET subject_id = NULL WHERE subject_id = :sid"),
+            {"sid": subject_id},
         )
 
-        # Delete Subject (relies on SQLAlchemy cascades for related skills, states, chunks)
+        # Delete garden cache and subject profile rows (no ORM cascade on these)
+        db.execute(
+            text("DELETE FROM garden_plants WHERE subject_id = :sid"),
+            {"sid": subject_id},
+        )
+        db.execute(
+            text("DELETE FROM student_subject_profiles WHERE subject_id = :sid"),
+            {"sid": subject_id},
+        )
+
+        # Delete Subject — cascades to skills → student_skill_states, curriculum_chunks, questions
         db.delete(subject)
-        
+
         db.commit()
     except Exception as e:
         db.rollback()
