@@ -4,21 +4,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../services/permission_service.dart';
 
-/// Shown immediately after parent login when the battery-optimisation
-/// permission has not yet been granted.
+/// Shown immediately after parent login when one or more required permissions
+/// are missing. Displays permissions one at a time in order:
 ///
-/// Parents only need one permission:
+///   1. POST_NOTIFICATIONS  ← must be granted to proceed
+///   2. Battery Optimization ← must be granted to proceed
 ///
-///   1. Battery Optimization  ← may be skipped
-///
-/// Unlike the student gate, this screen does NOT call [DeviceAdminService]
-/// (that guard is student-only). When the permission is granted or skipped,
-/// [onAllGranted] is called to continue into the parent dashboard.
+/// The screen re-checks the current permission every time the app is resumed
+/// from Settings. If it was granted it either advances to the next permission
+/// or calls [onAllGranted] when both are confirmed.
 class ParentPermissionGateScreen extends StatefulWidget {
-  /// Called when the battery-optimisation step is granted or skipped.
+  /// Called when every required parent permission has been confirmed as granted.
   final VoidCallback onAllGranted;
 
-  const ParentPermissionGateScreen({super.key, required this.onAllGranted});
+  /// Called when the user taps "Log out" in the header.
+  final VoidCallback onSignOut;
+
+  const ParentPermissionGateScreen({
+    super.key,
+    required this.onAllGranted,
+    required this.onSignOut,
+  });
 
   @override
   State<ParentPermissionGateScreen> createState() =>
@@ -27,11 +33,14 @@ class ParentPermissionGateScreen extends StatefulWidget {
 
 class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     with WidgetsBindingObserver {
+  // The permission currently being shown to the user.
+  RequiredPermission? _current;
+
   // True while performing the initial or post-resume permission check.
   bool _checking = true;
 
-  // True once the user returns from Settings with the permission granted —
-  // the button switches to "Continue".
+  // True when the user returned from Settings and the current permission is
+  // now granted — button changes to "Continue".
   bool _currentGranted = false;
 
   // Prevent multiple simultaneous checks triggered by rapid lifecycle events.
@@ -50,7 +59,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     super.dispose();
   }
 
-  // Re-check when the user returns from the Settings app.
+  // Re-check whenever the user returns from the Settings app.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -58,54 +67,78 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     }
   }
 
-  /// Checks whether battery optimisation has been disabled for the app.
-  /// If it has already been granted, skips straight to [onAllGranted].
+  /// Finds the first missing parent permission and updates state accordingly.
+  /// If none are missing, calls [onAllGranted].
   Future<void> _runCheck() async {
     if (_checkInProgress) return;
     _checkInProgress = true;
 
-    final granted = await PermissionService.isGranted(
-      RequiredPermission.batteryOptimization,
-    );
+    final missing = await PermissionService.firstMissingParentPermission();
 
     if (!mounted) {
       _checkInProgress = false;
       return;
     }
 
-    if (granted) {
+    if (missing == null) {
       _checkInProgress = false;
       widget.onAllGranted();
       return;
     }
 
-    // Determine if the user just came back from Settings with it enabled.
-    final justGranted = !_checking && granted;
+    // Determine whether the permission we are currently showing was just
+    // granted (user came back from Settings with it enabled).
+    final justGranted = _current != null && missing != _current;
 
     setState(() {
       _checking = false;
-      _currentGranted = justGranted;
+      if (justGranted) {
+        _currentGranted = true;
+      } else {
+        _current = missing;
+        _currentGranted = false;
+      }
     });
 
     _checkInProgress = false;
   }
 
-  /// Primary action button handler.
+  /// Called when the user taps the primary action button.
   ///
-  ///   • Not yet granted → open battery-optimisation Settings.
-  ///   • Already granted → call [onAllGranted].
+  ///   • Not yet granted → open Settings for the current permission.
+  ///   • Already granted → advance to the next missing permission (or finish).
   Future<void> _onActionTap() async {
     if (_currentGranted) {
-      widget.onAllGranted();
+      setState(() {
+        _checking = true;
+        _currentGranted = false;
+      });
+      await _advanceToNext();
     } else {
-      await PermissionService.openSettings(
-        RequiredPermission.batteryOptimization,
-      );
+      if (_current != null) {
+        await PermissionService.openSettings(_current!);
+      }
     }
   }
 
-  /// Skip handler — proceeds to the parent dashboard without the permission.
-  void _onSkipTap() => widget.onAllGranted();
+  /// After a permission was granted, finds the next missing permission and
+  /// either updates [_current] or finishes the setup flow.
+  Future<void> _advanceToNext() async {
+    final missing = await PermissionService.firstMissingParentPermission();
+
+    if (!mounted) return;
+
+    if (missing == null) {
+      widget.onAllGranted();
+      return;
+    }
+
+    setState(() {
+      _checking = false;
+      _current = missing;
+      _currentGranted = false;
+    });
+  }
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -115,28 +148,35 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
-        body: _checking
+        body: _checking || _current == null
             ? const Center(child: CircularProgressIndicator())
-            : _buildContent(),
+            : _buildContent(_current!),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(RequiredPermission permission) {
+    final stepNumber = parentPermissions.indexOf(permission) + 1;
+    const totalSteps = 2;
+
     return Column(
       children: [
+        // ── Header ────────────────────────────────────────────────────────
+        _buildHeader(stepNumber, totalSteps),
+
+        // ── Body ──────────────────────────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildPermissionIcon(),
+                _buildPermissionIcon(permission),
                 const SizedBox(height: 28),
-                const Text(
-                  'Disable Battery Optimization',
+                Text(
+                  permission.displayName,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF1F2937),
@@ -145,11 +185,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Keep StudyMentor running in the background so you never '
-                  'miss a notification from your students. Without this, '
-                  'Android may silently put the app to sleep and delay — or '
-                  'drop — important alerts. This step is recommended but '
-                  'not required.',
+                  permission.parentRationale,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -158,14 +194,12 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                   ),
                 ),
                 const SizedBox(height: 40),
-                _buildStatusCard(),
+                _buildStatusCard(permission),
                 const SizedBox(height: 32),
                 _buildActionButton(),
                 if (!_currentGranted) ...[
-                  const SizedBox(height: 12),
-                  _buildSkipButton(),
                   const SizedBox(height: 16),
-                  _buildSettingsHint(),
+                  _buildSettingsHint(permission),
                 ],
               ],
             ),
@@ -175,10 +209,93 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     );
   }
 
-  // ── Icon ───────────────────────────────────────────────────────────────────
+  // ── Header with progress indicator ────────────────────────────────────────
 
-  Widget _buildPermissionIcon() {
-    const color = Color(0xFF16A34A);
+  Widget _buildHeader(int step, int total) {
+    return Container(
+      decoration: const BoxDecoration(color: Color(0xFF1F2937)),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        MediaQuery.of(context).padding.top + 20,
+        24,
+        24,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Step $step of $total',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF4CAF50),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: widget.onSignOut,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white.withValues(alpha: 0.55),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: const Icon(Icons.logout_rounded, size: 14),
+                label: const Text(
+                  'Log out',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: step / total,
+              minHeight: 5,
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF4CAF50),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Permission icon ────────────────────────────────────────────────────────
+
+  Widget _buildPermissionIcon(RequiredPermission permission) {
+    final (IconData icon, Color color) = switch (permission) {
+      RequiredPermission.postNotifications => (
+        Icons.notifications_active_outlined,
+        const Color(0xFFF59E0B),
+      ),
+      RequiredPermission.batteryOptimization => (
+        Icons.battery_saver_outlined,
+        const Color(0xFF16A34A),
+      ),
+      // Not reachable in the parent flow — safe fallback.
+      _ => (Icons.lock_outline_rounded, const Color(0xFF6B7280)),
+    };
+
     return Center(
       child: Container(
         width: 96,
@@ -188,33 +305,33 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
           shape: BoxShape.circle,
           border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
         ),
-        child: const Icon(Icons.battery_saver_outlined, size: 44, color: color),
+        child: Icon(icon, size: 44, color: color),
       ),
     );
   }
 
   // ── Status card ────────────────────────────────────────────────────────────
 
-  Widget _buildStatusCard() {
+  Widget _buildStatusCard(RequiredPermission permission) {
     if (_currentGranted) {
       return _statusRow(
         icon: Icons.check_circle_rounded,
         iconColor: const Color(0xFF10B981),
         backgroundColor: const Color(0xFFECFDF5),
         borderColor: const Color(0xFF10B981),
-        text: 'Disable Battery Optimization has been enabled.',
+        text: '${permission.displayName} has been enabled.',
         textColor: const Color(0xFF065F46),
       );
     }
 
     return _statusRow(
-      icon: Icons.info_outline_rounded,
-      iconColor: const Color(0xFF0EA5E9),
-      backgroundColor: const Color(0xFFE0F2FE),
-      borderColor: const Color(0xFF0EA5E9),
+      icon: Icons.lock_outline_rounded,
+      iconColor: const Color(0xFFF59E0B),
+      backgroundColor: const Color(0xFFFFFBEB),
+      borderColor: const Color(0xFFF59E0B),
       text:
-          'Tap "Open Settings" to enable it, or "Skip" to continue without it.',
-      textColor: const Color(0xFF0C4A6E),
+          'Permission not granted yet. Tap the button below to open Settings.',
+      textColor: const Color(0xFF92400E),
     );
   }
 
@@ -290,42 +407,22 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     );
   }
 
-  // ── Skip button ────────────────────────────────────────────────────────────
-
-  Widget _buildSkipButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: TextButton(
-        onPressed: _onSkipTap,
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.grey.shade500,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: Colors.grey.shade300),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Skip for now',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            SizedBox(width: 6),
-            Icon(Icons.arrow_forward_rounded, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ── Hint text ──────────────────────────────────────────────────────────────
 
-  Widget _buildSettingsHint() {
+  Widget _buildSettingsHint(RequiredPermission permission) {
+    final hint = switch (permission) {
+      RequiredPermission.postNotifications =>
+        'Allow StudyMentor to send you notifications.',
+      RequiredPermission.batteryOptimization =>
+        'Find "StudyMentor", select "Don\'t optimize" or "Unrestricted", '
+            'then confirm.',
+      _ => '',
+    };
+
+    if (hint.isEmpty) return const SizedBox.shrink();
+
     return Text(
-      'Find "StudyMentor", select "Don\'t optimize" or "Unrestricted", '
-      'then confirm.',
+      hint,
       textAlign: TextAlign.center,
       style: TextStyle(fontSize: 12, color: Colors.grey.shade500, height: 1.5),
     );

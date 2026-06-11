@@ -2,10 +2,10 @@
 
 import 'package:flutter/services.dart';
 
-/// Represents one of the six student permissions — five mandatory, one optional.
+/// Represents the six permissions required by the student setup flow.
 ///
 /// Order matters: [firstMissingPermission] iterates [RequiredPermission.values]
-/// in declaration order, so [batteryOptimization] is always offered last.
+/// in declaration order, so [batteryOptimization] is always the final step.
 enum RequiredPermission {
   systemAlertWindow,
   packageUsageStats,
@@ -13,20 +13,22 @@ enum RequiredPermission {
   accessibilityService,
   deviceAdmin,
 
-  /// Step 6 — recommended but not mandatory.
-  ///
-  /// Prevents Android from aggressively killing background services
+  /// Step 6 — prevents Android from aggressively killing background services
   /// (UsageTimerService, StudyMentorAccessibilityService) due to battery
-  /// optimisation. The student may skip this step; the app remains functional
-  /// but background services may be terminated on aggressive OEM ROMs.
+  /// optimisation. Must be granted to complete setup.
   batteryOptimization,
 }
 
-extension RequiredPermissionDetails on RequiredPermission {
-  /// Whether the user is allowed to skip this permission without completing
-  /// setup. Currently only [batteryOptimization] is optional.
-  bool get isOptional => this == RequiredPermission.batteryOptimization;
+/// The two permissions required by the parent setup flow, in order.
+///
+///   1. [RequiredPermission.postNotifications]  — receive child activity alerts
+///   2. [RequiredPermission.batteryOptimization] — keep polling job reliable
+const List<RequiredPermission> parentPermissions = [
+  RequiredPermission.postNotifications,
+  RequiredPermission.batteryOptimization,
+];
 
+extension RequiredPermissionDetails on RequiredPermission {
   String get displayName {
     switch (this) {
       case RequiredPermission.systemAlertWindow:
@@ -44,6 +46,7 @@ extension RequiredPermissionDetails on RequiredPermission {
     }
   }
 
+  /// Rationale shown in the **student** permission gate.
   String get rationale {
     switch (this) {
       case RequiredPermission.systemAlertWindow:
@@ -65,7 +68,26 @@ extension RequiredPermissionDetails on RequiredPermission {
         return 'Disabling Battery Optimization keeps background services running '
             'reliably. Without this, Android may shut down StudyMentor\'s '
             'background services on some devices, causing timers and app rules '
-            'to stop working. This step is recommended but not required.';
+            'to stop working.';
+    }
+  }
+
+  /// Rationale shown in the **parent** permission gate.
+  ///
+  /// Only [postNotifications] and [batteryOptimization] are used by the parent
+  /// flow; the other cases fall back to [rationale] for safety.
+  String get parentRationale {
+    switch (this) {
+      case RequiredPermission.postNotifications:
+        return 'StudyMentor notifies you when your child levels up, earns a '
+            'badge, or hasn\'t studied in a few days. You can change this any '
+            'time in Settings.';
+      case RequiredPermission.batteryOptimization:
+        return 'To reliably notify you about your child\'s activity, '
+            'StudyMentor needs to run in the background. Without this, Android '
+            'may delay or drop important alerts on some devices.';
+      default:
+        return rationale;
     }
   }
 }
@@ -81,13 +103,19 @@ class PermissionService {
   static const _channel = MethodChannel('com.example.studymentor/permissions');
 
   /// Iterates all permissions in declaration order and returns the first one
-  /// that is not yet granted, or null if every permission has been granted
-  /// (including optional ones that were already accepted or are not applicable).
-  ///
-  /// Optional permissions that have been *skipped* are not tracked here — the
-  /// gate screen handles skip state locally and calls [onAllGranted] directly.
+  /// that is not yet granted, or null if every permission has been granted.
   static Future<RequiredPermission?> firstMissingPermission() async {
     for (final permission in RequiredPermission.values) {
+      final granted = await isGranted(permission);
+      if (!granted) return permission;
+    }
+    return null;
+  }
+
+  /// Iterates [parentPermissions] in order and returns the first one that is
+  /// not yet granted, or null if both parent permissions have been granted.
+  static Future<RequiredPermission?> firstMissingParentPermission() async {
+    for (final permission in parentPermissions) {
       final granted = await isGranted(permission);
       if (!granted) return permission;
     }

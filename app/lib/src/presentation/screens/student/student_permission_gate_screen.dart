@@ -13,7 +13,7 @@ import '../../../services/permission_service.dart';
 ///   3. POST_NOTIFICATIONS
 ///   4. BIND_ACCESSIBILITY_SERVICE
 ///   5. BIND_DEVICE_ADMIN        ← always last mandatory step
-///   6. Battery Optimization      ← recommended; may be skipped
+///   6. Battery Optimization      ← must be granted to proceed
 ///
 /// The screen re-checks the current permission every time the app is resumed
 /// from Settings. If it was granted it either advances to the next permission
@@ -23,11 +23,9 @@ import '../../../services/permission_service.dart';
 /// while this screen is shown — [DeviceAdminService.setPermissionSetupMode]
 /// suppresses the guard so the student can open Settings freely. The guard is
 /// enabled atomically with [DeviceAdminService.onPermissionsGranted] once every
-/// mandatory permission is confirmed (and the optional one is either granted or
-/// skipped).
+/// permission is confirmed.
 class PermissionGateScreen extends StatefulWidget {
-  /// Called when every required permission has been confirmed as granted (and
-  /// the optional battery-optimisation step has been granted or skipped).
+  /// Called when every required permission has been confirmed as granted.
   final VoidCallback onAllGranted;
 
   /// Called when the user taps "Sign out" in the header.
@@ -98,7 +96,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     }
 
     if (missing == null) {
-      // Every permission is granted (including the optional one).
+      // Every permission is granted.
       _checkInProgress = false;
       await _finish();
       return;
@@ -139,13 +137,6 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     }
   }
 
-  /// Called when the user taps "Skip" on an optional permission step.
-  /// Skips directly to [_finish] without checking the permission again.
-  Future<void> _onSkipTap() async {
-    setState(() => _checking = true);
-    await _finish();
-  }
-
   /// After a permission was granted, finds the next missing permission and
   /// either updates [_current] or finishes the setup flow.
   Future<void> _advanceToNext() async {
@@ -166,8 +157,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   }
 
   /// Clears the setup bypass flag, enables the full student guard, and hands
-  /// off to the caller. Called when all mandatory permissions are satisfied
-  /// (the optional one may or may not be granted at this point).
+  /// off to the caller. Called when all permissions are satisfied.
   Future<void> _finish() async {
     await DeviceAdminService.onPermissionsGranted();
     if (mounted) widget.onAllGranted();
@@ -230,12 +220,6 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                 _buildStatusCard(permission),
                 const SizedBox(height: 32),
                 _buildActionButton(),
-                // Skip button — only for optional permissions that are not yet
-                // confirmed as granted.
-                if (permission.isOptional && !_currentGranted) ...[
-                  const SizedBox(height: 12),
-                  _buildSkipButton(),
-                ],
                 const SizedBox(height: 16),
                 if (!_currentGranted) _buildSettingsHint(permission),
               ],
@@ -376,24 +360,13 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     }
 
     return _statusRow(
-      icon: permission.isOptional
-          ? Icons.info_outline_rounded
-          : Icons.lock_outline_rounded,
-      iconColor: permission.isOptional
-          ? const Color(0xFF0EA5E9)
-          : const Color(0xFFF59E0B),
-      backgroundColor: permission.isOptional
-          ? const Color(0xFFE0F2FE)
-          : const Color(0xFFFFFBEB),
-      borderColor: permission.isOptional
-          ? const Color(0xFF0EA5E9)
-          : const Color(0xFFF59E0B),
-      text: permission.isOptional
-          ? 'Tap "Open Settings" to enable it, or "Skip" to continue without it.'
-          : 'Permission not granted yet. Tap the button below to open Settings.',
-      textColor: permission.isOptional
-          ? const Color(0xFF0C4A6E)
-          : const Color(0xFF92400E),
+      icon: Icons.lock_outline_rounded,
+      iconColor: const Color(0xFFF59E0B),
+      backgroundColor: const Color(0xFFFFFBEB),
+      borderColor: const Color(0xFFF59E0B),
+      text:
+          'Permission not granted yet. Tap the button below to open Settings.',
+      textColor: const Color(0xFF92400E),
     );
   }
 
@@ -463,36 +436,6 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                   : Icons.settings_outlined,
               size: 18,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Skip button (optional permissions only) ────────────────────────────────
-
-  Widget _buildSkipButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: TextButton(
-        onPressed: _onSkipTap,
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.grey.shade500,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: Colors.grey.shade300),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Skip for now',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            SizedBox(width: 6),
-            Icon(Icons.arrow_forward_rounded, size: 16),
           ],
         ),
       ),
