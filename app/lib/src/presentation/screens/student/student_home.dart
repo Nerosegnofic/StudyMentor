@@ -38,7 +38,10 @@ class StudentHomeState extends State<StudentHome> {
   final Map<String, String?> _iconCache = {};
 
   int _streak = 0;
+
   int _quizzesCompletedToday = 0;
+  int _studentGrade = 5;
+
 
   // Last known garden data — persists across BLoC state changes.
   List<GardenPlantModel> _gardenCache = [];
@@ -81,6 +84,7 @@ class StudentHomeState extends State<StudentHome> {
       if (mounted) {
         setState(() {
           _streak = (profile['current_streak'] as int?) ?? 0;
+          _studentGrade = (profile['grade_level'] as int?) ?? 5;
         });
       }
     } catch (e, s) {
@@ -1127,9 +1131,11 @@ class StudentHomeState extends State<StudentHome> {
           ],
           child: SubjectDetailScreen(
             studentUid: widget.uid,
+
             subjectId: plant.subjectId,
             subjectName: plant.subjectName,
             masteryPercent: plant.masteryPercent,
+
           ),
         ),
       ),

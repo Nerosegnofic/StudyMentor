@@ -58,7 +58,10 @@ class _StudentScreenState extends State<StudentScreen>
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
+
   int _streak = 0;
+  int _gradeLevel = 5;
+
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   /// True while _initMascotService() is in progress.
@@ -205,10 +208,13 @@ class _StudentScreenState extends State<StudentScreen>
         final profile = results[0] as Map<String, dynamic>;
         final avatarMap = results[1] as Map<String, dynamic>?;
         setState(() {
+
           _coins = (profile['coins_total'] as int?) ?? 0;
           _xp = (profile['xp_total'] as int?) ?? 0;
           _level = (profile['current_level'] as int?) ?? levelForXp(_xp).levelNumber;
           _streak = (profile['current_streak'] as int?) ?? 0;
+          _gradeLevel = (profile['grade_level'] as int?) ?? 5;
+
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
@@ -299,7 +305,13 @@ class _StudentScreenState extends State<StudentScreen>
 
   void _openQuizOverlay() {
     if (!mounted) return;
-
+    // ── Defense-in-depth guard ─────────────────────────────────────────────
+    // The primary guard lives in MascotOverlayService._onLimitReached()
+    // (the _isBlocked early-return). This flag catches any duplicate signal
+    // that slips through — e.g. a race between broadcastState PATH 1 and the
+    // startActivity PATH 2 on a warm resume where both arrive after _isBlocked
+    // has already been set to true by the first call but before the stream
+    // listener fires for the second.
     if (_quizIsOpen) {
       debugPrint(
         '[StudentScreen] _openQuizOverlay called while quiz is already open — ignoring duplicate.',
@@ -315,6 +327,7 @@ class _StudentScreenState extends State<StudentScreen>
         .push(
           MaterialPageRoute<bool?>(
             fullscreenDialog: true,
+
             builder: (_) => MultiBlocProvider(
               providers: [
                 BlocProvider.value(value: _gamificationBloc),
@@ -325,6 +338,7 @@ class _StudentScreenState extends State<StudentScreen>
                 studentId: widget.uid,
                 contextType: QuizContext.forced,
               ),
+
             ),
           ),
         )

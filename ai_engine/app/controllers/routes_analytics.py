@@ -5,19 +5,17 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Date, text
 from app.core.database import get_db
 from app.core.auth import get_current_user
-from datetime import datetime, timedelta
 from app.repositories import (
     get_subject_mastery_hierarchy,
     get_subject_stats,
 )
 from app.services.evaluation.analytics_service import (
     enrich_hierarchy_with_status,
+    get_overall_dashboard_stats,
 )
 from app.models.domain import (
-    Skill,
     Subject,
     QuizSession,
-    StudentSkillState,
 )
 
 router = APIRouter(prefix="/analytics", tags=["Analytics Dashboard"])
@@ -145,47 +143,7 @@ async def get_overall_analytics(
     - Total skills tracked & mastered across all subjects
     - Activity heatmap (sessions grouped by date for the last 30 days)
     """
-
-    # ── Aggregate mastery across all subjects ────────────────────────────
-    all_states = (
-        db.query(StudentSkillState)
-        .filter(StudentSkillState.student_uid == student_uid)
-        .all()
-    )
-    total_skills = db.query(Skill).count()
-    mastered_skills = sum(1 for s in all_states if s.is_mastered)
-    overall_mastery = (
-        round(sum(s.mastery_probability for s in all_states) / total_skills, 4)
-        if total_skills
-        else 0.0
-    )
-
-    # ── Activity heatmap: sessions per day over the last 30 days ─────────
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    heatmap_rows = (
-        db.query(
-            cast(QuizSession.start_time, Date).label("date"),
-            func.count(QuizSession.session_id).label("count"),
-        )
-        .filter(
-            QuizSession.student_uid == student_uid,
-            QuizSession.start_time >= thirty_days_ago,
-        )
-        .group_by(cast(QuizSession.start_time, Date))
-        .order_by(cast(QuizSession.start_time, Date))
-        .all()
-    )
-    activity_heatmap = {
-        row.date.isoformat(): row.count for row in heatmap_rows
-    }
-
-    return {
-        "student_uid": student_uid,
-        "total_skills": total_skills,
-        "mastered_skills": mastered_skills,
-        "overall_mastery": overall_mastery,
-        "activity_heatmap": activity_heatmap,
-    }
+    return get_overall_dashboard_stats(db, student_uid)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -249,19 +207,14 @@ async def delete_subject(
     subject_id = subject.subject_id
 
     try:
-        # Wipe PGVector chunks (langchain_pg_embedding is outside ORM cascade)
         db.execute(
             text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'subject_id' = :sid"),
             {"sid": str(subject_id)},
         )
-
-        # Disassociate QuizSessions to preserve gamification audit logs
         db.execute(
             text("UPDATE quiz_sessions SET subject_id = NULL WHERE subject_id = :sid"),
             {"sid": subject_id},
         )
-
-        # Delete garden cache and subject profile rows (no ORM cascade on these)
         db.execute(
             text("DELETE FROM garden_plants WHERE subject_id = :sid"),
             {"sid": subject_id},
@@ -270,10 +223,7 @@ async def delete_subject(
             text("DELETE FROM student_subject_profiles WHERE subject_id = :sid"),
             {"sid": subject_id},
         )
-
-        # Delete Subject — cascades to skills → student_skill_states, curriculum_chunks, questions
         db.delete(subject)
-
         db.commit()
     except Exception as e:
         db.rollback()

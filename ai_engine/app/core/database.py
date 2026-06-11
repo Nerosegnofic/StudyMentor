@@ -22,7 +22,7 @@ def get_vector_store() -> PGVector:
     """
     embeddings = RateLimitedCohereEmbeddings(
         cohere_api_key=settings.COHERE_API_KEY,
-        model="embed-multilingual-v3.0"
+        model=settings.COHERE_EMBEDDING_MODEL
     )
     
     vector_store = PGVector(

@@ -54,6 +54,22 @@ class ChunkClassifier:
         if re.search(r'^\s*(Page|صفحة)?\s*\d+\s*$', text.strip(), re.IGNORECASE):
             structural_score += 12
 
+        # Learning Objective patterns — meta-content about learning, not the content itself.
+        # These describe WHAT the student will learn, not HOW (e.g., "أستطيع أن أقرأ").
+        # They're useful for navigation but harmful for quiz generation context.
+        learning_obj_patterns = [
+            r'أستطيع\s+أن',           # "I can..."
+            r'أهداف\s+التعلم',         # "Learning objectives"
+            r'هدف\s+التعلم',           # "Learning objective" (singular)
+            r'في\s+نهاية\s+الدرس',     # "By the end of the lesson"
+            r'\bLearning\s+Objectives?\b',  # English equivalent
+            r'\bBy\s+the\s+end\s+of',       # English equivalent
+        ]
+        for pattern in learning_obj_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                structural_score += 8
+                break
+
         # --- 2. SUBSTANTIVE INDICATORS (Instructional Content) ---
         
         # Action Verbs (Arabic & English) - ALL SUBJECTS
@@ -86,6 +102,17 @@ class ChunkClassifier:
             number_ratio = numbers / len(words)
             if number_ratio > 0.3 and len(words) > 10:
                 substantive_score += 10 # High boost for data-rich chunks
+
+        # NEW: Text-rich content indicators (language subjects, science explanations)
+        # A chunk with multiple sentences and paragraphs is likely substantive content
+        # (reading passages, stories, explanations) even without math symbols.
+        sentence_endings = len(re.findall(r'[.!?؟!。]', text))
+        if sentence_endings >= 3 and len(words) > 30:
+            substantive_score += 8  # Reading passages, stories, explanations
+
+        # Dialogue/conversation patterns (common in English textbooks)
+        if re.search(r'[""\'"].+?[""\'"]|[«»].+?[«»]', text):
+            substantive_score += 4
 
         # Final Classification
         content_type = "substantive" if substantive_score >= structural_score else "structural"

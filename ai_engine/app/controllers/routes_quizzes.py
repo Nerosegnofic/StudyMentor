@@ -1,22 +1,17 @@
-from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
+
 from app.models.schemas import (
     GenerateQuizRequest,
     GenerateQuizResponse,
-    QuestionSchema,
     QuizSubmissionRequest,
     QuizSubmissionResponse,
 )
-from app.models.domain.quiz import QuizSession as QuizSessionModel
 from app.core.rate_limit import limiter
 from app.core.config import settings
-from app.services.rag.retrieval import retrieve_context_for_topics
-from app.services.rag.generation.context import GeneratorContext
-from app.services.rag.generation.gemini_strategy import GeminiStrategy
-from app.services.quiz.quiz_bank_service import build_quiz_from_bank
 from app.core.database import get_db
 from app.core.auth import get_current_user
+
 from app.core.exceptions import LLMGenerationError, QuizBankInsufficientError, InsufficientContextError
 from app.repositories import (
     get_all_student_skill_states,
@@ -40,13 +35,17 @@ from app.services.evaluation.bkt_engine import BKTEngine
 from app.services.gamification import GamificationService
 from app.models.domain import Question, QuestionResponse
 
-DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
+
+from app.services.quiz.quiz_generation_service import generate_quiz_for_student
+from app.services.quiz.quiz_submission_service import process_quiz_submission
 
 router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
+
 
 generator_context = GeneratorContext(strategy=GeminiStrategy())
 bkt_engine = BKTEngine()
 gamification_service = GamificationService()
+
 
 
 @router.post("/generate", response_model=GenerateQuizResponse)
@@ -57,6 +56,7 @@ async def generate_quiz(
     db: Session = Depends(get_db),
     student_uid: str = Depends(get_current_user),
 ):
+
     try:
         # ------------------------------------------------------------------ #
         # Step 0: Determine the Subject
@@ -265,12 +265,14 @@ async def generate_quiz(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @router.post("/submit", response_model=QuizSubmissionResponse)
 async def submit_quiz(
     request: QuizSubmissionRequest,
     db: Session = Depends(get_db),
     student_uid: str = Depends(get_current_user),
 ):
+
     try:
         total_submitted = len(request.answers)
         if total_submitted == 0:
@@ -424,3 +426,4 @@ async def submit_quiz(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+

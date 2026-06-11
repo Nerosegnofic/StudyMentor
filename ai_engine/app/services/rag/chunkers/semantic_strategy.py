@@ -47,7 +47,7 @@ class SemanticChunkerStrategy(DocumentChunkerStrategy):
             os.environ["COHERE_API_KEY"] = settings.COHERE_API_KEY
 
         # Using multilingual model since your textbook is in Arabic
-        return RateLimitedCohereEmbeddings(model="embed-multilingual-v3.0")
+        return RateLimitedCohereEmbeddings(model=settings.COHERE_EMBEDDING_MODEL)
 
     def chunk(self, full_text: str, document_id: UUID) -> list:
         """

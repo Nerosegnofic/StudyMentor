@@ -1,48 +1,48 @@
 from typing import Dict, List
-from app.services.quiz.difficulty_mapper import mastery_to_difficulty
-from app.services.quiz.priority_engine import compute_skill_priority_weight
-from app.services.quiz.allocator import allocate_questions
+
+from sqlalchemy.orm import Session
+
+from app.services.quiz.skill_selector import select_quiz_skills
+
 
 def build_quiz_payload(
-    student_profile: Dict[str, float],
+    db: Session,
+    student_uid: str,
+    subject_id: int,
     total_questions: int,
-    static_weights: Dict[str, float] = None
+    student_grade: int = 5,
 ) -> List[Dict]:
     """
-    Bridges the BKT mastery profile and the AI Quiz Generator by computing
-    an optimal question distribution across skills.
-    
-    student_profile: Dictionary mapping skill_name -> mastery_probability
-    static_weights: Dictionary mapping skill_name -> static ERD weight (default 1.0)
+    Bridges the Ordered Frontier skill selector and the quiz generation route.
+
+    Uses zone-classified skill selection (Frontier/Review/Preview) to produce
+    the payload format expected by ``routes_quizzes.py``.
+
+    Returns a list of dicts, each containing::
+
+        {
+            "skill":      str   — skill name,
+            "difficulty":  int   — 1-5 difficulty target,
+            "count":       int   — number of questions to generate,
+            "zone":        str   — "frontier", "review", or "preview",
+            "mastery":     float — current mastery probability,
+        }
     """
-    if not student_profile or total_questions <= 0:
-        return []
-        
-    if static_weights is None:
-        static_weights = {}
+    quiz_skills = select_quiz_skills(
+        db, student_uid, subject_id, total_questions, student_grade
+    )
 
-    # 1. Compute per-skill priority weights (Dynamic * Static)
-    weights: Dict[str, float] = {}
-    for skill, mastery in student_profile.items():
-        dynamic_w = compute_skill_priority_weight(mastery)
-        static_w = static_weights.get(skill, 1.0)
-        weights[skill] = dynamic_w * static_w
-
-    # 2. Distribute questions
-    allocation = allocate_questions(weights, total_questions)
-
-    # 3. Build the payload (skip zero-allocation skills)
     payload: List[Dict] = []
-    for skill, count in allocation.items():
-        if count <= 0:
-            continue
+    for entry in quiz_skills:
         payload.append({
-            "skill": skill,
-            "difficulty": mastery_to_difficulty(student_profile[skill]),
-            "count": count,
+            "skill": entry["skill"].name,
+            "difficulty": entry["difficulty"],
+            "count": entry["count"],
+            "zone": entry.get("zone", "frontier"),
+            "mastery": entry.get("mastery", 0.0),
         })
 
-    # 4. Sort payload: highest-count skills first
+    # Sort: highest-count skills first (frontier skills tend to have more questions)
     payload.sort(key=lambda x: x["count"], reverse=True)
 
     return payload

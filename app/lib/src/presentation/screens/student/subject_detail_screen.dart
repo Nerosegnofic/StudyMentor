@@ -16,16 +16,20 @@ const _kGreenLight = Color(0xFFE8F5E9);
 
 class SubjectDetailScreen extends StatefulWidget {
   final String studentUid;
+
   final int subjectId;
   final String subjectName;
   final double masteryPercent;
 
+
   const SubjectDetailScreen({
     super.key,
     required this.studentUid,
+
     required this.subjectId,
     required this.subjectName,
     required this.masteryPercent,
+
   });
 
   @override
@@ -92,8 +96,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               ),
             );
           }
+
           final skills = snapshot.data ?? [];
           return _buildContent(context, stage, skills);
+
         },
       ),
     );
@@ -114,6 +120,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         children: [
           // ── Plant hero ──────────────────────────────────────────────────
           _PlantHeroSection(
+
             subjectName: widget.subjectName,
             stage: stage,
             masteryPercent: widget.masteryPercent,
@@ -124,6 +131,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           _buildGrowthProgressCard(widget.masteryPercent),
           const SizedBox(height: 12),
 
+
           // ── Mastery card ─────────────────────────────────────────────────
           _Card(
             child: Row(
@@ -132,17 +140,21 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
+
                     color: GrowthStageUtils.healthColor(widget.masteryPercent)
                         .withOpacity(0.15),
+
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     widget.masteryPercent >= 75
                         ? Icons.local_florist_rounded
+
                         : widget.masteryPercent >= 50
                             ? Icons.spa_rounded
                             : Icons.energy_savings_leaf_rounded,
                     color: GrowthStageUtils.healthColor(widget.masteryPercent),
+
                     size: 24,
                   ),
                 ),
@@ -159,8 +171,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                       ),
                     ),
                     Text(
+
                       'Overall mastery: ${widget.masteryPercent.toStringAsFixed(0)}%',
                       style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+
                     ),
                   ],
                 ),
@@ -174,12 +188,14 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             const Text(
               'Skills',
               style: TextStyle(
+
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF1A1A2E)),
             ),
             const SizedBox(height: 12),
             ...skills.map((s) => _SkillRow(skill: s)),
+
             const SizedBox(height: 20),
           ],
 
@@ -216,6 +232,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     fullscreenDialog: true,
+
                     builder: (_) => MultiBlocProvider(
                       providers: [
                         BlocProvider.value(value: gamificationBloc),
@@ -230,6 +247,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                           Fixed(:final count) => count,
                         },
                       ),
+
                     ),
                   ),
                 );
@@ -238,7 +256,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 backgroundColor: _kGreen,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
+
                     borderRadius: BorderRadius.circular(14)),
+
                 elevation: 0,
               ),
               icon: const Icon(Icons.play_arrow_rounded, size: 22),
@@ -355,9 +375,11 @@ class _PlantHeroSection extends StatelessWidget {
   final double masteryPercent;
 
   const _PlantHeroSection({
+
     required this.subjectName,
     required this.stage,
     required this.masteryPercent,
+
   });
 
   @override
@@ -451,8 +473,10 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+
   const _SectionHeader(
       {required this.icon, required this.label, required this.color});
+
 
   @override
   Widget build(BuildContext context) {
@@ -460,9 +484,11 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 6),
+
         Text(label,
             style: TextStyle(
                 fontSize: 15, fontWeight: FontWeight.w700, color: color)),
+
       ],
     );
   }
@@ -509,10 +535,12 @@ class _SkillRow extends StatelessWidget {
             child: Icon(
               attempted
                   ? (skill.isStrong
+
                       ? Icons.emoji_events_rounded
                       : skill.isWeak
                           ? Icons.fitness_center_rounded
                           : Icons.trending_up_rounded)
+
                   : Icons.lock_outline_rounded,
               color: attempted ? healthColor : Colors.grey.shade400,
               size: 18,
@@ -571,6 +599,7 @@ class _SkillChipRow extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: skills
+
           .map((s) => Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -587,6 +616,7 @@ class _SkillChipRow extends StatelessWidget {
                       fontWeight: FontWeight.w600),
                 ),
               ))
+
           .toList(),
     );
   }

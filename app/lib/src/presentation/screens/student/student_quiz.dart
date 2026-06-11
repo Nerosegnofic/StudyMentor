@@ -24,32 +24,39 @@ import '../../../data/catalog/subject_catalog.dart';
 
 class QuizOverlayPage extends StatelessWidget {
   final AiEngineRepository repository;
+
   final String studentId;
   final QuizContext contextType;
   final int totalQuestions;
 
+
   const QuizOverlayPage({
     super.key,
     required this.repository,
+
     required this.studentId,
     required this.contextType,
     this.totalQuestions = 5,
+
   });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => QuizBloc(repository: repository),
+
       child: _QuizOverlayScaffold(
         studentId: studentId,
         contextType: contextType,
         totalQuestions: totalQuestions,
       ),
+
     );
   }
 }
 
 class _QuizOverlayScaffold extends StatelessWidget {
+
   final String studentId;
   final QuizContext contextType;
   final int totalQuestions;
@@ -59,6 +66,7 @@ class _QuizOverlayScaffold extends StatelessWidget {
     required this.contextType,
     required this.totalQuestions,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +103,7 @@ class _QuizOverlayScaffold extends StatelessWidget {
           ),
         ],
       ),
+
       body: BlocListener<QuizBloc, QuizState>(
         listener: (context, state) {
           if (state is QuizResultsLoaded) {
@@ -145,6 +154,7 @@ class _QuizOverlayScaffold extends StatelessWidget {
                     result: xpResult,
                   ),
                 );
+
           }
         },
         child: BlocBuilder<QuizBloc, QuizState>(
@@ -202,9 +212,11 @@ class _QuizOverlayScaffold extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _AutoStartPanel extends StatelessWidget {
+
   final int totalQuestions;
 
   const _AutoStartPanel({required this.totalQuestions});
+
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +256,9 @@ class _AutoStartPanel extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 context.read<QuizBloc>().add(
+
                   GenerateQuizEvent(totalQuestions: totalQuestions),
+
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -313,7 +327,9 @@ class StudentQuizScreen extends StatelessWidget {
   const StudentQuizScreen({super.key});
 
   @override
+
   Widget build(BuildContext context) => const _AutoStartPanel(totalQuestions: 5);
+
 }
 
 // ---------------------------------------------------------------------------

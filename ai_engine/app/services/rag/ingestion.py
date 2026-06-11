@@ -21,7 +21,8 @@ def process_and_ingest_document(
     file_content: bytes, 
     filename: str, 
     subject_id: int = 1,
-    firebase_uid: str = None
+    firebase_uid: str = None,
+    subject_name: str = "",
 ):
     """
     Orchestrates the RAG ingestion pipeline:
@@ -48,7 +49,7 @@ def process_and_ingest_document(
         try:
             # Step 1: Parse PDF
             print(f"[1/6] Sending PDF to LlamaParse (converting layout to Markdown)...", flush=True)
-            full_text = parser_context.execute_parse(document_id, temp_file_path)
+            full_text = parser_context.execute_parse(document_id, temp_file_path, subject_name=subject_name)
             print(f" -> Success. Extracted {len(full_text)} characters of raw Markdown.", flush=True)
             
             # Step 2: Preprocess text
@@ -70,16 +71,41 @@ def process_and_ingest_document(
             langchain_docs = chunker_context.execute_chunking(cleaned_text, document_id)
             print(f" -> Generated {len(langchain_docs)} chunks.", flush=True)
 
-            # Step 5: Save Vector Embeddings
-            print(f"[5/6] Generating Cohere vector embeddings and saving to PGVector...", flush=True)
-            save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
-            print(" -> Chunks successfully saved to database.", flush=True)
-            
-            # Step 6: Refine via Gemini LLM
-            print(f"[6/6] Refining objectives using Gemini LLM to compile granular skills...", flush=True)
+            # Step 5: Refine via Gemini LLM (before pgvector so chunks can be tagged)
+            print(f"[5/6] Refining objectives using Gemini LLM to compile granular skills...", flush=True)
+            refined_mastery_data = None
             if raw_mastery_data:
                 refined_mastery_data = refine_mastery_points(raw_mastery_data, cleaned_text)
-                
+
+            # Tag chunks with skill_names from mastery data (improves RAG precision)
+            active_mastery_data = refined_mastery_data if refined_mastery_data else raw_mastery_data
+            if active_mastery_data:
+                lesson_to_skills = {}
+                for entry in active_mastery_data:
+                    lesson = entry.get("lesson_name", "") or entry.get("lesson", "")
+                    skills = entry.get("skills", [])
+                    if lesson and skills:
+                        skill_names = [s["name"] if isinstance(s, dict) else str(s) for s in skills]
+                        lesson_to_skills[lesson] = skill_names
+
+                tagged_count = 0
+                for chunk in langchain_docs:
+                    parent_lesson = chunk.metadata.get("parent_lesson", "")
+                    if parent_lesson:
+                        for lesson_key, skill_list in lesson_to_skills.items():
+                            if lesson_key in parent_lesson or parent_lesson in lesson_key:
+                                chunk.metadata["skill_names"] = skill_list
+                                tagged_count += 1
+                                break
+                if tagged_count > 0:
+                    print(f"[{document_id}] Tagged {tagged_count}/{len(langchain_docs)} chunks with skill_names.", flush=True)
+
+            # Step 6: Save Vector Embeddings (with skill-tagged chunks)
+            print(f"[6/6] Generating Cohere vector embeddings and saving to PGVector...", flush=True)
+            save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
+            print(" -> Chunks successfully saved to database.", flush=True)
+
+            if raw_mastery_data:
                 # Only save if refinement produced different data (not a fallback)
                 if refined_mastery_data:
                     print(f" -> Success! Gemini generated {len(refined_mastery_data)} refined items.", flush=True)

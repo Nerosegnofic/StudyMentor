@@ -103,3 +103,20 @@ def clear_vector_database():
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE langchain_pg_embedding, langchain_pg_collection CASCADE;"))
     print("Vector database cleared!", flush=True)
+
+def check_student_owns_document(document_id: UUID, firebase_uid: str) -> bool:
+    """
+    Checks if a given student owns at least one vector embedding for the specified document.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    with engine.connect() as conn:
+        result = conn.execute(
+            text(
+                "SELECT 1 FROM langchain_pg_embedding "
+                "WHERE cmetadata->>'document_id' = :doc_id "
+                "AND cmetadata->>'firebase_uid' = :uid "
+                "LIMIT 1"
+            ),
+            {"doc_id": str(document_id), "uid": firebase_uid},
+        )
+        return result.fetchone() is not None

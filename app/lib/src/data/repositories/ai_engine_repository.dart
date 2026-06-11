@@ -13,12 +13,18 @@ import '../../domain/models/skill_detail_model.dart';
 class GenerateQuizRequest {
   final int? subjectId;
   final int totalQuestions;
+  final int studentGrade;
 
-  const GenerateQuizRequest({this.subjectId, required this.totalQuestions});
+  const GenerateQuizRequest({
+    this.subjectId,
+    required this.totalQuestions,
+    this.studentGrade = 5,
+  });
 
   Map<String, dynamic> toJson() => {
         'subject_id': subjectId,
         'total_questions': totalQuestions,
+        'student_grade': studentGrade,
       };
 }
 
