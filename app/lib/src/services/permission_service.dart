@@ -19,6 +19,15 @@ enum RequiredPermission {
   batteryOptimization,
 }
 
+/// The two permissions required by the parent setup flow, in order.
+///
+///   1. [RequiredPermission.postNotifications]  — receive child activity alerts
+///   2. [RequiredPermission.batteryOptimization] — keep polling job reliable
+const List<RequiredPermission> parentPermissions = [
+  RequiredPermission.postNotifications,
+  RequiredPermission.batteryOptimization,
+];
+
 extension RequiredPermissionDetails on RequiredPermission {
   String get displayName {
     switch (this) {
@@ -37,6 +46,7 @@ extension RequiredPermissionDetails on RequiredPermission {
     }
   }
 
+  /// Rationale shown in the **student** permission gate.
   String get rationale {
     switch (this) {
       case RequiredPermission.systemAlertWindow:
@@ -61,6 +71,25 @@ extension RequiredPermissionDetails on RequiredPermission {
             'to stop working.';
     }
   }
+
+  /// Rationale shown in the **parent** permission gate.
+  ///
+  /// Only [postNotifications] and [batteryOptimization] are used by the parent
+  /// flow; the other cases fall back to [rationale] for safety.
+  String get parentRationale {
+    switch (this) {
+      case RequiredPermission.postNotifications:
+        return 'StudyMentor notifies you when your child levels up, earns a '
+            'badge, or hasn\'t studied in a few days. You can change this any '
+            'time in Settings.';
+      case RequiredPermission.batteryOptimization:
+        return 'To reliably notify you about your child\'s activity, '
+            'StudyMentor needs to run in the background. Without this, Android '
+            'may delay or drop important alerts on some devices.';
+      default:
+        return rationale;
+    }
+  }
 }
 
 /// Dart-side interface for the native permission channel.
@@ -77,6 +106,16 @@ class PermissionService {
   /// that is not yet granted, or null if every permission has been granted.
   static Future<RequiredPermission?> firstMissingPermission() async {
     for (final permission in RequiredPermission.values) {
+      final granted = await isGranted(permission);
+      if (!granted) return permission;
+    }
+    return null;
+  }
+
+  /// Iterates [parentPermissions] in order and returns the first one that is
+  /// not yet granted, or null if both parent permissions have been granted.
+  static Future<RequiredPermission?> firstMissingParentPermission() async {
+    for (final permission in parentPermissions) {
       final granted = await isGranted(permission);
       if (!granted) return permission;
     }
