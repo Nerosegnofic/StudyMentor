@@ -11,16 +11,16 @@ class LlamaParseStrategy(DocumentParserStrategy):
     def parse(self, document_id: UUID, temp_file_path: str) -> str:
         if settings.LLAMA_CLOUD_API_KEY:
             os.environ["LLAMA_CLOUD_API_KEY"] = settings.LLAMA_CLOUD_API_KEY
-            
+
         parser = LlamaParse(
             result_type="markdown",
             premium_mode=True,
             language="ar",
             system_prompt ="""
-            This is a bilingual educational textbook. 
-            IMPORTANT: The primary language is Arabic (RTL). 
-            Please preserve the RTL reading order for Arabic sections. 
-            Keep technical English terms in-line. 
+            This is a bilingual educational textbook.
+            IMPORTANT: The primary language is Arabic (RTL).
+            Please preserve the RTL reading order for Arabic sections.
+            Keep technical English terms in-line.
             Output headers as # and sub-headers as ##.
             """,
             verbose=True
