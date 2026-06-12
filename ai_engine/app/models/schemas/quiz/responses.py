@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Literal
+from typing import Dict, List, Literal
 from .models import QuestionSchema
 
 class GenerateQuizResponse(BaseModel):
@@ -25,3 +25,4 @@ class QuizSubmissionResponse(BaseModel):
     score: float
     total_questions: int
     feedback: str
+    rewards: dict = Field(default_factory=dict)

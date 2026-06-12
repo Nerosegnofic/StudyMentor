@@ -12,12 +12,12 @@ import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../bloc/gamification/gamification_bloc.dart';
 import '../../../data/providers/dataconnect_provider.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../domain/models/garden_plant_model.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../widgets/garden_subject_card.dart';
-import '../../../data/catalog/subject_metadata_registry.dart';
 import 'subject_detail_screen.dart';
 
 class StudentHome extends StatefulWidget {
@@ -40,7 +40,6 @@ class StudentHomeState extends State<StudentHome> {
   int _streak = 0;
 
   int _quizzesCompletedToday = 0;
-  int _studentGrade = 5;
 
 
   // Last known garden data — persists across BLoC state changes.
@@ -84,7 +83,6 @@ class StudentHomeState extends State<StudentHome> {
       if (mounted) {
         setState(() {
           _streak = (profile['current_streak'] as int?) ?? 0;
-          _studentGrade = (profile['grade_level'] as int?) ?? 5;
         });
       }
     } catch (e, s) {
@@ -310,7 +308,10 @@ class StudentHomeState extends State<StudentHome> {
                 child: ScrollbarTheme(
                   data: ScrollbarThemeData(
                     thumbColor: WidgetStateProperty.all(
-                      Colors.white.withValues(alpha: 0.6),
+                      const Color(0xFF4CAF50).withValues(alpha: 0.7),
+                    ),
+                    trackColor: WidgetStateProperty.all(
+                      const Color(0xFF2E7D32).withValues(alpha: 0.15),
                     ),
                     thickness: WidgetStateProperty.all(3),
                     radius: const Radius.circular(4),

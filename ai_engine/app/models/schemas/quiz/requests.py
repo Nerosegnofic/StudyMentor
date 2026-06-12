@@ -36,3 +36,4 @@ class StudentAnswer(BaseModel):
 class QuizSubmissionRequest(BaseModel):
     quiz_session_id: str = Field(..., description="The ID of the generated quiz session")
     answers: List[StudentAnswer]
+    client_local_date: Optional[str] = Field(None, description="Client's local date (YYYY-MM-DD) for streak tracking")

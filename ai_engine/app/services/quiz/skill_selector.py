@@ -76,7 +76,7 @@ def classify_skills(
     all_skills = (
         db.query(Skill)
         .filter(Skill.subject_id == subject_id)
-        .order_by(Skill.lesson_index.asc(), Skill.skill_id.asc())
+        .order_by(Skill.skill_id.asc())
         .all()
     )
 

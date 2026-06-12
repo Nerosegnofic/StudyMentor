@@ -95,6 +95,19 @@ def delete_vector_embeddings(document_id: UUID):
             {"doc_id": str(document_id)}
         )
 
+def delete_vector_embeddings_by_subject(subject_id: int):
+    """
+    Deletes all vector embeddings whose metadata tags them with a given subject_id.
+    Called when a subject is fully deleted so the RAG store stays in sync.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    with engine.begin() as conn:
+        result = conn.execute(
+            text("DELETE FROM langchain_pg_embedding WHERE (cmetadata->>'subject_id')::int = :sid"),
+            {"sid": subject_id}
+        )
+        print(f"[VectorRepo] Deleted {result.rowcount} embeddings for subject_id={subject_id}.", flush=True)
+
 def clear_vector_database():
     """
     Wipes the entire vector database.

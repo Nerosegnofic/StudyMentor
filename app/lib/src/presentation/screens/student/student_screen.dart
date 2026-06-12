@@ -15,13 +15,11 @@ import '../../../data/constants/gamification_levels.dart';
 
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/garden/garden_bloc.dart';
-import '../../../bloc/subject/subject_bloc.dart';
 import '../../../domain/models/app_config_model.dart';
+import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
-import '../../widgets/gamification/stat_badge.dart';
 import '../../widgets/gamification/level_up_modal.dart';
-import '../../widgets/gamification/streak_display.dart';
 import '../../widgets/gamification/streak_milestone_modal.dart';
 import '../../utils/reward_toast.dart';
 import '../../widgets/parent_verification_dialog.dart';
@@ -29,14 +27,12 @@ import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/permission_service.dart';
 import '../../../services/device_admin_service.dart';
-import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import 'permission_gate_screen.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
 import 'student_profile.dart';
 import 'shop/custom_shop_screen.dart';
-import 'student_profile.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
@@ -59,9 +55,6 @@ class _StudentScreenState extends State<StudentScreen>
   int _xp = 0;
   int _level = 1;
 
-  int _streak = 0;
-  int _gradeLevel = 5;
-
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   /// True while _initMascotService() is in progress.
@@ -82,6 +75,9 @@ class _StudentScreenState extends State<StudentScreen>
   /// Set to true immediately before pushing, cleared in the .then() callback
   /// after the route pops.
   bool _quizIsOpen = false;
+
+  /// Parent-configured quiz question count — kept in sync when config loads.
+  QuizCount _quizCount = const Auto();
 
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
@@ -107,7 +103,7 @@ class _StudentScreenState extends State<StudentScreen>
     _aiRepo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
 
     _shopBloc = ShopBloc();
-    _gardenBloc = GardenBloc(subjectBloc: context.read<SubjectBloc>());
+    _gardenBloc = GardenBloc();
     _gamificationBloc = GamificationBloc(
       repository: GamificationRepositoryImpl(),
     )..add(LoadGamificationDataRequested(studentId: widget.uid))
@@ -146,10 +142,12 @@ class _StudentScreenState extends State<StudentScreen>
         final repo = context.read<AuthBloc>().repository;
         final (:config, :rules) = await repo.getAppConfigForStudent(widget.uid);
         if (mounted) {
+          final resolvedConfig = config ?? const StudentConfigModel();
+          _quizCount = resolvedConfig.quizCount;
           await MascotOverlayService.instance.updateMonitoredApps(
             rules,
-            studentUid: widget.uid, // FIX: forward uid for account-switch guard
-            config: config ?? const StudentConfigModel(),
+            studentUid: widget.uid,
+            config: resolvedConfig,
           );
         }
       } catch (e) {
@@ -212,8 +210,6 @@ class _StudentScreenState extends State<StudentScreen>
           _coins = (profile['coins_total'] as int?) ?? 0;
           _xp = (profile['xp_total'] as int?) ?? 0;
           _level = (profile['current_level'] as int?) ?? levelForXp(_xp).levelNumber;
-          _streak = (profile['current_streak'] as int?) ?? 0;
-          _gradeLevel = (profile['grade_level'] as int?) ?? 5;
 
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
@@ -337,6 +333,10 @@ class _StudentScreenState extends State<StudentScreen>
                 repository: _aiRepo,
                 studentId: widget.uid,
                 contextType: QuizContext.forced,
+                totalQuestions: switch (_quizCount) {
+                  Auto() => 5,
+                  Fixed(:final count) => count,
+                },
               ),
 
             ),
@@ -462,7 +462,6 @@ class _StudentScreenState extends State<StudentScreen>
                     _coins = state.profile.coinsTotal;
                     _xp = state.profile.xpTotal;
                     _level = state.profile.currentLevel;
-                    _streak = state.profile.currentStreak;
                   });
                 }
                 if (state is GamificationRewardProcessed) {
@@ -470,7 +469,6 @@ class _StudentScreenState extends State<StudentScreen>
                     _coins = state.profile.coinsTotal;
                     _xp = state.profile.xpTotal;
                     _level = state.profile.currentLevel;
-                    _streak = state.profile.currentStreak;
                   });
                   RewardToast.show(context, state.xpEarned, state.coinsEarned);
                   if (state.leveledUpTo != null) {
@@ -577,92 +575,76 @@ class _StudentScreenState extends State<StudentScreen>
             ),
           ),
           const Spacer(),
-          BlocBuilder<GamificationBloc, GamificationState>(
-            builder: (context, state) {
-              final int coins;
-              final int level;
-              if (state is GamificationLoaded) {
-                coins = state.profile.coinsTotal;
-                level = state.profile.currentLevel;
-              } else if (state is GamificationRewardProcessed) {
-                coins = state.profile.coinsTotal;
-                level = state.profile.currentLevel;
-              } else {
-                coins = _coins;
-                level = _level;
-              }
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FF),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE0E6FF)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.star_rounded, color: Color(0xFF4A6CF7), size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Lv. $level',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A1F3C),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BlocProvider.value(
-                            value: context.read<ShopBloc>(),
-                            child: CustomShopScreen(
-                              studentUid: widget.uid,
-                              currentCoins: coins,
-                              currentLevel: level,
-                            ),
-                          ),
-                        ),
-                      ).then((_) {
-                        if (mounted) _loadCoinsAndLevel();
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8E1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFFFE082)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('🪙', style: TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatNum(coins),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFFF57F17),
-                            ),
-                          ),
-                        ],
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F7FF),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE0E6FF)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded, color: Color(0xFF4A6CF7), size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Lv. $_level',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A1F3C),
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<ShopBloc>(),
+                        child: CustomShopScreen(
+                          studentUid: widget.uid,
+                          currentCoins: _coins,
+                          currentLevel: _level,
+                        ),
+                      ),
+                    ),
+                  ).then((_) {
+                    if (mounted) _loadCoinsAndLevel();
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8E1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFFFE082)),
                   ),
-                ],
-              );
-            },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('🪙', style: TextStyle(fontSize: 12)),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatNum(_coins),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFF57F17),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 6),
           Stack(

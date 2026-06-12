@@ -159,11 +159,11 @@ class StudentAnswer(BaseModel):
 class QuizSubmissionRequest(BaseModel):
     quiz_session_id: str = Field(..., description="The ID of the generated quiz session")
     answers: List[StudentAnswer]
-    client_local_date: Optional[str] = Field(None, description="Local date from client (YYYY-MM-DD)")
+    client_local_date: Optional[str] = Field(None, description="Client's local date (YYYY-MM-DD) for streak tracking")
 
 
 class QuizSubmissionResponse(BaseModel):
     score: float
     total_questions: int
     feedback: str
-    rewards: Optional[dict] = None  # Gamification rewards summary
+    rewards: dict = Field(default_factory=dict)

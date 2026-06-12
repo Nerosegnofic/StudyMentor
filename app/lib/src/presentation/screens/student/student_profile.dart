@@ -141,31 +141,33 @@ class _StudentProfileState extends State<StudentProfile> {
   }
 
   Widget _buildAvatarWithBadge() {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        GestureDetector(
-          onTap: _loading
-              ? null
-              : () {
-                  final shopBloc = context.read<ShopBloc>();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: shopBloc,
-                        child: CustomShopScreen(
-                          studentUid: widget.uid,
-                          currentCoins: _totalCoins,
-                          currentLevel: _level,
-                        ),
-                      ),
+    // GestureDetector wraps the whole Stack so the edit-icon and level-badge
+    // containers (which are rendered on top) don't silently absorb the tap.
+    return GestureDetector(
+      onTap: _loading
+          ? null
+          : () {
+              final shopBloc = context.read<ShopBloc>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: shopBloc,
+                    child: CustomShopScreen(
+                      studentUid: widget.uid,
+                      currentCoins: _totalCoins,
+                      currentLevel: _level,
                     ),
-                  ).then((_) {
-                    if (mounted) _loadProfile();
-                  });
-                },
-          child: Container(
+                  ),
+                ),
+              ).then((_) {
+                if (mounted) _loadProfile();
+              });
+            },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 4),
@@ -179,54 +181,54 @@ class _StudentProfileState extends State<StudentProfile> {
             ),
             child: AvatarWidget(config: _avatarConfig, size: 96.0),
           ),
-        ),
-        Positioned(
-          bottom: -2,
-          right: -2,
-          child: Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4A6CF7),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: const Icon(Icons.edit, color: Colors.white, size: 11),
-          ),
-        ),
-        Positioned(
-          bottom: -10,
-          left: 0,
-          right: 0,
-          child: Center(
+          Positioned(
+            bottom: -2,
+            right: -2,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF8F00),
-                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFF4A6CF7),
+                shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
-              child: _loading
-                  ? const SizedBox(
-                      width: 36,
-                      height: 12,
-                      child: LinearProgressIndicator(
-                        backgroundColor: Colors.transparent,
-                        color: Colors.white,
-                        minHeight: 2,
-                      ),
-                    )
-                  : Text(
-                      'Level $_level',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+              child: const Icon(Icons.edit, color: Colors.white, size: 11),
             ),
           ),
-        ),
-      ],
+          Positioned(
+            bottom: -10,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF8F00),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: _loading
+                    ? const SizedBox(
+                        width: 36,
+                        height: 12,
+                        child: LinearProgressIndicator(
+                          backgroundColor: Colors.transparent,
+                          color: Colors.white,
+                          minHeight: 2,
+                        ),
+                      )
+                    : Text(
+                        'Level $_level',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

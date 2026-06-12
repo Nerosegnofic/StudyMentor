@@ -6,6 +6,7 @@ import 'garden_state.dart';
 
 class GardenBloc extends Bloc<GardenEvent, GardenState> {
   final AiEngineRepository _repo;
+  String? _currentStudentUid;
 
   GardenBloc({AiEngineRepository? repo})
       : _repo = repo ?? AiEngineRepository.instance,

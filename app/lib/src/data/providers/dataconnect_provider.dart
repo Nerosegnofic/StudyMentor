@@ -14,7 +14,6 @@ import '../../domain/models/quiz_attempt_model.dart';
 import '../../domain/models/question_detail_model.dart';
 import '../../domain/models/ai_summary_model.dart';
 import '../../domain/models/notification_model.dart';
-import '../catalog/subject_catalog.dart';
 import '../catalog/subject_metadata_registry.dart';
 import '../repositories/ai_engine_repository.dart';
 
@@ -428,12 +427,12 @@ class DataConnectProvider {
     required String studentUid,
     required String subjectKey,
   }) async {
-    final subject = SubjectCatalog.byKey(subjectKey);
-    if (subject == null) return [];
+    final subject = SubjectMetadataRegistry.getDefinition(subjectKey);
     
     // Simulate real data from DataConnect
     int index = 0;
-    return subject.skillKeys.map((key) {
+    final mockSkills = ['basics', 'intermediate', 'advanced'];
+    return mockSkills.map((key) {
       index++;
       final isStrong = index % 3 == 0;
       return SkillProgressModel(
@@ -468,12 +467,13 @@ class DataConnectProvider {
 
   Future<List<SubjectSummaryModel>> getAvailableSubjects() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    return SubjectCatalog.all.map((s) {
-      final def = SubjectMetadataRegistry.getDefinition(s.key);
+    final globalKeys = ['math', 'science', 'history', 'english', 'geography', 'art', 'music'];
+    return globalKeys.map((key) {
+      final def = SubjectMetadataRegistry.getDefinition(key);
       return SubjectSummaryModel(
-        subjectKey: s.key,
+        subjectKey: def.key,
         colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
-        skillsCount: s.skillKeys.length,
+        skillsCount: 3,
         masteryPercent: 0,
         quizzesCompleted: 0,
         totalTimeSpent: Duration.zero,
@@ -491,6 +491,12 @@ class DataConnectProvider {
         level: 1,
       );
     }
+    // Create Subject rows in AI engine so assigned subjects appear in the garden.
+    try {
+      await AiEngineRepository.instance.ensureSubjects(subjectKeys, studentUid);
+    } catch (e) {
+      print('Failed to sync subjects to AI engine: $e');
+    }
   }
 
   Future<void> removeSubject({required String studentUid, required String subjectKey}) async {
@@ -500,28 +506,24 @@ class DataConnectProvider {
       subjectKey: subjectKey,
     ).execute();
 
-    // 2. Clear backend vectors if it's a custom subject
-    const globalKeys = ['math', 'science', 'history', 'english', 'geography', 'art', 'music'];
-    if (!globalKeys.contains(subjectKey.toLowerCase())) {
-      try {
-        await AiEngineRepository.instance.deleteSubject(subjectKey);
-      } catch (e) {
-        print('Failed to clear backend vectors for custom subject: $e');
-      }
+    // 2. Delete subject from AI engine (garden, skills, embeddings, etc.)
+    // Backend returns 404 for global subjects — caught and ignored below.
+    try {
+      await AiEngineRepository.instance.deleteSubject(subjectKey, studentUid);
+    } catch (e) {
+      print('AI engine subject delete skipped or failed: $e');
     }
   }
 
   Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    final subject = SubjectCatalog.byKey(subjectKey);
-    final colorHex = subject != null 
-        ? '#${subject.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}'
-        : '#2196F3';
+    final subject = SubjectMetadataRegistry.getDefinition(subjectKey);
+    final colorHex = '#${subject.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
         
     return SubjectSummaryModel(
       subjectKey: subjectKey,
       colorHex: colorHex,
-      skillsCount: subject?.skillKeys.length ?? 0,
+      skillsCount: 3,
       masteryPercent: 88,
       quizzesCompleted: 24,
       totalTimeSpent: const Duration(hours: 5, minutes: 10),

@@ -74,7 +74,6 @@ class LlamaParseStrategy(DocumentParserStrategy):
         if settings.LLAMA_CLOUD_API_KEY:
             os.environ["LLAMA_CLOUD_API_KEY"] = settings.LLAMA_CLOUD_API_KEY
 
-
         is_english = _is_english_subject(subject_name)
 
         # Build LlamaParse kwargs based on subject language
@@ -95,7 +94,6 @@ class LlamaParseStrategy(DocumentParserStrategy):
             print(f"[{document_id}] Parser mode: ARABIC (subject='{subject_name}')", flush=True)
 
         parser = LlamaParse(**parse_kwargs)
-
 
         print(f"[{document_id}] Starting LlamaParse extraction...", flush=True)
         try:

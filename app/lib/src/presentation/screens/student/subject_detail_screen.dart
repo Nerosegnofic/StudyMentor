@@ -10,6 +10,8 @@ import '../../../bloc/gamification/gamification_bloc.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/quiz_count.dart';
 import '../../../bloc/auth/auth_bloc.dart';
+import '../../../bloc/garden/garden_bloc.dart';
+import '../../../bloc/garden/garden_state.dart';
 
 const _kGreen = Color(0xFF2E7D32);
 const _kGreenLight = Color(0xFFE8F5E9);
@@ -39,10 +41,12 @@ class SubjectDetailScreen extends StatefulWidget {
 class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   late Future<List<SkillDetailModel>> _skillsFuture;
   StudentConfigModel _config = const StudentConfigModel();
+  late double _masteryPercent;
 
   @override
   void initState() {
     super.initState();
+    _masteryPercent = widget.masteryPercent;
     _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
     _loadConfig();
   }
@@ -61,46 +65,58 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stage = GrowthStageUtils.fromMastery(widget.masteryPercent);
+    final stage = GrowthStageUtils.fromMastery(_masteryPercent);
 
-    return Scaffold(
-      backgroundColor: _kGreenLight,
-      appBar: AppBar(
+    return BlocListener<GardenBloc, GardenState>(
+      listener: (context, state) {
+        if (state is GardenLoaded) {
+          final plant = state.plants.where((p) => p.subjectId == widget.subjectId).firstOrNull;
+          if (plant != null && mounted) {
+            setState(() {
+              _masteryPercent = plant.masteryPercent;
+              _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
+            });
+          }
+        }
+      },
+      child: Scaffold(
         backgroundColor: _kGreenLight,
-        elevation: 0,
-        title: Text(
-          '${widget.subjectName} Garden',
-          style: const TextStyle(
-            color: _kGreen,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
+        appBar: AppBar(
+          backgroundColor: _kGreenLight,
+          elevation: 0,
+          title: Text(
+            '${widget.subjectName} Garden',
+            style: const TextStyle(
+              color: _kGreen,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
           ),
+          iconTheme: const IconThemeData(color: _kGreen),
         ),
-        iconTheme: const IconThemeData(color: _kGreen),
-      ),
-      body: FutureBuilder<List<SkillDetailModel>>(
-        future: _skillsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: _kGreen));
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Could not load skills.\n${snapshot.error}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
+        body: FutureBuilder<List<SkillDetailModel>>(
+          future: _skillsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator(color: _kGreen));
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'Could not load skills.\n${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          final skills = snapshot.data ?? [];
-          return _buildContent(context, stage, skills);
-
-        },
+            final skills = snapshot.data ?? [];
+            return _buildContent(context, stage, skills);
+          },
+        ),
       ),
     );
   }
@@ -123,12 +139,12 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
             subjectName: widget.subjectName,
             stage: stage,
-            masteryPercent: widget.masteryPercent,
+            masteryPercent: _masteryPercent,
           ),
           const SizedBox(height: 20),
 
           // ── Growth progress card ──────────────────────────────────────────
-          _buildGrowthProgressCard(widget.masteryPercent),
+          _buildGrowthProgressCard(_masteryPercent),
           const SizedBox(height: 12),
 
 
@@ -141,19 +157,19 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   height: 48,
                   decoration: BoxDecoration(
 
-                    color: GrowthStageUtils.healthColor(widget.masteryPercent)
-                        .withOpacity(0.15),
 
+                    color: GrowthStageUtils.healthColor(_masteryPercent)
+                        .withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    widget.masteryPercent >= 75
+                    _masteryPercent >= 75
                         ? Icons.local_florist_rounded
-
-                        : widget.masteryPercent >= 50
+                        : _masteryPercent >= 50
                             ? Icons.spa_rounded
                             : Icons.energy_savings_leaf_rounded,
-                    color: GrowthStageUtils.healthColor(widget.masteryPercent),
+                    color: GrowthStageUtils.healthColor(_masteryPercent),
+
 
                     size: 24,
                   ),
@@ -163,16 +179,18 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _masteryLabel(widget.masteryPercent),
+                      _masteryLabel(_masteryPercent),
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: GrowthStageUtils.healthColor(widget.masteryPercent),
+                        color: GrowthStageUtils.healthColor(_masteryPercent),
                       ),
                     ),
                     Text(
 
-                      'Overall mastery: ${widget.masteryPercent.toStringAsFixed(0)}%',
+
+                      'Overall mastery: ${_masteryPercent.toStringAsFixed(0)}%',
+
                       style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
 
                     ),
@@ -226,10 +244,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             width: double.infinity,
             height: 52,
             child: ElevatedButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 final gamificationBloc = context.read<GamificationBloc>();
                 final gardenBloc = context.read<GardenBloc>();
-                Navigator.of(context).push(
+                await Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     fullscreenDialog: true,
 
@@ -242,6 +260,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         repository: AiEngineRepository.instance,
                         studentId: widget.studentUid,
                         contextType: QuizContext.voluntary,
+                        subjectId: widget.subjectId,
                         totalQuestions: switch (_config.quizCount) {
                           Auto() => 5,
                           Fixed(:final count) => count,
@@ -251,6 +270,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     ),
                   ),
                 );
+                if (mounted) {
+                  setState(() {
+                    _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
+                  });
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kGreen,
@@ -362,7 +386,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
     if (mastery >= 80) return 'Flourishing';
     if (mastery >= 60) return 'Growing Well';
     if (mastery >= 40) return 'Making Progress';
-    if (mastery >= 20) return 'Just Started';
+    if (mastery > 0)   return 'Just Started';
     return 'Not Started Yet';
   }
 }

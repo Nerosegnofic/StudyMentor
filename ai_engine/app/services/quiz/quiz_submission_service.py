@@ -10,11 +10,14 @@ from app.repositories import (
     get_question_by_id,
     save_question_response,
     get_student_skill_state,
+    upsert_garden_plant,
 )
 from app.services.evaluation.bkt_engine import BKTEngine
+from app.services.gamification import GamificationService
 from app.core.config import settings
 
 bkt_engine = BKTEngine()
+gamification_service = GamificationService()
 
 
 def process_quiz_submission(
@@ -61,6 +64,7 @@ def process_quiz_submission(
 
     triggered_punishment = False
     correct_answers = 0
+    total_time_ms = 0
 
     for ans in request.answers:
         # G22c: Cross-session guard — reject answers referencing foreign questions
@@ -88,6 +92,7 @@ def process_quiz_submission(
         )
         save_question_response(db, db_response)
         db_question.submitted_at = datetime.utcnow()
+        total_time_ms += ans.time_taken_ms
 
         difficulty = db_question.difficulty
         skill_name = db_question.skill.name if db_question.skill else "General"
@@ -127,7 +132,27 @@ def process_quiz_submission(
         quiz_session.score = score
         quiz_session.end_time = datetime.utcnow()
 
+    # ── Gamification rewards ──────────────────────────────────────────────
+    rewards = gamification_service.process_quiz_rewards(
+        db,
+        student_uid,
+        quiz_session.session_id,
+        correct_answers=correct_answers,
+        total_questions=total_submitted,
+        total_time_ms=total_time_ms,
+        quiz_context=quiz_session.quiz_context or "VOLUNTARY",
+        client_local_date=request.client_local_date,
+    )
+
     db.commit()
+
+    # ── Garden sync (update plant mastery after BKT states are persisted) ─
+    if quiz_session and quiz_session.subject_id:
+        try:
+            upsert_garden_plant(db, student_uid, quiz_session.subject_id)
+            db.commit()
+        except Exception:
+            db.rollback()
 
     if score >= 85:
         feedback = "ممتاز! لقد أبليت بلاءً حسناً."
@@ -143,4 +168,5 @@ def process_quiz_submission(
         score=score,
         total_questions=total_submitted,
         feedback=feedback,
+        rewards=rewards,
     )

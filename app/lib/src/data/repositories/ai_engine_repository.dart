@@ -175,7 +175,7 @@ class AiEngineRepository {
   /// - Physical device → your machine's LAN IP, e.g. `http://192.168.x.x:8000`
   ///
   /// Change this single constant when switching environments.
-  static const String defaultBaseUrl = 'http://192.168.0.219:8000';
+  static const String defaultBaseUrl = 'http://192.168.1.6:8000';
 
   /// Lazy singleton — created on first access, reused everywhere.
   static final AiEngineRepository instance = AiEngineRepository(
@@ -383,13 +383,23 @@ class AiEngineRepository {
   // Analytics endpoints
   // -------------------------------------------------------------------------
 
-  /// `DELETE /analytics/subjects/{subject_name}` — securely wipe a custom subject
-  Future<void> deleteSubject(String subjectName) async {
+  /// `POST /analytics/subjects/ensure` — create Subject rows for assigned subjects
+  Future<void> ensureSubjects(List<String> subjectNames, String studentUid) async {
     final headers = await _getJsonHeaders();
-    final response = await http.delete(
-      Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectName'),
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/analytics/subjects/ensure'),
       headers: headers,
+      body: jsonEncode({'student_uid': studentUid, 'subject_names': subjectNames}),
     );
+    _assertSuccess(response, 'ensureSubjects');
+  }
+
+  /// `DELETE /analytics/subjects/{subject_name}` — securely wipe a custom subject
+  Future<void> deleteSubject(String subjectName, String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectName')
+        .replace(queryParameters: {'student_uid': studentUid});
+    final response = await http.delete(uri, headers: headers);
     _assertSuccess(response, 'deleteSubject');
   }
 }

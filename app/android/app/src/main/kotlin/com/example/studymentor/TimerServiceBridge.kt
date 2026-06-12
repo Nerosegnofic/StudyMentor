@@ -102,7 +102,6 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                         val apps          = call.argument<List<String>>("monitoredApps") ?: emptyList()
                         val usageLimit    = call.argument<Int>("usageLimitSecs") ?: 1800
                         val cooldownLimit = call.argument<Int>("cooldownLimitSecs") ?: 600
-                        val studentUid    = call.argument<String>("studentUid") ?: ""
 
                         val intent = serviceIntent(ACTION_START).apply {
                             putExtra(UsageTimerService.EXTRA_STUDENT_UID,         studentUid)
@@ -145,7 +144,6 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                         val apps          = call.argument<List<String>>("monitoredApps") ?: emptyList()
                         val usageLimit    = call.argument<Int>("usageLimitSecs") ?: 1800
                         val cooldownLimit = call.argument<Int>("cooldownLimitSecs") ?: 600
-                        val studentUid    = call.argument<String>("studentUid") ?: ""
 
                         val intent = serviceIntent(ACTION_START).apply {
                             putExtra(UsageTimerService.EXTRA_STUDENT_UID,         studentUid)

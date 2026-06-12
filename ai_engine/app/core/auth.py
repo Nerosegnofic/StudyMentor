@@ -15,8 +15,8 @@ def init_firebase():
             if settings.FIREBASE_SERVICE_ACCOUNT_JSON:
                 print(f"DEBUG: Initializing Firebase with Service Account: {settings.FIREBASE_SERVICE_ACCOUNT_JSON}")
                 cred = credentials.Certificate(settings.FIREBASE_SERVICE_ACCOUNT_JSON)
-                firebase_admin.initialize_app(cred, options={'projectId': settings.FIREBASE_PROJECT_ID})
-                print(f"DEBUG: Firebase initialized with Service Account. Overrode Project ID to: {settings.FIREBASE_PROJECT_ID}")
+                firebase_admin.initialize_app(cred)
+                print("DEBUG: Firebase initialized with Service Account.")
             else:
                 print(f"DEBUG: Falling back to Project ID: {settings.FIREBASE_PROJECT_ID}")
                 firebase_admin.initialize_app(options={'projectId': settings.FIREBASE_PROJECT_ID})

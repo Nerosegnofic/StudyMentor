@@ -2,9 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date, text
+from sqlalchemy import func
 from app.core.database import get_db
 from app.core.auth import get_current_user
+from app.repositories.vector_repo import delete_vector_embeddings_by_subject
 from app.repositories import (
     get_subject_mastery_hierarchy,
     get_subject_stats,
@@ -16,7 +17,9 @@ from app.services.evaluation.analytics_service import (
 from app.models.domain import (
     Subject,
     QuizSession,
+    GardenPlant,
 )
+from app.models.domain.student import StudentSubjectProfile
 
 router = APIRouter(prefix="/analytics", tags=["Analytics Dashboard"])
 
@@ -162,9 +165,9 @@ async def ensure_subjects(
     _: str = Depends(get_current_user),
 ):
     """
-    Ensures a Subject row exists in the AI engine for each assigned subject name.
-    Called when a parent assigns global subjects to a student so they appear in
-    the Knowledge Garden. Skips names that already have a matching row (case-insensitive).
+    Ensures a Subject row exists for each assigned subject name.
+    Called when a parent assigns subjects to a student so they appear in
+    the Knowledge Garden. Skips names that already exist (case-insensitive).
     """
     created = []
     for name in body.subject_names:
@@ -181,52 +184,48 @@ async def ensure_subjects(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# DELETE /analytics/subjects/{subject_name}   — Wipe custom subject securely
+# DELETE /analytics/subjects/{subject_name}  — Wipe custom subject securely
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.delete("/subjects/{subject_name}")
 async def delete_subject(
     subject_name: str,
-    student_uid: str = Query(..., description="UID of the student who owns the subject"),
+    student_uid: str = Query(...),
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
 ):
     """
-    Deletes a custom subject and all related data for a specific student.
-    Global subjects (is_global=True) cannot be deleted.
-    QuizSession history is preserved with subject_id set to NULL.
+    Deletes a custom subject and all its associated skills for a specific student.
+    Only deletes subjects owned by the student (not global subjects).
     """
     subject = db.query(Subject).filter(
         func.lower(Subject.name) == subject_name.lower(),
         Subject.student_uid == student_uid,
+        Subject.is_global == False,
     ).first()
-
     if not subject:
-        raise HTTPException(status_code=404, detail="Subject not found or access denied.")
+        raise HTTPException(status_code=404, detail="Subject not found or not owned by this student.")
 
     subject_id = subject.subject_id
 
-    try:
-        db.execute(
-            text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'subject_id' = :sid"),
-            {"sid": str(subject_id)},
-        )
-        db.execute(
-            text("UPDATE quiz_sessions SET subject_id = NULL WHERE subject_id = :sid"),
-            {"sid": subject_id},
-        )
-        db.execute(
-            text("DELETE FROM garden_plants WHERE subject_id = :sid"),
-            {"sid": subject_id},
-        )
-        db.execute(
-            text("DELETE FROM student_subject_profiles WHERE subject_id = :sid"),
-            {"sid": subject_id},
-        )
-        db.delete(subject)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete subject: {str(e)}")
+    # Delete rows that have no SQLAlchemy cascade from Subject
+    db.query(GardenPlant).filter(
+        GardenPlant.subject_id == subject_id,
+        GardenPlant.student_uid == student_uid,
+    ).delete()
+    db.query(StudentSubjectProfile).filter(
+        StudentSubjectProfile.subject_id == subject_id,
+        StudentSubjectProfile.student_uid == student_uid,
+    ).delete()
 
-    return {"status": "success", "message": f"Subject '{subject_name}' deleted successfully."}
+    # Delete the subject (cascades: skills → skill_states, curriculum_chunks, questions)
+    db.delete(subject)
+    db.commit()
+
+    # Delete vector embeddings from LangChain's pgvector table (outside SQLAlchemy ORM)
+    try:
+        delete_vector_embeddings_by_subject(subject_id)
+    except Exception as e:
+        print(f"[DeleteSubject] Vector cleanup failed for subject_id={subject_id}: {e}", flush=True)
+
+    return {"deleted": subject_name}

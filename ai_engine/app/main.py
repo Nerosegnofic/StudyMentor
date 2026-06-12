@@ -16,6 +16,7 @@ from app.controllers.routes_gamification import router as gamification_router
 from app.core.database import get_vector_store, init_db, SessionLocal
 from app.core.cleanup import start_scheduler, shutdown_scheduler
 from app.core.auth import init_firebase, get_current_user_optional
+from app.repositories import seed_levels
 
 from contextlib import asynccontextmanager
 
@@ -30,16 +31,10 @@ async def lifespan(app: FastAPI):
     try:
         init_firebase()   # Raises RuntimeError if Firebase fails (intentional)
         init_db()
-        # Seed static gamification levels on first startup
-        from app.repositories.gamification_repo import seed_levels
-        _seed_db = SessionLocal()
-        try:
-            seed_levels(_seed_db)
-        finally:
-            _seed_db.close()
         _ = get_vector_store()
         db = SessionLocal()
         try:
+            seed_levels(db)
             start_scheduler(db)
         finally:
             db.close()

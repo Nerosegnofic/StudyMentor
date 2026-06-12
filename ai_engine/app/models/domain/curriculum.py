@@ -31,7 +31,7 @@ class Skill(Base):
     lesson_index = Column(Integer, nullable=True)
     weight = Column(Float, default=1.0)
     default_difficulty = Column(Float, default=1.0)
-    default_learn_rate = Column(Float, default=0.1)
+    default_learn_rate = Column(Float, default=0.05)
     
     subject = relationship("Subject", back_populates="skills")
     student_states = relationship("StudentSkillState", back_populates="skill", cascade="all, delete-orphan")

@@ -30,21 +30,6 @@ class GardenSubjectCard extends StatelessWidget {
               clipBehavior: Clip.none,
               alignment: Alignment.bottomCenter,
               children: [
-                Positioned(
-                  bottom: 2,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      width: 60,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                ),
                 PlantWidget(stage: stage, size: 110),
                 // Stage badge — top-right of plant
                 Positioned(
@@ -91,6 +76,40 @@ class GardenSubjectCard extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF3D6B2E),
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            // ── Mastery % ──────────────────────────────────────────────
+            Text(
+              '${plant.masteryPercent.toStringAsFixed(0)}%',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF5A8A4A),
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            // ── Within-stage progress bar ──────────────────────────────
+            // Each stage spans 20 mastery points (0-20, 20-40, …, 80-100).
+            // The bar fills proportionally within the current stage so even
+            // small BKT gains are immediately visible.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (plant.masteryPercent % 20) / 20,
+                  minHeight: 4,
+                  backgroundColor: const Color(0xFFD4ECC8),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF4CAF50),
+                  ),
+                ),
               ),
             ),
 
