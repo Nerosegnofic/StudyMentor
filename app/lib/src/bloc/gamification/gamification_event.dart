@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/models/gamification_enums.dart';
 
 abstract class GamificationEvent extends Equatable {
   const GamificationEvent();

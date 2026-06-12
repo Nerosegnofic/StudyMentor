@@ -4,15 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/document/document_upload_bloc.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../domain/models/student_model.dart';
-import '../../../domain/models/student_model.dart';
 import '../../../domain/models/subject_summary_model.dart';
 import 'parent_subject_detail_screen.dart';
 import '../../../bloc/subject/subject_bloc.dart';
 import '../../../bloc/subject/subject_event.dart';
 import '../../../bloc/subject/subject_state.dart';
-import '../../../bloc/subject_detail/subject_detail_bloc.dart';
-import '../../../bloc/subject_detail/subject_detail_event.dart';
-import '../../../domain/repositories/auth_repository.dart';
 import '../student/student_documents.dart';
 
 // SubjectData removed, using SubjectSummaryModel directly

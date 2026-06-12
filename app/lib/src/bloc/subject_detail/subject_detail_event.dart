@@ -1,8 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/models/subject_summary_model.dart';
-import '../../domain/models/skill_progress_model.dart';
-import '../../domain/models/quiz_attempt_model.dart';
-import '../../domain/models/question_detail_model.dart';
 
 abstract class SubjectDetailEvent extends Equatable {
   const SubjectDetailEvent();

@@ -4,7 +4,6 @@ import 'package:studymentor/src/domain/models/gamification_enums.dart';
 import 'package:studymentor/src/domain/models/gamification_models.dart';
 import 'package:studymentor/src/domain/models/reward_result.dart';
 import 'package:studymentor/src/domain/repositories/gamification_repository.dart';
-import 'package:studymentor/src/data/constants/gamification_levels.dart';
 import 'package:studymentor/src/data/repositories/ai_engine_repository.dart';
 
 /// Server-authoritative gamification repository.

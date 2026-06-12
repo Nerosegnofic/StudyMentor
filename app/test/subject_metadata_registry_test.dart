@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../lib/src/data/catalog/subject_metadata_registry.dart';
 

@@ -427,7 +427,7 @@ class DataConnectProvider {
     required String studentUid,
     required String subjectKey,
   }) async {
-    final subject = SubjectMetadataRegistry.getDefinition(subjectKey);
+    SubjectMetadataRegistry.getDefinition(subjectKey);
     
     // Simulate real data from DataConnect
     int index = 0;

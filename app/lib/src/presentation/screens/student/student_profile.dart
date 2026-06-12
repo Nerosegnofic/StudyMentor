@@ -48,9 +48,8 @@ class _StudentProfileState extends State<StudentProfile> {
         dataconnect.getStudentAvatar(widget.uid),
       ]);
 
-      final profile = results[0] as Map<String, dynamic>;
       final gamification = results[1] as Map<String, dynamic>;
-      final avatarMap = results[2] as Map<String, dynamic>?;
+      final avatarMap = results[2];
 
       if (mounted) {
         setState(() {

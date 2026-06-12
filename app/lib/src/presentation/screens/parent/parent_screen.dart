@@ -18,16 +18,21 @@ import 'parent_help_center.dart';
 class ParentScreen extends StatefulWidget {
   final String fullName;
   final String uid;
+  final int initialIndex;
 
-  const ParentScreen({super.key, required this.fullName, required this.uid});
+  const ParentScreen({
+    super.key,
+    required this.fullName,
+    required this.uid,
+    this.initialIndex = 0,
+  });
 
   @override
   State<ParentScreen> createState() => _ParentScreenState();
 }
 
 class _ParentScreenState extends State<ParentScreen> {
-  // Default to tab 0 — the new Home Dashboard
-  int _selectedIndex = 0;
+  late int _selectedIndex = widget.initialIndex;
 
   // False until the parent has granted the battery-optimisation permission.
   bool _permissionsCleared = false;
@@ -55,8 +60,8 @@ class _ParentScreenState extends State<ParentScreen> {
     );
     if (mounted) {
       context.read<StudentsBloc>().add(
-          LoadStudentsRequested(parentUid: widget.uid),
-          );
+        LoadStudentsRequested(parentUid: widget.uid),
+      );
     }
   }
 

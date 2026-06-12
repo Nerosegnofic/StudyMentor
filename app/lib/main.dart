@@ -114,7 +114,8 @@ class StudyMentorApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>(
-            create: (context) => AuthBloc(repository: authRepository)..add(AppStarted()),
+            create: (context) =>
+                AuthBloc(repository: authRepository)..add(AppStarted()),
           ),
           BlocProvider<AppConfigBloc>(
             create: (context) => AppConfigBloc(authRepository: authRepository),
@@ -152,15 +153,26 @@ class StudyMentorApp extends StatelessWidget {
             '/register': (_) => const ParentRegisterScreen(),
             '/confirm-email': (_) => const ConfirmEmailScreen(),
             '/forgot-password': (_) => const ForgotPasswordScreen(),
+            // ── Safe cast: fall back to LoginScreen if state is unexpected ──
             '/parent': (context) {
-              final user =
-                  (context.read<AuthBloc>().state as AuthAuthenticated).user;
-              return ParentScreen(fullName: user.fullName, uid: user.uid);
+              final state = context.read<AuthBloc>().state;
+              if (state is AuthAuthenticated) {
+                return ParentScreen(
+                  fullName: state.user.fullName,
+                  uid: state.user.uid,
+                );
+              }
+              return const LoginScreen();
             },
             '/student': (context) {
-              final user =
-                  (context.read<AuthBloc>().state as AuthAuthenticated).user;
-              return StudentScreen(fullName: user.fullName, uid: user.uid);
+              final state = context.read<AuthBloc>().state;
+              if (state is AuthAuthenticated) {
+                return StudentScreen(
+                  fullName: state.user.fullName,
+                  uid: state.user.uid,
+                );
+              }
+              return const LoginScreen();
             },
           },
           home: const RootPage(),

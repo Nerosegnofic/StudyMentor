@@ -8,7 +8,6 @@ import '../../../bloc/students/students_event.dart';
 import '../../../bloc/students/students_state.dart';
 import '../../../domain/models/student_model.dart';
 import '../../widgets/student_card.dart';
-import 'student_config_screen.dart';
 import 'student_profile_dashboard.dart';
 
 class ParentStudents extends StatefulWidget {

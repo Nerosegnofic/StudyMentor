@@ -204,7 +204,7 @@ class _StudentScreenState extends State<StudentScreen>
       ]);
       if (mounted) {
         final profile = results[0] as Map<String, dynamic>;
-        final avatarMap = results[1] as Map<String, dynamic>?;
+        final avatarMap = results[1];
         setState(() {
 
           _coins = (profile['coins_total'] as int?) ?? 0;
