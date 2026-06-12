@@ -39,9 +39,12 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
   @override
   void didUpdateWidget(ParentVerificationDialog oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Propagate a new incoming error into local state.
-    if (widget.errorMessage != oldWidget.errorMessage &&
-        widget.errorMessage != null) {
+    // Only propagate the error once loading has finished. This prevents the
+    // error from flashing in while the spinner is still visible. The check
+    // intentionally omits the `!= oldWidget.errorMessage` guard so that
+    // consecutive submissions returning the same error string still restore
+    // _serverError after onChanged cleared it.
+    if (widget.errorMessage != null && !widget.isLoading) {
       setState(() => _serverError = widget.errorMessage);
     }
   }

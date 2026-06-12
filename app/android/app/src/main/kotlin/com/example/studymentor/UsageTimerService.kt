@@ -144,7 +144,7 @@ class UsageTimerService : Service() {
     private var isBlocked             = false
     private var cooldownRemSecs       = 0
     private var usageLimitSecs        = 1800
-    private var cooldownLimitSecs     = 600
+    private var cooldownLimitSecs     = 60
     private var monitoredApps         = mutableSetOf<String>()
     private var studentLoggedIn       = false
     private var monitoredInForeground = false
@@ -588,7 +588,7 @@ class UsageTimerService : Service() {
         isBlocked                = prefs.getBoolean(studentKey(uid, SUFFIX_IS_BLOCKED), false)
         cooldownRemSecs          = prefs.getInt(studentKey(uid, SUFFIX_COOLDOWN_REMAINING), 0)
         usageLimitSecs           = prefs.getInt(studentKey(uid, SUFFIX_USAGE_LIMIT), 1800)
-        cooldownLimitSecs        = prefs.getInt(studentKey(uid, SUFFIX_COOLDOWN_LIMIT), 600)
+        cooldownLimitSecs        = prefs.getInt(studentKey(uid, SUFFIX_COOLDOWN_LIMIT), 60)
         monitoredApps            = prefs.getStringSet(studentKey(uid, SUFFIX_MONITORED_APPS), emptySet())
                                        ?.toMutableSet() ?: mutableSetOf()
         quizDismissedForCooldown = prefs.getBoolean(studentKey(uid, SUFFIX_QUIZ_DISMISSED), false)
