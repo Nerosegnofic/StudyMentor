@@ -402,6 +402,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         studentPassword: event.studentPassword,
       );
       emit(StudentDeleted(studentUid: event.studentUid));
+      // Restore AuthAuthenticated so parent-facing screens (settings, profile)
+      // continue to display the parent's data correctly after navigation back.
+      final profile = await repository.getUserProfile();
+      if (profile != null) emit(AuthAuthenticated(profile));
     } catch (e) {
       emit(StudentDeleteError(_mapDeletionException(e)));
     }
