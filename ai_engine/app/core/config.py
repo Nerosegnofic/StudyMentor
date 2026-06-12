@@ -15,8 +15,25 @@ class Settings(BaseSettings):
     COHERE_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
     POSTGRES_CONNECTION: Optional[str] = None
-    FIREBASE_PROJECT_ID: str = "fcai-studymentor"
+    FIREBASE_PROJECT_ID: str = "studymentor-2026"
     FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = None
+
+    # --- AI Model Configuration ---
+    # Gemini Models:
+    # - "gemini-2.5-flash" (Recommended default: fast, cheap, highly capable)
+    # - "gemini-2.5-pro" (Better for complex logic, deeper reasoning, and complex parsing)
+    GEMINI_MODEL: str = "gemini-3.5-flash"
+    GEMINI_FALLBACK_MODEL: Optional[str] = "gemini-2.5-flash"
+
+    # Cohere Models:
+    # - "command-r-08-2024" (Current default)
+    # - "command-r-plus" (Recommended for advanced multi-step tools & reasoning)
+    COHERE_MODEL: str = "command-r-08-2024"
+
+    # Cohere Embeddings:
+    # - "embed-multilingual-v3.0" (Recommended: high-quality vector embeddings for Arabic)
+    # - "embed-multilingual-light-v3.0" (Faster, smaller dimensions)
+    COHERE_EMBEDDING_MODEL: str = "embed-multilingual-v3.0"
 
     # --- Guardrail Configuration ---
     # File Upload

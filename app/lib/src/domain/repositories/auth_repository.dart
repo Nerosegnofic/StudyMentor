@@ -4,6 +4,13 @@ import '../models/user_model.dart';
 import '../models/student_model.dart';
 import '../models/app_config_model.dart';
 import '../models/installed_app_model.dart';
+import '../models/subject_summary_model.dart';
+import '../models/quiz_attempt_model.dart';
+import '../models/question_detail_model.dart';
+import '../models/skill_progress_model.dart';
+import '../models/ai_summary_model.dart';
+import '../models/notification_model.dart';
+import '../models/report_models.dart';
 
 abstract class AuthRepository {
   Future<UserModel> signUp({
@@ -37,12 +44,7 @@ abstract class AuthRepository {
   });
   Future<void> markEmailVerifiedInDatabase(String uid);
 
-  Future<UserModel> updateProfile({
-    String? newFullName,
-    String? newEmail,
-    String? currentPassword,
-    String? newPassword,
-  });
+
 
   Future<List<InstalledAppModel>> getInstalledAppsForStudent(String studentUid);
   Future<void> syncInstalledAppsForStudent({
@@ -67,14 +69,50 @@ abstract class AuthRepository {
     required String studentUid,
     required String fullName,
   });
-  Future<void> deleteParentAccount({required String currentPassword});
 
-  Future<String?> updateStudentProfile({
-    required String studentUid,
-    required String studentEmail,
+
+  // ── Subjects & Skills ───────────────────────────────────────────────────
+  Future<List<SubjectSummaryModel>> getSubjectsByStudent(String studentUid);
+  Future<List<SubjectSummaryModel>> getAvailableSubjects();
+  Future<void> addSubjectsForStudent({required String studentUid, required List<String> subjectKeys});
+  Future<void> removeSubject({required String studentUid, required String subjectKey});
+  
+  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey);
+  Future<List<SkillProgressModel>> getSkillsForSubject(String studentUid, String subjectKey);
+  
+  // ── Quizzes ─────────────────────────────────────────────────────────────
+  Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, String subjectKey, {int limit = 10});
+  Future<List<QuizAttemptModel>> getAllQuizzes(String studentUid, String subjectKey);
+  Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber);
+
+  // ── Reports & Analytics ──────────────────────────────────────────────────
+  Future<WeeklyReportModel> getWeeklyReport(String studentUid);
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, String subjectKey);
+  Future<StudyHabitsReport> getStudyHabitsReport(String studentUid);
+  Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid);
+  
+  // Dashboard additions
+  Future<AiSummaryModel> getAiSummary(String parentUid);
+  Future<List<NotificationModel>> getNotificationsForParent(String parentUid);
+  Future<void> markAllNotificationsRead(String parentUid);
+
+  // ── Profile management ──────────────────────────────────────────────────
+  Future<UserModel> updateProfile({
+    required String parentUid,
     String? newFullName,
     String? newEmail,
     String? currentPassword,
     String? newPassword,
+  });
+  Future<void> deleteParentAccount(String currentPassword);
+
+  Future<StudentModel> updateStudentProfile({
+    required String studentUid,
+    String? studentEmail,
+    String? newFullName,
+    String? newEmail,
+    String? currentPassword,
+    String? newPassword,
+    String? newGradeLevel,
   });
 }

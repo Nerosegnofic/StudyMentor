@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.domain import QuizSession, Question, QuestionResponse, StudentSubjectProfile
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Set
 
 def create_quiz_session(db: Session, student_uid: str, subject_id: int, total_questions: int) -> QuizSession:
     quiz_session = QuizSession(
@@ -84,3 +84,44 @@ def get_questions_for_session(
         .order_by(Question.created_at)
         .all()
     )
+
+
+def get_recent_question_fingerprints(
+    db: Session,
+    student_uid: str,
+    subject_id: int,
+    limit: int = 50,
+) -> Set[str]:
+    """
+    Get fingerprints (first 80 chars) of recently generated questions
+    for a specific student + subject, to prevent the LLM from repeating
+    questions across quiz sessions.
+
+    Scoped to `subject_id` so Math dedup fingerprints don't bleed into
+    Arabic or Science quizzes (and vice versa).
+    """
+    recent_session_ids = (
+        db.query(QuizSession.session_id)
+        .filter(
+            QuizSession.student_uid == student_uid,
+            QuizSession.subject_id == subject_id,
+        )
+        .order_by(QuizSession.start_time.desc())
+        .limit(10)
+        .all()
+    )
+    if not recent_session_ids:
+        return set()
+
+    session_ids = [s.session_id for s in recent_session_ids]
+    recent_questions = (
+        db.query(Question.text_content)
+        .filter(Question.session_id.in_(session_ids))
+        .limit(limit)
+        .all()
+    )
+    return {
+        q.text_content[:150].strip()
+        for q in recent_questions
+        if q.text_content
+    }

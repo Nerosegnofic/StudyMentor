@@ -1,4 +1,5 @@
 import math
+from datetime import datetime
 from typing import Tuple
 from app.models.domain import StudentSkillState
 from app.services.evaluation.config import BKTConfig
@@ -62,6 +63,14 @@ class BKTEngine:
         Main entry point for updating a student's cognitive state after an answer.
         Returns (trigger_punishment, updated_spam_count).
         """
+        # Apply time-based forgetting before the Bayesian update so skills decay
+        # when a student returns after a break.
+        if skill_state.last_practiced:
+            days_elapsed = (datetime.utcnow() - skill_state.last_practiced).total_seconds() / 86400.0
+            if days_elapsed > 0:
+                decayed = skill_state.mastery_probability * (self.cfg.forgetting_rate ** days_elapsed)
+                skill_state.mastery_probability = self._clamp(decayed)
+
         old_mastery = skill_state.mastery_probability
         guess, slip = self._adjust_parameters(difficulty, response_time)
         effective_quality = max(0.1, 1.0 - (hints_used * 0.3))
@@ -80,18 +89,18 @@ class BKTEngine:
         else:
             updated_spam_count = 0
 
-        # Assuming skill relationship is loaded, fallback to default 0.10 if not
-        learn_rate = skill_state.skill.default_learn_rate if skill_state.skill else 0.10
+        learn_rate = skill_state.skill.default_learn_rate if skill_state.skill else 0.05
 
         updated = self._bayesian_update(old_mastery, correct, guess, slip, learn_rate)
         new_mastery = old_mastery + effective_quality * (updated - old_mastery)
         
         skill_state.mastery_probability = self._clamp(new_mastery)
-        if skill_state.mastery_probability >= 0.95:
-            skill_state.is_mastered = True
-            
         skill_state.attempts += 1
-        # Reusing attempts as last_seen_step for simplicity since last_seen_step is no longer explicitly on state, 
-        # or we don't need it. The profile has current_step.
+        skill_state.last_practiced = datetime.utcnow()
+
+        # Require at least 6 answered questions before declaring a skill mastered,
+        # so a lucky streak of 5 correct answers doesn't trigger the mastered badge.
+        if skill_state.mastery_probability >= 0.95 and skill_state.attempts >= 6:
+            skill_state.is_mastered = True
 
         return trigger_punishment, updated_spam_count

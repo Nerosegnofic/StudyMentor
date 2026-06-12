@@ -24,7 +24,7 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
     """
     # Minimum number of characters for a chunk to stand on its own.
     # Smaller chunks get merged with the next chunk.
-    MIN_CHUNK_SIZE = 150
+    MIN_CHUNK_SIZE = 350
 
     def chunk(self, full_text: str, document_id: UUID) -> list:
         headers_to_split_on = [("#", "h1"), ("##", "h2"), ("###", "h3")]
@@ -57,7 +57,7 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
                 accumulator = chunk
             else:
                 combined_len = len(accumulator.page_content) + len(chunk.page_content)
-                if len(accumulator.page_content) < self.MIN_CHUNK_SIZE and combined_len <= 2200:
+                if len(accumulator.page_content) < self.MIN_CHUNK_SIZE and combined_len <= 3000:
                     # Merge: combine text, keep metadata from the first chunk
                     accumulator.page_content = accumulator.page_content + "\n\n" + chunk.page_content
                     # Inherit any new header metadata from the merged chunk

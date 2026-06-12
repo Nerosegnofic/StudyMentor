@@ -21,20 +21,12 @@ class GetStudentProfileVariablesBuilder {
 class GetStudentProfileStudent {
   final String uid;
   final String username;
-  final int? totalXp;
-  final int? totalCoins;
   final int? gradeLevel;
-  final int? totalQuestionsAnswered;
-  final int? currentStreak;
   GetStudentProfileStudent.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
   username = nativeFromJson<String>(json['username']),
-  totalXp = json['totalXp'] == null ? null : nativeFromJson<int>(json['totalXp']),
-  totalCoins = json['totalCoins'] == null ? null : nativeFromJson<int>(json['totalCoins']),
-  gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']),
-  totalQuestionsAnswered = json['totalQuestionsAnswered'] == null ? null : nativeFromJson<int>(json['totalQuestionsAnswered']),
-  currentStreak = json['currentStreak'] == null ? null : nativeFromJson<int>(json['currentStreak']);
+  gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -47,35 +39,19 @@ class GetStudentProfileStudent {
     final GetStudentProfileStudent otherTyped = other as GetStudentProfileStudent;
     return uid == otherTyped.uid && 
     username == otherTyped.username && 
-    totalXp == otherTyped.totalXp && 
-    totalCoins == otherTyped.totalCoins && 
-    gradeLevel == otherTyped.gradeLevel && 
-    totalQuestionsAnswered == otherTyped.totalQuestionsAnswered && 
-    currentStreak == otherTyped.currentStreak;
+    gradeLevel == otherTyped.gradeLevel;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, totalXp.hashCode, totalCoins.hashCode, gradeLevel.hashCode, totalQuestionsAnswered.hashCode, currentStreak.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, gradeLevel.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['uid'] = nativeToJson<String>(uid);
     json['username'] = nativeToJson<String>(username);
-    if (totalXp != null) {
-      json['totalXp'] = nativeToJson<int?>(totalXp);
-    }
-    if (totalCoins != null) {
-      json['totalCoins'] = nativeToJson<int?>(totalCoins);
-    }
     if (gradeLevel != null) {
       json['gradeLevel'] = nativeToJson<int?>(gradeLevel);
-    }
-    if (totalQuestionsAnswered != null) {
-      json['totalQuestionsAnswered'] = nativeToJson<int?>(totalQuestionsAnswered);
-    }
-    if (currentStreak != null) {
-      json['currentStreak'] = nativeToJson<int?>(currentStreak);
     }
     return json;
   }
@@ -83,11 +59,7 @@ class GetStudentProfileStudent {
   GetStudentProfileStudent({
     required this.uid,
     required this.username,
-    this.totalXp,
-    this.totalCoins,
     this.gradeLevel,
-    this.totalQuestionsAnswered,
-    this.currentStreak,
   });
 }
 

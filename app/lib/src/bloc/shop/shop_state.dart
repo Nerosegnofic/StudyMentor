@@ -50,11 +50,15 @@ class ShopLoaded extends ShopState {
     return switch (item.category) {
       ItemCategory.hair => avatarConfig.equippedHair == item.id,
       ItemCategory.outfit => avatarConfig.equippedOutfit == item.id,
-      ItemCategory.bottom => avatarConfig.equippedBottom == item.id,
-      ItemCategory.shoes => avatarConfig.equippedShoes == item.id,
+      ItemCategory.hairColor => avatarConfig.equippedHairColor == item.id,
+      ItemCategory.outfitColor => avatarConfig.equippedOutfitColor == item.id,
       ItemCategory.accessory => avatarConfig.equippedAccessory == item.id,
-      ItemCategory.background => avatarConfig.equippedBackground == item.id,
-      ItemCategory.special => avatarConfig.equippedSpecial == item.id,
+      ItemCategory.facialHair => avatarConfig.equippedFacialHair == item.id,
+      ItemCategory.facialHairColor => avatarConfig.equippedFacialHairColor == item.id,
+      ItemCategory.eyes => avatarConfig.equippedEyes == item.id,
+      ItemCategory.eyebrow => avatarConfig.equippedEyebrow == item.id,
+      ItemCategory.mouth => avatarConfig.equippedMouth == item.id,
+      ItemCategory.skinTone => avatarConfig.equippedSkinTone == item.id,
     };
   }
 
@@ -64,7 +68,6 @@ class ShopLoaded extends ShopState {
     int? coins,
     String? feedbackMessage,
     bool? feedbackIsError,
-    bool clearFeedback = false,
   }) {
     return ShopLoaded(
       catalog: catalog,
@@ -72,16 +75,23 @@ class ShopLoaded extends ShopState {
       avatarConfig: avatarConfig ?? this.avatarConfig,
       coins: coins ?? this.coins,
       level: level,
-      feedbackMessage: clearFeedback ? null : (feedbackMessage ?? this.feedbackMessage),
+      // feedbackMessage is intentionally NOT preserved — it is transient.
+      // Any copyWith call that doesn't explicitly pass it clears it to null,
+      // preventing the SnackBar from re-firing on the next state change.
+      feedbackMessage: feedbackMessage,
       feedbackIsError: feedbackIsError ?? this.feedbackIsError,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [ownedItemIds, avatarConfig.gender, avatarConfig.skinTone,
-       avatarConfig.equippedHair, avatarConfig.equippedOutfit,
-       avatarConfig.equippedBottom, avatarConfig.equippedShoes,
-       avatarConfig.equippedAccessory, avatarConfig.equippedBackground,
-       avatarConfig.equippedSpecial, coins, level, feedbackMessage];
+  List<Object?> get props => [
+    ownedItemIds, avatarConfig.gender, avatarConfig.skinTone,
+    avatarConfig.equippedHair, avatarConfig.equippedOutfit,
+    avatarConfig.equippedHairColor, avatarConfig.equippedOutfitColor,
+    avatarConfig.equippedAccessory, avatarConfig.equippedBackground,
+    avatarConfig.equippedFacialHair, avatarConfig.equippedFacialHairColor,
+    avatarConfig.equippedEyes, avatarConfig.equippedEyebrow,
+    avatarConfig.equippedMouth, avatarConfig.equippedSkinTone,
+    coins, level, feedbackMessage,
+  ];
 }

@@ -4,6 +4,27 @@ from app.core.config import settings
 from app.core.exceptions import InsufficientContextError
 
 
+# ---------------------------------------------------------------------------
+# Role Priority for re-ranking: lower number = higher priority in prompt.
+# Examples and exercises are most useful for quiz generation; explanations
+# provide supporting context; generic content is lowest priority.
+# ---------------------------------------------------------------------------
+ROLE_PRIORITY = {
+    'example': 0,       # Best for question generation — contains worked solutions
+    'exercise': 0,      # Equally good — contains practice problems
+    'rule': 1,          # Rules inform question design
+    'explanation': 2,   # Good context but less directly usable
+    'content': 3,       # Generic content — lowest priority
+}
+
+# Zone-specific context budgets: how many chunks per skill per zone.
+_ZONE_BUDGETS = {
+    "frontier": 5,   # Rich context for active learning
+    "review": 2,     # Light context for recall questions
+    "preview": 1,    # Minimal — just enough for a simple intro question
+}
+
+
 def retrieve_context_for_topics(
     topics: List[str],
     k: int = 10,
@@ -14,12 +35,11 @@ def retrieve_context_for_topics(
     Retrieves a fair distribution of textbook chunks across multiple topics
     and formats them for injection into the LLM prompt.
 
-    Uses Quota-based (Round Robin) retrieval with:
+    Uses MMR (Maximum Marginal Relevance) retrieval with:
       - 4-tier safe fallback chain (never drops all filters — data leak risk)
-      - Similarity score thresholding (filters irrelevant chunks)
       - Subject-scoped filtering (prevents cross-subject context contamination)
-      - Empty context guard (never calls LLM with blank curriculum content)
       - Deduplication across topics
+      - Empty context guard (never calls LLM with blank curriculum content)
 
     Args:
         topics: List of skill/topic names to retrieve context for.
@@ -34,15 +54,6 @@ def retrieve_context_for_topics(
     # Calculate per-topic quota (minimum 2 chunks per topic to ensure coverage)
     quota = max(2, k // max(len(topics), 1))
 
-    # Role priority for re-ranking: lower number = higher priority in prompt
-    ROLE_PRIORITY = {
-        'explanation': 0,
-        'rule': 0,
-        'example': 0,
-        'exercise': 0,
-        'content': 0,
-    }
-
     seen_contents: set = set()
     final_docs: list = []
 
@@ -50,13 +61,12 @@ def retrieve_context_for_topics(
         topic_docs = _retrieve_with_safe_fallback(
             vector_store=vector_store,
             topic=topic,
-            k=quota * 4,  # Fetch more than needed so we have room to filter and re-rank
+            k=quota * 4,  # Fetch more than needed for MMR diversity pool
             firebase_uid=firebase_uid,
             subject_id=subject_id,
         )
 
-        # Re-rank by role priority (all content roles are equally prioritised here;
-        # structural noise should have been excluded by the content_type filter)
+        # Re-rank by role priority (examples/exercises first)
         topic_docs.sort(
             key=lambda d: ROLE_PRIORITY.get(d.metadata.get('chunk_role', 'content'), 10)
         )
@@ -88,6 +98,86 @@ def retrieve_context_for_topics(
     return context
 
 
+def retrieve_context_for_quiz(
+    quiz_payload: list,
+    k: int = 15,
+    firebase_uid: str = None,
+    subject_id: int = None,
+) -> str:
+    """
+    Zone-aware retrieval: allocates different context budgets per zone.
+
+    Frontier skills get deep context (examples, exercises, explanations).
+    Review skills get light context (just enough for a recall question).
+    Preview skills get minimal context (learning objectives only).
+
+    Args:
+        quiz_payload: List of dicts with 'skill' (name), 'zone', etc.
+                      Output of build_quiz_payload().
+        k: Maximum total chunks across all skills.
+        firebase_uid: Student's Firebase UID for scoping.
+        subject_id: Subject ID for scoping.
+    """
+    vector_store = get_vector_store()
+
+    seen_contents: set = set()
+    final_docs: list = []
+
+    for cfg in quiz_payload:
+        skill_name = cfg["skill"]
+        zone = cfg.get("zone", "frontier")
+        difficulty = cfg.get("difficulty", 3)
+        budget = _ZONE_BUDGETS.get(zone, 2)
+
+        topic_docs = _retrieve_with_safe_fallback(
+            vector_store=vector_store,
+            topic=skill_name,
+            k=budget * 3,  # Fetch 3x budget for filtering headroom
+            firebase_uid=firebase_uid,
+            subject_id=subject_id,
+        )
+
+        # Re-rank by role priority — adapted to difficulty level.
+        # Low difficulty (1-2): prefer explanations, definitions, and rules
+        # (facts the student needs to recall), NOT exercises/examples which
+        # contain complex problems that bias the LLM toward harder output.
+        # High difficulty (3+): prefer examples and exercises as before.
+        if zone == "preview" or difficulty <= 2:
+            # For preview or easy questions, prefer explanations (objectives/intro/definitions)
+            topic_docs.sort(
+                key=lambda d: 0 if d.metadata.get('chunk_role') in ('explanation', 'content', 'rule') else 1
+            )
+        else:
+            # For frontier/review at medium+ difficulty, prefer examples and exercises
+            topic_docs.sort(
+                key=lambda d: ROLE_PRIORITY.get(d.metadata.get('chunk_role', 'content'), 10)
+            )
+
+        added = 0
+        for doc in topic_docs:
+            if added >= budget:
+                break
+            if doc.page_content not in seen_contents:
+                doc.metadata["quiz_zone"] = zone
+                final_docs.append(doc)
+                seen_contents.add(doc.page_content)
+                added += 1
+
+    # Hard cap
+    final_docs = final_docs[:k + 5]
+
+    context = _format_context(final_docs)
+
+    if len(context.strip()) < 50:
+        raise InsufficientContextError(
+            f"No relevant curriculum context found for quiz skills. "
+            f"(subject_id={subject_id}, firebase_uid={firebase_uid}). "
+            f"Ensure the curriculum document has been uploaded and processed."
+        )
+
+    return context
+
+
 # ---------------------------------------------------------------------------
 # Internal Helpers
 # ---------------------------------------------------------------------------
@@ -100,40 +190,40 @@ def _retrieve_with_safe_fallback(
     subject_id: Optional[int],
 ) -> list:
     """
-    4-tier safe retrieval fallback. NEVER drops all filters simultaneously
-    (which was the previous data leak risk).
+    4-tier safe retrieval fallback using MMR for diversity.
+    NEVER drops all filters simultaneously (cross-tenant data leak risk).
 
     Tier 1: firebase_uid + subject_id + content_type=substantive  (full filter)
     Tier 2: firebase_uid + subject_id                             (drop content_type)
     Tier 3: subject_id only                                       (global subjects)
     ❌ Tier 4: no filter at all → REMOVED (was a cross-tenant data leak)
     """
-    # Tier 1: Full filter (student's docs, correct subject, substantive content only)
-    filter_t1 = {"content_type": "substantive"}
-    if firebase_uid:
-        filter_t1["firebase_uid"] = firebase_uid
-    if subject_id is not None:
-        filter_t1["subject_id"] = subject_id
+    # Build filter tiers
+    tiers = []
 
-    docs = _search_with_score(vector_store, topic, k, filter_t1)
-    if docs:
-        return docs
+    # Tier 1: Full filter (student's docs, correct subject, substantive content only)
+    t1 = {"content_type": "substantive"}
+    if firebase_uid:
+        t1["firebase_uid"] = firebase_uid
+    if subject_id is not None:
+        t1["subject_id"] = subject_id
+    tiers.append(t1)
 
     # Tier 2: Drop content_type restriction (include structural chunks as fallback)
-    filter_t2 = {}
+    t2 = {}
     if firebase_uid:
-        filter_t2["firebase_uid"] = firebase_uid
+        t2["firebase_uid"] = firebase_uid
     if subject_id is not None:
-        filter_t2["subject_id"] = subject_id
-
-    if filter_t2:  # Only attempt if we have at least one filter
-        docs = _search_with_score(vector_store, topic, k, filter_t2)
-        if docs:
-            return docs
+        t2["subject_id"] = subject_id
+    if t2:  # Only attempt if we have at least one filter
+        tiers.append(t2)
 
     # Tier 3: Subject-only filter (for global/shared curriculum subjects)
     if subject_id is not None:
-        docs = _search_with_score(vector_store, topic, k, {"subject_id": subject_id})
+        tiers.append({"subject_id": subject_id})
+
+    for filter_dict in tiers:
+        docs = _search_with_mmr(vector_store, topic, k, filter_dict)
         if docs:
             return docs
 
@@ -142,10 +232,48 @@ def _retrieve_with_safe_fallback(
     return []
 
 
+def _search_with_mmr(
+    vector_store,
+    topic: str,
+    k: int,
+    filter_dict: dict,
+    lambda_mult: float = 0.5,
+) -> list:
+    """
+    MMR (Maximum Marginal Relevance) retrieval: balances relevance
+    (similarity to query) with diversity (dissimilarity between selected chunks).
+
+    lambda_mult controls the trade-off:
+        1.0 = pure similarity (old behavior)
+        0.5 = balanced relevance + diversity (recommended)
+        0.0 = maximum diversity
+
+    Falls back to similarity_search_with_score if MMR is unavailable.
+    """
+    try:
+        docs = vector_store.max_marginal_relevance_search(
+            topic,
+            k=k,
+            fetch_k=k * 4,  # Fetch more candidates for better MMR selection
+            lambda_mult=lambda_mult,
+            filter=filter_dict,
+        )
+        return docs
+    except AttributeError:
+        # MMR not available on this vector store — fall back to similarity search
+        print(
+            f"[Retrieval] MMR not available, falling back to similarity search.",
+            flush=True,
+        )
+        return _search_with_score(vector_store, topic, k, filter_dict)
+    except Exception as e:
+        print(f"[Retrieval] MMR search failed with filter {filter_dict}: {e}", flush=True)
+        return _search_with_score(vector_store, topic, k, filter_dict)
+
+
 def _search_with_score(vector_store, topic: str, k: int, filter_dict: dict) -> list:
     """
-    Performs a similarity search and filters out chunks that exceed the
-    relevance threshold (high cosine distance = low relevance).
+    Fallback: similarity search with score-based relevance filtering.
 
     PGVector returns cosine distance: 0.0 = identical, 2.0 = opposite.
     Chunks with distance > RETRIEVAL_SCORE_THRESHOLD are too dissimilar to

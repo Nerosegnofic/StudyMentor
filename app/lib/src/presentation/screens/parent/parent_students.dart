@@ -3,12 +3,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/auth/auth_event.dart';
-import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/students/students_bloc.dart';
+import '../../../bloc/students/students_event.dart';
+import '../../../bloc/students/students_state.dart';
 import '../../../domain/models/student_model.dart';
 import '../../widgets/student_card.dart';
 import 'student_config_screen.dart';
+import 'student_profile_dashboard.dart';
 
 class ParentStudents extends StatefulWidget {
   final String parentUid;
@@ -28,7 +29,7 @@ class _ParentStudentsState extends State<ParentStudents> {
   @override
   void initState() {
     super.initState();
-    context.read<AuthBloc>().add(
+    context.read<StudentsBloc>().add(
       LoadStudentsRequested(parentUid: widget.parentUid),
     );
   }
@@ -45,7 +46,7 @@ class _ParentStudentsState extends State<ParentStudents> {
     if (hasUnverified && _verificationPollTimer == null) {
       _verificationPollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
         if (!mounted) return;
-        context.read<AuthBloc>().add(
+        context.read<StudentsBloc>().add(
           RefreshStudentVerificationsRequested(currentStudents: _students),
         );
       });
@@ -56,7 +57,7 @@ class _ParentStudentsState extends State<ParentStudents> {
   }
 
   Future<void> _refresh() async {
-    context.read<AuthBloc>().add(
+    context.read<StudentsBloc>().add(
       LoadStudentsRequested(parentUid: widget.parentUid),
     );
   }
@@ -65,8 +66,8 @@ class _ParentStudentsState extends State<ParentStudents> {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
-          value: context.read<AuthBloc>(),
-          child: StudentConfigScreen(student: student),
+          value: context.read<StudentsBloc>(),
+          child: StudentProfileDashboard(student: student),
         ),
       ),
     );
@@ -77,7 +78,7 @@ class _ParentStudentsState extends State<ParentStudents> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => BlocProvider.value(
-        value: context.read<AuthBloc>(),
+        value: context.read<StudentsBloc>(),
         child: _DeleteConfirmationDialog(
           student: student,
           parentUid: widget.parentUid,
@@ -266,7 +267,7 @@ class _ParentStudentsState extends State<ParentStudents> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<StudentsBloc, StudentsState>(
       listener: (context, state) {
         if (state is StudentsLoaded) {
           setState(() {
@@ -278,12 +279,12 @@ class _ParentStudentsState extends State<ParentStudents> {
 
         if (state is StudentDeleted) {
           setState(() => _isLoading = true);
-          context.read<AuthBloc>().add(
+          context.read<StudentsBloc>().add(
             LoadStudentsRequested(parentUid: widget.parentUid),
           );
         }
 
-        if (state is AuthError) {
+        if (state is StudentsError) {
           setState(() => _isLoading = false);
         }
       },
@@ -358,7 +359,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
     final password = _passwordController.text.trim();
     if (password.isEmpty) return;
 
-    context.read<AuthBloc>().add(
+    context.read<StudentsBloc>().add(
       DeleteStudentRequested(
         studentUid: widget.student.uid,
         studentEmail: widget.student.email,
@@ -370,7 +371,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<StudentsBloc, StudentsState>(
       listener: (context, state) {
         if (state is StudentDeleteLoading) {
           setState(() => _isLoading = true);

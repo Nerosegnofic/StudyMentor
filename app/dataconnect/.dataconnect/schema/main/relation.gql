@@ -26,6 +26,15 @@ extend type AppRule {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "AppRule.id", purpose: QUERY_COUNT)
   """
+  ✨ Count the number of rows in the `AppRule` table where the `isPaused` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  isPaused_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "AppRule.isPaused", purpose: QUERY_COUNT)
+  """
   ✨ Count the number of rows in the `AppRule` table where the `packageName` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   packageName_count(
@@ -349,15 +358,6 @@ extend type Student {
   """
   _count: Int! @fdc_generated(from: "Student.", purpose: QUERY_COUNT)
   """
-  ✨ Count the number of rows in the `Student` table where the `currentStreak` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  currentStreak_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Student.currentStreak", purpose: QUERY_COUNT)
-  """
   ✨ Count the number of rows in the `Student` table where the `gradeLevel` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   gradeLevel_count(
@@ -367,24 +367,6 @@ extend type Student {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_COUNT)
   """
-  ✨ Count the number of rows in the `Student` table where the `lastActiveAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  lastActiveAt_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `Student` table where the `level` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  level_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Student.level", purpose: QUERY_COUNT)
-  """
   ✨ Count the number of rows in the `Student` table where the `parentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   parentUid_count(
@@ -393,33 +375,6 @@ extend type Student {
     """
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.parentUid", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `Student` table where the `totalCoins` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  totalCoins_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Student.totalCoins", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `Student` table where the `totalQuestionsAnswered` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  totalQuestionsAnswered_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `Student` table where the `totalXp` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  totalXp_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Student.totalXp", purpose: QUERY_COUNT)
   """
   ✨ Count the number of rows in the `Student` table where the `uid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
@@ -448,24 +403,6 @@ extend type Student {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.username", purpose: QUERY_COUNT)
   """
-  ✨ Count the number of rows in the `Student` table where the `weeklyXp` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  weeklyXp_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_COUNT)
-  """
-  ✨ Sum the `currentStreak` field in the `Student` table.
-  """
-  currentStreak_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "Student.currentStreak", purpose: QUERY_SUM)
-  """
   ✨ Sum the `gradeLevel` field in the `Student` table.
   """
   gradeLevel_sum(
@@ -474,60 +411,6 @@ extend type Student {
     """
     distinct: Boolean = false
   ): Int @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_SUM)
-  """
-  ✨ Sum the `level` field in the `Student` table.
-  """
-  level_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "Student.level", purpose: QUERY_SUM)
-  """
-  ✨ Sum the `totalCoins` field in the `Student` table.
-  """
-  totalCoins_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "Student.totalCoins", purpose: QUERY_SUM)
-  """
-  ✨ Sum the `totalQuestionsAnswered` field in the `Student` table.
-  """
-  totalQuestionsAnswered_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_SUM)
-  """
-  ✨ Sum the `totalXp` field in the `Student` table.
-  """
-  totalXp_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "Student.totalXp", purpose: QUERY_SUM)
-  """
-  ✨ Sum the `weeklyXp` field in the `Student` table.
-  """
-  weeklyXp_sum(
-    """
-    Set to true to sum the distinct values.
-    """
-    distinct: Boolean = false
-  ): Int @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_SUM)
-  """
-  ✨ Average the `currentStreak` field in the `Student` table.
-  """
-  currentStreak_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "Student.currentStreak", purpose: QUERY_AVG)
   """
   ✨ Average the `gradeLevel` field in the `Student` table.
   """
@@ -538,114 +421,13 @@ extend type Student {
     distinct: Boolean = false
   ): Float @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_AVG)
   """
-  ✨ Average the `level` field in the `Student` table.
-  """
-  level_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "Student.level", purpose: QUERY_AVG)
-  """
-  ✨ Average the `totalCoins` field in the `Student` table.
-  """
-  totalCoins_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "Student.totalCoins", purpose: QUERY_AVG)
-  """
-  ✨ Average the `totalQuestionsAnswered` field in the `Student` table.
-  """
-  totalQuestionsAnswered_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_AVG)
-  """
-  ✨ Average the `totalXp` field in the `Student` table.
-  """
-  totalXp_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "Student.totalXp", purpose: QUERY_AVG)
-  """
-  ✨ Average the `weeklyXp` field in the `Student` table.
-  """
-  weeklyXp_avg(
-    """
-    Set to true to average the distinct values.
-    """
-    distinct: Boolean = false
-  ): Float @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_AVG)
-  """
-  ✨ Minimum of the `currentStreak` field in the `Student` table.
-  """
-  currentStreak_min: Int @fdc_generated(from: "Student.currentStreak", purpose: QUERY_MIN)
-  """
   ✨ Minimum of the `gradeLevel` field in the `Student` table.
   """
   gradeLevel_min: Int @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_MIN)
   """
-  ✨ Minimum of the `lastActiveAt` field in the `Student` table.
-  """
-  lastActiveAt_min: Timestamp @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_MIN)
-  """
-  ✨ Minimum of the `level` field in the `Student` table.
-  """
-  level_min: Int @fdc_generated(from: "Student.level", purpose: QUERY_MIN)
-  """
-  ✨ Minimum of the `totalCoins` field in the `Student` table.
-  """
-  totalCoins_min: Int @fdc_generated(from: "Student.totalCoins", purpose: QUERY_MIN)
-  """
-  ✨ Minimum of the `totalQuestionsAnswered` field in the `Student` table.
-  """
-  totalQuestionsAnswered_min: Int @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_MIN)
-  """
-  ✨ Minimum of the `totalXp` field in the `Student` table.
-  """
-  totalXp_min: Int @fdc_generated(from: "Student.totalXp", purpose: QUERY_MIN)
-  """
-  ✨ Minimum of the `weeklyXp` field in the `Student` table.
-  """
-  weeklyXp_min: Int @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_MIN)
-  """
-  ✨ Maximum of the `currentStreak` field in the `Student` table.
-  """
-  currentStreak_max: Int @fdc_generated(from: "Student.currentStreak", purpose: QUERY_MAX)
-  """
   ✨ Maximum of the `gradeLevel` field in the `Student` table.
   """
   gradeLevel_max: Int @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `lastActiveAt` field in the `Student` table.
-  """
-  lastActiveAt_max: Timestamp @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `level` field in the `Student` table.
-  """
-  level_max: Int @fdc_generated(from: "Student.level", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `totalCoins` field in the `Student` table.
-  """
-  totalCoins_max: Int @fdc_generated(from: "Student.totalCoins", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `totalQuestionsAnswered` field in the `Student` table.
-  """
-  totalQuestionsAnswered_max: Int @fdc_generated(from: "Student.totalQuestionsAnswered", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `totalXp` field in the `Student` table.
-  """
-  totalXp_max: Int @fdc_generated(from: "Student.totalXp", purpose: QUERY_MAX)
-  """
-  ✨ Maximum of the `weeklyXp` field in the `Student` table.
-  """
-  weeklyXp_max: Int @fdc_generated(from: "Student.weeklyXp", purpose: QUERY_MAX)
   """
   A generated field that is used for caching results in SDKs.
   """
@@ -791,6 +573,15 @@ extend type StudentConfig {
     """
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "StudentConfig.cooldownMinutes", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `StudentConfig` table where the `quizCount` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  quizCount_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "StudentConfig.quizCount", purpose: QUERY_COUNT)
   """
   ✨ Count the number of rows in the `StudentConfig` table where the `studentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """

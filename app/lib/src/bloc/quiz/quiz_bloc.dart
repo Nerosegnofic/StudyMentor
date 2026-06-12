@@ -27,6 +27,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
         GenerateQuizRequest(
           subjectId: event.subjectId,
           totalQuestions: event.totalQuestions,
+          studentGrade: event.studentGrade,
         ),
       );
       emit(QuizLoaded(quizResponse: response));
@@ -55,9 +56,14 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
         QuizSubmissionRequest(
           quizSessionId: event.quizSessionId,
           answers: current.currentAnswers.values.toList(),
+          clientLocalDate: DateTime.now().toIso8601String().split('T')[0],
         ),
       );
-      emit(QuizResultsLoaded(result: response));
+      emit(QuizResultsLoaded(
+        result: response,
+        quizResponse: current.quizResponse,
+        answers: current.currentAnswers,
+      ));
     } catch (e) {
       emit(QuizError(e.toString()));
     }

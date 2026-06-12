@@ -10,13 +10,13 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
-import '../../../data/catalog/subject_catalog.dart';
+import '../../../bloc/gamification/gamification_bloc.dart';
 import '../../../data/providers/dataconnect_provider.dart';
-import '../../../domain/models/subject_progress_model.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../domain/models/garden_plant_model.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../domain/models/app_config_model.dart';
-import '../../../utils/subject_xp_engine.dart';
 import '../../widgets/garden_subject_card.dart';
 import 'subject_detail_screen.dart';
 
@@ -27,10 +27,10 @@ class StudentHome extends StatefulWidget {
   const StudentHome({super.key, required this.fullName, required this.uid});
 
   @override
-  State<StudentHome> createState() => _StudentHomeState();
+  State<StudentHome> createState() => StudentHomeState();
 }
 
-class _StudentHomeState extends State<StudentHome> {
+class StudentHomeState extends State<StudentHome> {
   String? _parentFullName;
   List<AppRuleModel> _appRules = [];
   StudentConfigModel _config = const StudentConfigModel();
@@ -39,8 +39,13 @@ class _StudentHomeState extends State<StudentHome> {
 
   int _streak = 0;
 
+  int _quizzesCompletedToday = 0;
+
+
   // Last known garden data — persists across BLoC state changes.
-  Map<String, SubjectProgressModel> _gardenCache = {};
+  List<GardenPlantModel> _gardenCache = [];
+
+  final ScrollController _gardenScrollController = ScrollController();
 
   // ── Screen-time live refresh ───────────────────────────────────────────────
   Timer? _usageTicker;
@@ -68,22 +73,35 @@ class _StudentHomeState extends State<StudentHome> {
   @override
   void dispose() {
     _usageTicker?.cancel();
+    _gardenScrollController.dispose();
     super.dispose();
   }
 
   Future<void> _loadStreak() async {
     try {
-      final provider = DataConnectProvider();
-      final profile = await provider.getStudentProfile(widget.uid);
+      final profile = await AiEngineRepository.instance.getGamificationProfile(widget.uid);
       if (mounted) {
         setState(() {
           _streak = (profile['current_streak'] as int?) ?? 0;
         });
       }
-    } catch (_) {}
+    } catch (e, s) {
+      debugPrint('[StudentHome] _loadStreak gamification error: $e\n$s');
+    }
+
+    try {
+      final snapshot = await DataConnectProvider().getDailySnapshot(widget.uid);
+      if (mounted) {
+        setState(() {
+          _quizzesCompletedToday = snapshot.quizzesCompletedToday;
+        });
+      }
+    } catch (e, s) {
+      debugPrint('[StudentHome] _loadStreak daily snapshot error: $e\n$s');
+    }
   }
 
-  Future<void> _refresh() async {
+  Future<void> refresh() async {
     setState(() {
       _parentFullName = null;
       _rulesLoading = true;
@@ -124,7 +142,7 @@ class _StudentHomeState extends State<StudentHome> {
             if (state is ParentNameLoaded) {
               setState(() => _parentFullName = state.parentFullName);
             }
-            if (state is AppRulesLoaded && state.studentUid == widget.uid) {
+            if (state is LegacyAppRulesLoaded && state.studentUid == widget.uid) {
               setState(() {
                 _appRules = state.rules;
                 _config = state.config;
@@ -139,7 +157,7 @@ class _StudentHomeState extends State<StudentHome> {
               );
               _loadIcons(state.rules);
             }
-            if (state is AppConfigError) {
+            if (state is LegacyAppConfigError) {
               setState(() => _rulesLoading = false);
             }
           },
@@ -147,19 +165,19 @@ class _StudentHomeState extends State<StudentHome> {
         BlocListener<GardenBloc, GardenState>(
           listener: (context, state) {
             if (state is GardenLoaded) {
-              setState(() => _gardenCache = state.subjectProgress);
+              setState(() => _gardenCache = state.plants);
             }
           },
         ),
       ],
       child: RefreshIndicator(
-        onRefresh: _refresh,
+        onRefresh: refresh,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Garden area ───────────────────────────────────────────────
+              // ── Garden area ───────────────────────────────────────────────────
               Container(
                 color: const Color(0xFFF8FAF6),
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -201,7 +219,7 @@ class _StudentHomeState extends State<StudentHome> {
                 ),
               ),
 
-              // ── Parent + App rules ─────────────────────────────────────────
+              // ── Parent + App rules ──────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Column(
@@ -248,35 +266,80 @@ class _StudentHomeState extends State<StudentHome> {
           );
         }
 
-        final subjects = SubjectCatalog.all.take(3).toList();
-        return _gardenShell(
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFC5E8A8), Color(0xFFB8DFA0)],
+        // ── Empty state ──────────────────────────────────────────────────
+        if (_gardenCache.isEmpty) {
+          return _gardenShell(
+            child: SizedBox(
+              height: 180,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.eco_outlined,
+                        size: 40, color: Colors.green.shade300),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Ask a parent to add your subjects',
+                      style: TextStyle(
+                          fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
             ),
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: subjects.map((subject) {
-                final progress =
-                    _gardenCache[subject.key] ??
-                    SubjectProgressModel.empty(widget.uid, subject.key);
-                return Expanded(
-                  child: GardenSubjectCard(
-                    subject: subject,
-                    progress: progress,
-                    onTap: () => _openSubjectDetail(subject.key),
+          );
+        }
+
+        return _gardenShell(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth - 32;
+              final cardWidth = availableWidth / 3;
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFB8DFA0),
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(12),
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+                padding: const EdgeInsets.fromLTRB(4, 14, 4, 4),
+                child: ScrollbarTheme(
+                  data: ScrollbarThemeData(
+                    thumbColor: WidgetStateProperty.all(
+                      const Color(0xFF4CAF50).withValues(alpha: 0.7),
+                    ),
+                    trackColor: WidgetStateProperty.all(
+                      const Color(0xFF2E7D32).withValues(alpha: 0.15),
+                    ),
+                    thickness: WidgetStateProperty.all(3),
+                    radius: const Radius.circular(4),
+                  ),
+                  child: Scrollbar(
+                    controller: _gardenScrollController,
+                    thumbVisibility: _gardenCache.length > 3,
+                    child: SingleChildScrollView(
+                      controller: _gardenScrollController,
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: _gardenCache.map((plant) {
+                          return SizedBox(
+                            width: cardWidth,
+                            child: GardenSubjectCard(
+                              plant: plant,
+                              onTap: () => _openSubjectDetail(plant),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
@@ -399,11 +462,9 @@ class _StudentHomeState extends State<StudentHome> {
 
   double _overallGardenProgress() {
     if (_gardenCache.isEmpty) return 0.0;
-    double total = 0;
-    for (final p in _gardenCache.values) {
-      total += SubjectXpEngine.levelProgress(p.totalXp).clamp(0.0, 1.0);
-    }
-    return total / _gardenCache.length;
+    final avg = _gardenCache.fold(0.0, (sum, p) => sum + p.masteryPercent) /
+        _gardenCache.length;
+    return (avg / 100).clamp(0.0, 1.0);
   }
 
   // ── Owl mascot ──────────────────────────────────────────────────────────────
@@ -477,7 +538,7 @@ class _StudentHomeState extends State<StudentHome> {
     final streakLabel = _streak == 1 ? '1 day' : '$_streak days';
     return Row(
       children: [
-        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '0')),
+        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '$_quizzesCompletedToday')),
         const SizedBox(width: 10),
         Expanded(
           child: _statCard(
@@ -620,6 +681,8 @@ class _StudentHomeState extends State<StudentHome> {
   // ── App rules section ───────────────────────────────────────────────────────
 
   Widget _buildAppRulesSection() {
+    final activeRules = _appRules.where((r) => !r.isPaused).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -644,14 +707,15 @@ class _StudentHomeState extends State<StudentHome> {
           style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
         ),
         const SizedBox(height: 14),
-        if (!_rulesLoading && _appRules.isEmpty)
+        if (!_rulesLoading && activeRules.isEmpty)
           _buildNoRulesPlaceholder()
         else if (!_rulesLoading) ...[
+          // ── Screen-time card (always visible when rules exist) ───────────────
           _buildScreenTimeCard(),
           const SizedBox(height: 12),
           _buildTimingBanner(),
           const SizedBox(height: 12),
-          ..._appRules.map(_buildRuleRow),
+          ...activeRules.map(_buildRuleRow),
         ],
       ],
     );
@@ -659,6 +723,9 @@ class _StudentHomeState extends State<StudentHome> {
 
   // ── Screen-time card ────────────────────────────────────────────────────────
 
+  /// Reads live data from [MascotOverlayService] and renders either:
+  ///   • A usage progress bar with remaining time, or
+  ///   • A cooldown banner with live countdown.
   Widget _buildScreenTimeCard() {
     final svc = MascotOverlayService.instance;
     final thresholdSeconds =
@@ -668,6 +735,7 @@ class _StudentHomeState extends State<StudentHome> {
       return _buildCooldownBanner(svc.remainingSeconds);
     }
 
+    // Not blocked — show remaining usage time.
     return _buildUsageBar(
       usedSeconds: svc.totalUsageSeconds,
       totalSeconds: thresholdSeconds,
@@ -680,6 +748,7 @@ class _StudentHomeState extends State<StudentHome> {
     final remaining = (totalSeconds - usedSeconds).clamp(0, totalSeconds);
     final fraction = (usedSeconds / totalSeconds).clamp(0.0, 1.0);
 
+    // Color shifts: green → amber → red as usage fills up.
     final Color barColor;
     if (fraction < 0.6) {
       barColor = const Color(0xFF34A853);
@@ -785,6 +854,7 @@ class _StudentHomeState extends State<StudentHome> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
+        // Warm amber gradient — firm but not alarming
         gradient: const LinearGradient(
           colors: [Color(0xFFFFF3E0), Color(0xFFFFF8F0)],
           begin: Alignment.topLeft,
@@ -870,6 +940,8 @@ class _StudentHomeState extends State<StudentHome> {
       ),
     );
   }
+
+  // ── Timing banner (usage + cooldown pills) ──────────────────────────────────
 
   Widget _buildTimingBanner() {
     return Container(
@@ -1006,6 +1078,8 @@ class _StudentHomeState extends State<StudentHome> {
     return '${hours}h ${minutes}m';
   }
 
+  /// Formats a raw second count into a human-readable duration string.
+  /// e.g. 3725 → "1h 2m", 95 → "1m 35s", 45 → "45s"
   String _formatDurationFromSeconds(int seconds) {
     if (seconds <= 0) return '0s';
     final h = seconds ~/ 3600;
@@ -1046,14 +1120,23 @@ class _StudentHomeState extends State<StudentHome> {
     );
   }
 
-  void _openSubjectDetail(String subjectKey) {
+  void _openSubjectDetail(GardenPlantModel plant) {
+    final gardenBloc = context.read<GardenBloc>();
+    final gamificationBloc = context.read<GamificationBloc>();
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => MultiBlocProvider(
-          providers: [BlocProvider.value(value: context.read<GardenBloc>())],
+          providers: [
+            BlocProvider.value(value: gardenBloc),
+            BlocProvider.value(value: gamificationBloc),
+          ],
           child: SubjectDetailScreen(
             studentUid: widget.uid,
-            subjectKey: subjectKey,
+
+            subjectId: plant.subjectId,
+            subjectName: plant.subjectName,
+            masteryPercent: plant.masteryPercent,
+
           ),
         ),
       ),
@@ -1061,7 +1144,7 @@ class _StudentHomeState extends State<StudentHome> {
   }
 }
 
-// ── Owl CustomPainter ──────────────────────────────────────────────────────────
+// â”€â”€ Owl CustomPainter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _OwlPainter extends CustomPainter {
   @override
@@ -1133,7 +1216,7 @@ class _OwlPainter extends CustomPainter {
   bool shouldRepaint(_OwlPainter old) => false;
 }
 
-// ── App icon widget ────────────────────────────────────────────────────────────
+// â”€â”€ App icon widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AppIcon extends StatelessWidget {
   final String? iconBase64;
@@ -1179,3 +1262,4 @@ class _AppIcon extends StatelessWidget {
     );
   }
 }
+

@@ -9,8 +9,9 @@
 
 import 'package:flutter/material.dart';
 import '../../domain/models/student_model.dart';
+import '../../data/repositories/ai_engine_repository.dart';
 
-class StudentCard extends StatelessWidget {
+class StudentCard extends StatefulWidget {
   final StudentModel student;
 
   /// Called when the card is tapped AND the student is verified.
@@ -18,6 +19,32 @@ class StudentCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const StudentCard({super.key, required this.student, this.onTap});
+
+  @override
+  State<StudentCard> createState() => _StudentCardState();
+}
+
+class _StudentCardState extends State<StudentCard> {
+  int _xp = 0;
+  int _coins = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGamification();
+  }
+
+  Future<void> _loadGamification() async {
+    try {
+      final profile = await AiEngineRepository.instance.getGamificationProfile(widget.student.uid);
+      if (mounted) {
+        setState(() {
+          _xp = (profile['xp_total'] as int?) ?? 0;
+          _coins = (profile['coins_total'] as int?) ?? 0;
+        });
+      }
+    } catch (_) {}
+  }
 
   // ── colour palette ──────────────────────────────────────────────────────────
 
@@ -35,26 +62,26 @@ class StudentCard extends StatelessWidget {
   // ── helpers ─────────────────────────────────────────────────────────────────
 
   String get _initials {
-    final parts = student.fullName.trim().split(RegExp(r'\s+'));
+    final parts = widget.student.fullName.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
     }
-    return student.fullName.isNotEmpty
-        ? student.fullName[0].toUpperCase()
+    return widget.student.fullName.isNotEmpty
+        ? widget.student.fullName[0].toUpperCase()
         : '?';
   }
 
   String get _gradeLabel =>
-      student.gradeLevel != null ? 'Grade ${student.gradeLevel}' : 'No grade';
+      widget.student.gradeLevel != null ? 'Grade ${widget.student.gradeLevel}' : 'No grade';
 
   // ── build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final verified = student.isEmailVerified;
+    final verified = widget.student.isEmailVerified;
 
     return GestureDetector(
-      onTap: verified ? onTap : null,
+      onTap: verified ? widget.onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -142,7 +169,7 @@ class StudentCard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          student.fullName,
+          widget.student.fullName,
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -154,7 +181,7 @@ class StudentCard extends StatelessWidget {
         const SizedBox(height: 3),
         // ── Show "Tap to view" for verified students; email for unverified ──
         Text(
-          verified ? 'Tap to view' : student.email,
+          verified ? 'Tap to view' : widget.student.email,
           style: TextStyle(fontSize: 12, color: subtitleColor),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -204,7 +231,7 @@ class StudentCard extends StatelessWidget {
       children: [
         _buildStatPill(
           icon: Icons.bolt,
-          value: '${student.totalXp ?? 0} XP',
+          value: '$_xp XP',
           iconColor: verified ? _verifiedXpColor : _unverifiedTextSecondary,
           textColor: verified
               ? const Color(0xFF1A1A2E)
@@ -214,7 +241,7 @@ class StudentCard extends StatelessWidget {
         const SizedBox(height: 6),
         _buildStatPill(
           icon: Icons.monetization_on_outlined,
-          value: '${student.totalCoins ?? 0}',
+          value: '$_coins',
           iconColor: verified
               ? const Color(0xFFFFB300)
               : _unverifiedTextSecondary,

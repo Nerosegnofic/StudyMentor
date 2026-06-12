@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/models/subject_progress_model.dart';
-import '../../domain/models/skill_progress_model.dart';
+import '../../domain/models/garden_plant_model.dart';
 
 abstract class GardenState extends Equatable {
   const GardenState();
@@ -23,55 +22,12 @@ class GardenError extends GardenState {
   List<Object?> get props => [message];
 }
 
-/// All subject progress loaded — ready to render the home garden section.
+/// Garden loaded — [plants] is empty when no subjects have been assigned yet.
 class GardenLoaded extends GardenState {
-  /// Map of subjectKey → SubjectProgressModel
-  final Map<String, SubjectProgressModel> subjectProgress;
+  final List<GardenPlantModel> plants;
 
-  /// If non-null, a level-up just occurred for this subject.
-  final String? levelUpSubjectKey;
-
-  const GardenLoaded({
-    required this.subjectProgress,
-    this.levelUpSubjectKey,
-  });
-
-  GardenLoaded copyWith({
-    Map<String, SubjectProgressModel>? subjectProgress,
-    String? levelUpSubjectKey,
-    bool clearLevelUp = false,
-  }) {
-    return GardenLoaded(
-      subjectProgress: subjectProgress ?? this.subjectProgress,
-      levelUpSubjectKey: clearLevelUp ? null : (levelUpSubjectKey ?? this.levelUpSubjectKey),
-    );
-  }
+  const GardenLoaded({required this.plants});
 
   @override
-  List<Object?> get props => [subjectProgress, levelUpSubjectKey];
-}
-
-/// Skills loaded for a specific subject — used on the detail page.
-class SubjectSkillsLoaded extends GardenState {
-  final String subjectKey;
-  final SubjectProgressModel progress;
-  final List<SkillProgressModel> skills;
-
-  const SubjectSkillsLoaded({
-    required this.subjectKey,
-    required this.progress,
-    required this.skills,
-  });
-
-  List<SkillProgressModel> get strongSkills =>
-      skills.where((s) => s.isStrong).toList();
-
-  List<SkillProgressModel> get weakSkills =>
-      skills.where((s) => s.isWeak).toList();
-
-  List<SkillProgressModel> get untouchedSkills =>
-      skills.where((s) => s.totalAttempts == 0).toList();
-
-  @override
-  List<Object?> get props => [subjectKey, progress.totalXp, progress.level, skills.length];
+  List<Object?> get props => [plants];
 }

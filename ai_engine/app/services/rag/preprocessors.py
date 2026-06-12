@@ -54,6 +54,28 @@ def scan_for_prompt_injection(text: str) -> tuple[str, int]:
 # Noise Cleaning
 # ---------------------------------------------------------------------------
 
+def _remove_garbled_lines(text: str) -> str:
+    """
+    Detect and remove lines with high OCR garble indicators.
+
+    Heuristic: if more than 50% of Arabic words on a line are ≤2 characters,
+    the line is likely garbled OCR output (e.g., "الأداة التكن مستدًا").
+    Lines with fewer than 4 Arabic words are skipped (too short to judge).
+
+    Domain-agnostic: works on any Arabic-script text regardless of subject.
+    """
+    cleaned = []
+    for line in text.split('\n'):
+        arabic_words = re.findall(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+', line)
+        if len(arabic_words) >= 4:
+            short_count = sum(1 for w in arabic_words if len(w) <= 2)
+            if short_count / len(arabic_words) > 0.5:
+                cleaned.append('')  # Remove garbled line
+                continue
+        cleaned.append(line)
+    return '\n'.join(cleaned)
+
+
 def preprocess_parsed_text(text: str) -> str:
     """
     Cleans raw parsed text from LlamaIndex or other parsers to prepare it
@@ -61,7 +83,8 @@ def preprocess_parsed_text(text: str) -> str:
 
     Pipeline:
         1. Remove structural noise (page numbers, figure labels, footer lines).
-        2. Scan for and neutralise prompt injection attempts.
+        2. Remove OCR-garbled lines.
+        3. Scan for and neutralise prompt injection attempts.
     """
     if not text:
         return ""
@@ -110,6 +133,9 @@ def preprocess_parsed_text(text: str) -> str:
             cleaned_lines.append(line)
 
     cleaned_text = '\n'.join(cleaned_lines)
+
+    # Step 2: Remove OCR-garbled lines
+    cleaned_text = _remove_garbled_lines(cleaned_text)
 
     # G27: Sanitize prompt injection attempts
     sanitized_text, injection_count = scan_for_prompt_injection(cleaned_text)

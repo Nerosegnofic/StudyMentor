@@ -1,22 +1,25 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel
+from typing import List
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func
 from app.core.database import get_db
 from app.core.auth import get_current_user
-from datetime import datetime, timedelta
+from app.repositories.vector_repo import delete_vector_embeddings_by_subject
 from app.repositories import (
     get_subject_mastery_hierarchy,
     get_subject_stats,
 )
 from app.services.evaluation.analytics_service import (
     enrich_hierarchy_with_status,
+    get_overall_dashboard_stats,
 )
 from app.models.domain import (
-    Skill,
     Subject,
     QuizSession,
-    StudentSkillState,
+    GardenPlant,
 )
+from app.models.domain.student import StudentSubjectProfile
 
 router = APIRouter(prefix="/analytics", tags=["Analytics Dashboard"])
 
@@ -143,44 +146,86 @@ async def get_overall_analytics(
     - Total skills tracked & mastered across all subjects
     - Activity heatmap (sessions grouped by date for the last 30 days)
     """
+    return get_overall_dashboard_stats(db, student_uid)
 
-    # ── Aggregate mastery across all subjects ────────────────────────────
-    all_states = (
-        db.query(StudentSkillState)
-        .filter(StudentSkillState.student_uid == student_uid)
-        .all()
-    )
-    total_skills = db.query(Skill).count()
-    mastered_skills = sum(1 for s in all_states if s.is_mastered)
-    overall_mastery = (
-        round(sum(s.mastery_probability for s in all_states) / total_skills, 4)
-        if total_skills
-        else 0.0
-    )
 
-    # ── Activity heatmap: sessions per day over the last 30 days ─────────
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    heatmap_rows = (
-        db.query(
-            cast(QuizSession.start_time, Date).label("date"),
-            func.count(QuizSession.session_id).label("count"),
-        )
-        .filter(
-            QuizSession.student_uid == student_uid,
-            QuizSession.start_time >= thirty_days_ago,
-        )
-        .group_by(cast(QuizSession.start_time, Date))
-        .order_by(cast(QuizSession.start_time, Date))
-        .all()
-    )
-    activity_heatmap = {
-        row.date.isoformat(): row.count for row in heatmap_rows
-    }
+# ═══════════════════════════════════════════════════════════════════════════
+# POST /analytics/subjects/ensure  — Create Subject rows for assigned subjects
+# ═══════════════════════════════════════════════════════════════════════════
 
-    return {
-        "student_uid": student_uid,
-        "total_skills": total_skills,
-        "mastered_skills": mastered_skills,
-        "overall_mastery": overall_mastery,
-        "activity_heatmap": activity_heatmap,
-    }
+class _EnsureSubjectsBody(BaseModel):
+    student_uid: str
+    subject_names: List[str]
+
+
+@router.post("/subjects/ensure")
+async def ensure_subjects(
+    body: _EnsureSubjectsBody,
+    db: Session = Depends(get_db),
+    _: str = Depends(get_current_user),
+):
+    """
+    Ensures a Subject row exists for each assigned subject name.
+    Called when a parent assigns subjects to a student so they appear in
+    the Knowledge Garden. Skips names that already exist (case-insensitive).
+    """
+    created = []
+    for name in body.subject_names:
+        existing = db.query(Subject).filter(
+            func.lower(Subject.name) == name.lower(),
+            Subject.student_uid == body.student_uid,
+        ).first()
+        if not existing:
+            db.add(Subject(name=name, student_uid=body.student_uid, is_global=False))
+            created.append(name)
+    if created:
+        db.commit()
+    return {"ensured": len(body.subject_names), "created": created}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DELETE /analytics/subjects/{subject_name}  — Wipe custom subject securely
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.delete("/subjects/{subject_name}")
+async def delete_subject(
+    subject_name: str,
+    student_uid: str = Query(...),
+    db: Session = Depends(get_db),
+    _: str = Depends(get_current_user),
+):
+    """
+    Deletes a custom subject and all its associated skills for a specific student.
+    Only deletes subjects owned by the student (not global subjects).
+    """
+    subject = db.query(Subject).filter(
+        func.lower(Subject.name) == subject_name.lower(),
+        Subject.student_uid == student_uid,
+        Subject.is_global == False,
+    ).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found or not owned by this student.")
+
+    subject_id = subject.subject_id
+
+    # Delete rows that have no SQLAlchemy cascade from Subject
+    db.query(GardenPlant).filter(
+        GardenPlant.subject_id == subject_id,
+        GardenPlant.student_uid == student_uid,
+    ).delete()
+    db.query(StudentSubjectProfile).filter(
+        StudentSubjectProfile.subject_id == subject_id,
+        StudentSubjectProfile.student_uid == student_uid,
+    ).delete()
+
+    # Delete the subject (cascades: skills → skill_states, curriculum_chunks, questions)
+    db.delete(subject)
+    db.commit()
+
+    # Delete vector embeddings from LangChain's pgvector table (outside SQLAlchemy ORM)
+    try:
+        delete_vector_embeddings_by_subject(subject_id)
+    except Exception as e:
+        print(f"[DeleteSubject] Vector cleanup failed for subject_id={subject_id}: {e}", flush=True)
+
+    return {"deleted": subject_name}
