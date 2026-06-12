@@ -95,6 +95,19 @@ def delete_vector_embeddings(document_id: UUID):
             {"doc_id": str(document_id)}
         )
 
+def delete_vector_embeddings_by_subject(subject_id: int):
+    """
+    Deletes all vector embeddings whose metadata tags them with a given subject_id.
+    Called when a subject is fully deleted so the RAG store stays in sync.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    with engine.begin() as conn:
+        result = conn.execute(
+            text("DELETE FROM langchain_pg_embedding WHERE (cmetadata->>'subject_id')::int = :sid"),
+            {"sid": subject_id}
+        )
+        print(f"[VectorRepo] Deleted {result.rowcount} embeddings for subject_id={subject_id}.", flush=True)
+
 def clear_vector_database():
     """
     Wipes the entire vector database.
@@ -103,3 +116,20 @@ def clear_vector_database():
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE langchain_pg_embedding, langchain_pg_collection CASCADE;"))
     print("Vector database cleared!", flush=True)
+
+def check_student_owns_document(document_id: UUID, firebase_uid: str) -> bool:
+    """
+    Checks if a given student owns at least one vector embedding for the specified document.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    with engine.connect() as conn:
+        result = conn.execute(
+            text(
+                "SELECT 1 FROM langchain_pg_embedding "
+                "WHERE cmetadata->>'document_id' = :doc_id "
+                "AND cmetadata->>'firebase_uid' = :uid "
+                "LIMIT 1"
+            ),
+            {"doc_id": str(document_id), "uid": firebase_uid},
+        )
+        return result.fetchone() is not None

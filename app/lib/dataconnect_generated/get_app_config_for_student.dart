@@ -23,12 +23,14 @@ class GetAppConfigForStudentStudentConfig {
   final int usageMinutes;
   final int cooldownHours;
   final int cooldownMinutes;
+  final String? quizCount;
   GetAppConfigForStudentStudentConfig.fromJson(dynamic json):
   
   usageHours = nativeFromJson<int>(json['usageHours']),
   usageMinutes = nativeFromJson<int>(json['usageMinutes']),
   cooldownHours = nativeFromJson<int>(json['cooldownHours']),
-  cooldownMinutes = nativeFromJson<int>(json['cooldownMinutes']);
+  cooldownMinutes = nativeFromJson<int>(json['cooldownMinutes']),
+  quizCount = json['quizCount'] == null ? null : nativeFromJson<String>(json['quizCount']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -42,11 +44,12 @@ class GetAppConfigForStudentStudentConfig {
     return usageHours == otherTyped.usageHours && 
     usageMinutes == otherTyped.usageMinutes && 
     cooldownHours == otherTyped.cooldownHours && 
-    cooldownMinutes == otherTyped.cooldownMinutes;
+    cooldownMinutes == otherTyped.cooldownMinutes && 
+    quizCount == otherTyped.quizCount;
     
   }
   @override
-  int get hashCode => Object.hashAll([usageHours.hashCode, usageMinutes.hashCode, cooldownHours.hashCode, cooldownMinutes.hashCode]);
+  int get hashCode => Object.hashAll([usageHours.hashCode, usageMinutes.hashCode, cooldownHours.hashCode, cooldownMinutes.hashCode, quizCount.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -55,6 +58,9 @@ class GetAppConfigForStudentStudentConfig {
     json['usageMinutes'] = nativeToJson<int>(usageMinutes);
     json['cooldownHours'] = nativeToJson<int>(cooldownHours);
     json['cooldownMinutes'] = nativeToJson<int>(cooldownMinutes);
+    if (quizCount != null) {
+      json['quizCount'] = nativeToJson<String?>(quizCount);
+    }
     return json;
   }
 
@@ -63,6 +69,7 @@ class GetAppConfigForStudentStudentConfig {
     required this.usageMinutes,
     required this.cooldownHours,
     required this.cooldownMinutes,
+    this.quizCount,
   });
 }
 
@@ -71,11 +78,13 @@ class GetAppConfigForStudentAppRules {
   final String id;
   final String packageName;
   final String appLabel;
+  final bool? isPaused;
   GetAppConfigForStudentAppRules.fromJson(dynamic json):
   
   id = nativeFromJson<String>(json['id']),
   packageName = nativeFromJson<String>(json['packageName']),
-  appLabel = nativeFromJson<String>(json['appLabel']);
+  appLabel = nativeFromJson<String>(json['appLabel']),
+  isPaused = json['isPaused'] == null ? null : nativeFromJson<bool>(json['isPaused']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -88,11 +97,12 @@ class GetAppConfigForStudentAppRules {
     final GetAppConfigForStudentAppRules otherTyped = other as GetAppConfigForStudentAppRules;
     return id == otherTyped.id && 
     packageName == otherTyped.packageName && 
-    appLabel == otherTyped.appLabel;
+    appLabel == otherTyped.appLabel && 
+    isPaused == otherTyped.isPaused;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode]);
+  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, isPaused.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -100,6 +110,9 @@ class GetAppConfigForStudentAppRules {
     json['id'] = nativeToJson<String>(id);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
+    if (isPaused != null) {
+      json['isPaused'] = nativeToJson<bool?>(isPaused);
+    }
     return json;
   }
 
@@ -107,6 +120,7 @@ class GetAppConfigForStudentAppRules {
     required this.id,
     required this.packageName,
     required this.appLabel,
+    this.isPaused,
   });
 }
 

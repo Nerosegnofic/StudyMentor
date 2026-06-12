@@ -4,12 +4,22 @@ import '../../../bloc/quiz/quiz_bloc.dart';
 import '../../../bloc/quiz/quiz_event.dart';
 import '../../../bloc/quiz/quiz_state.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../domain/models/gamification_enums.dart';
+import '../../../bloc/gamification/gamification_bloc.dart';
+import '../../../bloc/gamification/gamification_event.dart';
+import '../../../bloc/garden/garden_bloc.dart';
+import '../../../bloc/garden/garden_event.dart';
+import '../../../bloc/garden/garden_state.dart';
 
 // ---------------------------------------------------------------------------
 // QuizOverlayPage
 // ---------------------------------------------------------------------------
-// Full-screen Scaffold pushed by StudentScreen when the mascot overlay fires.
-// It owns its own QuizBloc so it doesn't interfere with the rest of the app.
+// Full-screen Scaffold pushed by StudentScreen when the mascot overlay fires,
+// or by SubjectDetailScreen when the student taps "Practice Now".
+//
+// [subjectId] — optional. When provided the backend generates a quiz
+// specifically for that subject. When null the backend auto-selects the
+// highest-priority subject based on BKT mastery data.
 //
 // Pop return value convention:
 //   true  → student completed the quiz (reached results screen, tapped Done)
@@ -18,19 +28,64 @@ import '../../../data/repositories/ai_engine_repository.dart';
 class QuizOverlayPage extends StatelessWidget {
   final AiEngineRepository repository;
 
-  const QuizOverlayPage({super.key, required this.repository});
+  final String studentId;
+  final QuizContext contextType;
+  final int totalQuestions;
+  final int? subjectId;
+
+
+  const QuizOverlayPage({
+    super.key,
+    required this.repository,
+    required this.studentId,
+    required this.contextType,
+    this.totalQuestions = 5,
+    this.subjectId,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => QuizBloc(repository: repository),
-      child: const _QuizOverlayScaffold(),
+
+      child: _QuizOverlayScaffold(
+        studentId: studentId,
+        contextType: contextType,
+        totalQuestions: totalQuestions,
+        subjectId: subjectId,
+      ),
+
     );
   }
 }
 
-class _QuizOverlayScaffold extends StatelessWidget {
-  const _QuizOverlayScaffold();
+
+class _QuizOverlayScaffold extends StatefulWidget {
+
+
+  final String studentId;
+  final QuizContext contextType;
+  final int totalQuestions;
+  final int? subjectId;
+
+  const _QuizOverlayScaffold({
+    required this.studentId,
+    required this.contextType,
+    required this.totalQuestions,
+    this.subjectId,
+  });
+
+
+  @override
+  State<_QuizOverlayScaffold> createState() => _QuizOverlayScaffoldState();
+}
+
+class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
+  // Captured when quiz results arrive; used to compute the mastery delta.
+  double? _preQuizMastery;
+  String? _quizzedSubjectName;
+  int? _quizzedSubjectId;
+  bool _waitingForGardenUpdate = false;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +102,6 @@ class _QuizOverlayScaffold extends StatelessWidget {
             fontSize: 18,
           ),
         ),
-        // Only allow closing from the results screen or on error.
         automaticallyImplyLeading: false,
         actions: [
           BlocBuilder<QuizBloc, QuizState>(
@@ -55,11 +109,8 @@ class _QuizOverlayScaffold extends StatelessWidget {
               if (state is QuizResultsLoaded || state is QuizError) {
                 return IconButton(
                   icon: const Icon(Icons.close, color: Color(0xFF4A6CF7)),
-                  // Results close: pop with true (completed).
-                  // Error close: pop with false (did not complete).
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pop(state is QuizResultsLoaded ? true : false),
+                  onPressed: () => Navigator.of(context)
+                      .pop(state is QuizResultsLoaded ? true : false),
                 );
               }
               return const SizedBox.shrink();
@@ -67,20 +118,86 @@ class _QuizOverlayScaffold extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocBuilder<QuizBloc, QuizState>(
-        builder: (context, state) {
-          if (state is QuizInitial) return const _AutoStartPanel();
-          if (state is QuizLoading) {
-            return const _LoadingView(message: 'Generating your quiz…');
-          }
-          if (state is QuizLoaded) return _QuizActiveView(state: state);
-          if (state is QuizSubmitting) {
-            return const _LoadingView(message: 'Submitting answers…');
-          }
-          if (state is QuizResultsLoaded) return _ResultsView(state: state);
-          if (state is QuizError) return _ErrorView(message: state.message);
-          return const SizedBox.shrink();
-        },
+
+
+      body: BlocListener<QuizBloc, QuizState>(
+        listener: (context, state) {
+          if (state is QuizResultsLoaded) {
+                _quizzedSubjectId = state.quizResponse.selectedSubjectId;
+                _quizzedSubjectName = state.quizResponse.selectedSubjectName;
+
+                // Snapshot mastery BEFORE the reload so we can show a delta.
+                final gardenState = context.read<GardenBloc>().state;
+                if (gardenState is GardenLoaded) {
+                  _preQuizMastery = gardenState.plants
+                      .where((p) => p.subjectId == _quizzedSubjectId)
+                      .map((p) => p.masteryPercent)
+                      .firstOrNull;
+                }
+                _waitingForGardenUpdate = true;
+
+                context.read<GamificationBloc>().add(
+                      ProcessQuizRewardsRequested(
+                        studentId: widget.studentId,
+                        rewards: state.result.rewards,
+                      ),
+                    );
+
+                context.read<GardenBloc>().add(
+                      LoadGardenRequested(studentUid: widget.studentId),
+                    );
+              }
+            },
+          child: BlocListener<GardenBloc, GardenState>(
+            listener: (context, state) {
+              if (state is GardenLoaded && _waitingForGardenUpdate) {
+                _waitingForGardenUpdate = false;
+                if (_quizzedSubjectId == null || !mounted) return;
+
+                final plant = state.plants
+                    .where((p) => p.subjectId == _quizzedSubjectId)
+                    .firstOrNull;
+                if (plant == null) return;
+
+                final newMastery = plant.masteryPercent;
+                final pre = _preQuizMastery;
+                final delta = pre != null ? newMastery - pre : null;
+
+                final message = (delta != null && delta > 0.05)
+                    ? '$_quizzedSubjectName: ${pre!.toStringAsFixed(0)}% → ${newMastery.toStringAsFixed(0)}% (+${delta.toStringAsFixed(1)}%)'
+                    : '$_quizzedSubjectName mastery updated!';
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(message),
+                    duration: const Duration(seconds: 3),
+                    backgroundColor: const Color(0xFF4CAF50),
+                  ),
+                );
+              }
+            },
+
+        child: BlocBuilder<QuizBloc, QuizState>(
+          builder: (context, state) {
+            if (state is QuizInitial) {
+              return _AutoStartPanel(
+                totalQuestions: widget.totalQuestions,
+                subjectId: widget.subjectId,
+              );
+            }
+            if (state is QuizLoading) {
+              return const _LoadingView(message: 'Generating your quiz…');
+            }
+            if (state is QuizLoaded) return _QuizActiveView(state: state);
+            if (state is QuizSubmitting) {
+              return const _LoadingView(message: 'Submitting answers…');
+            }
+            if (state is QuizResultsLoaded) return _ResultsView(state: state);
+            if (state is QuizError) return _ErrorView(message: state.message);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
       ),
     );
   }
@@ -91,7 +208,15 @@ class _QuizOverlayScaffold extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _AutoStartPanel extends StatelessWidget {
-  const _AutoStartPanel();
+
+  final int totalQuestions;
+  final int? subjectId;
+
+  const _AutoStartPanel({
+    required this.totalQuestions,
+    this.subjectId,
+  });
+
 
   @override
   Widget build(BuildContext context) {
@@ -131,8 +256,12 @@ class _AutoStartPanel extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 context.read<QuizBloc>().add(
-                  GenerateQuizEvent(totalQuestions: 5),
+                  GenerateQuizEvent(
+                    totalQuestions: totalQuestions,
+                    subjectId: subjectId,
+                  ),
                 );
+
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4A6CF7),
@@ -163,7 +292,6 @@ class _AutoStartPanel extends StatelessWidget {
             const Divider(color: Color(0xFFFFCDD2)),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              // Pop with false = dismissed, not completed.
               onPressed: () => Navigator.of(context).pop(false),
               icon: const Icon(Icons.home_outlined, color: Color(0xFFE53935)),
               label: const Text(
@@ -200,7 +328,9 @@ class StudentQuizScreen extends StatelessWidget {
   const StudentQuizScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const _AutoStartPanel();
+
+  Widget build(BuildContext context) => const _AutoStartPanel(totalQuestions: 5);
+
 }
 
 // ---------------------------------------------------------------------------
@@ -250,15 +380,15 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
         .inMilliseconds;
 
     context.read<QuizBloc>().add(
-      AnswerQuestionEvent(
-        StudentAnswer(
-          questionId: _currentQuestion.questionId,
-          selectedOption: option,
-          timeTakenMs: timeTaken,
-          hintsUsed: _hintsUsed,
-        ),
-      ),
-    );
+          AnswerQuestionEvent(
+            StudentAnswer(
+              questionId: _currentQuestion.questionId,
+              selectedOption: option,
+              timeTakenMs: timeTaken,
+              hintsUsed: _hintsUsed,
+            ),
+          ),
+        );
   }
 
   void _goNext(BuildContext context) {
@@ -270,8 +400,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
     }
     if (_isLastQuestion) {
       context.read<QuizBloc>().add(
-        SubmitQuizEvent(widget.state.quizResponse.quizSessionId),
-      );
+            SubmitQuizEvent(widget.state.quizResponse.quizSessionId),
+          );
     } else {
       setState(() {
         _currentIndex++;
@@ -288,9 +418,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   void _showHint(BuildContext context) {
     final hints = _currentQuestion.hints;
     if (_hintsUsed >= hints.length) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No more hints available.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No more hints available.')));
       return;
     }
     setState(() => _hintsUsed++);
@@ -317,7 +446,6 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
 
     return Column(
       children: [
-        // Progress bar
         LinearProgressIndicator(
           value: answered.length / total,
           backgroundColor: const Color(0xFFE8EDFF),
@@ -339,12 +467,12 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
               ),
               Text(
                 '${answered.length} answered',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF8B93A7)),
+                style:
+                    const TextStyle(fontSize: 13, color: Color(0xFF8B93A7)),
               ),
             ],
           ),
         ),
-
         Expanded(
           child: PageView.builder(
             controller: _pageController,
@@ -360,7 +488,6 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
             },
           ),
         ),
-
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           child: Row(
@@ -379,7 +506,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
               ),
               const Spacer(),
               ElevatedButton(
-                onPressed: _hasAnsweredCurrent ? () => _goNext(context) : null,
+                onPressed:
+                    _hasAnsweredCurrent ? () => _goNext(context) : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4A6CF7),
                   foregroundColor: Colors.white,
@@ -423,7 +551,6 @@ class _QuestionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Difficulty chip + Topic badge
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -435,9 +562,8 @@ class _QuestionCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: _difficultyColor(
-                    question.difficulty,
-                  ).withOpacity(0.12),
+                  color: _difficultyColor(question.difficulty)
+                      .withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -584,9 +710,8 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected
-        ? const Color(0xFF4A6CF7)
-        : const Color(0xFFE8EDFF);
+    final color =
+        isSelected ? const Color(0xFF4A6CF7) : const Color(0xFFE8EDFF);
     return GestureDetector(
       onTap: isAnswered ? null : onTap,
       child: AnimatedContainer(
@@ -603,7 +728,8 @@ class _OptionTile extends StatelessWidget {
           style: TextStyle(
             fontSize: 15,
             color: isSelected ? Colors.white : const Color(0xFF1A1F3C),
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+            fontWeight:
+                isSelected ? FontWeight.w700 : FontWeight.normal,
           ),
         ),
       ),
@@ -635,8 +761,8 @@ class _ResultsView extends StatelessWidget {
             pct >= 85
                 ? '🎉'
                 : pct >= 50
-                ? '👍'
-                : '💪',
+                    ? '👍'
+                    : '💪',
             style: const TextStyle(fontSize: 64),
           ),
           const SizedBox(height: 16),
@@ -651,13 +777,16 @@ class _ResultsView extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${state.result.totalQuestions} questions',
-            style: const TextStyle(fontSize: 14, color: Color(0xFF8B93A7)),
+            style:
+                const TextStyle(fontSize: 14, color: Color(0xFF8B93A7)),
           ),
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: isGood ? const Color(0xFFE6F4EA) : const Color(0xFFFFF3E0),
+              color: isGood
+                  ? const Color(0xFFE6F4EA)
+                  : const Color(0xFFFFF3E0),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isGood
@@ -680,7 +809,6 @@ class _ResultsView extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            // Pop with true = completed successfully.
             onPressed: () => Navigator.of(context).pop(true),
             icon: const Icon(Icons.check_circle_outline),
             label: const Text(
@@ -699,7 +827,8 @@ class _ResultsView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: () => context.read<QuizBloc>().add(ResetQuizEvent()),
+            onPressed: () =>
+                context.read<QuizBloc>().add(ResetQuizEvent()),
             icon: const Icon(Icons.refresh_rounded),
             label: const Text(
               'Take Another Quiz',
@@ -739,7 +868,8 @@ class _LoadingView extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             message,
-            style: const TextStyle(color: Color(0xFF8B93A7), fontSize: 15),
+            style:
+                const TextStyle(color: Color(0xFF8B93A7), fontSize: 15),
           ),
         ],
       ),
@@ -760,21 +890,25 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEA4335)),
+            const Icon(Icons.error_outline,
+                size: 56, color: Color(0xFFEA4335)),
             const SizedBox(height: 16),
             const Text(
               'Something went wrong',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style:
+                  TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF8B93A7), fontSize: 13),
+              style: const TextStyle(
+                  color: Color(0xFF8B93A7), fontSize: 13),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.read<QuizBloc>().add(ResetQuizEvent()),
+              onPressed: () =>
+                  context.read<QuizBloc>().add(ResetQuizEvent()),
               child: const Text('Try Again'),
             ),
           ],

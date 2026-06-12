@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ':*)",
+      "Bash(node -e ':*)",
+      "Bash(firebase deploy:*)",
+      "Bash(firebase dataconnect:sql:migrate --force)",
+      "Bash(grep -E \"\\\\.dart$\")",
+      "Bash(flutter build:*)",
+      "Bash(firebase dataconnect:sql:migrate)",
+      "Bash(flutter analyze:*)",
+      "Bash(firebase dataconnect:sql:migrate --project fcai-studymentor)",
+      "Bash(firebase projects:list)",
+      "Bash(firebase dataconnect:sql:migrate --project fcai-studymentor --force)",
+      "Bash(firebase dataconnect:sql:migrate --help)",
+      "Bash(cat dataconnect/dataconnect.yaml)",
+      "Bash(cat ../dataconnect/dataconnect.yaml)",
+      "Bash(grep -l \"total_xp\\\\|mastery\" /d/GP/Graduation_Project/StudyMentor/app/lib/dataconnect_generated/*.dart)"
+    ]
+  }
+}

@@ -3,11 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/shop/shop_bloc.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../../utils/student_rank_utils.dart';
 import '../../widgets/avatar_widget.dart';
-import 'student_avatar_customization.dart';
+import 'shop/custom_shop_screen.dart';
 import 'student_settings.dart';
 
 class StudentProfile extends StatefulWidget {
@@ -27,9 +28,8 @@ class _StudentProfileState extends State<StudentProfile> {
   int _currentStreak = 0;
   int _totalQuestionsAnswered = 0;
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
-
-  int get _level => StudentRankUtils.levelFromXp(_totalXp);
-  String get _rank => StudentRankUtils.rankFromLevel(_level);
+  int _level = 1;
+  String _rank = 'Seedling';
 
   @override
   void initState() {
@@ -39,22 +39,27 @@ class _StudentProfileState extends State<StudentProfile> {
 
   Future<void> _loadProfile() async {
     try {
-      final provider = DataConnectProvider();
+      final dataconnect = DataConnectProvider();
+      final aiEngine = AiEngineRepository.instance;
+      
       final results = await Future.wait([
-        provider.getStudentProfile(widget.uid),
-        provider.getStudentAvatar(widget.uid),
+        dataconnect.getStudentProfile(widget.uid),
+        aiEngine.getGamificationProfile(widget.uid),
+        dataconnect.getStudentAvatar(widget.uid),
       ]);
 
       final profile = results[0] as Map<String, dynamic>;
-      final avatarMap = results[1];
+      final gamification = results[1] as Map<String, dynamic>;
+      final avatarMap = results[2] as Map<String, dynamic>?;
 
       if (mounted) {
         setState(() {
-          _totalXp = (profile['total_xp'] as int?) ?? 0;
-          _totalCoins = (profile['total_coins'] as int?) ?? 0;
-          _currentStreak = (profile['current_streak'] as int?) ?? 0;
-          _totalQuestionsAnswered =
-              (profile['total_questions_answered'] as int?) ?? 0;
+          _totalXp = (gamification['xp_total'] as int?) ?? 0;
+          _totalCoins = (gamification['coins_total'] as int?) ?? 0;
+          _currentStreak = (gamification['current_streak'] as int?) ?? 0;
+          _totalQuestionsAnswered = (gamification['total_questions_answered'] as int?) ?? 0;
+          _level = (gamification['current_level'] as int?) ?? StudentRankUtils.levelFromXp(_totalXp);
+          _rank = (gamification['level_name'] as String?) ?? StudentRankUtils.rankFromLevel(_level);
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
@@ -136,30 +141,33 @@ class _StudentProfileState extends State<StudentProfile> {
   }
 
   Widget _buildAvatarWithBadge() {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        GestureDetector(
-          onTap: _loading
-              ? null
-              : () {
-                  final shopBloc = context.read<ShopBloc>();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: shopBloc,
-                        child: StudentAvatarCustomization(
-                          uid: widget.uid,
-                          config: _avatarConfig,
-                        ),
-                      ),
+    // GestureDetector wraps the whole Stack so the edit-icon and level-badge
+    // containers (which are rendered on top) don't silently absorb the tap.
+    return GestureDetector(
+      onTap: _loading
+          ? null
+          : () {
+              final shopBloc = context.read<ShopBloc>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: shopBloc,
+                    child: CustomShopScreen(
+                      studentUid: widget.uid,
+                      currentCoins: _totalCoins,
+                      currentLevel: _level,
                     ),
-                  ).then((_) {
-                    if (mounted) _loadProfile();
-                  });
-                },
-          child: Container(
+                  ),
+                ),
+              ).then((_) {
+                if (mounted) _loadProfile();
+              });
+            },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 4),
@@ -171,56 +179,56 @@ class _StudentProfileState extends State<StudentProfile> {
                 ),
               ],
             ),
-            child: AvatarWidget(config: _avatarConfig, size: 96),
+            child: AvatarWidget(config: _avatarConfig, size: 96.0),
           ),
-        ),
-        Positioned(
-          bottom: -2,
-          right: -2,
-          child: Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4A6CF7),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: const Icon(Icons.edit, color: Colors.white, size: 11),
-          ),
-        ),
-        Positioned(
-          bottom: -10,
-          left: 0,
-          right: 0,
-          child: Center(
+          Positioned(
+            bottom: -2,
+            right: -2,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF8F00),
-                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFF4A6CF7),
+                shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
-              child: _loading
-                  ? const SizedBox(
-                      width: 36,
-                      height: 12,
-                      child: LinearProgressIndicator(
-                        backgroundColor: Colors.transparent,
-                        color: Colors.white,
-                        minHeight: 2,
-                      ),
-                    )
-                  : Text(
-                      'Level $_level',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+              child: const Icon(Icons.edit, color: Colors.white, size: 11),
             ),
           ),
-        ),
-      ],
+          Positioned(
+            bottom: -10,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF8F00),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: _loading
+                    ? const SizedBox(
+                        width: 36,
+                        height: 12,
+                        child: LinearProgressIndicator(
+                          backgroundColor: Colors.transparent,
+                          color: Colors.white,
+                          minHeight: 2,
+                        ),
+                      )
+                    : Text(
+                        'Level $_level',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

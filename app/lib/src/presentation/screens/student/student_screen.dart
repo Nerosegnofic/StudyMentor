@@ -5,14 +5,24 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/shop/shop_bloc.dart';
+import '../../../bloc/shop/shop_state.dart';
+import '../../../bloc/gamification/gamification_bloc.dart';
+import '../../../bloc/gamification/gamification_event.dart';
+import '../../../bloc/gamification/gamification_state.dart';
+import '../../../domain/models/gamification_enums.dart';
+import '../../../data/repositories/gamification_repository_impl.dart';
+import '../../../data/constants/gamification_levels.dart';
 
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../domain/models/app_config_model.dart';
+import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
+import '../../widgets/gamification/level_up_modal.dart';
+import '../../widgets/gamification/streak_milestone_modal.dart';
+import '../../utils/reward_toast.dart';
 import '../../widgets/parent_verification_dialog.dart';
-import '../../widgets/student_navigation_bar.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/permission_service.dart';
@@ -21,12 +31,12 @@ import '../../../data/providers/dataconnect_provider.dart';
 import 'student_permission_gate_screen.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
-import 'student_shop.dart';
 import 'student_profile.dart';
+import 'shop/custom_shop_screen.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
-const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
+const _kAiEngineBaseUrl = 'http://192.168.1.6:8000';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -44,6 +54,7 @@ class _StudentScreenState extends State<StudentScreen>
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
+
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
   /// True while _initMascotService() is in progress.
@@ -65,6 +76,9 @@ class _StudentScreenState extends State<StudentScreen>
   /// after the route pops.
   bool _quizIsOpen = false;
 
+  /// Parent-configured quiz question count — kept in sync when config loads.
+  QuizCount _quizCount = const Auto();
+
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
 
@@ -76,6 +90,11 @@ class _StudentScreenState extends State<StudentScreen>
   bool _dialogIsLoading = false;
   String? _dialogError;
 
+  // ── Persistent BLoC instances ─────────────────────────────────────────────
+  late final ShopBloc _shopBloc;
+  late final GardenBloc _gardenBloc;
+  late final GamificationBloc _gamificationBloc;
+
   @override
   void initState() {
     super.initState();
@@ -83,11 +102,17 @@ class _StudentScreenState extends State<StudentScreen>
 
     _aiRepo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
 
+    _shopBloc = ShopBloc();
+    _gardenBloc = GardenBloc();
+    _gamificationBloc = GamificationBloc(
+      repository: GamificationRepositoryImpl(),
+    )..add(LoadGamificationDataRequested(studentId: widget.uid))
+     ..add(CheckDailyLoginRewardRequested(studentId: widget.uid));
+
     _quizSub = MascotOverlayService.instance.listenForQuiz(_onQuizTriggered);
 
     _initMascotService();
 
-    DataConnectProvider().updateLastActiveAt().catchError((_) {});
     _loadCoinsAndLevel();
 
     // Sync the installed-app inventory on every login so DataConnect always
@@ -117,10 +142,12 @@ class _StudentScreenState extends State<StudentScreen>
         final repo = context.read<AuthBloc>().repository;
         final (:config, :rules) = await repo.getAppConfigForStudent(widget.uid);
         if (mounted) {
+          final resolvedConfig = config ?? const StudentConfigModel();
+          _quizCount = resolvedConfig.quizCount;
           await MascotOverlayService.instance.updateMonitoredApps(
             rules,
-            studentUid: widget.uid, // FIX: forward uid for account-switch guard
-            config: config ?? const StudentConfigModel(),
+            studentUid: widget.uid,
+            config: resolvedConfig,
           );
         }
       } catch (e) {
@@ -169,18 +196,21 @@ class _StudentScreenState extends State<StudentScreen>
 
   Future<void> _loadCoinsAndLevel() async {
     try {
-      final provider = DataConnectProvider();
+      final dataconnect = DataConnectProvider();
+      final aiEngine = AiEngineRepository.instance;
       final results = await Future.wait([
-        provider.getStudentProfile(widget.uid),
-        provider.getStudentAvatar(widget.uid),
+        aiEngine.getGamificationProfile(widget.uid),
+        dataconnect.getStudentAvatar(widget.uid),
       ]);
       if (mounted) {
         final profile = results[0] as Map<String, dynamic>;
-        final avatarMap = results[1];
+        final avatarMap = results[1] as Map<String, dynamic>?;
         setState(() {
-          _coins = (profile['total_coins'] as int?) ?? 0;
-          _xp = (profile['total_xp'] as int?) ?? 0;
-          _level = (_xp ~/ 500) + 1;
+
+          _coins = (profile['coins_total'] as int?) ?? 0;
+          _xp = (profile['xp_total'] as int?) ?? 0;
+          _level = (profile['current_level'] as int?) ?? levelForXp(_xp).levelNumber;
+
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
@@ -192,7 +222,6 @@ class _StudentScreenState extends State<StudentScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    DataConnectProvider().updateLastActiveAt().catchError((_) {});
 
     // Sync on resume only when the native side flags a package change.
     InstalledAppsService.instance.isInventoryDirty().then((dirty) {
@@ -220,6 +249,9 @@ class _StudentScreenState extends State<StudentScreen>
     _quizSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MascotOverlayService.instance.stop();
+    _shopBloc.close();
+    _gardenBloc.close();
+    _gamificationBloc.close();
     super.dispose();
   }
 
@@ -269,7 +301,13 @@ class _StudentScreenState extends State<StudentScreen>
 
   void _openQuizOverlay() {
     if (!mounted) return;
-
+    // ── Defense-in-depth guard ─────────────────────────────────────────────
+    // The primary guard lives in MascotOverlayService._onLimitReached()
+    // (the _isBlocked early-return). This flag catches any duplicate signal
+    // that slips through — e.g. a race between broadcastState PATH 1 and the
+    // startActivity PATH 2 on a warm resume where both arrive after _isBlocked
+    // has already been set to true by the first call but before the stream
+    // listener fires for the second.
     if (_quizIsOpen) {
       debugPrint(
         '[StudentScreen] _openQuizOverlay called while quiz is already open — ignoring duplicate.',
@@ -285,7 +323,23 @@ class _StudentScreenState extends State<StudentScreen>
         .push(
           MaterialPageRoute<bool?>(
             fullscreenDialog: true,
-            builder: (_) => QuizOverlayPage(repository: _aiRepo),
+
+            builder: (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: _gamificationBloc),
+                BlocProvider.value(value: _gardenBloc),
+              ],
+              child: QuizOverlayPage(
+                repository: _aiRepo,
+                studentId: widget.uid,
+                contextType: QuizContext.forced,
+                totalQuestions: switch (_quizCount) {
+                  Auto() => 5,
+                  Fixed(:final count) => count,
+                },
+              ),
+
+            ),
           ),
         )
         .then((completed) {
@@ -364,8 +418,9 @@ class _StudentScreenState extends State<StudentScreen>
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider<ShopBloc>(create: (_) => ShopBloc()),
-        BlocProvider<GardenBloc>(create: (_) => GardenBloc()),
+        BlocProvider<ShopBloc>.value(value: _shopBloc),
+        BlocProvider<GardenBloc>.value(value: _gardenBloc),
+        BlocProvider<GamificationBloc>.value(value: _gamificationBloc),
       ],
       child: PopScope(
         canPop: false,
@@ -376,29 +431,76 @@ class _StudentScreenState extends State<StudentScreen>
             );
           }
         },
-        child: BlocListener<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state is AppRulesLoaded && state.studentUid == widget.uid) {
-              // FIX: forward studentUid so the account-switch guard fires
-              // if the parent changes rules while a different student is
-              // somehow in scope.
-              MascotOverlayService.instance.updateMonitoredApps(
-                state.rules,
-                studentUid: widget.uid,
-                config: state.config,
-              );
-            }
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<AuthBloc, AuthState>(
+              listener: (context, state) {
+                if (state is LegacyAppRulesLoaded && state.studentUid == widget.uid) {
+                  MascotOverlayService.instance.updateMonitoredApps(
+                    state.rules,
+                    studentUid: widget.uid,
+                    config: state.config,
+                  );
+                }
 
-            if (state is StudentLogoutVerificationRequired) {
-              _showVerificationDialog();
-            }
-            if (state is ParentVerificationFailed) {
-              _updateDialogWithError(state.message);
-            }
-            if (state is AuthUnauthenticated) {
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
-            }
-          },
+                if (state is StudentLogoutVerificationRequired) {
+                  _showVerificationDialog();
+                }
+                if (state is ParentVerificationFailed) {
+                  _updateDialogWithError(state.message);
+                }
+                if (state is AuthUnauthenticated) {
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (_) => false);
+                }
+              },
+            ),
+            BlocListener<GamificationBloc, GamificationState>(
+              listener: (context, state) {
+                if (state is GamificationLoaded) {
+                  setState(() {
+                    _coins = state.profile.coinsTotal;
+                    _xp = state.profile.xpTotal;
+                    _level = state.profile.currentLevel;
+                  });
+                }
+                if (state is GamificationRewardProcessed) {
+                  setState(() {
+                    _coins = state.profile.coinsTotal;
+                    _xp = state.profile.xpTotal;
+                    _level = state.profile.currentLevel;
+                  });
+                  RewardToast.show(context, state.xpEarned, state.coinsEarned);
+                  if (state.leveledUpTo != null) {
+                    LevelUpModal.show(
+                      context,
+                      kGamificationLevels.firstWhere(
+                        (l) => l.levelNumber == state.leveledUpTo,
+                        orElse: () => kGamificationLevels.first,
+                      ),
+                    );
+                  }
+                  if (state.milestoneHit != null) {
+                    StreakMilestoneModal.show(
+                      context,
+                      milestoneDays: state.milestoneHit!,
+                      coinReward: 20, // Milestone coin reward amount
+                      currentStreak: state.profile.currentStreak,
+                    );
+                  }
+                }
+              },
+            ),
+            BlocListener<ShopBloc, ShopState>(
+              listener: (context, state) {
+                if (state is ShopLoaded) {
+                  setState(() {
+                    _coins = state.coins;
+                  });
+                }
+              },
+            ),
+          ],
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FA),
             body: SafeArea(
@@ -410,20 +512,11 @@ class _StudentScreenState extends State<StudentScreen>
                       index: _selectedIndex,
                       children: [
                         StudentHome(fullName: widget.fullName, uid: widget.uid),
-                        StudentShop(
-                          uid: widget.uid,
-                          coins: _coins,
-                          level: _level,
-                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
-            bottomNavigationBar: StudentNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: (index) => setState(() => _selectedIndex = index),
             ),
           ),
         ),
@@ -477,21 +570,81 @@ class _StudentScreenState extends State<StudentScreen>
                 ],
               ),
               child: ClipOval(
-                child: AvatarWidget(config: _avatarConfig, size: 43),
+                child: AvatarWidget(config: _avatarConfig, size: 43.0),
               ),
             ),
           ),
           const Spacer(),
-          _navPill(
-            icon: Icons.star_rounded,
-            iconColor: const Color(0xFFFFC107),
-            label: _formatNum(_xp),
-          ),
-          const SizedBox(width: 8),
-          _navPill(
-            icon: Icons.monetization_on_rounded,
-            iconColor: const Color(0xFFFFA000),
-            label: _formatNum(_coins),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F7FF),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE0E6FF)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded, color: Color(0xFF4A6CF7), size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Lv. $_level',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A1F3C),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<ShopBloc>(),
+                        child: CustomShopScreen(
+                          studentUid: widget.uid,
+                          currentCoins: _coins,
+                          currentLevel: _level,
+                        ),
+                      ),
+                    ),
+                  ).then((_) {
+                    if (mounted) _loadCoinsAndLevel();
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8E1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFFFE082)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('🪙', style: TextStyle(fontSize: 12)),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatNum(_coins),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFF57F17),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 6),
           Stack(
@@ -527,35 +680,6 @@ class _StudentScreenState extends State<StudentScreen>
     );
   }
 
-  Widget _navPill({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E7),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFE082)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: iconColor),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFE6A800),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   String _formatNum(int n) {
     if (n >= 1000) {

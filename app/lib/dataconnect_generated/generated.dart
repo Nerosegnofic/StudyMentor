@@ -22,19 +22,13 @@ part 'insert_app_rule.dart';
 
 part 'delete_all_app_rules_for_student.dart';
 
-part 'update_last_active_at.dart';
-
 part 'upsert_student_settings.dart';
 
 part 'insert_support_ticket.dart';
 
 part 'insert_student_owned_item.dart';
 
-part 'update_student_coins.dart';
-
 part 'upsert_student_avatar.dart';
-
-part 'update_student_xp_and_coins.dart';
 
 part 'delete_all_owned_items_for_student.dart';
 
@@ -55,6 +49,8 @@ part 'delete_parent_record.dart';
 part 'upsert_student_config.dart';
 
 part 'upsert_subject_progress.dart';
+
+part 'delete_subject_progress.dart';
 
 part 'get_user_by_uid.dart';
 
@@ -209,11 +205,6 @@ class ExampleConnector {
   }
   
   
-  UpdateLastActiveAtVariablesBuilder updateLastActiveAt () {
-    return UpdateLastActiveAtVariablesBuilder(dataConnect, );
-  }
-  
-  
   UpsertStudentSettingsVariablesBuilder upsertStudentSettings ({required String studentUid, required bool notificationsEnabled, required bool soundEffectsEnabled, required bool backgroundMusicEnabled, }) {
     return UpsertStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,notificationsEnabled: notificationsEnabled,soundEffectsEnabled: soundEffectsEnabled,backgroundMusicEnabled: backgroundMusicEnabled,);
   }
@@ -229,18 +220,8 @@ class ExampleConnector {
   }
   
   
-  UpdateStudentCoinsVariablesBuilder updateStudentCoins ({required int totalCoins, }) {
-    return UpdateStudentCoinsVariablesBuilder(dataConnect, totalCoins: totalCoins,);
-  }
-  
-  
   UpsertStudentAvatarVariablesBuilder upsertStudentAvatar ({required String studentUid, required String gender, required String skinTone, }) {
     return UpsertStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,gender: gender,skinTone: skinTone,);
-  }
-  
-  
-  UpdateStudentXpAndCoinsVariablesBuilder updateStudentXpAndCoins ({required int totalXp, required int weeklyXp, required int totalCoins, required int totalQuestionsAnswered, required int currentStreak, }) {
-    return UpdateStudentXpAndCoinsVariablesBuilder(dataConnect, totalXp: totalXp,weeklyXp: weeklyXp,totalCoins: totalCoins,totalQuestionsAnswered: totalQuestionsAnswered,currentStreak: currentStreak,);
   }
   
   
@@ -284,13 +265,18 @@ class ExampleConnector {
   }
   
   
-  UpsertStudentConfigVariablesBuilder upsertStudentConfig ({required String studentUid, required int usageHours, required int usageMinutes, required int cooldownHours, required int cooldownMinutes, }) {
-    return UpsertStudentConfigVariablesBuilder(dataConnect, studentUid: studentUid,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,);
+  UpsertStudentConfigVariablesBuilder upsertStudentConfig ({required String studentUid, required int usageHours, required int usageMinutes, required int cooldownHours, required int cooldownMinutes, required String quizCount, }) {
+    return UpsertStudentConfigVariablesBuilder(dataConnect, studentUid: studentUid,usageHours: usageHours,usageMinutes: usageMinutes,cooldownHours: cooldownHours,cooldownMinutes: cooldownMinutes,quizCount: quizCount,);
   }
   
   
   UpsertSubjectProgressVariablesBuilder upsertSubjectProgress ({required String studentUid, required String subjectKey, required int totalXp, required int level, }) {
     return UpsertSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,subjectKey: subjectKey,totalXp: totalXp,level: level,);
+  }
+  
+  
+  DeleteSubjectProgressVariablesBuilder deleteSubjectProgress ({required String studentUid, required String subjectKey, }) {
+    return DeleteSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,subjectKey: subjectKey,);
   }
   
   

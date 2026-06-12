@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/auth/auth_event.dart';
-import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/students/students_bloc.dart';
+import '../../../bloc/students/students_event.dart';
+import '../../../bloc/students/students_state.dart';
+import '../../../domain/models/app_config_model.dart';
 
 class AddStudentScreen extends StatefulWidget {
   final String parentUid;
@@ -72,29 +73,28 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       canPop: true,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
-          // Reset BLoC state so RootPage never sees a stale AuthLoading or
-          // AuthError left over from a failed CreateStudentRequested call.
-          context.read<AuthBloc>().add(ResetAuthState());
+          // No need to reset StudentsBloc state because the screen is popped
+          // and the parent (ParentStudents) will just fetch students again.
         }
       },
       child: Scaffold(
         appBar: AppBar(title: const Text('Register Your Child')),
-        body: BlocConsumer<AuthBloc, AuthState>(
+        body: BlocConsumer<StudentsBloc, StudentsState>(
           // Only rebuild the button when loading state changes.
-          buildWhen: (prev, curr) => curr is AuthLoading || prev is AuthLoading,
+          buildWhen: (prev, curr) => curr is StudentCreateLoading || prev is StudentCreateLoading,
           // Handle side effects without setState.
           listener: (context, state) {
             if (state is StudentCreated) {
               _showSuccessAndPop();
             }
-            if (state is AuthError) {
+            if (state is StudentCreateError) {
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(SnackBar(content: Text(state.message)));
             }
           },
           builder: (context, state) {
-            final loading = state is AuthLoading;
+            final loading = state is StudentCreateLoading;
             return Padding(
               padding: const EdgeInsets.all(16),
               child: Form(
@@ -199,7 +199,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                           ? null
                           : () {
                               if (_formKey.currentState!.validate()) {
-                                context.read<AuthBloc>().add(
+                                context.read<StudentsBloc>().add(
                                   CreateStudentRequested(
                                     fullName: _fullNameCtl.text.trim(),
                                     username: _usernameCtl.text.trim(),
@@ -207,6 +207,11 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                                     password: _passCtl.text.trim(),
                                     parentUid: widget.parentUid,
                                     gradeLevel: _selectedGrade!,
+                                    rules: const [],
+                                    config: const StudentConfigModel(
+                                      usageHours: 0,
+                                      usageMinutes: 0,
+                                    ),
                                   ),
                                 );
                               }

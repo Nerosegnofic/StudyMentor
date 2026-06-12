@@ -20,8 +20,6 @@ query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
       isEmailVerified
     }
     gradeLevel
-    totalXp
-    totalCoins
   }
 }
 
@@ -74,11 +72,7 @@ query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Stude
   student(key: { uid: $uid }) {
     uid
     username
-    totalXp
-    totalCoins
     gradeLevel
-    totalQuestionsAnswered
-    currentStreak
   }
 }
 
@@ -131,11 +125,13 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
     usageMinutes
     cooldownHours
     cooldownMinutes
+    quizCount
   }
   appRules(where: { studentUid: { eq: $studentUid } }) {
     id
     packageName
     appLabel
+    isPaused
   }
 }
 

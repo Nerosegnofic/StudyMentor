@@ -1,93 +1,62 @@
 import 'package:flutter/material.dart';
-import '../../data/catalog/subject_catalog.dart';
-import '../../domain/models/subject_progress_model.dart';
+import '../../domain/models/garden_plant_model.dart';
 import '../../utils/growth_stage_utils.dart';
-import '../../utils/subject_xp_engine.dart';
 import 'plant_widget.dart';
 
-/// Plant slot displayed inside the atmospheric garden scene.
-/// Transparent background — the garden container provides the soil colour.
-/// Plant aligns to the bottom so taller plants (higher levels) appear taller.
 class GardenSubjectCard extends StatelessWidget {
-  final SubjectDefinition subject;
-  final SubjectProgressModel progress;
+  final GardenPlantModel plant;
   final VoidCallback onTap;
 
   const GardenSubjectCard({
     super.key,
-    required this.subject,
-    required this.progress,
+    required this.plant,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final stage = GrowthStageUtils.fromLevel(progress.level);
-    final progressFraction = SubjectXpEngine.levelProgress(progress.totalXp);
-    final badgeColor = progress.level <= 1
-        ? const Color(0xFFFFC107)
-        : const Color(0xFF4CAF50);
-
+    final stage = GrowthStageUtils.fromMastery(plant.masteryPercent);
+    final stageNum = GrowthStage.values.indexOf(stage) + 1;
+    const badgeColor = Color(0xFF4CAF50);
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        mainAxisSize: MainAxisSize.max,
-        children: [
-            // ── Plant + level badge ────────────────────────────────────────
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // ── Plant + badge + shadow ─────────────────────────────────
             Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.bottomCenter,
               children: [
-                // Soft oval ground-shadow under the plant
-                Positioned(
-                  bottom: 2,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      width: 70,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.09),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                ),
-
-                PlantWidget(
-                  plantType: subject.plantType,
-                  stage: stage,
-                  primaryColor: subject.primaryColor,
-                  size: 130,
-                ),
-
-                // Circular level badge — top-right of plant widget
+                PlantWidget(stage: stage, size: 110),
+                // Stage badge — top-right of plant
                 Positioned(
                   top: 0,
                   right: 2,
                   child: Container(
-                    width: 20,
-                    height: 20,
+                    width: 26,
+                    height: 26,
                     decoration: BoxDecoration(
                       color: badgeColor,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: badgeColor.withValues(alpha: 0.4),
+                          color: Colors.black.withOpacity(0.25),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${progress.level}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    child: Center(
+                      child: Text(
+                        '$stageNum',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ),
@@ -97,9 +66,12 @@ class GardenSubjectCard extends StatelessWidget {
 
             const SizedBox(height: 5),
 
-            // ── Subject name ───────────────────────────────────────────────
+            // ── Subject name ───────────────────────────────────────────
             Text(
-              subject.name,
+              plant.subjectName,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -109,20 +81,42 @@ class GardenSubjectCard extends StatelessWidget {
 
             const SizedBox(height: 4),
 
-            // ── XP progress bar ────────────────────────────────────────────
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progressFraction,
-                minHeight: 4,
-                backgroundColor: Colors.white.withOpacity(0.5),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+            // ── Mastery % ──────────────────────────────────────────────
+            Text(
+              '${plant.masteryPercent.toStringAsFixed(0)}%',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF5A8A4A),
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
+
+            // ── Within-stage progress bar ──────────────────────────────
+            // Each stage spans 20 mastery points (0-20, 20-40, …, 80-100).
+            // The bar fills proportionally within the current stage so even
+            // small BKT gains are immediately visible.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (plant.masteryPercent % 20) / 20,
+                  minHeight: 4,
+                  backgroundColor: const Color(0xFFD4ECC8),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF4CAF50),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
           ],
         ),
+      ),
     );
   }
 }

@@ -103,6 +103,14 @@ input AppRule_Data {
   """
   appLabel_expr: String_Expr @fdc_forbiddenInVariables
   """
+  ✨ Generated from Field `AppRule`.`isPaused` of type `Boolean`
+  """
+  isPaused: Boolean
+  """
+  ✨ `_expr` server value variant of `isPaused` (✨ Generated from Field `AppRule`.`isPaused` of type `Boolean`)
+  """
+  isPaused_expr: Boolean_Expr @fdc_forbiddenInVariables
+  """
   ✨ Generated from Field `AppRule`.`packageName` of type `String!`
   """
   packageName: String
@@ -143,6 +151,10 @@ input AppRule_Filter {
   ✨ Generated from Field `AppRule`.`appLabel` of type `String!`
   """
   appLabel: String_Filter
+  """
+  ✨ Generated from Field `AppRule`.`isPaused` of type `Boolean`
+  """
+  isPaused: Boolean_Filter
   """
   ✨ Generated from Field `AppRule`.`packageName` of type `String!`
   """
@@ -193,6 +205,10 @@ input AppRule_Having {
   ✨ Generated from Field `AppRule`.`id_count` of type `Int!`
   """
   id_count: Int_Filter
+  """
+  ✨ Generated from Field `AppRule`.`isPaused_count` of type `Int!`
+  """
+  isPaused_count: Int_Filter
   """
   ✨ Generated from Field `AppRule`.`packageName_count` of type `Int!`
   """
@@ -249,6 +265,10 @@ input AppRule_Order {
   """
   appLabel: OrderDirection
   """
+  ✨ Generated from Field `AppRule`.`isPaused` of type `Boolean`
+  """
+  isPaused: OrderDirection
+  """
   ✨ Generated from Field `AppRule`.`packageName` of type `String!`
   """
   packageName: OrderDirection
@@ -264,6 +284,10 @@ input AppRule_Order {
   ✨ Generated from Field `AppRule`.`id_count` of type `Int!`
   """
   id_count: OrderDirection
+  """
+  ✨ Generated from Field `AppRule`.`isPaused_count` of type `Int!`
+  """
+  isPaused_count: OrderDirection
   """
   ✨ Generated from Field `AppRule`.`packageName_count` of type `Int!`
   """
@@ -850,18 +874,6 @@ input Student_Data {
   """
   user: User_Key @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `Student`.`currentStreak` of type `Int`
-  """
-  currentStreak: Int
-  """
-  ✨ `_expr` server value variant of `currentStreak` (✨ Generated from Field `Student`.`currentStreak` of type `Int`)
-  """
-  currentStreak_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `currentStreak` (✨ Generated from Field `Student`.`currentStreak` of type `Int`)
-  """
-  currentStreak_update: [Int_Update!] @fdc_forbiddenInVariables
-  """
   ✨ Generated from Field `Student`.`gradeLevel` of type `Int`
   """
   gradeLevel: Int
@@ -874,70 +886,6 @@ input Student_Data {
   """
   gradeLevel_update: [Int_Update!] @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`
-  """
-  lastActiveAt: Timestamp
-  """
-  ✨ `_expr` server value variant of `lastActiveAt` (✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`)
-  """
-  lastActiveAt_expr: Timestamp_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_time` server value variant of `lastActiveAt` (✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`)
-  """
-  lastActiveAt_time: Timestamp_Relative @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `lastActiveAt` (✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`)
-  """
-  lastActiveAt_update: [Timestamp_Update!] @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `Student`.`level` of type `Int!`
-  """
-  level: Int
-  """
-  ✨ `_expr` server value variant of `level` (✨ Generated from Field `Student`.`level` of type `Int!`)
-  """
-  level_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `level` (✨ Generated from Field `Student`.`level` of type `Int!`)
-  """
-  level_update: [Int_Update!] @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `Student`.`totalCoins` of type `Int`
-  """
-  totalCoins: Int
-  """
-  ✨ `_expr` server value variant of `totalCoins` (✨ Generated from Field `Student`.`totalCoins` of type `Int`)
-  """
-  totalCoins_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `totalCoins` (✨ Generated from Field `Student`.`totalCoins` of type `Int`)
-  """
-  totalCoins_update: [Int_Update!] @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered` of type `Int`
-  """
-  totalQuestionsAnswered: Int
-  """
-  ✨ `_expr` server value variant of `totalQuestionsAnswered` (✨ Generated from Field `Student`.`totalQuestionsAnswered` of type `Int`)
-  """
-  totalQuestionsAnswered_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `totalQuestionsAnswered` (✨ Generated from Field `Student`.`totalQuestionsAnswered` of type `Int`)
-  """
-  totalQuestionsAnswered_update: [Int_Update!] @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `Student`.`totalXp` of type `Int`
-  """
-  totalXp: Int
-  """
-  ✨ `_expr` server value variant of `totalXp` (✨ Generated from Field `Student`.`totalXp` of type `Int`)
-  """
-  totalXp_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `totalXp` (✨ Generated from Field `Student`.`totalXp` of type `Int`)
-  """
-  totalXp_update: [Int_Update!] @fdc_forbiddenInVariables
-  """
   ✨ Generated from Field `Student`.`username` of type `String!`
   """
   username: String
@@ -945,18 +893,6 @@ input Student_Data {
   ✨ `_expr` server value variant of `username` (✨ Generated from Field `Student`.`username` of type `String!`)
   """
   username_expr: String_Expr @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `Student`.`weeklyXp` of type `Int`
-  """
-  weeklyXp: Int
-  """
-  ✨ `_expr` server value variant of `weeklyXp` (✨ Generated from Field `Student`.`weeklyXp` of type `Int`)
-  """
-  weeklyXp_expr: Int_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `weeklyXp` (✨ Generated from Field `Student`.`weeklyXp` of type `Int`)
-  """
-  weeklyXp_update: [Int_Update!] @fdc_forbiddenInVariables
   """
   ✨ Generated from Field `Student`.`appRules_on_student` of type `[AppRule!]!`
   """
@@ -1011,41 +947,13 @@ input Student_Filter {
   """
   user: User_Filter
   """
-  ✨ Generated from Field `Student`.`currentStreak` of type `Int`
-  """
-  currentStreak: Int_Filter
-  """
   ✨ Generated from Field `Student`.`gradeLevel` of type `Int`
   """
   gradeLevel: Int_Filter
   """
-  ✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`
-  """
-  lastActiveAt: Timestamp_Filter
-  """
-  ✨ Generated from Field `Student`.`level` of type `Int!`
-  """
-  level: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalCoins` of type `Int`
-  """
-  totalCoins: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered` of type `Int`
-  """
-  totalQuestionsAnswered: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalXp` of type `Int`
-  """
-  totalXp: Int_Filter
-  """
   ✨ Generated from Field `Student`.`username` of type `String!`
   """
   username: String_Filter
-  """
-  ✨ Generated from Field `Student`.`weeklyXp` of type `Int`
-  """
-  weeklyXp: Int_Filter
   """
   ✨ Generated from Field `Student`.`appRules_on_student` of type `[AppRule!]!`
   """
@@ -1113,37 +1021,13 @@ input Student_Having {
   """
   _count: Int_Filter
   """
-  ✨ Generated from Field `Student`.`currentStreak_count` of type `Int!`
-  """
-  currentStreak_count: Int_Filter
-  """
   ✨ Generated from Field `Student`.`gradeLevel_count` of type `Int!`
   """
   gradeLevel_count: Int_Filter
   """
-  ✨ Generated from Field `Student`.`lastActiveAt_count` of type `Int!`
-  """
-  lastActiveAt_count: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`level_count` of type `Int!`
-  """
-  level_count: Int_Filter
-  """
   ✨ Generated from Field `Student`.`parentUid_count` of type `Int!`
   """
   parentUid_count: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalCoins_count` of type `Int!`
-  """
-  totalCoins_count: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_count` of type `Int!`
-  """
-  totalQuestionsAnswered_count: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalXp_count` of type `Int!`
-  """
-  totalXp_count: Int_Filter
   """
   ✨ Generated from Field `Student`.`uid_count` of type `Int!`
   """
@@ -1157,129 +1041,21 @@ input Student_Having {
   """
   username_count: Int_Filter
   """
-  ✨ Generated from Field `Student`.`weeklyXp_count` of type `Int!`
-  """
-  weeklyXp_count: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`currentStreak_sum` of type `Int`
-  """
-  currentStreak_sum: Int_Filter
-  """
   ✨ Generated from Field `Student`.`gradeLevel_sum` of type `Int`
   """
   gradeLevel_sum: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`level_sum` of type `Int`
-  """
-  level_sum: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalCoins_sum` of type `Int`
-  """
-  totalCoins_sum: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_sum` of type `Int`
-  """
-  totalQuestionsAnswered_sum: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalXp_sum` of type `Int`
-  """
-  totalXp_sum: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`weeklyXp_sum` of type `Int`
-  """
-  weeklyXp_sum: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`currentStreak_avg` of type `Float`
-  """
-  currentStreak_avg: Float_Filter
   """
   ✨ Generated from Field `Student`.`gradeLevel_avg` of type `Float`
   """
   gradeLevel_avg: Float_Filter
   """
-  ✨ Generated from Field `Student`.`level_avg` of type `Float`
-  """
-  level_avg: Float_Filter
-  """
-  ✨ Generated from Field `Student`.`totalCoins_avg` of type `Float`
-  """
-  totalCoins_avg: Float_Filter
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_avg` of type `Float`
-  """
-  totalQuestionsAnswered_avg: Float_Filter
-  """
-  ✨ Generated from Field `Student`.`totalXp_avg` of type `Float`
-  """
-  totalXp_avg: Float_Filter
-  """
-  ✨ Generated from Field `Student`.`weeklyXp_avg` of type `Float`
-  """
-  weeklyXp_avg: Float_Filter
-  """
-  ✨ Generated from Field `Student`.`currentStreak_min` of type `Int`
-  """
-  currentStreak_min: Int_Filter
-  """
   ✨ Generated from Field `Student`.`gradeLevel_min` of type `Int`
   """
   gradeLevel_min: Int_Filter
   """
-  ✨ Generated from Field `Student`.`lastActiveAt_min` of type `Timestamp`
-  """
-  lastActiveAt_min: Timestamp_Filter
-  """
-  ✨ Generated from Field `Student`.`level_min` of type `Int`
-  """
-  level_min: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalCoins_min` of type `Int`
-  """
-  totalCoins_min: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_min` of type `Int`
-  """
-  totalQuestionsAnswered_min: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalXp_min` of type `Int`
-  """
-  totalXp_min: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`weeklyXp_min` of type `Int`
-  """
-  weeklyXp_min: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`currentStreak_max` of type `Int`
-  """
-  currentStreak_max: Int_Filter
-  """
   ✨ Generated from Field `Student`.`gradeLevel_max` of type `Int`
   """
   gradeLevel_max: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`lastActiveAt_max` of type `Timestamp`
-  """
-  lastActiveAt_max: Timestamp_Filter
-  """
-  ✨ Generated from Field `Student`.`level_max` of type `Int`
-  """
-  level_max: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalCoins_max` of type `Int`
-  """
-  totalCoins_max: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_max` of type `Int`
-  """
-  totalQuestionsAnswered_max: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`totalXp_max` of type `Int`
-  """
-  totalXp_max: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`weeklyXp_max` of type `Int`
-  """
-  weeklyXp_max: Int_Filter
 }
 """
 ✨ Generated key input type for table 'Student'. It represents the primary key fields used to uniquely identify a row in the table.
@@ -1332,77 +1108,25 @@ input Student_Order {
   """
   user: User_Order
   """
-  ✨ Generated from Field `Student`.`currentStreak` of type `Int`
-  """
-  currentStreak: OrderDirection
-  """
   ✨ Generated from Field `Student`.`gradeLevel` of type `Int`
   """
   gradeLevel: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`
-  """
-  lastActiveAt: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`level` of type `Int!`
-  """
-  level: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalCoins` of type `Int`
-  """
-  totalCoins: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered` of type `Int`
-  """
-  totalQuestionsAnswered: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalXp` of type `Int`
-  """
-  totalXp: OrderDirection
   """
   ✨ Generated from Field `Student`.`username` of type `String!`
   """
   username: OrderDirection
   """
-  ✨ Generated from Field `Student`.`weeklyXp` of type `Int`
-  """
-  weeklyXp: OrderDirection
-  """
   ✨ Generated from Field `Student`.`_count` of type `Int!`
   """
   _count: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`currentStreak_count` of type `Int!`
-  """
-  currentStreak_count: OrderDirection
   """
   ✨ Generated from Field `Student`.`gradeLevel_count` of type `Int!`
   """
   gradeLevel_count: OrderDirection
   """
-  ✨ Generated from Field `Student`.`lastActiveAt_count` of type `Int!`
-  """
-  lastActiveAt_count: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`level_count` of type `Int!`
-  """
-  level_count: OrderDirection
-  """
   ✨ Generated from Field `Student`.`parentUid_count` of type `Int!`
   """
   parentUid_count: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalCoins_count` of type `Int!`
-  """
-  totalCoins_count: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_count` of type `Int!`
-  """
-  totalQuestionsAnswered_count: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalXp_count` of type `Int!`
-  """
-  totalXp_count: OrderDirection
   """
   ✨ Generated from Field `Student`.`uid_count` of type `Int!`
   """
@@ -1416,129 +1140,21 @@ input Student_Order {
   """
   username_count: OrderDirection
   """
-  ✨ Generated from Field `Student`.`weeklyXp_count` of type `Int!`
-  """
-  weeklyXp_count: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`currentStreak_sum` of type `Int`
-  """
-  currentStreak_sum: OrderDirection
-  """
   ✨ Generated from Field `Student`.`gradeLevel_sum` of type `Int`
   """
   gradeLevel_sum: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`level_sum` of type `Int`
-  """
-  level_sum: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalCoins_sum` of type `Int`
-  """
-  totalCoins_sum: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_sum` of type `Int`
-  """
-  totalQuestionsAnswered_sum: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalXp_sum` of type `Int`
-  """
-  totalXp_sum: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`weeklyXp_sum` of type `Int`
-  """
-  weeklyXp_sum: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`currentStreak_avg` of type `Float`
-  """
-  currentStreak_avg: OrderDirection
   """
   ✨ Generated from Field `Student`.`gradeLevel_avg` of type `Float`
   """
   gradeLevel_avg: OrderDirection
   """
-  ✨ Generated from Field `Student`.`level_avg` of type `Float`
-  """
-  level_avg: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalCoins_avg` of type `Float`
-  """
-  totalCoins_avg: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_avg` of type `Float`
-  """
-  totalQuestionsAnswered_avg: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalXp_avg` of type `Float`
-  """
-  totalXp_avg: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`weeklyXp_avg` of type `Float`
-  """
-  weeklyXp_avg: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`currentStreak_min` of type `Int`
-  """
-  currentStreak_min: OrderDirection
-  """
   ✨ Generated from Field `Student`.`gradeLevel_min` of type `Int`
   """
   gradeLevel_min: OrderDirection
   """
-  ✨ Generated from Field `Student`.`lastActiveAt_min` of type `Timestamp`
-  """
-  lastActiveAt_min: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`level_min` of type `Int`
-  """
-  level_min: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalCoins_min` of type `Int`
-  """
-  totalCoins_min: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_min` of type `Int`
-  """
-  totalQuestionsAnswered_min: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalXp_min` of type `Int`
-  """
-  totalXp_min: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`weeklyXp_min` of type `Int`
-  """
-  weeklyXp_min: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`currentStreak_max` of type `Int`
-  """
-  currentStreak_max: OrderDirection
-  """
   ✨ Generated from Field `Student`.`gradeLevel_max` of type `Int`
   """
   gradeLevel_max: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`lastActiveAt_max` of type `Timestamp`
-  """
-  lastActiveAt_max: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`level_max` of type `Int`
-  """
-  level_max: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalCoins_max` of type `Int`
-  """
-  totalCoins_max: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalQuestionsAnswered_max` of type `Int`
-  """
-  totalQuestionsAnswered_max: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`totalXp_max` of type `Int`
-  """
-  totalXp_max: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`weeklyXp_max` of type `Int`
-  """
-  weeklyXp_max: OrderDirection
 }
 """
 ✨ Generated data input type for table 'StudentAvatar'. It includes all necessary fields for creating or upserting rows into table.
@@ -1952,6 +1568,14 @@ input StudentConfig_Data {
   """
   cooldownMinutes_update: [Int_Update!] @fdc_forbiddenInVariables
   """
+  ✨ Generated from Field `StudentConfig`.`quizCount` of type `String`
+  """
+  quizCount: String
+  """
+  ✨ `_expr` server value variant of `quizCount` (✨ Generated from Field `StudentConfig`.`quizCount` of type `String`)
+  """
+  quizCount_expr: String_Expr @fdc_forbiddenInVariables
+  """
   ✨ Generated from Field `StudentConfig`.`usageHours` of type `Int!`
   """
   usageHours: Int
@@ -2009,6 +1633,10 @@ input StudentConfig_Filter {
   """
   cooldownMinutes: Int_Filter
   """
+  ✨ Generated from Field `StudentConfig`.`quizCount` of type `String`
+  """
+  quizCount: String_Filter
+  """
   ✨ Generated from Field `StudentConfig`.`usageHours` of type `Int!`
   """
   usageHours: Int_Filter
@@ -2062,6 +1690,10 @@ input StudentConfig_Having {
   ✨ Generated from Field `StudentConfig`.`cooldownMinutes_count` of type `Int!`
   """
   cooldownMinutes_count: Int_Filter
+  """
+  ✨ Generated from Field `StudentConfig`.`quizCount_count` of type `Int!`
+  """
+  quizCount_count: Int_Filter
   """
   ✨ Generated from Field `StudentConfig`.`studentUid_count` of type `Int!`
   """
@@ -2186,6 +1818,10 @@ input StudentConfig_Order {
   """
   cooldownMinutes: OrderDirection
   """
+  ✨ Generated from Field `StudentConfig`.`quizCount` of type `String`
+  """
+  quizCount: OrderDirection
+  """
   ✨ Generated from Field `StudentConfig`.`usageHours` of type `Int!`
   """
   usageHours: OrderDirection
@@ -2205,6 +1841,10 @@ input StudentConfig_Order {
   ✨ Generated from Field `StudentConfig`.`cooldownMinutes_count` of type `Int!`
   """
   cooldownMinutes_count: OrderDirection
+  """
+  ✨ Generated from Field `StudentConfig`.`quizCount_count` of type `Int!`
+  """
+  quizCount_count: OrderDirection
   """
   ✨ Generated from Field `StudentConfig`.`studentUid_count` of type `Int!`
   """

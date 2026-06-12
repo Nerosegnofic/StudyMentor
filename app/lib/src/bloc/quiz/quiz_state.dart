@@ -33,11 +33,17 @@ class QuizSubmitting extends QuizState {}
 
 class QuizResultsLoaded extends QuizState {
   final QuizSubmissionResponse result;
+  final GenerateQuizResponse quizResponse;
+  final Map<String, StudentAnswer> answers;
 
-  QuizResultsLoaded({required this.result});
+  QuizResultsLoaded({
+    required this.result,
+    required this.quizResponse,
+    required this.answers,
+  });
 
   @override
-  List<Object?> get props => [result];
+  List<Object?> get props => [result, quizResponse, answers];
 }
 
 class QuizError extends QuizState {

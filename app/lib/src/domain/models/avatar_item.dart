@@ -1,4 +1,4 @@
-enum ItemCategory { hair, outfit, bottom, shoes, accessory, background, special }
+enum ItemCategory { hair, outfit, hairColor, outfitColor, accessory, facialHair, facialHairColor, eyes, eyebrow, mouth, skinTone }
 
 enum ItemRarity { common, rare, epic, legendary }
 
@@ -14,6 +14,10 @@ class AvatarItem {
   final int unlockLevel; // minimum level required to buy
   final GenderCompatibility genderCompatibility;
 
+  // New fields for Fluttermoji mapping
+  final String fluttermojiKey;   // e.g., 'topType', 'clotheType', 'accessoriesType'
+  final int fluttermojiIndex;    // e.g., 0, 1, 2, 3...
+
   const AvatarItem({
     required this.id,
     required this.name,
@@ -21,6 +25,8 @@ class AvatarItem {
     required this.price,
     required this.emoji,
     required this.rarity,
+    required this.fluttermojiKey,
+    required this.fluttermojiIndex,
     this.unlockLevel = 1,
     this.genderCompatibility = GenderCompatibility.all,
   });

@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import '../../data/catalog/avatar_items_catalog.dart';
+import '../../data/repositories/ai_engine_repository.dart';
 import '../../data/providers/dataconnect_provider.dart';
 import '../../domain/models/avatar_config.dart';
 import '../../domain/models/avatar_item.dart';
@@ -16,6 +17,7 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     on<PurchaseItemRequested>(_onPurchase);
     on<EquipItemToggled>(_onEquipToggle);
     on<AvatarCustomizationChanged>(_onCustomizationChanged);
+    on<SaveAvatarRequested>(_onSaveAvatar);
   }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -96,7 +98,11 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
           studentUid: event.studentUid,
           itemId: event.item.id,
         ),
-        _provider.updateStudentCoins(newCoins),
+        AiEngineRepository.instance.spendCoins(
+          event.studentUid,
+          event.item.price,
+          'SHOP_PURCHASE',
+        ),
       ]);
 
       final newOwned = {...current.ownedItemIds, event.item.id};
@@ -127,26 +133,8 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
         ? _unequip(event.currentConfig, event.item.category)
         : _equip(event.currentConfig, event.item);
 
-    // Optimistic update
+    // Local update only — Firebase is written when the user taps Done.
     emit(current.copyWith(avatarConfig: newConfig));
-
-    try {
-      await _provider.upsertStudentAvatar(
-        studentUid: event.studentUid,
-        gender: newConfig.gender,
-        skinTone: newConfig.skinTone,
-        equippedHair: newConfig.equippedHair,
-        equippedOutfit: newConfig.equippedOutfit,
-        equippedBottom: newConfig.equippedBottom,
-        equippedShoes: newConfig.equippedShoes,
-        equippedAccessory: newConfig.equippedAccessory,
-        equippedBackground: newConfig.equippedBackground,
-        equippedSpecial: newConfig.equippedSpecial,
-      );
-    } catch (_) {
-      // Roll back on failure
-      emit(current.copyWith(avatarConfig: event.currentConfig));
-    }
   }
 
   Future<void> _onCustomizationChanged(
@@ -156,20 +144,29 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     final current = state;
     if (current is! ShopLoaded) return;
 
+    // Local update only — Firebase is written when the user taps Done.
     emit(current.copyWith(avatarConfig: event.newConfig));
+  }
 
+  Future<void> _onSaveAvatar(
+    SaveAvatarRequested event,
+    Emitter<ShopState> emit,
+  ) async {
+    final current = state;
+    if (current is! ShopLoaded) return;
     try {
       await _provider.upsertStudentAvatar(
         studentUid: event.studentUid,
-        gender: event.newConfig.gender,
-        skinTone: event.newConfig.skinTone,
-        equippedHair: event.newConfig.equippedHair,
-        equippedOutfit: event.newConfig.equippedOutfit,
-        equippedBottom: event.newConfig.equippedBottom,
-        equippedShoes: event.newConfig.equippedShoes,
-        equippedAccessory: event.newConfig.equippedAccessory,
-        equippedBackground: event.newConfig.equippedBackground,
-        equippedSpecial: event.newConfig.equippedSpecial,
+        gender: current.avatarConfig.gender,
+        skinTone: current.avatarConfig.skinTone,
+        equippedHair: current.avatarConfig.equippedHair,
+        equippedOutfit: current.avatarConfig.equippedOutfit,
+        equippedBottom: current.avatarConfig.equippedHairColor,
+        equippedShoes: current.avatarConfig.equippedOutfitColor,
+        equippedAccessory: current.avatarConfig.equippedAccessory,
+        equippedBackground: current.avatarConfig.equippedBackground,
+        equippedSpecial: current.avatarConfig.equippedFacialHair,
+        avatarConfig: current.avatarConfig.extrasJson,
       );
     } catch (_) {
       // Silently fail; avatar is visual-only
@@ -182,11 +179,15 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     return switch (item.category) {
       ItemCategory.hair => config.copyWith(equippedHair: item.id),
       ItemCategory.outfit => config.copyWith(equippedOutfit: item.id),
-      ItemCategory.bottom => config.copyWith(equippedBottom: item.id),
-      ItemCategory.shoes => config.copyWith(equippedShoes: item.id),
+      ItemCategory.hairColor => config.copyWith(equippedHairColor: item.id),
+      ItemCategory.outfitColor => config.copyWith(equippedOutfitColor: item.id),
       ItemCategory.accessory => config.copyWith(equippedAccessory: item.id),
-      ItemCategory.background => config.copyWith(equippedBackground: item.id),
-      ItemCategory.special => config.copyWith(equippedSpecial: item.id),
+      ItemCategory.facialHair => config.copyWith(equippedFacialHair: item.id),
+      ItemCategory.facialHairColor => config.copyWith(equippedFacialHairColor: item.id),
+      ItemCategory.eyes => config.copyWith(equippedEyes: item.id),
+      ItemCategory.eyebrow => config.copyWith(equippedEyebrow: item.id),
+      ItemCategory.mouth => config.copyWith(equippedMouth: item.id),
+      ItemCategory.skinTone => config.copyWith(equippedSkinTone: item.id),
     };
   }
 
@@ -194,11 +195,15 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     return switch (category) {
       ItemCategory.hair => config.copyWith(equippedHair: null),
       ItemCategory.outfit => config.copyWith(equippedOutfit: null),
-      ItemCategory.bottom => config.copyWith(equippedBottom: null),
-      ItemCategory.shoes => config.copyWith(equippedShoes: null),
+      ItemCategory.hairColor => config.copyWith(equippedHairColor: null),
+      ItemCategory.outfitColor => config.copyWith(equippedOutfitColor: null),
       ItemCategory.accessory => config.copyWith(equippedAccessory: null),
-      ItemCategory.background => config.copyWith(equippedBackground: null),
-      ItemCategory.special => config.copyWith(equippedSpecial: null),
+      ItemCategory.facialHair => config.copyWith(equippedFacialHair: null),
+      ItemCategory.facialHairColor => config.copyWith(equippedFacialHairColor: null),
+      ItemCategory.eyes => config.copyWith(equippedEyes: null),
+      ItemCategory.eyebrow => config.copyWith(equippedEyebrow: null),
+      ItemCategory.mouth => config.copyWith(equippedMouth: null),
+      ItemCategory.skinTone => config.copyWith(equippedSkinTone: null),
     };
   }
 }

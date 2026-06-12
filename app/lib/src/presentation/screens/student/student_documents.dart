@@ -5,12 +5,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/document/document_upload_bloc.dart';
 import '../../../bloc/document/document_upload_event.dart';
 import '../../../bloc/document/document_upload_state.dart';
+import '../../../bloc/subject/subject_bloc.dart';
+import '../../../bloc/subject/subject_event.dart';
 
 /// Document upload screen that lets the student browse for a PDF and upload it
 /// to the AI Engine for curriculum ingestion.
 class StudentDocumentUploadScreen extends StatefulWidget {
   final String studentUid;
-  const StudentDocumentUploadScreen({super.key, required this.studentUid});
+  final List<String> existingSubjectKeys;
+  const StudentDocumentUploadScreen({super.key, required this.studentUid, required this.existingSubjectKeys});
 
   @override
   State<StudentDocumentUploadScreen> createState() =>
@@ -59,6 +62,13 @@ class _StudentDocumentUploadScreenState
       return;
     }
 
+    if (widget.existingSubjectKeys.contains(name.toLowerCase())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This subject already exists.')),
+      );
+      return;
+    }
+
     context.read<DocumentUploadBloc>().add(
       PickAndUploadDocumentEvent(
         file: File(_selectedFilePath!),
@@ -84,6 +94,13 @@ class _StudentDocumentUploadScreenState
             SnackBar(
               content: Text(state.message),
               backgroundColor: const Color(0xFFEA4335),
+            ),
+          );
+        } else if (state is DocumentUploadAccepted) {
+          context.read<SubjectBloc>().add(
+            AddSubjectsRequested(
+              studentUid: widget.studentUid,
+              selectedKeys: [_subjectNameController.text.trim().toLowerCase()],
             ),
           );
         }

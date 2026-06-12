@@ -92,6 +92,7 @@ class UsageTimerService : Service() {
         private const val KEY_STUDENT_LOGGED_IN  = "student_logged_in"
         const val KEY_TIMER_NOTIF_ENABLED        = "timer_notification_enabled"
         const val KEY_COOLDOWN_NOTIF_ENABLED     = "cooldown_notification_enabled"
+        private const val KEY_STUDENT_UID        = "student_uid"
 
         // ── Per-student key suffixes ───────────────────────────────────────────
         private const val SUFFIX_TOTAL_USAGE        = "total_usage_seconds"
@@ -149,6 +150,7 @@ class UsageTimerService : Service() {
     private var monitoredInForeground = false
     private var timerNotifEnabled     = true
     private var cooldownNotifEnabled  = true
+    private var studentUid            = ""
 
     private var activeStudentUid = ""
 
@@ -221,6 +223,12 @@ class UsageTimerService : Service() {
 
                 studentLoggedIn = intent.getBooleanExtra(EXTRA_STUDENT_LOGGED_IN, true)
                 prefs.edit().putBoolean(KEY_STUDENT_LOGGED_IN, studentLoggedIn).apply()
+                intent.getStringExtra(EXTRA_STUDENT_UID)?.let {
+                    if (it.isNotEmpty()) {
+                        studentUid = it
+                        prefs.edit().putString(KEY_STUDENT_UID, it).apply()
+                    }
+                }
 
                 startForegroundWithNotification()
                 if (!isRunning) {
@@ -258,6 +266,17 @@ class UsageTimerService : Service() {
         val foreground = getForegroundPackage()
         var thresholdAlert = -1
 
+        val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val pausedAppsValue = flutterPrefs.all["flutter.paused_packages_$studentUid"]
+        val isPaused = foreground != null && when (pausedAppsValue) {
+            is Set<*> -> pausedAppsValue.contains(foreground)
+            is List<*> -> pausedAppsValue.contains(foreground)
+            is Collection<*> -> pausedAppsValue.contains(foreground)
+            is String -> pausedAppsValue.contains("\"$foreground\"") || pausedAppsValue.contains(foreground)
+            else -> false
+        }
+        val isForegroundMonitored = foreground != null && monitoredApps.contains(foreground) && !isPaused
+
         if (isBlocked) {
             if (cooldownRemSecs > 0) {
                 cooldownRemSecs--
@@ -269,11 +288,11 @@ class UsageTimerService : Service() {
                 return
             }
 
-            if (foreground != null && monitoredApps.contains(foreground)) {
+            if (isForegroundMonitored) {
                 StudyMentorAccessibilityService.instance?.performGlobalAction(
                     android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME,
                 )
-                OverlayPlugin.instance?.notifyMonitoredAppIntercepted(foreground)
+                OverlayPlugin.instance?.notifyMonitoredAppIntercepted(foreground!!)
             }
 
         } else {
@@ -290,8 +309,7 @@ class UsageTimerService : Service() {
             }
         }
 
-        monitoredInForeground = !isBlocked &&
-            foreground != null && monitoredApps.contains(foreground)
+        monitoredInForeground = !isBlocked && isForegroundMonitored
 
         persistState()
         broadcastState(thresholdAlert, monitoredInForeground = monitoredInForeground)

@@ -3,8 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/students/students_bloc.dart';
+import '../../../bloc/students/students_event.dart';
+import '../../../bloc/students/students_state.dart';
+import '../../../bloc/parent_profile/parent_profile_bloc.dart';
+import '../../../bloc/parent_profile/parent_profile_event.dart';
+import '../../../bloc/parent_profile/parent_profile_state.dart';
 import '../../../domain/models/user_model.dart';
 
 class ParentSettings extends StatefulWidget {
@@ -71,7 +76,7 @@ class _ParentSettingsState extends State<ParentSettings> {
     // linked children. Re-uses the same event/state as ParentStudents —
     // no new BLoC wiring needed.
     if (user != null) {
-      context.read<AuthBloc>().add(LoadStudentsRequested(parentUid: user.uid));
+      context.read<StudentsBloc>().add(LoadStudentsRequested(parentUid: user.uid));
     }
   }
 
@@ -111,8 +116,9 @@ class _ParentSettingsState extends State<ParentSettings> {
     // Email or password changes both require the current password.
     final emailChanged = newEmail != _originalEmail && newEmail.isNotEmpty;
 
-    context.read<AuthBloc>().add(
-      UpdateProfileRequested(
+    context.read<ParentProfileBloc>().add(
+      UpdateParentProfileRequested(
+        parentUid: context.read<AuthBloc>().state is AuthAuthenticated ? (context.read<AuthBloc>().state as AuthAuthenticated).user.uid : '',
         newFullName: newName != _originalFullName && newName.isNotEmpty
             ? newName
             : null,
@@ -158,7 +164,7 @@ class _ParentSettingsState extends State<ParentSettings> {
       _childLoadError = false;
       _linkedChildCount = null; // back to loading state
     });
-    context.read<AuthBloc>().add(LoadStudentsRequested(parentUid: uid));
+    context.read<StudentsBloc>().add(LoadStudentsRequested(parentUid: uid));
   }
 
   // ── delete account ──────────────────────────────────────────────────────────
@@ -208,12 +214,16 @@ class _ParentSettingsState extends State<ParentSettings> {
     // second dismissal path (tapping the scrim) for the same period.
     // When _isLoading is false the dialog controls its own dismissal via the
     // Cancel button, so the tighter default is the correct one.
+    final parentUid = context.read<AuthBloc>().state is AuthAuthenticated 
+        ? (context.read<AuthBloc>().state as AuthAuthenticated).user.uid 
+        : '';
+        
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => BlocProvider.value(
-        value: context.read<AuthBloc>(),
-        child: const _ParentDeletePasswordDialog(),
+        value: context.read<ParentProfileBloc>(),
+        child: _ParentDeletePasswordDialog(parentUid: parentUid),
       ),
     );
   }
@@ -222,55 +232,58 @@ class _ParentSettingsState extends State<ParentSettings> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is StudentsLoaded) {
-          // Keep _linkedChildCount in sync whenever the student list changes —
-          // whether from our own initState request or from the Students tab.
-          setState(() {
-            _linkedChildCount = state.students.length;
-            _childLoadError = false;
-          });
-        } else if (state is ProfileUpdateLoading) {
-          setState(() => _isSaving = true);
-        } else if (state is EmailUpdateVerificationSent) {
-          // Show the pending-verification banner; keep saving = true
-          // because ProfileUpdateSuccess follows immediately after.
-          setState(() => _pendingEmailNotice = state.pendingEmail);
-        } else if (state is ProfileUpdateSuccess) {
-          setState(() => _isSaving = false);
-          _onSaveSuccess(state.updatedUser);
-        } else if (state is ProfileUpdateError) {
-          setState(() => _isSaving = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
-        } else if (state is AuthError && _linkedChildCount == null) {
-          // LoadStudentsRequested failed before we got a count — surface the
-          // error and let the user retry rather than leaving them stuck with
-          // a frozen spinner and a permanently disabled delete button.
-          setState(() => _childLoadError = true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Could not load linked students. Check your connection.',
-              ),
-              backgroundColor: Colors.red.shade700,
-              action: SnackBarAction(
-                label: 'Retry',
-                textColor: Colors.white,
-                onPressed: _retryLoadChildren,
-              ),
-            ),
-          );
-        }
-        // ParentAccountDeleteLoading, ParentAccountDeleted, and
-        // ParentAccountDeleteError are handled entirely inside
-        // _ParentDeletePasswordDialog — no screen-level reaction needed.
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<StudentsBloc, StudentsState>(
+          listener: (context, state) {
+            if (state is StudentsLoaded) {
+              setState(() {
+                _linkedChildCount = state.students.length;
+                _childLoadError = false;
+              });
+            } else if (state is StudentsError && _linkedChildCount == null) {
+              setState(() {
+                _childLoadError = true;
+                _linkedChildCount = null;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Could not load linked students. Check your connection.',
+                  ),
+                  backgroundColor: Colors.red.shade700,
+                  action: SnackBarAction(
+                    label: 'Retry',
+                    textColor: Colors.white,
+                    onPressed: _retryLoadChildren,
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+        BlocListener<ParentProfileBloc, ParentProfileState>(
+          listener: (context, state) {
+            if (state is ParentProfileLoading) {
+              setState(() => _isSaving = true);
+            } else if (state is EmailVerificationPending) {
+              setState(() => _pendingEmailNotice = state.pendingEmail);
+            } else if (state is ParentProfileUpdateSuccess) {
+              setState(() => _isSaving = false);
+              _onSaveSuccess(state.updatedUser);
+              // Note: AuthAuthenticated should theoretically be updated here or in AuthBloc directly, but we can do it via a generic mechanism or reload.
+            } else if (state is ParentProfileError) {
+              setState(() => _isSaving = false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red.shade700,
+                ),
+              );
+            }
+          },
+        ),
+      ],
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -826,7 +839,9 @@ class _ParentSettingsState extends State<ParentSettings> {
 //      button exclusively while the delete request is in flight.
 
 class _ParentDeletePasswordDialog extends StatefulWidget {
-  const _ParentDeletePasswordDialog();
+  final String parentUid;
+
+  const _ParentDeletePasswordDialog({required this.parentUid});
 
   @override
   State<_ParentDeletePasswordDialog> createState() =>
@@ -853,8 +868,11 @@ class _ParentDeletePasswordDialogState
       return;
     }
     setState(() => _errorMessage = null);
-    context.read<AuthBloc>().add(
-      DeleteParentAccountRequested(currentPassword: password),
+    context.read<ParentProfileBloc>().add(
+      DeleteParentAccountRequested(
+        parentUid: widget.parentUid,
+        currentPassword: password,
+      ),
     );
   }
 
@@ -865,16 +883,16 @@ class _ParentDeletePasswordDialogState
       // is in flight. When not loading, the back gesture dismisses normally
       // (equivalent to tapping Cancel).
       canPop: !_isLoading,
-      child: BlocListener<AuthBloc, AuthState>(
+      child: BlocListener<ParentProfileBloc, ParentProfileState>(
         listener: (context, state) {
-          if (state is ParentAccountDeleteLoading) {
+          if (state is ParentProfileLoading) {
             setState(() => _isLoading = true);
           } else if (state is ParentAccountDeleted) {
             // Close the dialog. AuthUnauthenticated follows immediately and the
             // root navigator redirects to the login screen — no extra navigation
             // needed here.
             Navigator.of(context).pop();
-          } else if (state is ParentAccountDeleteError) {
+          } else if (state is ParentProfileError) {
             setState(() {
               _isLoading = false;
               _errorMessage = state.message;

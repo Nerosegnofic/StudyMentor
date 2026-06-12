@@ -70,12 +70,7 @@ class CreateStudentRequested extends AuthEvent {
   List<Object?> get props => [fullName, email, parentUid, gradeLevel, username];
 }
 
-class LoadStudentsRequested extends AuthEvent {
-  final String parentUid;
-  LoadStudentsRequested({required this.parentUid});
-  @override
-  List<Object?> get props => [parentUid];
-}
+
 
 class LoadParentNameRequested extends AuthEvent {
   final String studentUid;
@@ -130,21 +125,21 @@ class UpdateProfileRequested extends AuthEvent {
   List<Object?> get props => [newFullName, newEmail, newPassword];
 }
 
-// ── App Configuration Events ──────────────────────────────────────────────────
+// â”€â”€ App Configuration Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-class LoadAppRulesRequested extends AuthEvent {
+class LegacyLoadAppRulesRequested extends AuthEvent {
   final String studentUid;
-  LoadAppRulesRequested({required this.studentUid});
+  LegacyLoadAppRulesRequested({required this.studentUid});
   @override
   List<Object?> get props => [studentUid];
 }
 
-class SaveAppRulesRequested extends AuthEvent {
+class LegacySaveAppRulesRequested extends AuthEvent {
   final String studentUid;
   final List<PendingAppRule> rules;
   final StudentConfigModel config;
 
-  SaveAppRulesRequested({
+  LegacySaveAppRulesRequested({
     required this.studentUid,
     required this.rules,
     required this.config,
@@ -161,7 +156,7 @@ class LoadStudentAppConfigRequested extends AuthEvent {
   List<Object?> get props => [studentUid];
 }
 
-// ── Installed-App Inventory Events ────────────────────────────────────────────
+// â”€â”€ Installed-App Inventory Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class SyncInstalledAppsRequested extends AuthEvent {
   final String studentUid;
@@ -177,16 +172,16 @@ class LoadInstalledAppsForStudentRequested extends AuthEvent {
   List<Object?> get props => [studentUid];
 }
 
-class RefreshStudentDataRequested extends AuthEvent {
+class LegacyRefreshStudentDataRequested extends AuthEvent {
   final String studentUid;
-  RefreshStudentDataRequested({required this.studentUid});
+  LegacyRefreshStudentDataRequested({required this.studentUid});
   @override
   List<Object?> get props => [studentUid];
 }
 
-// ── CHANGED: added studentEmail and studentPassword so the repository can
+// â”€â”€ CHANGED: added studentEmail and studentPassword so the repository can
 // sign in as the student via a secondary Firebase app and delete their
-// Auth account — mirroring the updateStudentCredentials pattern.
+// Auth account â€” mirroring the updateStudentCredentials pattern.
 class DeleteStudentRequested extends AuthEvent {
   final String studentUid;
   final String studentEmail;
@@ -252,3 +247,5 @@ class UpdateStudentProfileRequested extends AuthEvent {
     newPassword,
   ];
 }
+
+

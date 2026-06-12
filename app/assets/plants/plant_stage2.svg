@@ -1,0 +1,27 @@
+<svg width="680" height="500" viewBox="0 0 680 500" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Level 2 plant</title>
+  <desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">A small seedling with a short stem, two rounded leaves and a small bud, slightly larger than level 1</desc>
+
+  
+
+  <!-- Stem — a bit taller than level 1 -->
+  <path stroke-width="5.5" d="M340 440 C340 410 339 375 340 345 C341 320 340 300 340 278" style="fill:none;stroke:rgb(42, 110, 42);color:rgb(255, 255, 255);stroke-width:5.5px;stroke-linecap:round;stroke-linejoin:round;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Left leaf — rounded cotyledon style, slightly bigger than lvl1 -->
+  <path fill="#3aaa3a" stroke="#1f6b1f" stroke-width="1.5" d="&#10;    M340 318&#10;    C326 308 304 294 286 278&#10;    C268 261 262 240 272 224&#10;    C282 208 302 206 320 216&#10;    C336 226 346 248 346 270&#10;    C346 290 344 308 340 318 Z" style="fill:rgb(58, 170, 58);stroke:rgb(31, 107, 31);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <path d="M340 318 C322 290 294 258 275 228" style="fill:none;stroke:rgb(26, 80, 16);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;opacity:0.6;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <path d="M326 306 C316 284 304 266 292 248" style="fill:none;stroke:rgb(26, 80, 16);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;opacity:0.6;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Right leaf — mirror -->
+  <path fill="#3aaa3a" stroke="#1f6b1f" stroke-width="1.5" d="&#10;    M340 318&#10;    C354 308 376 294 394 278&#10;    C412 261 418 240 408 224&#10;    C398 208 378 206 360 216&#10;    C344 226 334 248 334 270&#10;    C334 290 336 308 340 318 Z" style="fill:rgb(58, 170, 58);stroke:rgb(31, 107, 31);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <path d="M340 318 C358 290 386 258 405 228" style="fill:none;stroke:rgb(26, 80, 16);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;opacity:0.6;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <path d="M354 306 C364 284 376 266 388 248" style="fill:none;stroke:rgb(26, 80, 16);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;opacity:0.6;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Small top bud — same style as lvl1 but slightly taller -->
+  <path fill="#66dd66" stroke="#1f6b1f" stroke-width="1" d="&#10;    M340 278&#10;    C336 266 332 252 335 241&#10;    C337 232 344 229 349 236&#10;    C354 244 351 259 346 270&#10;    C343 277 341 278 340 278 Z" style="fill:rgb(102, 221, 102);stroke:rgb(31, 107, 31);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Soil -->
+  <ellipse cx="340" cy="448" rx="52" ry="9" fill="#2a6e2a" opacity="0.22" style="fill:rgb(42, 110, 42);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.22;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <ellipse cx="340" cy="448" rx="32" ry="5.5" fill="#2a6e2a" opacity="0.18" style="fill:rgb(42, 110, 42);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.18;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+</svg>

@@ -1,11 +1,14 @@
 import re
 import uuid
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional, Literal
 
 # Pre-compiled pattern for LaTeX delimiters and bare dollar signs.
 # Strips: $...$ inline, \(...\) inline, \[...\] display blocks, and stray $.
-_LATEX_PATTERN = re.compile(r"\$[^$]*\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]|\$")
+_LATEX_PATTERN = re.compile(r"\$[^$]*\$|\\\([\\s\\S]*?\\\)|\\\[[\\s\\S]*?\\\]|\$")
+
+# Pattern to detect trailing zeros in decimal numbers (e.g., "3.70" → "3.7")
+_TRAILING_ZEROS_PATTERN = re.compile(r"(\d+\.\d*?)0+(\s|$|[^\d])")
 
 
 def _strip_latex(text: str) -> str:
@@ -13,6 +16,20 @@ def _strip_latex(text: str) -> str:
     if not text:
         return text
     return _LATEX_PATTERN.sub("", text).strip()
+
+
+def _normalize_numeric_text(text: str) -> str:
+    """
+    Normalize numeric representations in text to prevent ambiguous duplicates.
+    - Strips trailing zeros from decimals: "3.70" → "3.7", "5.00" → "5.0"
+    - Preserves non-numeric text unchanged.
+    """
+    if not text:
+        return text
+    # Iteratively strip trailing zeros in decimals
+    result = _TRAILING_ZEROS_PATTERN.sub(r"\1\2", text)
+    # Handle edge case: "5.0" should stay as "5.0" (one decimal place kept)
+    return result
 
 
 class GenerateQuizRequest(BaseModel):
@@ -23,6 +40,10 @@ class GenerateQuizRequest(BaseModel):
     total_questions: int = Field(
         default=10, ge=1, le=50,
         description="Total number of questions to generate"
+    )
+    student_grade: int = Field(
+        default=5, ge=1, le=12,
+        description="The student's grade level (1-12). Used to tailor question vocabulary and complexity."
     )
 
 
@@ -55,6 +76,48 @@ class QuestionSchema(BaseModel):
         if not v:
             return v
         return [_strip_latex(h) for h in v]
+
+    @field_validator("options", mode="before")
+    @classmethod
+    def normalize_options(cls, v: List[str]) -> List[str]:
+        """Normalize option text: strip whitespace and trailing zeros."""
+        if not v:
+            return v
+        return [_normalize_numeric_text(opt.strip()) for opt in v]
+
+    @field_validator("correct_answer", mode="before")
+    @classmethod
+    def normalize_correct_answer(cls, v: str) -> str:
+        """Apply the same normalization to correct_answer so it matches options."""
+        return _normalize_numeric_text(v.strip()) if v else v
+
+    @model_validator(mode="after")
+    def validate_question_integrity(self):
+        """
+        Post-construction validation to catch LLM output errors:
+        1. Exactly 4 options required.
+        2. All options must be unique.
+        3. correct_answer must exactly match one of the options.
+        """
+        # Check option count
+        if len(self.options) != 4:
+            raise ValueError(
+                f"Expected exactly 4 options, got {len(self.options)}: {self.options}"
+            )
+
+        # Check for duplicate options
+        if len(set(self.options)) != len(self.options):
+            raise ValueError(
+                f"Duplicate options detected: {self.options}"
+            )
+
+        # Check correct_answer is in options
+        if self.correct_answer not in self.options:
+            raise ValueError(
+                f"correct_answer '{self.correct_answer}' does not match any option: {self.options}"
+            )
+
+        return self
 
 
 class GenerateQuizResponse(BaseModel):
@@ -96,9 +159,11 @@ class StudentAnswer(BaseModel):
 class QuizSubmissionRequest(BaseModel):
     quiz_session_id: str = Field(..., description="The ID of the generated quiz session")
     answers: List[StudentAnswer]
+    client_local_date: Optional[str] = Field(None, description="Client's local date (YYYY-MM-DD) for streak tracking")
 
 
 class QuizSubmissionResponse(BaseModel):
     score: float
     total_questions: int
     feedback: str
+    rewards: dict = Field(default_factory=dict)

@@ -112,6 +112,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                             putExtra(UsageTimerService.EXTRA_USAGE_LIMIT_SECS,    usageLimit)
                             putExtra(UsageTimerService.EXTRA_COOLDOWN_LIMIT_SECS, cooldownLimit)
                             putExtra(UsageTimerService.EXTRA_STUDENT_LOGGED_IN,   true)
+                            putExtra(UsageTimerService.EXTRA_STUDENT_UID,         studentUid)
                         }
                         startService(intent)
                         bindService()
@@ -153,6 +154,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                             putExtra(UsageTimerService.EXTRA_USAGE_LIMIT_SECS,    usageLimit)
                             putExtra(UsageTimerService.EXTRA_COOLDOWN_LIMIT_SECS, cooldownLimit)
                             putExtra(UsageTimerService.EXTRA_STUDENT_LOGGED_IN,   true)
+                            putExtra(UsageTimerService.EXTRA_STUDENT_UID,         studentUid)
                         }
                         startService(intent)
                         result.success(null)

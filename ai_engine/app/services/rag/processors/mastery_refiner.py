@@ -81,10 +81,13 @@ _rate_limiter = RateLimiter()
 def _extract_toc_section(markdown_text: str) -> str:
     """
     Extract the Table of Contents section from the parsed markdown.
-    Looks for "المحتويات" header and captures the structured list that follows.
-    Falls back to scanning for all unit/lesson headers if no TOC section found.
+    Supports both Arabic and English textbooks.
+    
+    Strategy:
+        1. Look for explicit TOC headers (Arabic: المحتويات, English: Table of Contents, Scope and Sequence)
+        2. Fall back to scanning all unit/lesson headers to build a pseudo-TOC
     """
-    # Try to find explicit TOC section
+    # Try Arabic TOC header
     toc_match = re.search(
         r'#+\s*المحتويات\s*\n(.*?)(?=\n#+\s*(?:الوحدة|الفصل|Unit|Chapter)|\n---|\Z)',
         markdown_text,
@@ -92,18 +95,28 @@ def _extract_toc_section(markdown_text: str) -> str:
     )
     if toc_match:
         return toc_match.group(0).strip()
+    
+    # Try English TOC headers
+    en_toc_match = re.search(
+        r'#+\s*(?:Table\s+of\s+Contents|Contents|Scope\s+and\s+Sequence)\s*\n(.*?)(?=\n#+\s*(?:Unit|Chapter|الوحدة|الفصل)|\n---|\Z)',
+        markdown_text,
+        re.DOTALL | re.IGNORECASE
+    )
+    if en_toc_match:
+        return en_toc_match.group(0).strip()
 
     # Fallback: extract all unit and lesson headers to reconstruct a pseudo-TOC
+    # Matches Arabic AND English unit/lesson headers
     lines = []
     for match in re.finditer(
-        r'^#+\s*((?:الوحدة|الفصل)\s*.+|(?:الدرس|Lesson)\s*.+)$',
+        r'^#+\s*((?:الوحدة|الفصل|Unit|Chapter|Module)\s*.+|(?:الدرس|Lesson)\s*.+)$',
         markdown_text,
-        re.MULTILINE
+        re.MULTILINE | re.IGNORECASE
     ):
         lines.append(match.group(1).strip())
     
     if lines:
-        return "المحتويات (مُستخرجة من العناوين):\n" + "\n".join(f"- {line}" for line in lines)
+        return "Table of Contents (extracted from headers):\n" + "\n".join(f"- {line}" for line in lines)
     
     return ""
 
@@ -137,12 +150,16 @@ RULES:
 
 5. NORMALIZE unit names: Consolidate duplicates (e.g., "الوحدة الثانية" and "الوحدة الثانية: العلاقات بين الأعداد" should be merged into one canonical name).
 
-6. LANGUAGE: Keep the EXACT language of the textbook (Arabic). Do NOT translate to English.
+6. LANGUAGE: Keep the EXACT language of the textbook. If the textbook is in English, write skills in English. If Arabic, write skills in Arabic. Do NOT translate.
 
 7. REMOVE filler/generic points like "أستطيع أن أتحقق من معقولية إجاباتي" UNLESS they are the only point for a lesson.
 
 8. SKILL TEXT FORMAT: Write skills as concise noun phrases describing the ability, NOT as "أستطيع أن..." sentences.
-   Example: Instead of "أستطيع أن أقرب الأعداد العشرية" → Use "تقريب الأعداد العشرية إلى أقرب جزء من عشرة أو مائة أو ألف"
+   Example (Math): Instead of "أستطيع أن أقرب الأعداد العشرية" → Use "تقريب الأعداد العشرية إلى أقرب جزء من عشرة أو مائة أو ألف"
+   Example (English): Instead of "Read and identify sight words" + "Spell sight words" → Use "Reading and spelling sight words"
+   Example (Arabic): Instead of "أن يميز التلميذ بين التاء المربوطة والمفتوحة" + "أن يكتب التاء المربوطة" → Use "التمييز بين التاء المربوطة والمفتوحة وكتابتهما"
+   Example (Science): Instead of "أن يتعرف التلميذ على أجزاء النبات" + "أن يصف وظيفة كل جزء" → Use "التعرف على أجزاء النبات ووظائفها"
+   Example (Social Studies): Instead of "أن يحدد الطالب عاصمة مصر" + "أن يذكر موقع مصر الجغرافي" → Use "تحديد عاصمة مصر وموقعها الجغرافي"
 
 9. SKILL IDs: Generate a unique skill_id for each skill using the format: u{unit_number}_l{lesson_number}_s{skill_index}
    Example: u1_l1_s1, u1_l1_s2, u1_l2_s1, etc.
@@ -151,15 +168,15 @@ RULES:
 
 
 def _build_user_prompt(raw_mastery: List[dict], toc_text: str) -> str:
-    """Build the user prompt containing raw points and TOC."""
-    # Format raw mastery points
+    """Build the user prompt containing raw points and TOC. Language-neutral labels."""
+    # Format raw mastery points with language-neutral labels
     points_text = ""
     for entry in raw_mastery:
         unit = entry.get('unit', 'Unknown')
         lesson = entry.get('lesson', 'Unknown')
         objectives = entry.get('objectives', [])
-        points_text += f"\n[الوحدة: {unit}]\n"
-        points_text += f"  الدرس: {lesson}\n"
+        points_text += f"\n[Unit: {unit}]\n"
+        points_text += f"  Lesson: {lesson}\n"
         for obj in objectives:
             points_text += f"    - {obj}\n"
     
@@ -224,20 +241,26 @@ def refine_mastery_points(
     raw_lessons = len(raw_mastery_data)
     print(f"[MasteryRefiner] Refining {raw_total} raw points across {raw_lessons} lesson groups...", flush=True)
     
-    # Initialize Gemini
-    llm = ChatGoogleGenerativeAI(
-        google_api_key=settings.GEMINI_API_KEY,
-        model="gemini-2.5-flash",
-        temperature=0.1,  # Low temp for consistency
-    )
-    structured_llm = llm.with_structured_output(RefinedMasteryResponse)
-    
     # Retry loop with rate limiting
     for attempt in range(1, max_retries + 1):
         try:
             _rate_limiter.wait_if_needed()
             
-            print(f"[MasteryRefiner] Calling Gemini (attempt {attempt}/{max_retries})...", flush=True)
+            model_to_use = settings.GEMINI_MODEL
+            if attempt > 1 and getattr(settings, "GEMINI_FALLBACK_MODEL", None):
+                model_to_use = settings.GEMINI_FALLBACK_MODEL
+                print(f"[MasteryRefiner] Attempt {attempt}/{max_retries}: using fallback model {model_to_use}...", flush=True)
+            else:
+                print(f"[MasteryRefiner] Calling Gemini {model_to_use} (attempt {attempt}/{max_retries})...", flush=True)
+
+            # Initialize Gemini dynamically for the attempt
+            llm = ChatGoogleGenerativeAI(
+                google_api_key=settings.GEMINI_API_KEY,
+                model=model_to_use,
+                temperature=0.1,  # Low temp for consistency
+            )
+            structured_llm = llm.with_structured_output(RefinedMasteryResponse)
+
             response: RefinedMasteryResponse = structured_llm.invoke(
                 [
                     {"role": "system", "content": _SYSTEM_PROMPT},

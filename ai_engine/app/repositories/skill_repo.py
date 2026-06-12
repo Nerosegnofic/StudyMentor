@@ -22,19 +22,21 @@ def save_skills_from_mastery_data(
     Returns the number of skills created/updated.
     """
     total = 0
-    unit_lesson_counter: Dict[str, int] = {}  # unit -> lesson ordinal index
+    unit_lesson_counter: Dict[str, int] = {}  # unit -> lesson count within that unit
 
     for entry in mastery_data:
         unit = entry.get("unit", "Unknown")
         lesson = entry.get("lesson", "Unknown")
         objectives = entry.get("objectives", [])
 
-        # Track lesson index for ordering within each unit
         unit_lesson_counter[unit] = unit_lesson_counter.get(unit, 0) + 1
         lesson_idx = unit_lesson_counter[unit]
 
         for point in objectives:
-            skill = db.query(Skill).filter(Skill.name == point).first()
+            skill = db.query(Skill).filter(
+                Skill.name == point,
+                Skill.subject_id == subject_id,
+            ).first()
 
             if not skill:
                 skill = Skill(
@@ -46,12 +48,9 @@ def save_skills_from_mastery_data(
                 )
                 db.add(skill)
             else:
-                # Refresh hierarchy metadata and ensure correct subject
                 skill.unit_name = unit
                 skill.lesson_name = lesson
                 skill.lesson_index = lesson_idx
-                if skill.subject_id == 1 and subject_id != 1:
-                    skill.subject_id = subject_id
 
             total += 1
 
