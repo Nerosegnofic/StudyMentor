@@ -353,6 +353,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: const []));
     }
+    // Restore AuthAuthenticated so that screens reading AuthBloc.state
+    // (e.g. ParentSettings) still find the parent's profile after this
+    // sub-operation completes.
+    final profile = await repository.getUserProfile();
+    if (profile != null) emit(AuthAuthenticated(profile));
   }
 
   Future<void> _onRefreshStudentData(
