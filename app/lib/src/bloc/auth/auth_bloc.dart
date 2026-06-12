@@ -539,30 +539,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     return 'Update failed: $msg';
   }
 
-  // Dedicated mapper for student deletion errors. Handles both the legacy
-  // Firebase 'wrong-password' error code and the newer 'invalid-credential' /
-  // 'INVALID_LOGIN_CREDENTIALS' codes introduced in recent SDK versions, so a
-  // bad password always produces the 'Invalid credentials' sentinel that
-  // parent_students.dart checks for. All unexpected failures produce a generic
-  // message so internal details are never exposed to the UI.
-  String _mapDeletionException(dynamic e) {
-    final msg = e.toString().toLowerCase();
-    if (msg.contains('wrong-password') ||
-        msg.contains('invalid-credential') ||
-        msg.contains('invalid_login_credentials') ||
-        msg.contains('user-not-found') ||
-        msg.contains('invalid-email')) {
-      // Must contain 'Invalid credentials' — matched by the contains() check
-      // in parent_students.dart to show the friendly wrong-password message.
-      return 'Invalid credentials';
-    }
-    if (msg.contains('network-request-failed')) {
-      return 'Network error. Check your connection and try again.';
-    }
-    // Never surface raw exception details for a deletion failure.
-    return 'Unable to delete account. Please try again.';
-  }
-
   /// Mapper for email verification errors. Distinct from [_mapException] so
   /// that verification failures never show the login-specific
   /// "Invalid email or password" message.

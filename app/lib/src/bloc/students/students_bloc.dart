@@ -32,7 +32,7 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   ) async {
     emit(StudentCreateLoading());
     try {
-      final parent = await repository.createStudent(
+      await repository.createStudent(
         fullName: event.fullName,
         email: event.email,
         password: event.password,
@@ -40,7 +40,6 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
         gradeLevel: event.gradeLevel,
         username: event.username,
       );
-      
       emit(StudentCreated());
     } catch (e) {
       emit(StudentCreateError(_mapRegistrationException(e)));
@@ -73,14 +72,34 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   ) async {
     emit(StudentDeleteLoading());
     try {
-      // Deleting a student using updateStudentCredentials pattern inside repository
-      // Not implemented in repository yet, but we will mock it or call it.
-      // For now:
-      // await repository.deleteStudent(event.studentUid, event.studentEmail, event.studentPassword, event.parentUid);
+      // parentUid is intentionally omitted — the repository deleteStudent
+      // method only requires the student's own credentials to remove their
+      // Auth account and database records.
+      await repository.deleteStudent(
+        studentUid: event.studentUid,
+        studentEmail: event.studentEmail,
+        studentPassword: event.studentPassword,
+      );
       emit(StudentDeleted(event.studentUid));
     } catch (e) {
-      emit(StudentDeleteError(e.toString()));
+      emit(StudentDeleteError(_mapDeleteException(e)));
     }
+  }
+
+  String _mapDeleteException(dynamic e) {
+    final str = e.toString();
+    if (str.contains('wrong-password') ||
+        str.contains('invalid-credential') ||
+        str.contains('Invalid credentials')) {
+      return 'Invalid credentials';
+    }
+    if (str.contains('too-many-requests')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    if (str.contains('network')) {
+      return 'Network error. Please check your connection and try again.';
+    }
+    return 'An unexpected error occurred. Please try again.';
   }
 
   String _mapRegistrationException(dynamic e) {
@@ -103,5 +122,4 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
     }
     return 'An unexpected error occurred. Please try again.';
   }
-  
 }
