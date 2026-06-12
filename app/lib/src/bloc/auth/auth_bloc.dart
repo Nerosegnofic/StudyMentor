@@ -583,4 +583,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
     return 'Could not send verification email. Please try again.';
   }
+
+  String _mapDeletionException(dynamic e) {
+    final msg = e.toString().toLowerCase();
+    if (msg.contains('wrong-password') ||
+        msg.contains('invalid-credential') ||
+        msg.contains('invalid_login_credentials') ||
+        msg.contains('user-not-found') ||
+        msg.contains('invalid-email')) {
+      return 'Invalid credentials';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    return 'Unable to delete account. Please try again.';
+  }
 }

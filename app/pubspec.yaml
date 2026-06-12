@@ -46,8 +46,6 @@ dependencies:
   bloc: ^9.2.0
   flutter_bloc: ^9.1.1
   equatable: ^2.0.8
-  flutter_svg: ^2.0.0
-  get: ^4.6.6
   flutter_launcher_icons: ^0.14.4
   cloud_functions: ^6.0.7
   firebase_data_connect: ^0.3.0+3
