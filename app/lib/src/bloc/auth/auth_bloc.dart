@@ -34,6 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<UpdateStudentFullNameRequested>(_onUpdateStudentFullName);
     on<DeleteParentAccountRequested>(_onDeleteParentAccount);
     on<UpdateStudentProfileRequested>(_onUpdateStudentProfile);
+    on<DeleteStudentRequested>(_onDeleteStudent);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -352,6 +353,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(InstalledAppsLoaded(studentUid: event.studentUid, apps: const []));
     }
+    // Restore AuthAuthenticated so that screens reading AuthBloc.state
+    // (e.g. ParentSettings) still find the parent's profile after this
+    // sub-operation completes.
+    final profile = await repository.getUserProfile();
+    if (profile != null) emit(AuthAuthenticated(profile));
   }
 
   Future<void> _onRefreshStudentData(
@@ -388,6 +394,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   // ── Student Deletion ──────────────────────────────────────────────────────
+
+  Future<void> _onDeleteStudent(
+    DeleteStudentRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentDeleteLoading());
+    try {
+      await repository.deleteStudent(
+        studentUid: event.studentUid,
+        studentEmail: event.studentEmail,
+        studentPassword: event.studentPassword,
+      );
+      emit(StudentDeleted(studentUid: event.studentUid));
+      // Restore AuthAuthenticated so parent-facing screens (settings, profile)
+      // continue to display the parent's data correctly after navigation back.
+      final profile = await repository.getUserProfile();
+      if (profile != null) emit(AuthAuthenticated(profile));
+    } catch (e) {
+      emit(StudentDeleteError(_mapDeletionException(e)));
+    }
+  }
 
   // ── Student Full Name Update ──────────────────────────────────────────────
 
@@ -555,5 +582,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return 'No signed-in account found. Please log in again.';
     }
     return 'Could not send verification email. Please try again.';
+  }
+
+  String _mapDeletionException(dynamic e) {
+    final msg = e.toString().toLowerCase();
+    if (msg.contains('wrong-password') ||
+        msg.contains('invalid-credential') ||
+        msg.contains('invalid_login_credentials') ||
+        msg.contains('user-not-found') ||
+        msg.contains('invalid-email')) {
+      return 'Invalid credentials';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    return 'Unable to delete account. Please try again.';
   }
 }

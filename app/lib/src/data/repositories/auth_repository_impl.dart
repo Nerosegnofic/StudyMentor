@@ -1,5 +1,6 @@
 // lib/src/data/repositories/auth_repository_impl.dart
 
+import 'package:flutter/foundation.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
 import '../../domain/models/app_config_model.dart';
@@ -15,6 +16,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../providers/firebase_auth_provider.dart';
 import '../providers/dataconnect_provider.dart';
 import '../../../dataconnect_generated/generated.dart';
+import 'ai_engine_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final FirebaseAuthProvider firebase;
@@ -368,11 +370,20 @@ class AuthRepositoryImpl implements AuthRepository {
     required String studentEmail,
     required String studentPassword,
   }) async {
+    // Delete Firebase Auth account first (validates the password).
     await firebase.deleteStudentAuthAccount(
       studentEmail: studentEmail,
       studentPassword: studentPassword,
     );
-    await dataConnect.deleteStudentAllData(studentUid);
+    // Clean DataConnect and AI-engine in parallel; AI-engine is best-effort.
+    await Future.wait([
+      dataConnect.deleteStudentAllData(studentUid),
+      AiEngineRepository.instance
+          .deleteStudentAllData(studentUid)
+          .catchError((e) {
+        // Don't block account deletion if the AI engine is unreachable.
+      }),
+    ]);
   }
 
   // ── Student Full Name Update (parent-side) ────────────────────────────────

@@ -72,6 +72,7 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   ) async {
     emit(StudentDeleteLoading());
     try {
+
       // parentUid is intentionally omitted — the repository deleteStudent
       // method only requires the student's own credentials to remove their
       // Auth account and database records.
@@ -82,24 +83,23 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
       );
       emit(StudentDeleted(event.studentUid));
     } catch (e) {
-      emit(StudentDeleteError(_mapDeleteException(e)));
+      emit(StudentDeleteError(_mapDeletionException(e)));
     }
   }
 
-  String _mapDeleteException(dynamic e) {
-    final str = e.toString();
-    if (str.contains('wrong-password') ||
-        str.contains('invalid-credential') ||
-        str.contains('Invalid credentials')) {
+  String _mapDeletionException(dynamic e) {
+    final msg = e.toString().toLowerCase();
+    if (msg.contains('wrong-password') ||
+        msg.contains('invalid-credential') ||
+        msg.contains('invalid_login_credentials') ||
+        msg.contains('user-not-found') ||
+        msg.contains('invalid-email')) {
       return 'Invalid credentials';
     }
-    if (str.contains('too-many-requests')) {
-      return 'Too many attempts. Please wait a moment and try again.';
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
     }
-    if (str.contains('network')) {
-      return 'Network error. Please check your connection and try again.';
-    }
-    return 'An unexpected error occurred. Please try again.';
+    return 'Unable to delete account. Please try again.';
   }
 
   String _mapRegistrationException(dynamic e) {

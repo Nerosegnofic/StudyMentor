@@ -19,7 +19,13 @@ from app.models.domain import (
     QuizSession,
     GardenPlant,
 )
-from app.models.domain.student import StudentSubjectProfile
+from app.models.domain.student import StudentSubjectProfile, StudentSkillState
+from app.models.domain.gamification import (
+    StudentGamification,
+    XpTransaction,
+    CoinTransaction,
+    StreakEvent,
+)
 
 router = APIRouter(prefix="/analytics", tags=["Analytics Dashboard"])
 
@@ -229,3 +235,54 @@ async def delete_subject(
         print(f"[DeleteSubject] Vector cleanup failed for subject_id={subject_id}: {e}", flush=True)
 
     return {"deleted": subject_name}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DELETE /analytics/students/{student_uid}  — Wipe all AI-engine data for a student
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.delete("/students/{student_uid}")
+async def delete_student_all_data(
+    student_uid: str,
+    db: Session = Depends(get_db),
+    _: str = Depends(get_current_user),
+):
+    """
+    Deletes every AI-engine record for a student.
+    Called by the parent app when the parent permanently deletes a student account.
+    The caller's JWT (parent) is used only for authentication; the student_uid
+    in the path identifies whose data to wipe.
+    """
+    # 1. Gamification transaction logs — must go before quiz_sessions (FK xp_transactions.quiz_session_id)
+    db.query(XpTransaction).filter(XpTransaction.student_uid == student_uid).delete(synchronize_session=False)
+    db.query(CoinTransaction).filter(CoinTransaction.student_uid == student_uid).delete(synchronize_session=False)
+    db.query(StreakEvent).filter(StreakEvent.student_uid == student_uid).delete(synchronize_session=False)
+    db.query(StudentGamification).filter(StudentGamification.student_uid == student_uid).delete(synchronize_session=False)
+
+    # 2. Skill states (FK to skills, safe to bulk-delete before subjects)
+    db.query(StudentSkillState).filter(StudentSkillState.student_uid == student_uid).delete(synchronize_session=False)
+
+    # 3. Subject-linked rows (FK to subjects — must go before Subject deletion)
+    db.query(StudentSubjectProfile).filter(StudentSubjectProfile.student_uid == student_uid).delete(synchronize_session=False)
+    db.query(GardenPlant).filter(GardenPlant.student_uid == student_uid).delete(synchronize_session=False)
+
+    # 4. Quiz sessions — load each so SQLAlchemy cascades to questions → responses
+    for session in db.query(QuizSession).filter(QuizSession.student_uid == student_uid).all():
+        db.delete(session)
+
+    # 5. Custom subjects — cascade: skills → skill_states (already gone), chunks, questions (already gone)
+    custom_subjects = db.query(Subject).filter(Subject.student_uid == student_uid).all()
+    custom_subject_ids = [s.subject_id for s in custom_subjects]
+    for subject in custom_subjects:
+        db.delete(subject)
+
+    db.commit()
+
+    # 6. Vector embeddings live outside the ORM — clean up best-effort
+    for subject_id in custom_subject_ids:
+        try:
+            delete_vector_embeddings_by_subject(subject_id)
+        except Exception as e:
+            print(f"[DeleteStudent] Vector cleanup failed subject_id={subject_id}: {e}", flush=True)
+
+    return {"deleted": student_uid}
