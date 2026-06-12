@@ -2,20 +2,30 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/cupertino.dart' show CupertinoTimerPicker, CupertinoTheme, CupertinoThemeData, CupertinoTextThemeData, CupertinoTimerPickerMode;
+import 'package:flutter/cupertino.dart'
+    show
+        CupertinoTimerPicker,
+        CupertinoTheme,
+        CupertinoThemeData,
+        CupertinoTextThemeData,
+        CupertinoTimerPickerMode;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/auth/auth_event.dart';
-
-import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/auth/auth_event.dart' hide DeleteStudentRequested;
+import '../../../bloc/auth/auth_state.dart'
+    hide StudentDeleteLoading, StudentDeleted, StudentDeleteError;
 import '../../../bloc/app_config/app_config_bloc.dart';
 import '../../../bloc/app_config/app_config_event.dart';
 import '../../../bloc/app_config/app_config_state.dart';
+import '../../../bloc/students/students_bloc.dart';
+import '../../../bloc/students/students_event.dart';
+import '../../../bloc/students/students_state.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
+import 'parent_screen.dart';
 import 'parent_student_settings_screen.dart';
 
 class StudentConfigScreen extends StatefulWidget {
@@ -63,7 +73,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     for (final r in saved) {
       _rules.add(
         PendingAppRule(
-          packageName: r.packageName, 
+          packageName: r.packageName,
           appLabel: r.appLabel,
           isPaused: r.isPaused,
         ),
@@ -76,11 +86,15 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   Future<void> _save() async {
-    final rulesToSave = _rules.map((r) => PendingAppRule(
-      packageName: r.packageName,
-      appLabel: r.appLabel,
-      isPaused: r.isPaused,
-    )).toList();
+    final rulesToSave = _rules
+        .map(
+          (r) => PendingAppRule(
+            packageName: r.packageName,
+            appLabel: r.appLabel,
+            isPaused: r.isPaused,
+          ),
+        )
+        .toList();
 
     context.read<AppConfigBloc>().add(
       SaveAppRulesRequested(
@@ -234,9 +248,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       context: context,
       builder: (dialogContext) => Dialog(
         backgroundColor: const Color(0xFFFFFFFF),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -331,7 +343,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             }
 
             // ── Rules + config loaded (initial load OR after refresh) ──────────
-            if (state is AppRulesLoaded && state.studentUid == widget.student.uid) {
+            if (state is AppRulesLoaded &&
+                state.studentUid == widget.student.uid) {
               setState(() {
                 _config = state.config;
                 _loadRulesFromSaved(state.rules);
@@ -384,12 +397,33 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 _isRefreshing = false;
               });
             }
+          },
+        ),
+        // ── Student deletion result ────────────────────────────────────────────
+        // Pop the delete dialog (if still open), then replace the entire
+        // navigator stack with a fresh ParentScreen on the Students tab.
+        BlocListener<StudentsBloc, StudentsState>(
+          listener: (context, state) {
+            if (state is StudentDeleted &&
+                state.studentUid == widget.student.uid) {
+              if (mounted) {
+                final authState = context.read<AuthBloc>().state;
+                if (authState is AuthAuthenticated) {
+                  final fullName = authState.user.fullName;
+                  final uid = authState.user.uid;
 
-        // The dialog handles StudentDeleteLoading and StudentDeleteError
-        // internally. The screen only needs to react to StudentDeleted so it
-        // can pop back to the parent students list.
-            if (state is StudentDeleted && state.studentUid == widget.student.uid) {
-              if (mounted) Navigator.of(context).pop();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (_) => ParentScreen(
+                        fullName: fullName,
+                        uid: uid,
+                        initialIndex: 1,
+                      ),
+                    ),
+                    (route) => false,
+                  );
+                }
+              }
             }
           },
         ),
@@ -423,7 +457,11 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       decoration: const BoxDecoration(
         color: Color(0xFF2196F3),
         boxShadow: [
-          BoxShadow(color: Color(0x1A2196F3), blurRadius: 8, offset: Offset(0, 3)),
+          BoxShadow(
+            color: Color(0x1A2196F3),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: SafeArea(
@@ -433,7 +471,11 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () {
                   if (_isDirty) {
                     _showUnsavedChangesDialog().then((leave) {
@@ -448,19 +490,34 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 child: Text(
                   'Configurations',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.cairo(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: _isRefreshing
                     ? const Padding(
-                        key: ValueKey('spinner'), padding: EdgeInsets.all(12),
-                        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                        key: ValueKey('spinner'),
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
                       )
                     : IconButton(
                         key: const ValueKey('refresh'),
-                        icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          color: Colors.white,
+                        ),
                         onPressed: _isSaving ? null : _refresh,
                       ),
               ),
@@ -469,7 +526,14 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 duration: const Duration(milliseconds: 200),
                 child: IconButton(
                   icon: _isSaving
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
                       : const Icon(Icons.save_rounded, color: Colors.white),
                   onPressed: canSave ? _save : null,
                 ),
@@ -510,25 +574,46 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Text('Screen Time Reward per Quiz',
-              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            'Screen Time Reward per Quiz',
+            style: GoogleFonts.roboto(
+              color: const Color(0xFF1E293B),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: _showRewardTimePicker,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE3F2FD),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('$hrs : $mins',
-                      style: GoogleFonts.roboto(color: const Color(0xFF2196F3), fontSize: 32, fontWeight: FontWeight.bold)),
+                  Text(
+                    '$hrs : $mins',
+                    style: GoogleFonts.roboto(
+                      color: const Color(0xFF2196F3),
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   const Icon(Icons.edit, color: Color(0xFF2196F3), size: 20),
                 ],
@@ -536,9 +621,14 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Text('Child earns this much unlocked screen time for every quiz they pass.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 12)),
+          Text(
+            'Child earns this much unlocked screen time for every quiz they pass.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.roboto(
+              color: const Color(0xFF64748B),
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
@@ -553,7 +643,13 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,14 +657,28 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Monitored Apps',
-                  style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                'Monitored Apps',
+                style: GoogleFonts.roboto(
+                  color: const Color(0xFF1E293B),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               GestureDetector(
                 onTap: _showAppPicker,
                 child: Container(
-                  width: 32, height: 32,
-                  decoration: const BoxDecoration(color: Color(0xFFE3F2FD), shape: BoxShape.circle),
-                  child: const Icon(Icons.add, color: Color(0xFF2196F3), size: 18),
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE3F2FD),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    color: Color(0xFF2196F3),
+                    size: 18,
+                  ),
                 ),
               ),
             ],
@@ -576,14 +686,20 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           if (_rules.isEmpty) ...[
             const SizedBox(height: 16),
             Center(
-              child: Text('No apps monitored yet. Tap + to add apps.',
-                  style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 13)),
+              child: Text(
+                'No apps monitored yet. Tap + to add apps.',
+                style: GoogleFonts.roboto(
+                  color: const Color(0xFF64748B),
+                  fontSize: 13,
+                ),
+              ),
             ),
           ] else ...[
             const SizedBox(height: 16),
             for (int i = 0; i < _rules.length; i++) ...[
               _buildAppRow(_rules[i], i),
-              if (i < _rules.length - 1) const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              if (i < _rules.length - 1)
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
             ],
           ],
         ],
@@ -597,11 +713,21 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       child: Row(
         children: [
           Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Center(
-              child: Text(rule.appLabel.isNotEmpty ? rule.appLabel[0].toUpperCase() : '?',
-                  style: GoogleFonts.roboto(color: const Color(0xFF2196F3), fontWeight: FontWeight.bold, fontSize: 16)),
+              child: Text(
+                rule.appLabel.isNotEmpty ? rule.appLabel[0].toUpperCase() : '?',
+                style: GoogleFonts.roboto(
+                  color: const Color(0xFF2196F3),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -609,12 +735,20 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(rule.appLabel,
-                    style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  rule.appLabel,
+                  style: GoogleFonts.roboto(
+                    color: const Color(0xFF1E293B),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 Text(
                   rule.isPaused ? 'Unmonitored' : 'Monitored',
                   style: GoogleFonts.roboto(
-                    color: rule.isPaused ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: rule.isPaused
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                     fontSize: 11,
                   ),
                 ),
@@ -638,7 +772,11 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           const SizedBox(width: 4),
           GestureDetector(
             onTap: () => _confirmRemoveRule(rule, index),
-            child: const Icon(Icons.delete_outline, color: Color(0xFFE53935), size: 20),
+            child: const Icon(
+              Icons.delete_outline,
+              color: Color(0xFFE53935),
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -654,20 +792,41 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quiz Settings',
-              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            'Quiz Settings',
+            style: GoogleFonts.roboto(
+              color: const Color(0xFF1E293B),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 16),
-          Text('Questions per Quiz',
-              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(
+            'Questions per Quiz',
+            style: GoogleFonts.roboto(
+              color: const Color(0xFF1E293B),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Row(
               children: [
                 _buildQuizCountSegment('Auto'),
@@ -679,10 +838,13 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _config.quizCount is Auto 
+            _config.quizCount is Auto
                 ? 'Smart Tutor will adjust the quiz length dynamically based on the child\'s current performance.'
                 : 'Child must correctly answer ${(_config.quizCount as Fixed).count} questions to unlock their device.',
-            style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 13),
+            style: GoogleFonts.roboto(
+              color: const Color(0xFF64748B),
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -690,9 +852,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   Widget _buildQuizCountSegment(String label) {
-    final isActive = label == 'Auto' 
-        ? _config.quizCount is Auto 
-        : _config.quizCount is Fixed && (_config.quizCount as Fixed).count == int.parse(label);
+    final isActive = label == 'Auto'
+        ? _config.quizCount is Auto
+        : _config.quizCount is Fixed &&
+              (_config.quizCount as Fixed).count == int.parse(label);
 
     return Expanded(
       child: GestureDetector(
@@ -714,14 +877,24 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             color: isActive ? const Color(0xFF2196F3) : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
             boxShadow: isActive
-                ? [const BoxShadow(color: Color(0x1A2196F3), blurRadius: 4, offset: Offset(0, 2))]
+                ? [
+                    const BoxShadow(
+                      color: Color(0x1A2196F3),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ]
                 : null,
           ),
-          child: Text(label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(
-                  color: isActive ? Colors.white : const Color(0xFF64748B),
-                  fontWeight: FontWeight.w600, fontSize: 14)),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.roboto(
+              color: isActive ? Colors.white : const Color(0xFF64748B),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
         ),
       ),
     );
@@ -735,18 +908,31 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => BlocProvider.value(
-                value: context.read<AuthBloc>(),
-                child: ParentStudentSettingsScreen(student: widget.student),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: context.read<AuthBloc>(),
+                  child: ParentStudentSettingsScreen(student: widget.student),
+                ),
               ),
-            )),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2196F3), foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)), elevation: 0,
             ),
-            child: Text('Edit Profile', style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2196F3),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Edit Profile',
+              style: GoogleFonts.roboto(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -758,9 +944,17 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
               foregroundColor: const Color(0xFFE53935),
               side: const BorderSide(color: Color(0xFFE53935)),
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
             ),
-            child: Text('Delete Account', style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Delete Account',
+              style: GoogleFonts.roboto(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
       ],
@@ -775,8 +969,11 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
 
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => BlocProvider.value(
-        value: context.read<AuthBloc>(),
+      builder: (dialogContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: context.read<AuthBloc>()),
+          BlocProvider.value(value: context.read<StudentsBloc>()),
+        ],
         child: _DeleteStudentDialog(
           student: widget.student,
           parentUid: parentUid,
@@ -856,7 +1053,7 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
     final password = _passwordCtl.text.trim();
     if (password.isEmpty) return;
 
-    context.read<AuthBloc>().add(
+    context.read<StudentsBloc>().add(
       DeleteStudentRequested(
         studentUid: widget.student.uid,
         studentEmail: widget.student.email,
@@ -870,13 +1067,13 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !_isLoading,
-      child: BlocListener<AuthBloc, AuthState>(
+      child: BlocListener<StudentsBloc, StudentsState>(
         listener: (context, state) {
           if (state is StudentDeleteLoading) {
             setState(() => _isLoading = true);
           } else if (state is StudentDeleted &&
               state.studentUid == widget.student.uid) {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(); // close the dialog
           } else if (state is StudentDeleteError) {
             final isWrongPassword = state.message.contains(
               'Invalid credentials',
@@ -1046,8 +1243,6 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
   late TextEditingController _cooldownHoursCtl;
   late TextEditingController _cooldownMinutesCtl;
 
-  // Tracks which fields currently hold an out-of-range value so the
-  // _TimeInput widget can show an inline error.
   final Map<String, String?> _errors = {
     'usageHours': null,
     'usageMinutes': null,
@@ -1081,8 +1276,6 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
       _cooldownHoursCtl.text = widget.config.cooldownHours.toString();
       _cooldownMinutesCtl.text = widget.config.cooldownMinutes.toString();
       setState(() => _errors.updateAll((_, __) => null));
-      // Defer the parent setState — calling onErrorsChanged directly here
-      // triggers setState on the parent mid-build, causing the crash.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _notifyErrors();
       });
@@ -1098,14 +1291,10 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
     super.dispose();
   }
 
-  // ── validation helpers ─────────────────────────────────────────────────────
-
-  /// Notifies the parent whether any field currently has a validation error.
   void _notifyErrors() {
     widget.onErrorsChanged(_errors.values.any((e) => e != null));
   }
 
-  /// Returns an error string when [value] is outside [min]..[max], else null.
   String? _validateRange(String value, int min, int max) {
     final parsed = int.tryParse(value);
     if (parsed == null) return 'Must be a number';
@@ -1164,7 +1353,6 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ──────────────────────────────────────────────────────
             Row(
               children: [
                 const Icon(
@@ -1198,7 +1386,6 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
             const SizedBox(height: 14),
             const Divider(height: 1),
             const SizedBox(height: 14),
-            // ── Usage Allowance ──────────────────────────────────────────────
             Row(
               children: [
                 const Icon(
@@ -1243,7 +1430,6 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
               ],
             ),
             const SizedBox(height: 18),
-            // ── Cooldown Period ──────────────────────────────────────────────
             Row(
               children: [
                 const Icon(
@@ -1315,15 +1501,9 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   String _query = '';
   bool _submitted = false;
 
-  /// false = "Installed Apps" (user-installed only)
-  /// true  = "All Apps"       (user-installed + system)
   bool _showSystemApps = false;
 
   static const double _buttonHeight = 32;
-  static const EdgeInsets _buttonPadding = EdgeInsets.symmetric(horizontal: 10);
-  static const BorderRadius _buttonRadius = BorderRadius.all(
-    Radius.circular(8),
-  );
   static const TextStyle _buttonTextStyle = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w600,
@@ -1414,9 +1594,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
             Text(
               _showSystemApps ? 'All Apps' : 'Installed Apps',
               overflow: TextOverflow.ellipsis,
-              style: _buttonTextStyle.copyWith(
-                color: const Color(0xFF2196F3),
-              ),
+              style: _buttonTextStyle.copyWith(color: const Color(0xFF2196F3)),
             ),
             const SizedBox(width: 3),
             const Icon(
@@ -1532,7 +1710,11 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               decoration: InputDecoration(
                 hintText: 'Search apps…',
                 hintStyle: const TextStyle(color: Color(0xFF64748B)),
-                prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF64748B)),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  size: 20,
+                  color: Color(0xFF64748B),
+                ),
                 isDense: true,
                 filled: true,
                 fillColor: const Color(0xFFF1F5F9),
@@ -1569,10 +1751,16 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                           }
                         }),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
                           decoration: const BoxDecoration(
                             border: Border(
-                              bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+                              bottom: BorderSide(
+                                color: Color(0xFFF1F5F9),
+                                width: 1,
+                              ),
                             ),
                           ),
                           child: Row(
@@ -1604,12 +1792,23 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: selected ? const Color(0xFF2196F3) : Colors.transparent,
+                                  color: selected
+                                      ? const Color(0xFF2196F3)
+                                      : Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
-                                  border: selected ? null : Border.all(color: const Color(0xFFCBD5E1), width: 2),
+                                  border: selected
+                                      ? null
+                                      : Border.all(
+                                          color: const Color(0xFFCBD5E1),
+                                          width: 2,
+                                        ),
                                 ),
                                 child: selected
-                                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                    ? const Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Colors.white,
+                                      )
                                     : null,
                               ),
                             ],
@@ -1641,7 +1840,9 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                         if (_submitted) return;
                         setState(() => _submitted = true);
                         final selected = widget.availableApps
-                            .where((a) => _selectedPackages.contains(a.packageName))
+                            .where(
+                              (a) => _selectedPackages.contains(a.packageName),
+                            )
                             .toList();
                         Navigator.of(context).pop();
                         widget.onAppsSelected(selected);
@@ -1649,7 +1850,9 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2196F3),
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(0xFF2196F3).withOpacity(0.5),
+                  disabledBackgroundColor: const Color(
+                    0xFF2196F3,
+                  ).withOpacity(0.5),
                   disabledForegroundColor: Colors.white.withOpacity(0.8),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -1811,13 +2014,8 @@ class _AppRuleCard extends StatelessWidget {
 class _TimeInput extends StatelessWidget {
   final TextEditingController controller;
   final String suffix;
-
-  /// Placeholder shown inside the field (e.g. "0 – 24").
   final String hint;
-
-  /// Non-null when the current value is out of range.
   final String? errorText;
-
   final ValueChanged<String> onChanged;
 
   const _TimeInput({
@@ -1944,6 +2142,8 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
+// ── _SetRewardTimeSheet ───────────────────────────────────────────────────────
+
 class _SetRewardTimeSheet extends StatefulWidget {
   final int initialHours;
   final int initialMinutes;
@@ -1977,9 +2177,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
     });
   }
 
-  bool _isPresetSelected(int h, int m) {
-    return _hours == h && _minutes == m;
-  }
+  bool _isPresetSelected(int h, int m) => _hours == h && _minutes == m;
 
   Widget _buildPresetChip(String label, int h, int m) {
     final bool isSelected = _isPresetSelected(h, m);
@@ -1991,7 +2189,9 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFE3F2FD) : const Color(0xFFF8FAFC),
           border: Border.all(
-            color: isSelected ? const Color(0xFF2196F3) : const Color(0xFFE2E8F0),
+            color: isSelected
+                ? const Color(0xFF2196F3)
+                : const Color(0xFFE2E8F0),
             width: 1,
           ),
           borderRadius: BorderRadius.circular(20),
@@ -1999,7 +2199,9 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
         child: Text(
           label,
           style: GoogleFonts.roboto(
-            color: isSelected ? const Color(0xFF2196F3) : const Color(0xFF64748B),
+            color: isSelected
+                ? const Color(0xFF2196F3)
+                : const Color(0xFF64748B),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 14,
           ),
@@ -2072,7 +2274,10 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
                       child: CupertinoTimerPicker(
                         key: ValueKey(_pickerKeyIndex),
                         mode: CupertinoTimerPickerMode.hm,
-                        initialTimerDuration: Duration(hours: _hours, minutes: _minutes),
+                        initialTimerDuration: Duration(
+                          hours: _hours,
+                          minutes: _minutes,
+                        ),
                         onTimerDurationChanged: (duration) {
                           _hours = duration.inHours;
                           _minutes = duration.inMinutes % 60;
@@ -2101,7 +2306,9 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pop({'hours': _hours, 'minutes': _minutes});
+                    Navigator.of(
+                      context,
+                    ).pop({'hours': _hours, 'minutes': _minutes});
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2196F3),

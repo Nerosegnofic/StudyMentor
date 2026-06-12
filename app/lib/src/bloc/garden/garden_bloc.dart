@@ -6,7 +6,6 @@ import 'garden_state.dart';
 
 class GardenBloc extends Bloc<GardenEvent, GardenState> {
   final AiEngineRepository _repo;
-  String? _currentStudentUid;
 
   GardenBloc({AiEngineRepository? repo})
       : _repo = repo ?? AiEngineRepository.instance,
@@ -18,7 +17,6 @@ class GardenBloc extends Bloc<GardenEvent, GardenState> {
     LoadGardenRequested event,
     Emitter<GardenState> emit,
   ) async {
-    _currentStudentUid = event.studentUid;
     emit(const GardenLoading());
     try {
       final plants = await _repo.getGarden();
