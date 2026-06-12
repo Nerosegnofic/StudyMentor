@@ -1,9 +1,7 @@
 package com.example.studymentor
 
 import android.app.AppOpsManager
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -23,6 +21,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
@@ -36,26 +35,27 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         const val USAGE_CHANNEL   = "com.example.studymentor/usage_stats"
         const val ACCESS_CHANNEL  = "com.example.studymentor/accessibility"
 
-        // ── Silent usage timer notification ───────────────────────────────────
-        private const val NOTIF_CHANNEL_ID   = "studymentor_usage_timer"
-        private const val NOTIF_CHANNEL_NAME = "Usage Timer"
-        private const val NOTIF_ID           = 7001
+        // ── Notification channel ──────────────────────────────────────────────
+        //
+        // All timer-related notifications use the single CHILD_TIMER channel,
+        // which is created and owned by LocalNotificationService (Dart-side,
+        // flutter_local_notifications) during app startup in main().
+        //
+        // This class must NOT create notification channels. The channel already
+        // exists by the time any of the post* methods below are called.
+        private const val CHILD_TIMER_CHANNEL_ID = "CHILD_TIMER"
 
-        // ── Silent cooldown timer notification ────────────────────────────────
-        private const val COOLDOWN_NOTIF_CHANNEL_ID   = "studymentor_cooldown_timer"
-        private const val COOLDOWN_NOTIF_CHANNEL_NAME = "Cooldown Timer"
-        private const val COOLDOWN_NOTIF_ID           = 7005
+        // ── Notification IDs ──────────────────────────────────────────────────
+        // Silent persistent timer notifications
+        private const val NOTIF_ID          = 7001   // usage countdown
+        private const val COOLDOWN_NOTIF_ID = 7005   // cooldown countdown
 
-        // ── Audible threshold alert notifications (usage) ─────────────────────
-        private const val ALERT_CHANNEL_ID   = "studymentor_usage_alerts"
-        private const val ALERT_CHANNEL_NAME = "Usage Alerts"
+        // Audible threshold alerts — usage
         private const val ALERT_NOTIF_ID_5MIN = 7002
         private const val ALERT_NOTIF_ID_1MIN = 7003
         private const val ALERT_NOTIF_ID_10S  = 7004
 
-        // ── Audible threshold alert notifications (cooldown) ──────────────────
-        private const val COOLDOWN_ALERT_CHANNEL_ID   = "studymentor_cooldown_alerts"
-        private const val COOLDOWN_ALERT_CHANNEL_NAME = "Cooldown Alerts"
+        // Audible threshold alerts — cooldown
         private const val COOLDOWN_ALERT_NOTIF_ID_5MIN = 7006
         private const val COOLDOWN_ALERT_NOTIF_ID_1MIN = 7007
         private const val COOLDOWN_ALERT_NOTIF_ID_10S  = 7008
@@ -68,16 +68,11 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     private var windowManager: WindowManager? = null
     private var countdownText: TextView? = null
 
-    // ── Notifications ─────────────────────────────────────────────────────────
-    private var notificationManager: NotificationManager? = null
-    private var notifChannelCreated = false
-
     // ── Channel & audio ───────────────────────────────────────────────────────
     private var overlayChannel: MethodChannel? = null
     private var audioManager: AudioManager? = null
     private var audioFocusRequest: AudioFocusRequest? = null
 
-    // Guard against double-firing the dismiss callback
     private var isDismissing = false
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -106,71 +101,8 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         ).setMethodCallHandler { call, result -> handleAccessibility(call, result) }
 
         audioManager = activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        notificationManager =
-            activity.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        ensureNotificationChannels()
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Notification channels (Android 8+)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private fun ensureNotificationChannels() {
-        if (notifChannelCreated) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-
-            // ── Silent usage timer ────────────────────────────────────────────
-            val timerChannel = NotificationChannel(
-                NOTIF_CHANNEL_ID,
-                NOTIF_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = "Shows how much time is left before the usage limit is reached"
-                setShowBadge(false)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            }
-
-            // ── Silent cooldown timer ─────────────────────────────────────────
-            val cooldownTimerChannel = NotificationChannel(
-                COOLDOWN_NOTIF_CHANNEL_ID,
-                COOLDOWN_NOTIF_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = "Shows how much cooldown time remains before apps are unlocked"
-                setShowBadge(false)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            }
-
-            // ── Audible usage alerts ──────────────────────────────────────────
-            val alertChannel = NotificationChannel(
-                ALERT_CHANNEL_ID,
-                ALERT_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = "Alerts when the usage limit is almost reached"
-                setShowBadge(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                enableVibration(true)
-            }
-
-            // ── Audible cooldown alerts ───────────────────────────────────────
-            val cooldownAlertChannel = NotificationChannel(
-                COOLDOWN_ALERT_CHANNEL_ID,
-                COOLDOWN_ALERT_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = "Alerts when the cooldown period is almost over"
-                setShowBadge(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                enableVibration(true)
-            }
-
-            notificationManager?.createNotificationChannel(timerChannel)
-            notificationManager?.createNotificationChannel(cooldownTimerChannel)
-            notificationManager?.createNotificationChannel(alertChannel)
-            notificationManager?.createNotificationChannel(cooldownAlertChannel)
-        }
-        notifChannelCreated = true
+        // No notification channel creation — CHILD_TIMER is created by
+        // LocalNotificationService.init() before registerWith() is called.
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -284,7 +216,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // Shared helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Formats [totalSeconds] as HH:MM:SS. */
     private fun formatHms(totalSeconds: Int): String {
         val h = totalSeconds / 3600
         val m = (totalSeconds % 3600) / 60
@@ -300,13 +231,22 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         )
     }
 
+    private fun mainActivityPendingIntent(requestCode: Int): PendingIntent =
+        PendingIntent.getActivity(
+            activity, requestCode, mainActivityIntent(),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+    private fun notificationManager() =
+        activity.getSystemService(Context.NOTIFICATION_SERVICE)
+            as android.app.NotificationManager
+
     // ─────────────────────────────────────────────────────────────────────────
-    // Silent usage timer notification helpers
+    // Silent usage timer notification
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun postUsageNotification(remainingSeconds: Int) {
-        ensureNotificationChannels()
-        val notification = NotificationCompat.Builder(activity, NOTIF_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(activity, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
             .setContentTitle("Time remaining")
             .setContentText(formatHms(remainingSeconds))
@@ -316,28 +256,21 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentIntent(
-                android.app.PendingIntent.getActivity(
-                    activity, 0, mainActivityIntent(),
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
-                        or android.app.PendingIntent.FLAG_IMMUTABLE,
-                ),
-            )
+            .setContentIntent(mainActivityPendingIntent(0))
             .build()
-        notificationManager?.notify(NOTIF_ID, notification)
+        notificationManager().notify(NOTIF_ID, notification)
     }
 
     private fun cancelUsageNotification() {
-        notificationManager?.cancel(NOTIF_ID)
+        notificationManager().cancel(NOTIF_ID)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Silent cooldown timer notification helpers
+    // Silent cooldown timer notification
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun postCooldownNotification(remainingSeconds: Int) {
-        ensureNotificationChannels()
-        val notification = NotificationCompat.Builder(activity, COOLDOWN_NOTIF_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(activity, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
             .setContentTitle("Cooldown — apps locked")
             .setContentText(formatHms(remainingSeconds))
@@ -347,30 +280,21 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentIntent(
-                android.app.PendingIntent.getActivity(
-                    activity, 0, mainActivityIntent(),
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
-                        or android.app.PendingIntent.FLAG_IMMUTABLE,
-                ),
-            )
+            .setContentIntent(mainActivityPendingIntent(0))
             .build()
-        notificationManager?.notify(COOLDOWN_NOTIF_ID, notification)
+        notificationManager().notify(COOLDOWN_NOTIF_ID, notification)
     }
 
     private fun cancelCooldownNotification() {
-        notificationManager?.cancel(COOLDOWN_NOTIF_ID)
+        notificationManager().cancel(COOLDOWN_NOTIF_ID)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Audible threshold alert helpers — usage
+    // Audible threshold alerts — usage
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun postThresholdAlert(remainingSeconds: Int) {
-        ensureNotificationChannels()
-
         data class AlertInfo(val notifId: Int, val title: String, val body: String)
-
         val alert = when {
             remainingSeconds >= 270 -> AlertInfo(
                 ALERT_NOTIF_ID_5MIN,
@@ -388,8 +312,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 "Your usage limit is almost up!",
             )
         }
-
-        val notification = NotificationCompat.Builder(activity, ALERT_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(activity, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(alert.title)
             .setContentText(alert.body)
@@ -399,27 +322,17 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setContentIntent(
-                android.app.PendingIntent.getActivity(
-                    activity, alert.notifId, mainActivityIntent(),
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
-                        or android.app.PendingIntent.FLAG_IMMUTABLE,
-                ),
-            )
+            .setContentIntent(mainActivityPendingIntent(alert.notifId))
             .build()
-
-        notificationManager?.notify(alert.notifId, notification)
+        notificationManager().notify(alert.notifId, notification)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Audible threshold alert helpers — cooldown
+    // Audible threshold alerts — cooldown
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun postCooldownThresholdAlert(remainingSeconds: Int) {
-        ensureNotificationChannels()
-
         data class AlertInfo(val notifId: Int, val title: String, val body: String)
-
         val alert = when {
             remainingSeconds >= 270 -> AlertInfo(
                 COOLDOWN_ALERT_NOTIF_ID_5MIN,
@@ -437,8 +350,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 "Your cooldown is ending in 10 seconds!",
             )
         }
-
-        val notification = NotificationCompat.Builder(activity, COOLDOWN_ALERT_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(activity, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(alert.title)
             .setContentText(alert.body)
@@ -448,16 +360,9 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setContentIntent(
-                android.app.PendingIntent.getActivity(
-                    activity, alert.notifId, mainActivityIntent(),
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
-                        or android.app.PendingIntent.FLAG_IMMUTABLE,
-                ),
-            )
+            .setContentIntent(mainActivityPendingIntent(alert.notifId))
             .build()
-
-        notificationManager?.notify(alert.notifId, notification)
+        notificationManager().notify(alert.notifId, notification)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -494,26 +399,10 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             "setBlocked" -> {
                 val blocked = call.argument<Boolean>("blocked") ?: false
                 StudyMentorAccessibilityService.isBlocked = blocked
-
-                // Keep AppPrefs in sync so StudyMentorAccessibilityService.
-                // onServiceConnected() restores the correct blocked state on
-                // process restart, regardless of which code path sets this flag.
-                //
-                // Without this write, the Flutter _resetAccessibilityState()
-                // call (setBlocked=false) on app resume would overwrite the
-                // in-memory flag correctly but leave AppPrefs.KEY_IS_BLOCKED=true
-                // from the previous block() call — causing the accessibility
-                // service to re-enforce the block the next time it reconnects.
-                //
-                // Conversely, the original bug: setBlocked(false) was called on
-                // Flutter engine startup before UsageTimerService had finished
-                // restarting, clearing the in-memory flag while AppPrefs still
-                // held true. Now both are always written together.
                 activity.getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
                     .edit()
                     .putBoolean(AppPrefs.KEY_IS_BLOCKED, blocked)
                     .apply()
-
                 result.success(null)
             }
 
@@ -526,8 +415,7 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // ─────────────────────────────────────────────────────────────────────────
 
     fun onActivityResult(requestCode: Int) {
-        // No pending permission results to handle — all permission flows are
-        // owned by PermissionGateScreen via PermissionPlugin.
+        // No pending permission results to handle.
     }
 
     fun dismissOverlay() {
@@ -551,22 +439,16 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build()
-
             val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                 .setAudioAttributes(attrs)
                 .setAcceptsDelayedFocusGain(false)
                 .setOnAudioFocusChangeListener { }
                 .build()
-
             audioFocusRequest = req
             audioManager?.requestAudioFocus(req)
         } else {
             @Suppress("DEPRECATION")
-            audioManager?.requestAudioFocus(
-                { },
-                AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN,
-            )
+            audioManager?.requestAudioFocus({ }, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
         }
     }
 
@@ -619,12 +501,9 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
     private fun buildRootView(): FrameLayout {
         val root = object : FrameLayout(activity) {
-
             override fun onTouchEvent(event: MotionEvent): Boolean = true
-
             override fun dispatchKeyEvent(event: KeyEvent): Boolean {
                 if (event.action != KeyEvent.ACTION_DOWN) return true
-
                 if (event.keyCode == KeyEvent.KEYCODE_BACK) {
                     StudyMentorAccessibilityService.justIntercepted = true
                     StudyMentorAccessibilityService.instance?.performGlobalAction(
@@ -632,7 +511,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                     )
                     dismissOverlay()
                 }
-
                 return true
             }
         }.apply {
@@ -714,7 +592,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         center.addView(subtitleText)
         center.addView(countdownText)
         center.addView(timerLabel)
-
         root.addView(center)
         return root
     }
@@ -739,46 +616,20 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     private fun getForegroundPackage(): String? {
         val usageManager = activity.getSystemService(Context.USAGE_STATS_SERVICE)
             as? android.app.usage.UsageStatsManager ?: return null
-
         val now = System.currentTimeMillis()
         val events = usageManager.queryEvents(now - 300_000L, now)
-
         var lastPackage: String? = null
         var lastTime = 0L
-
         val event = android.app.usage.UsageEvents.Event()
-
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
-            if (
-                event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND &&
-                event.timeStamp > lastTime
-            ) {
+            if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND
+                && event.timeStamp > lastTime) {
                 lastTime = event.timeStamp
                 lastPackage = event.packageName
             }
         }
-
         return lastPackage
-    }
-
-    private fun hasUsageStatsPermission(): Boolean {
-        val appOps = activity.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(),
-                activity.packageName,
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(),
-                activity.packageName,
-            )
-        }
-        return mode == AppOpsManager.MODE_ALLOWED
     }
 
     private fun isAccessibilityEnabled(): Boolean {
@@ -786,14 +637,11 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             activity.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
         ) ?: return false
-
         val pkg = activity.packageName
         val fullClass = StudyMentorAccessibilityService::class.java.name
         val shortClass = ".${StudyMentorAccessibilityService::class.java.simpleName}"
-
         val splitter = android.text.TextUtils.SimpleStringSplitter(':')
         splitter.setString(prefString)
-
         while (splitter.hasNext()) {
             val entry = splitter.next()
             val slash = entry.indexOf('/')
@@ -802,7 +650,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
             val cls = entry.substring(slash + 1)
             if (cls == fullClass || cls == shortClass) return true
         }
-
         return false
     }
 

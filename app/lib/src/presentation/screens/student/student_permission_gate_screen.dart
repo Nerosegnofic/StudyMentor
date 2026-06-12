@@ -12,7 +12,8 @@ import '../../../services/permission_service.dart';
 ///   2. PACKAGE_USAGE_STATS
 ///   3. POST_NOTIFICATIONS
 ///   4. BIND_ACCESSIBILITY_SERVICE
-///   5. BIND_DEVICE_ADMIN  ← always last (blocks Settings once granted)
+///   5. BIND_DEVICE_ADMIN        ← always last mandatory step
+///   6. Battery Optimization      ← must be granted to proceed
 ///
 /// The screen re-checks the current permission every time the app is resumed
 /// from Settings. If it was granted it either advances to the next permission
@@ -96,11 +97,8 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
 
     if (missing == null) {
       // Every permission is granted.
-      // Clear the setup bypass and enable the full student guard before
-      // handing off — this is the single, atomic transition point.
       _checkInProgress = false;
-      await DeviceAdminService.onPermissionsGranted();
-      if (mounted) widget.onAllGranted();
+      await _finish();
       return;
     }
 
@@ -112,9 +110,6 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     setState(() {
       _checking = false;
       _currentGranted = justGranted;
-      // If the user granted the current one, stay on this card briefly so
-      // the "Continue" button appears before they tap through to the next.
-      // Only update _current when there is no pending "Continue" action.
       if (!justGranted) {
         _current = missing;
         _currentGranted = false;
@@ -130,14 +125,12 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   ///   • Already granted → advance to the next missing permission (or finish).
   Future<void> _onActionTap() async {
     if (_currentGranted) {
-      // The current permission was just confirmed — find the next missing one.
       setState(() {
         _checking = true;
         _currentGranted = false;
       });
       await _advanceToNext();
     } else {
-      // Send the user to the appropriate Settings page.
       if (_current != null) {
         await PermissionService.openSettings(_current!);
       }
@@ -152,9 +145,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     if (!mounted) return;
 
     if (missing == null) {
-      // All done — clear the setup bypass and enable the full student guard.
-      await DeviceAdminService.onPermissionsGranted();
-      if (mounted) widget.onAllGranted();
+      await _finish();
       return;
     }
 
@@ -165,11 +156,17 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     });
   }
 
+  /// Clears the setup bypass flag, enables the full student guard, and hands
+  /// off to the caller. Called when all permissions are satisfied.
+  Future<void> _finish() async {
+    await DeviceAdminService.onPermissionsGranted();
+    if (mounted) widget.onAllGranted();
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    // Lock the status bar styling to match our dark header.
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -328,6 +325,10 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
         Icons.shield_outlined,
         const Color(0xFFEF4444),
       ),
+      RequiredPermission.batteryOptimization => (
+        Icons.battery_saver_outlined,
+        const Color(0xFF16A34A),
+      ),
     };
 
     return Center(
@@ -455,6 +456,9 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
         'Under Installed Apps, select "StudyMentor" and enable it.',
       RequiredPermission.deviceAdmin =>
         'Tap "Activate this device admin app" to confirm.',
+      RequiredPermission.batteryOptimization =>
+        'Find "StudyMentor", select "Don\'t optimize" or "Unrestricted", '
+            'then confirm.',
     };
 
     return Text(

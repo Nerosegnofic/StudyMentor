@@ -39,11 +39,12 @@ import androidx.core.app.NotificationCompat
  * │    • cooldown_notification_enabled – user preference                    │
  * └─────────────────────────────────────────────────────────────────────────┘
  *
- * When ACTION_START is received:
- *  - If the incoming UID differs from activeStudentUid, we load the incoming
- *    student's previously saved state (if any). The previous student's state
- *    is already fully persisted (written on every tick), so nothing is lost.
- *    Nothing is ever wiped: each student's data lives under its own key prefix.
+ * All notifications — foreground service persistent notification, usage/cooldown
+ * countdown updates, and threshold alerts — are posted on the single CHILD_TIMER
+ * channel ("CHILD_TIMER"), which is created and owned by LocalNotificationService
+ * (flutter_local_notifications) during app startup. This service never creates
+ * its own channels; it relies on the channel already existing by the time the
+ * service starts.
  *
  * Compatibility: Android 8 (API 26) – Android 15+ (API 35).
  */
@@ -63,20 +64,19 @@ class UsageTimerService : Service() {
         const val EXTRA_STUDENT_UID         = "EXTRA_STUDENT_UID"
         const val EXTRA_QUIZ_ON_LAUNCH      = "EXTRA_QUIZ_ON_LAUNCH"
 
-        // ── Foreground service notification channels ───────────────────────────
-        private const val FG_NOTIF_CHANNEL_ID        = "studymentor_timer_service"
-        private const val FG_NOTIF_CHANNEL_NAME      = "StudyMentor Timer"
-        private const val FG_NOTIF_CHANNEL_IDLE_ID   = "studymentor_timer_idle"
-        private const val FG_NOTIF_CHANNEL_IDLE_NAME = "StudyMentor"
-        private const val FG_NOTIF_ID                = 8001
+        // ── Notification channel ──────────────────────────────────────────────
+        //
+        // All timer notifications share the single CHILD_TIMER channel, which is
+        // created by LocalNotificationService.init() (flutter_local_notifications)
+        // before the service ever starts. Do NOT create this channel here —
+        // Android ignores duplicate createNotificationChannel calls, but keeping
+        // a single owner avoids importance/sound setting conflicts.
+        private const val CHILD_TIMER_CHANNEL_ID = "CHILD_TIMER"
 
-        // ── Threshold alert notification channels ──────────────────────────────
-        private const val ALERT_CHANNEL_ID            = "studymentor_usage_alerts"
-        private const val ALERT_CHANNEL_NAME          = "Usage Alerts"
-        private const val COOLDOWN_ALERT_CHANNEL_ID   = "studymentor_cooldown_alerts"
-        private const val COOLDOWN_ALERT_CHANNEL_NAME = "Cooldown Alerts"
+        // ── Foreground service notification ID ────────────────────────────────
+        private const val FG_NOTIF_ID = 8001
 
-        // ── Notification IDs ───────────────────────────────────────────────────
+        // ── Threshold alert notification IDs ──────────────────────────────────
         private const val ALERT_NOTIF_ID_5MIN          = 7002
         private const val ALERT_NOTIF_ID_1MIN          = 7003
         private const val ALERT_NOTIF_ID_10S           = 7004
@@ -95,7 +95,6 @@ class UsageTimerService : Service() {
         private const val KEY_STUDENT_UID        = "student_uid"
 
         // ── Per-student key suffixes ───────────────────────────────────────────
-        // Never read these raw — always go through studentKey(uid, SUFFIX_*).
         private const val SUFFIX_TOTAL_USAGE        = "total_usage_seconds"
         private const val SUFFIX_IS_BLOCKED         = "is_blocked"
         private const val SUFFIX_COOLDOWN_REMAINING = "cooldown_remaining_seconds"
@@ -106,8 +105,6 @@ class UsageTimerService : Service() {
         private const val SUFFIX_QUIZ_SHOWN         = "quiz_shown_for_cooldown"
 
         // Public aliases kept for TimerServiceBridge compatibility.
-        // Bridge calls prefs(context) then reads quiz state; it now needs to
-        // pair these suffixes with the active UID via studentKey().
         const val KEY_QUIZ_DISMISSED = SUFFIX_QUIZ_DISMISSED
         const val KEY_QUIZ_SHOWN     = SUFFIX_QUIZ_SHOWN
 
@@ -121,24 +118,12 @@ class UsageTimerService : Service() {
 
         // ── Helpers ────────────────────────────────────────────────────────────
 
-        /**
-         * Builds the per-student SharedPreferences key for [suffix] scoped to
-         * [uid]. Falls back to the bare suffix when uid is blank so reads still
-         * return a defined default rather than an unexpected crash.
-         */
         fun studentKey(uid: String, suffix: String): String =
             if (uid.isBlank()) suffix else "${uid}_${suffix}"
 
-        /** Returns the SharedPreferences file used by this service. */
         fun prefs(context: Context): SharedPreferences =
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        /**
-         * Returns the currently active student UID stored in prefs, or "".
-         * Useful for callers (e.g. TimerServiceBridge) that need the UID to
-         * build per-student keys without holding a reference to the running
-         * service.
-         */
         fun activeUid(context: Context): String =
             prefs(context).getString(KEY_ACTIVE_STUDENT_UID, "") ?: ""
     }
@@ -167,7 +152,6 @@ class UsageTimerService : Service() {
     private var cooldownNotifEnabled  = true
     private var studentUid            = ""
 
-    /** UID of the student whose timer state is currently loaded in memory. */
     private var activeStudentUid = ""
 
     // ── Quiz state ────────────────────────────────────────────────────────────
@@ -175,7 +159,6 @@ class UsageTimerService : Service() {
     private var quizDismissedForCooldown = false
     private var quizShownForCooldown     = false
 
-    // One-shot threshold alert tracking (reset on unblock / account switch)
     private val firedUsageThresholds    = mutableSetOf<Int>()
     private val firedCooldownThresholds = mutableSetOf<Int>()
 
@@ -198,10 +181,9 @@ class UsageTimerService : Service() {
         super.onCreate()
         prefs = prefs(applicationContext)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        ensureAllNotifChannels()
+        // No channel creation here — CHILD_TIMER is created by
+        // LocalNotificationService.init() before this service ever starts.
 
-        // Restore the previously active student's state so the service is
-        // immediately ready if the OS restarts it after a kill.
         val savedUid = prefs.getString(KEY_ACTIVE_STUDENT_UID, "") ?: ""
         if (savedUid.isNotEmpty()) {
             activeStudentUid = savedUid
@@ -215,16 +197,6 @@ class UsageTimerService : Service() {
                 val incomingUid = intent.getStringExtra(EXTRA_STUDENT_UID).orEmpty()
 
                 if (incomingUid.isNotEmpty() && incomingUid != activeStudentUid) {
-                    // ── Account switch ─────────────────────────────────────────
-                    // The outgoing student's state is already fully persisted
-                    // (written on every tick and on block/unblock), so we can
-                    // switch immediately without any extra save step.
-                    // Load the incoming student's own previously saved state.
-                    // restoreStudentState() unconditionally syncs both
-                    // AppPrefs.KEY_IS_BLOCKED and
-                    // StudyMentorAccessibilityService.isBlocked to match the
-                    // incoming student's actual cooldown state, so no stale
-                    // block from the outgoing account leaks into this session.
                     activeStudentUid = incomingUid
                     prefs.edit().putString(KEY_ACTIVE_STUDENT_UID, incomingUid).apply()
                     restoreStudentState(incomingUid)
@@ -232,8 +204,6 @@ class UsageTimerService : Service() {
                     firedCooldownThresholds.clear()
                 }
 
-                // Apply config overrides from the intent (always wins over
-                // saved state so the parent's latest settings take effect).
                 intent.getStringArrayListExtra(EXTRA_MONITORED_APPS)?.let {
                     monitoredApps = it.toMutableSet()
                     saveMonitoredApps()
@@ -272,7 +242,6 @@ class UsageTimerService : Service() {
             ACTION_UNBLOCK -> unblock()
 
             null -> {
-                // Restarted by OS after kill — state already restored in onCreate().
                 startForegroundWithNotification()
                 if (studentLoggedIn && !isRunning) {
                     isRunning = true
@@ -309,7 +278,6 @@ class UsageTimerService : Service() {
         val isForegroundMonitored = foreground != null && monitoredApps.contains(foreground) && !isPaused
 
         if (isBlocked) {
-            // ── Cooldown countdown ─────────────────────────────────────────────
             if (cooldownRemSecs > 0) {
                 cooldownRemSecs--
                 thresholdAlert = checkCooldownThreshold(cooldownRemSecs)
@@ -328,8 +296,7 @@ class UsageTimerService : Service() {
             }
 
         } else {
-            // ── Usage accumulation ─────────────────────────────────────────────
-            if (isForegroundMonitored) {
+            if (foreground != null && monitoredApps.contains(foreground)) {
                 totalUsageSecs++
                 val remaining = (usageLimitSecs - totalUsageSecs).coerceAtLeast(0)
                 thresholdAlert = checkUsageThreshold(remaining)
@@ -398,7 +365,7 @@ class UsageTimerService : Service() {
         updateFgNotification()
     }
 
-    // ── Quiz dismissed flag — public setters ──────────────────────────────────
+    // ── Quiz dismissed flag ───────────────────────────────────────────────────
 
     fun setQuizDismissed(dismissed: Boolean) {
         quizDismissedForCooldown = dismissed
@@ -439,6 +406,10 @@ class UsageTimerService : Service() {
     }
 
     // ── Threshold alert notifications ─────────────────────────────────────────
+    //
+    // Both usage and cooldown alerts post on CHILD_TIMER. The channel has
+    // HIGH importance and sound=true (set by LocalNotificationService), so
+    // these will vibrate and play the default sound — correct for alerts.
 
     private fun mainActivityPendingIntent(requestCode: Int): PendingIntent {
         val intent = Intent(applicationContext, MainActivity::class.java).apply {
@@ -473,7 +444,7 @@ class UsageTimerService : Service() {
                 "Your usage limit is almost up!",
             )
         }
-        val notification = NotificationCompat.Builder(applicationContext, ALERT_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(alert.title).setContentText(alert.body)
             .setOngoing(false).setAutoCancel(true)
@@ -505,7 +476,7 @@ class UsageTimerService : Service() {
                 "Your cooldown is ending in 10 seconds!",
             )
         }
-        val notification = NotificationCompat.Builder(applicationContext, COOLDOWN_ALERT_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(alert.title).setContentText(alert.body)
             .setOngoing(false).setAutoCancel(true)
@@ -518,52 +489,14 @@ class UsageTimerService : Service() {
         notificationManager?.notify(alert.notifId, notification)
     }
 
-    // ── Notification channels ─────────────────────────────────────────────────
-
-    private fun ensureAllNotifChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val activeChannel = NotificationChannel(
-                FG_NOTIF_CHANNEL_ID, FG_NOTIF_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = "Shows time remaining while a restricted app is in use"
-                setShowBadge(false); setSound(null, null); enableVibration(false)
-                lockscreenVisibility = Notification.VISIBILITY_SECRET
-            }
-            val idleChannel = NotificationChannel(
-                FG_NOTIF_CHANNEL_IDLE_ID, FG_NOTIF_CHANNEL_IDLE_NAME,
-                NotificationManager.IMPORTANCE_MIN,
-            ).apply {
-                description = "Required background service notification"
-                setShowBadge(false); setSound(null, null); enableVibration(false)
-                lockscreenVisibility = Notification.VISIBILITY_SECRET
-            }
-            val usageAlertChannel = NotificationChannel(
-                ALERT_CHANNEL_ID, ALERT_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = "Alerts when the usage limit is almost reached"
-                setShowBadge(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                enableVibration(true)
-            }
-            val cooldownAlertChannel = NotificationChannel(
-                COOLDOWN_ALERT_CHANNEL_ID, COOLDOWN_ALERT_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = "Alerts when the cooldown period is almost over"
-                setShowBadge(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                enableVibration(true)
-            }
-            notificationManager?.createNotificationChannel(activeChannel)
-            notificationManager?.createNotificationChannel(idleChannel)
-            notificationManager?.createNotificationChannel(usageAlertChannel)
-            notificationManager?.createNotificationChannel(cooldownAlertChannel)
-        }
-    }
-
     // ── Foreground notification ───────────────────────────────────────────────
+    //
+    // The persistent foreground notification also uses CHILD_TIMER.
+    // When the student is idle (no monitored app in foreground, not blocked)
+    // we use PRIORITY_MIN + setSilent(true) to suppress sound/vibration even
+    // though the channel itself has sound enabled. This matches the previous
+    // two-channel approach (active = LOW importance, idle = MIN importance)
+    // while using a single channel as required by the plan.
 
     private fun buildFgNotification(): Notification {
         val tapIntent = Intent(applicationContext, MainActivity::class.java).apply {
@@ -577,6 +510,8 @@ class UsageTimerService : Service() {
             applicationContext, 0, tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+
+        val isIdle = !isBlocked && !monitoredInForeground
 
         val (title, body) = when {
             isBlocked -> {
@@ -597,16 +532,12 @@ class UsageTimerService : Service() {
             else -> "StudyMentor is running..." to ""
         }
 
-        val channelId = if (!isBlocked && !monitoredInForeground)
-            FG_NOTIF_CHANNEL_IDLE_ID else FG_NOTIF_CHANNEL_ID
-
-        return NotificationCompat.Builder(applicationContext, channelId)
+        return NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
             .setContentTitle(title).setContentText(body)
             .setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
             .setPriority(
-                if (!isBlocked && !monitoredInForeground)
-                    NotificationCompat.PRIORITY_MIN
+                if (isIdle) NotificationCompat.PRIORITY_MIN
                 else NotificationCompat.PRIORITY_LOW,
             )
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
@@ -652,21 +583,6 @@ class UsageTimerService : Service() {
 
     // ── State persistence ─────────────────────────────────────────────────────
 
-    /**
-     * Loads all per-student timer counters from SharedPreferences for [uid].
-     *
-     * Called on service start (onCreate) to recover the previously active
-     * student, and on account switch to load the incoming student's own saved
-     * data. Config values (limits, monitored apps) are loaded too, but will be
-     * overwritten by values arriving in the ACTION_START Intent right after.
-     *
-     * FIX: AppPrefs.KEY_IS_BLOCKED and StudyMentorAccessibilityService.isBlocked
-     * are now set unconditionally to match the restored student's actual
-     * cooldown state. Previously they were only set when isBlocked == true,
-     * which meant that switching to an account that was NOT in cooldown left
-     * both flags stale from the previous account's block() call, causing all
-     * restricted apps to remain blocked for the newly logged-in account.
-     */
     private fun restoreStudentState(uid: String) {
         totalUsageSecs           = prefs.getInt(studentKey(uid, SUFFIX_TOTAL_USAGE), 0)
         isBlocked                = prefs.getBoolean(studentKey(uid, SUFFIX_IS_BLOCKED), false)
@@ -678,29 +594,18 @@ class UsageTimerService : Service() {
         quizDismissedForCooldown = prefs.getBoolean(studentKey(uid, SUFFIX_QUIZ_DISMISSED), false)
         quizShownForCooldown     = prefs.getBoolean(studentKey(uid, SUFFIX_QUIZ_SHOWN), false)
 
-        // Device-wide prefs (not per-student)
         studentLoggedIn      = prefs.getBoolean(KEY_STUDENT_LOGGED_IN, false)
         timerNotifEnabled    = prefs.getBoolean(KEY_TIMER_NOTIF_ENABLED, true)
         cooldownNotifEnabled = prefs.getBoolean(KEY_COOLDOWN_NOTIF_ENABLED, true)
 
-        // Unconditionally sync the shared blocked flag and the in-memory
-        // accessibility-service static to match the incoming student's actual
-        // cooldown state. This clears any stale block left by the previous
-        // account: if Account 1 was in cooldown and Account 2 is not,
-        // isBlocked is now false and both flags are cleared immediately.
         StudyMentorAccessibilityService.isBlocked = isBlocked
         applicationContext
             .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, isBlocked).apply()
     }
 
-    /**
-     * Writes all per-student timer counters to SharedPreferences under the
-     * [activeStudentUid] prefix. Called on every tick and on block/unblock so
-     * state survives process death or an unexpected account switch.
-     */
     private fun persistState() {
-        if (activeStudentUid.isBlank()) return // safety: no UID → nothing to persist
+        if (activeStudentUid.isBlank()) return
         prefs.edit()
             .putInt(studentKey(activeStudentUid, SUFFIX_TOTAL_USAGE),        totalUsageSecs)
             .putBoolean(studentKey(activeStudentUid, SUFFIX_IS_BLOCKED),     isBlocked)

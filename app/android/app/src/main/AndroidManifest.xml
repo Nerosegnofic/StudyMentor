@@ -16,6 +16,17 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Required to post notifications on Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+        Required to prompt the user to add this app to the battery-optimisation
+        whitelist via Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS.
+        Without this declaration the direct-intent path in PermissionPlugin
+        will throw ActivityNotFoundException on most devices.
+        tools:ignore suppresses the Play Store lint warning — this app is
+        distributed outside the Play Store so the policy does not apply.
+    -->
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        tools:ignore="BatteryLife" />
 
     <application
         android:label="StudyMentor"
