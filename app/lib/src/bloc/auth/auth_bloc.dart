@@ -34,6 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<UpdateStudentFullNameRequested>(_onUpdateStudentFullName);
     on<DeleteParentAccountRequested>(_onDeleteParentAccount);
     on<UpdateStudentProfileRequested>(_onUpdateStudentProfile);
+    on<DeleteStudentRequested>(_onDeleteStudent);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -388,6 +389,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   // ── Student Deletion ──────────────────────────────────────────────────────
+
+  Future<void> _onDeleteStudent(
+    DeleteStudentRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(StudentDeleteLoading());
+    try {
+      await repository.deleteStudent(
+        studentUid: event.studentUid,
+        studentEmail: event.studentEmail,
+        studentPassword: event.studentPassword,
+      );
+      emit(StudentDeleted(studentUid: event.studentUid));
+    } catch (e) {
+      emit(StudentDeleteError(_mapDeletionException(e)));
+    }
+  }
 
   // ── Student Full Name Update ──────────────────────────────────────────────
 

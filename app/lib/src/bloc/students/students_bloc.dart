@@ -73,14 +73,30 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   ) async {
     emit(StudentDeleteLoading());
     try {
-      // Deleting a student using updateStudentCredentials pattern inside repository
-      // Not implemented in repository yet, but we will mock it or call it.
-      // For now:
-      // await repository.deleteStudent(event.studentUid, event.studentEmail, event.studentPassword, event.parentUid);
+      await repository.deleteStudent(
+        studentUid: event.studentUid,
+        studentEmail: event.studentEmail,
+        studentPassword: event.studentPassword,
+      );
       emit(StudentDeleted(event.studentUid));
     } catch (e) {
-      emit(StudentDeleteError(e.toString()));
+      emit(StudentDeleteError(_mapDeletionException(e)));
     }
+  }
+
+  String _mapDeletionException(dynamic e) {
+    final msg = e.toString().toLowerCase();
+    if (msg.contains('wrong-password') ||
+        msg.contains('invalid-credential') ||
+        msg.contains('invalid_login_credentials') ||
+        msg.contains('user-not-found') ||
+        msg.contains('invalid-email')) {
+      return 'Invalid credentials';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    return 'Unable to delete account. Please try again.';
   }
 
   String _mapRegistrationException(dynamic e) {
