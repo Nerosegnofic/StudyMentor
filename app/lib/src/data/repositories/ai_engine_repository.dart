@@ -175,7 +175,7 @@ class AiEngineRepository {
   /// - Physical device → your machine's LAN IP, e.g. `http://192.168.x.x:8000`
   ///
   /// Change this single constant when switching environments.
-  static const String defaultBaseUrl = 'http://192.168.1.6:8000';
+  static const String defaultBaseUrl = 'http://192.168.100.2:8000';
 
   /// Lazy singleton — created on first access, reused everywhere.
   static final AiEngineRepository instance = AiEngineRepository(
