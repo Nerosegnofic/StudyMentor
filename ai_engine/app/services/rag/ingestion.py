@@ -1,3 +1,4 @@
+import glob
 import os
 import tempfile
 from uuid import UUID
@@ -7,9 +8,14 @@ from app.services.rag.parsers.llama_strategy import LlamaParseStrategy
 from app.services.rag.chunkers.context import ChunkerContext
 from app.services.rag.chunkers.markdown_strategy import MarkdownRecursiveChunkerStrategy
 from app.repositories.vector_repo import save_chunks_to_pgvector
-from app.repositories import save_skills_from_mastery_data
+from app.repositories import save_skills_from_mastery_data, document_repo
 from app.services.rag.processors.objective_extractor import extract_all_objectives
 from app.services.rag.processors.mastery_refiner import extract_skills_with_llm, refine_mastery_points
+from app.services.rag.processors.language_detector import (
+    detect_language,
+    dominant_language,
+    guess_language_from_subject_name,
+)
 from app.services.rag.preprocessors import preprocess_parsed_text
 from app.core.database import SessionLocal
 
@@ -47,14 +53,36 @@ def process_and_ingest_document(
             os.makedirs("debug_output", exist_ok=True)
             debug_prefix = f"debug_output/{document_id}"
 
-            full_text = parser_context.execute_parse(document_id, temp_file_path, subject_name=subject_name)
+            # Step 1: Parse (two-pass, content-verified).
+            # Pass 1 uses the subject-name language guess; the parser's no-translate
+            # prompts mean a wrong guess can only lower OCR quality, never flip the
+            # language. We then verify against the parsed content and re-parse ONCE in
+            # the correct mode when the guess was clearly wrong (this owns the cost of
+            # the extra LlamaParse call here, in the orchestrator, not in the parser).
+            initial_lang = guess_language_from_subject_name(subject_name)
+            full_text = parser_context.execute_parse(document_id, temp_file_path, language=initial_lang)
+
+            detected_lang = dominant_language(full_text, threshold=0.70)
+            if detected_lang and detected_lang != initial_lang:
+                print(
+                    f"[{document_id}] Pass-1 language guess '{initial_lang}' conflicts with "
+                    f"detected '{detected_lang}'. Re-parsing once in '{detected_lang}' mode...",
+                    flush=True,
+                )
+                corrected = parser_context.execute_parse(document_id, temp_file_path, language=detected_lang)
+                if corrected.strip():
+                    full_text = corrected
 
             # Optional: to read from cache instead of re-parsing
             # with open(f"debug_output/{document_id}_parsed.md", "r", encoding="utf-8") as f:
             #     full_text = f.read()
-            
+
             # Step 2: Preprocess text to clean artifacts
             cleaned_text = preprocess_parsed_text(full_text)
+
+            # Record the authoritative content language for downstream quiz generation.
+            document_language = detect_language(cleaned_text)
+            document_repo.set_detected_metadata(db, document_id, language=document_language)
             
             # DEBUG DUMP 1: Parsed & Cleaned Text
             with open(f"{debug_prefix}_parsed.md", "w", encoding="utf-8") as f:
@@ -80,13 +108,19 @@ def process_and_ingest_document(
             # (general across any subject/language). FALLBACK = regex output refined
             # by the LLM, used only when the primary path is unavailable / fails.
             mastery_source = "llm"
-            final_mastery_data = extract_skills_with_llm(cleaned_text)
+            final_mastery_data, detected_subject = extract_skills_with_llm(cleaned_text)
             if not final_mastery_data:
                 mastery_source = "regex"
+                detected_subject = None  # regex fallback can't classify the subject
                 final_mastery_data = (
                     refine_mastery_points(raw_mastery_data, cleaned_text)
                     if raw_mastery_data else []
                 )
+
+            # Persist the content-classified subject (a hint; used downstream alongside
+            # the parent's label). Only the primary LLM path produces it.
+            if detected_subject:
+                document_repo.set_detected_metadata(db, document_id, subject=detected_subject)
 
             skill_count = sum(len(e.get("objectives", [])) for e in final_mastery_data)
             print(f"[{document_id}] Skill extraction source={mastery_source}, "
@@ -128,12 +162,38 @@ def process_and_ingest_document(
             # Step 8: Save skills to DB
             if final_mastery_data:
                 save_skills_from_mastery_data(db, final_mastery_data, subject_id=subject_id)
-                
+
+            # Mark the upload as fully ingested.
+            document_repo.set_status(db, document_id, "ready")
+
+        except Exception as e:
+            print(f"[{document_id}] Ingestion failed: {e}", flush=True)
+            try:
+                document_repo.set_status(db, document_id, "failed")
+            except Exception:
+                pass  # status update is best-effort; don't mask the original error
+            raise
         finally:
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
     finally:
         db.close()
 
+
+def delete_debug_artifacts(document_id: UUID) -> None:
+    """
+    Best-effort removal of a document's on-disk debug dumps (test-only artifacts).
+    Never raises — a missing file/directory is fine.
+    """
+    try:
+        for path in glob.glob(f"debug_output/{document_id}_*"):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+    except Exception:
+        pass
+
+
 # Expose public interface
-__all__ = ["process_and_ingest_document"]
+__all__ = ["process_and_ingest_document", "delete_debug_artifacts"]

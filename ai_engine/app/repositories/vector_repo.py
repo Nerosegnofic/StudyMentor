@@ -95,6 +95,20 @@ def delete_vector_embeddings(document_id: UUID):
             {"doc_id": str(document_id)}
         )
 
+
+def delete_vector_embeddings_by_subject(subject_id: int):
+    """
+    Deletes all vector embeddings tagged with a subject_id. Used by the subject hard-delete
+    as a safety net to remove any chunks not covered by a `documents` row (e.g. legacy
+    uploads that predate the documents table). Compared as text to match the JSON storage.
+    """
+    engine = create_engine(settings.POSTGRES_CONNECTION)
+    with engine.begin() as conn:
+        conn.execute(
+            text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'subject_id' = :sid"),
+            {"sid": str(subject_id)}
+        )
+
 def clear_vector_database():
     """
     Wipes the entire vector database.

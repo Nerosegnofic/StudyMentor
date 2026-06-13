@@ -12,6 +12,8 @@ To support a new subject:
   3. Add keywords here in _KEYWORD_MAP
 """
 
+from typing import Optional
+
 from app.services.quiz.strategies import (
     SubjectProfile,
     MATH,
@@ -55,9 +57,16 @@ _KEYWORD_MAP = [
 ]
 
 
-def resolve_subject_strategy(subject_name: str) -> SubjectProfile:
+def resolve_subject_strategy(subject_name: str, detected_subject: Optional[str] = None) -> SubjectProfile:
     """
-    Resolve a subject name to its SubjectProfile via keyword matching.
+    Resolve a subject to its SubjectProfile via keyword matching.
+
+    Tries the content-classified ``detected_subject`` FIRST (e.g. "Mathematics" from
+    ingestion), then falls back to the parent-typed ``subject_name``. So a mislabeled
+    upload (an English-medium Math book named "English") resolves correctly via the
+    detected subject, and — crucially — if the detected value somehow fails to match,
+    we still fall back to the parent's label rather than dropping to GENERAL. Detection
+    can therefore only help, never make resolution worse.
 
     Handles any naming variant:
       - "الرياضيات" → MATH
@@ -68,29 +77,30 @@ def resolve_subject_strategy(subject_name: str) -> SubjectProfile:
     Returns:
         The matching SubjectProfile, or the general fallback profile.
     """
-    if not subject_name:
-        return DEFAULT_PROFILE
-
-    name_lower = subject_name.lower().strip()
-
-    for keyword, profile in _KEYWORD_MAP:
-        if keyword in name_lower:
-            try:
-                print(
-                    f"[StrategyResolver] Matched '{subject_name}' -> {profile.subject_key} "
-                    f"(keyword='{keyword}')",
-                    flush=True,
-                )
-            except UnicodeEncodeError:
-                print(
-                    f"[StrategyResolver] Matched subject -> {profile.subject_key}",
-                    flush=True,
-                )
-            return profile
+    # Candidate order matters: content-detected subject first, parent label second.
+    for candidate in (detected_subject, subject_name):
+        if not candidate:
+            continue
+        name_lower = candidate.lower().strip()
+        for keyword, profile in _KEYWORD_MAP:
+            if keyword in name_lower:
+                try:
+                    print(
+                        f"[StrategyResolver] Matched '{candidate}' (detected={detected_subject!r}, "
+                        f"label={subject_name!r}) -> {profile.subject_key} (keyword='{keyword}')",
+                        flush=True,
+                    )
+                except UnicodeEncodeError:
+                    print(
+                        f"[StrategyResolver] Matched subject -> {profile.subject_key}",
+                        flush=True,
+                    )
+                return profile
 
     try:
         print(
-            f"[StrategyResolver] No keyword match for '{subject_name}' -> {DEFAULT_PROFILE.subject_key}",
+            f"[StrategyResolver] No keyword match (detected={detected_subject!r}, "
+            f"label={subject_name!r}) -> {DEFAULT_PROFILE.subject_key}",
             flush=True,
         )
     except UnicodeEncodeError:

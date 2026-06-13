@@ -2,6 +2,7 @@ from .base import Base
 from .curriculum import Subject, Skill
 from .student import StudentSkillState, StudentSubjectProfile
 from .quiz import QuizSession, Question, QuestionResponse
+from .document import Document
 
 __all__ = [
     "Base",
@@ -12,4 +13,5 @@ __all__ = [
     "QuizSession",
     "Question",
     "QuestionResponse",
+    "Document",
 ]

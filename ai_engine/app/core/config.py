@@ -78,6 +78,39 @@ class Settings(BaseSettings):
     # Minimum time in ms required for an answer to be considered genuine comprehension
     MINIMUM_GENUINE_TIME_MS: int = 2000
 
+    # --- Subject Selection (auto-quiz subject prioritization) ---
+    # Relative weights for the per-subject priority score. Selection is argmax, so only
+    # the RELATIVE ordering matters — a weight of 0.0 simply disables that factor (the
+    # selector skips computing it). exam_urgency is 0.0 by default because the app does
+    # not yet collect exam dates; re-enable it later by bumping this one number (e.g. 0.3).
+    SUBJECT_SELECTION_WEIGHTS: dict = {"mastery_gap": 0.4, "neglect": 0.3, "exam_urgency": 0.0}
+    # "Neglect" is measured as how many quiz sessions the student has taken since this
+    # subject last appeared, normalized by this cap (>= this many ⇒ fully neglected).
+    SUBJECT_NEGLECT_QUIZ_WINDOW: int = 10
+    # Multiplier applied to the most-recently-quizzed subject's score for variety.
+    # 1.0 disables the rotation penalty.
+    SUBJECT_ROTATION_PENALTY: float = 0.6
+
+    # --- Skill Selection (Ordered Frontier + SRS) ---
+    # Mastery probability needed to move a skill from the frontier into the mastered/SRS zone.
+    SKILL_UNLOCK_THRESHOLD: float = 0.70
+    # Grade → number of unmastered skills active in the frontier at once.
+    SKILL_FRONTIER_WINDOW_BY_GRADE: dict = {
+        1: 2, 2: 2, 3: 3, 4: 3, 5: 4, 6: 4,
+        7: 5, 8: 5, 9: 5, 10: 5, 11: 5, 12: 5,
+    }
+    SKILL_DEFAULT_FRONTIER_WINDOW: int = 3
+    # Question-budget split across the three zones (must cover frontier/review/preview).
+    SKILL_ZONE_BUDGET_SPLIT: dict = {"frontier": 0.60, "review": 0.30, "preview": 0.10}
+    # When True, shift budget toward review for struggling students and toward frontier
+    # for thriving ones, based on recent quiz accuracy.
+    SKILL_ADAPTIVE_BUDGET: bool = True
+    # Recent-accuracy thresholds that trigger the adaptive shift (and how many recent
+    # sessions to average over).
+    SKILL_ADAPTIVE_LOW_ACCURACY: float = 0.50
+    SKILL_ADAPTIVE_HIGH_ACCURACY: float = 0.85
+    SKILL_ADAPTIVE_RECENT_SESSIONS: int = 3
+
     model_config = SettingsConfigDict(env_file=ENV_FILE_PATH, extra="ignore")
 
 

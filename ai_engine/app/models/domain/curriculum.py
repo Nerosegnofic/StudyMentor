@@ -16,6 +16,7 @@ class Subject(Base):
     
     
     skills = relationship("Skill", back_populates="subject", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="subject", cascade="all, delete-orphan")
 
 class Skill(Base):
     __tablename__ = "skills"

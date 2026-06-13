@@ -25,7 +25,7 @@ Design Goals:
 """
 import re
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.core.config import settings
@@ -173,7 +173,9 @@ RULES:
 
 9. SKILL IDs: Generate a unique skill_id for each skill using the format u{unit_number}_l{lesson_number}_s{skill_index} (e.g. u1_l1_s1, u1_l1_s2, u1_l2_s1).
 
-10. OUTPUT: Return structured JSON matching the provided schema exactly."""
+10. SUBJECT CLASSIFICATION: Also set `detected_subject` to the academic subject this textbook teaches, classified by its CONTENT/MATTER and INDEPENDENT of the language it is written in. Choose exactly one category name: "Mathematics", "Science", "Arabic Language", "English Language", "Social Studies", or "General". A Math or Science book written in English is still "Mathematics"/"Science", NOT "English Language". Use the language-arts categories ("Arabic Language"/"English Language") only for textbooks that teach the language itself.
+
+11. OUTPUT: Return structured JSON matching the provided schema exactly."""
 
 
 def _build_extract_user_prompt(markdown_text: str) -> str:
@@ -226,7 +228,7 @@ the result as structured JSON."""
 def extract_skills_with_llm(
     markdown_text: str,
     max_retries: int = 3,
-) -> Optional[List[dict]]:
+) -> Tuple[Optional[List[dict]], Optional[str]]:
     """
     PRIMARY skill extractor: read the full cleaned textbook markdown and extract
     the complete unit → lesson → skill hierarchy directly via Gemini.
@@ -240,19 +242,20 @@ def extract_skills_with_llm(
         max_retries: Number of retry attempts on failure.
 
     Returns:
-        List of dicts in the standard mastery format:
-        [{'unit': str, 'lesson': str, 'objectives': [str, ...], 'skill_ids': [str, ...]}]
-
-        Returns None when the LLM is unavailable (no API key) or fails / produces
-        nothing after all retries, so the caller can fall back to the regex extractor.
+        A tuple ``(mastery_list, detected_subject)`` where:
+          - mastery_list is the standard mastery format
+            [{'unit': str, 'lesson': str, 'objectives': [str, ...], 'skill_ids': [str, ...]}],
+            or None when the LLM is unavailable / fails (caller falls back to regex).
+          - detected_subject is the content-classified subject NAME (e.g. "Mathematics"),
+            or None — a free hint piggybacked on the same call (no extra cost).
     """
     if not markdown_text or not markdown_text.strip():
         print("[SkillExtractor] Empty document text. Skipping.", flush=True)
-        return None
+        return None, None
 
     if not settings.GEMINI_API_KEY:
         print("[SkillExtractor] GEMINI_API_KEY not set. Falling back to regex extractor.", flush=True)
-        return None
+        return None, None
 
     user_prompt = _build_extract_user_prompt(markdown_text)
     print(f"[SkillExtractor] Extracting skills from {len(markdown_text)} chars of markdown...", flush=True)
@@ -289,13 +292,14 @@ def extract_skills_with_llm(
             if not extracted:
                 raise ValueError("LLM returned an empty skill set")
 
+            detected_subject = (response.detected_subject or "").strip() or None
             total = sum(len(e.get('objectives', [])) for e in extracted)
             print(
                 f"[SkillExtractor] [OK] Extracted {total} skills across "
-                f"{len(extracted)} lesson groups.",
+                f"{len(extracted)} lesson groups. Detected subject: {detected_subject!r}.",
                 flush=True
             )
-            return extracted
+            return extracted, detected_subject
 
         except Exception as e:
             print(f"[SkillExtractor] Attempt {attempt}/{max_retries} failed: {e}", flush=True)
@@ -305,7 +309,7 @@ def extract_skills_with_llm(
                 time.sleep(backoff)
 
     print("[SkillExtractor] [FAILED] All attempts failed. Falling back to regex extractor.", flush=True)
-    return None
+    return None, None
 
 
 # ===========================================================================

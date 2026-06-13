@@ -1,7 +1,7 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from app.models.domain import StudentSkillState, Skill
+from app.models.domain import StudentSkillState, Skill, QuizSession
 
 def get_all_student_skill_states(db: Session, student_uid: str) -> Dict[str, float]:
     """Returns a dict mapping skill_name → mastery_probability for a student."""
@@ -96,3 +96,29 @@ def get_subject_stats(db: Session, student_uid: str, subject_id: int) -> Dict:
         "total_skills": total_skills,
         "mastered_skills": mastered_count,
     }
+
+
+def get_recent_subject_accuracy(
+    db: Session, student_uid: str, subject_id: int, limit: int = 3
+) -> Optional[float]:
+    """
+    Average of the student's most recent quiz scores for a subject, as a 0–1 fraction.
+
+    Returns None when there are no scored sessions yet. (QuizSession.score is persisted
+    as a 0–100 percentage; this normalizes it so callers work in the same 0–1 space as
+    mastery.)
+    """
+    sessions = (
+        db.query(QuizSession)
+        .filter(
+            QuizSession.student_uid == student_uid,
+            QuizSession.subject_id == subject_id,
+            QuizSession.score.isnot(None),
+        )
+        .order_by(QuizSession.start_time.desc())
+        .limit(max(1, limit))
+        .all()
+    )
+    if not sessions:
+        return None
+    return (sum(s.score for s in sessions) / len(sessions)) / 100.0

@@ -27,6 +27,7 @@ from app.services.quiz.utils import (
     filter_mismatched_questions,
 )
 from app.services.quiz.strategy_resolver import resolve_subject_strategy
+from app.repositories import document_repo
 from app.core.prompts import build_quiz_prompt
 
 DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
@@ -116,8 +117,15 @@ def generate_quiz_for_student(
     target_subject_name = subject.name
     target_is_global = bool(subject.is_global)
 
+    # Content-detected subject/language (majority vote across the subject's ready docs).
+    # The engine uses these internally so a mislabeled subject (e.g. an English-medium
+    # Math book named "Arabic") still gets the right strategy and retrieval threshold;
+    # the parent's `target_subject_name` is kept only as the display label.
+    _detected_language, detected_subject = document_repo.get_detected_for_subject(db, target_subject_id)
+    effective_subject_name = detected_subject or target_subject_name
+
     # ── Resolve Subject Strategy (once) ──────────────────────────────
-    strategy = resolve_subject_strategy(target_subject_name)
+    strategy = resolve_subject_strategy(target_subject_name, detected_subject=detected_subject)
     quiz_prompt = build_quiz_prompt(strategy)
 
     # Resolve grade label for prompt (e.g., 5 → "5th")
@@ -196,7 +204,7 @@ def generate_quiz_for_student(
             k=15,
             firebase_uid=student_uid,
             subject_id=target_subject_id,
-            subject_name=target_subject_name,
+            subject_name=effective_subject_name,
             is_global=target_is_global,
         )
 
