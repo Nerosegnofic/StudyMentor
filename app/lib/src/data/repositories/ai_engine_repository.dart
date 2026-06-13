@@ -394,6 +394,17 @@ class AiEngineRepository {
     _assertSuccess(response, 'ensureSubjects');
   }
 
+  /// `DELETE /analytics/students/{studentUid}` — wipe all AI-engine data for a student.
+  /// Called during student account deletion; uses the parent's JWT for auth.
+  Future<void> deleteStudentAllData(String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/v1/analytics/students/$studentUid'),
+      headers: headers,
+    );
+    _assertSuccess(response, 'deleteStudentAllData');
+  }
+
   /// `DELETE /analytics/subjects/{subject_name}` — securely wipe a custom subject
   Future<void> deleteSubject(String subjectName, String studentUid) async {
     final headers = await _getJsonHeaders();
