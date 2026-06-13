@@ -2058,6 +2058,48 @@ ref.execute();
 ```
 
 
+### DeleteNotificationPreferencesForUser
+#### Required Arguments
+```dart
+String userUid = ...;
+ExampleConnector.instance.deleteNotificationPreferencesForUser(
+  userUid: userUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<DeleteNotificationPreferencesForUserData, DeleteNotificationPreferencesForUserVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.deleteNotificationPreferencesForUser(
+  userUid: userUid,
+);
+DeleteNotificationPreferencesForUserData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String userUid = ...;
+
+final ref = ExampleConnector.instance.deleteNotificationPreferencesForUser(
+  userUid: userUid,
+).ref();
+ref.execute();
+```
+
+
 ### InsertInstalledApp
 #### Required Arguments
 ```dart

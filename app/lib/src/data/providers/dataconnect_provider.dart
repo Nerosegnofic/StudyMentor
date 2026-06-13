@@ -397,6 +397,9 @@ class DataConnectProvider {
       _connector
           .deleteAllInstalledAppsForStudent(studentUid: studentUid)
           .execute(),
+      _connector
+          .deleteNotificationPreferencesForUser(userUid: studentUid)
+          .execute(),
     ]);
     await _connector.deleteStudentRecord(uid: studentUid).execute();
     await _connector.deleteUserRecord(uid: studentUid).execute();

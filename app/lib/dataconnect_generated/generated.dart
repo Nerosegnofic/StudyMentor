@@ -58,6 +58,8 @@ part 'mark_notification_events_read.dart';
 
 part 'upsert_notification_preference.dart';
 
+part 'delete_notification_preferences_for_user.dart';
+
 part 'get_user_by_uid.dart';
 
 part 'get_students_by_parent.dart';
@@ -302,6 +304,11 @@ class ExampleConnector {
   
   UpsertNotificationPreferenceVariablesBuilder upsertNotificationPreference ({required String userUid, required String category, required bool enabled, }) {
     return UpsertNotificationPreferenceVariablesBuilder(dataConnect, userUid: userUid,category: category,enabled: enabled,);
+  }
+  
+  
+  DeleteNotificationPreferencesForUserVariablesBuilder deleteNotificationPreferencesForUser ({required String userUid, }) {
+    return DeleteNotificationPreferencesForUserVariablesBuilder(dataConnect, userUid: userUid,);
   }
   
   

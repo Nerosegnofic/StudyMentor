@@ -297,3 +297,8 @@ mutation UpsertNotificationPreference(
     reminderTime: $reminderTime
   })
 }
+
+mutation DeleteNotificationPreferencesForUser($userUid: String!)
+@auth(level: USER, insecureReason: "Parents delete their child's data.") {
+  notificationPreference_deleteMany(where: { userUid: { eq: $userUid } })
+}
