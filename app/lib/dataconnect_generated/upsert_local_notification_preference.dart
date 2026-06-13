@@ -1,34 +1,34 @@
 part of 'generated.dart';
 
-class UpsertNotificationPreferenceVariablesBuilder {
+class UpsertLocalNotificationPreferenceVariablesBuilder {
   String userUid;
   String category;
   bool enabled;
   Optional<String> _reminderTime = Optional.optional(nativeFromJson, nativeToJson);
 
-  final FirebaseDataConnect _dataConnect;  UpsertNotificationPreferenceVariablesBuilder reminderTime(String? t) {
+  final FirebaseDataConnect _dataConnect;  UpsertLocalNotificationPreferenceVariablesBuilder reminderTime(String? t) {
    _reminderTime.value = t;
    return this;
   }
 
-  UpsertNotificationPreferenceVariablesBuilder(this._dataConnect, {required  this.userUid,required  this.category,required  this.enabled,});
-  Deserializer<UpsertNotificationPreferenceData> dataDeserializer = (dynamic json)  => UpsertNotificationPreferenceData.fromJson(jsonDecode(json));
-  Serializer<UpsertNotificationPreferenceVariables> varsSerializer = (UpsertNotificationPreferenceVariables vars) => jsonEncode(vars.toJson());
-  Future<OperationResult<UpsertNotificationPreferenceData, UpsertNotificationPreferenceVariables>> execute() {
+  UpsertLocalNotificationPreferenceVariablesBuilder(this._dataConnect, {required  this.userUid,required  this.category,required  this.enabled,});
+  Deserializer<UpsertLocalNotificationPreferenceData> dataDeserializer = (dynamic json)  => UpsertLocalNotificationPreferenceData.fromJson(jsonDecode(json));
+  Serializer<UpsertLocalNotificationPreferenceVariables> varsSerializer = (UpsertLocalNotificationPreferenceVariables vars) => jsonEncode(vars.toJson());
+  Future<OperationResult<UpsertLocalNotificationPreferenceData, UpsertLocalNotificationPreferenceVariables>> execute() {
     return ref().execute();
   }
 
-  MutationRef<UpsertNotificationPreferenceData, UpsertNotificationPreferenceVariables> ref() {
-    UpsertNotificationPreferenceVariables vars= UpsertNotificationPreferenceVariables(userUid: userUid,category: category,enabled: enabled,reminderTime: _reminderTime,);
-    return _dataConnect.mutation("UpsertNotificationPreference", dataDeserializer, varsSerializer, vars);
+  MutationRef<UpsertLocalNotificationPreferenceData, UpsertLocalNotificationPreferenceVariables> ref() {
+    UpsertLocalNotificationPreferenceVariables vars= UpsertLocalNotificationPreferenceVariables(userUid: userUid,category: category,enabled: enabled,reminderTime: _reminderTime,);
+    return _dataConnect.mutation("UpsertLocalNotificationPreference", dataDeserializer, varsSerializer, vars);
   }
 }
 
 @immutable
-class UpsertNotificationPreferenceNotificationPreferenceUpsert {
+class UpsertLocalNotificationPreferenceLocalNotificationPreferenceUpsert {
   final String userUid;
   final String category;
-  UpsertNotificationPreferenceNotificationPreferenceUpsert.fromJson(dynamic json):
+  UpsertLocalNotificationPreferenceLocalNotificationPreferenceUpsert.fromJson(dynamic json):
   
   userUid = nativeFromJson<String>(json['userUid']),
   category = nativeFromJson<String>(json['category']);
@@ -41,7 +41,7 @@ class UpsertNotificationPreferenceNotificationPreferenceUpsert {
       return false;
     }
 
-    final UpsertNotificationPreferenceNotificationPreferenceUpsert otherTyped = other as UpsertNotificationPreferenceNotificationPreferenceUpsert;
+    final UpsertLocalNotificationPreferenceLocalNotificationPreferenceUpsert otherTyped = other as UpsertLocalNotificationPreferenceLocalNotificationPreferenceUpsert;
     return userUid == otherTyped.userUid && 
     category == otherTyped.category;
     
@@ -57,18 +57,18 @@ class UpsertNotificationPreferenceNotificationPreferenceUpsert {
     return json;
   }
 
-  UpsertNotificationPreferenceNotificationPreferenceUpsert({
+  UpsertLocalNotificationPreferenceLocalNotificationPreferenceUpsert({
     required this.userUid,
     required this.category,
   });
 }
 
 @immutable
-class UpsertNotificationPreferenceData {
-  final UpsertNotificationPreferenceNotificationPreferenceUpsert notificationPreference_upsert;
-  UpsertNotificationPreferenceData.fromJson(dynamic json):
+class UpsertLocalNotificationPreferenceData {
+  final UpsertLocalNotificationPreferenceLocalNotificationPreferenceUpsert localNotificationPreference_upsert;
+  UpsertLocalNotificationPreferenceData.fromJson(dynamic json):
   
-  notificationPreference_upsert = UpsertNotificationPreferenceNotificationPreferenceUpsert.fromJson(json['notificationPreference_upsert']);
+  localNotificationPreference_upsert = UpsertLocalNotificationPreferenceLocalNotificationPreferenceUpsert.fromJson(json['localNotificationPreference_upsert']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -78,33 +78,33 @@ class UpsertNotificationPreferenceData {
       return false;
     }
 
-    final UpsertNotificationPreferenceData otherTyped = other as UpsertNotificationPreferenceData;
-    return notificationPreference_upsert == otherTyped.notificationPreference_upsert;
+    final UpsertLocalNotificationPreferenceData otherTyped = other as UpsertLocalNotificationPreferenceData;
+    return localNotificationPreference_upsert == otherTyped.localNotificationPreference_upsert;
     
   }
   @override
-  int get hashCode => notificationPreference_upsert.hashCode;
+  int get hashCode => localNotificationPreference_upsert.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['notificationPreference_upsert'] = notificationPreference_upsert.toJson();
+    json['localNotificationPreference_upsert'] = localNotificationPreference_upsert.toJson();
     return json;
   }
 
-  UpsertNotificationPreferenceData({
-    required this.notificationPreference_upsert,
+  UpsertLocalNotificationPreferenceData({
+    required this.localNotificationPreference_upsert,
   });
 }
 
 @immutable
-class UpsertNotificationPreferenceVariables {
+class UpsertLocalNotificationPreferenceVariables {
   final String userUid;
   final String category;
   final bool enabled;
   late final Optional<String>reminderTime;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
-  UpsertNotificationPreferenceVariables.fromJson(Map<String, dynamic> json):
+  UpsertLocalNotificationPreferenceVariables.fromJson(Map<String, dynamic> json):
   
   userUid = nativeFromJson<String>(json['userUid']),
   category = nativeFromJson<String>(json['category']),
@@ -127,7 +127,7 @@ class UpsertNotificationPreferenceVariables {
       return false;
     }
 
-    final UpsertNotificationPreferenceVariables otherTyped = other as UpsertNotificationPreferenceVariables;
+    final UpsertLocalNotificationPreferenceVariables otherTyped = other as UpsertLocalNotificationPreferenceVariables;
     return userUid == otherTyped.userUid && 
     category == otherTyped.category && 
     enabled == otherTyped.enabled && 
@@ -149,7 +149,7 @@ class UpsertNotificationPreferenceVariables {
     return json;
   }
 
-  UpsertNotificationPreferenceVariables({
+  UpsertLocalNotificationPreferenceVariables({
     required this.userUid,
     required this.category,
     required this.enabled,

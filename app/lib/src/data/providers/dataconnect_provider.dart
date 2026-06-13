@@ -38,7 +38,7 @@ class DataConnectProvider {
   Future<void> createParentProfile() async {
     await _connector.insertParent().execute();
 
-    // Seed default notification preferences for parent
+    // Seed default local notification preferences for parent
     final parentCategories = [
       ('PARENT_CHILD_PROGRESS', true),
       ('PARENT_STREAK_ALERTS', true),
@@ -48,7 +48,7 @@ class DataConnectProvider {
     for (final (category, enabled) in parentCategories) {
       try {
         await _connector
-            .upsertNotificationPreference(
+            .upsertLocalNotificationPreference(
               userUid: FirebaseAuth.instance.currentUser!.uid,
               category: category,
               enabled: enabled,
@@ -78,7 +78,7 @@ class DataConnectProvider {
         .gradeLevel(gradeLevel)
         .execute();
 
-    // Seed default notification preferences for student
+    // Seed default local notification preferences for student
     final studentUid = FirebaseAuth.instance.currentUser!.uid;
     final studentCategories = [
       ('CHILD_STREAK_REMINDER', true, '19:00'),
@@ -88,7 +88,7 @@ class DataConnectProvider {
     ];
     for (final (category, enabled, reminderTime) in studentCategories) {
       try {
-        final builder = _connector.upsertNotificationPreference(
+        final builder = _connector.upsertLocalNotificationPreference(
           userUid: studentUid,
           category: category,
           enabled: enabled,
@@ -398,7 +398,7 @@ class DataConnectProvider {
           .deleteAllInstalledAppsForStudent(studentUid: studentUid)
           .execute(),
       _connector
-          .deleteNotificationPreferencesForUser(userUid: studentUid)
+          .deleteLocalNotificationPreferencesForUser(userUid: studentUid)
           .execute(),
     ]);
     await _connector.deleteStudentRecord(uid: studentUid).execute();
@@ -440,16 +440,16 @@ class DataConnectProvider {
         .execute();
   }
 
-  // ── Notification System ───────────────────────────────────────────────────
+  // ── Local Notification System ─────────────────────────────────────────────
 
-  Future<void> insertNotificationEvent({
+  Future<void> insertLocalNotificationEvent({
     required String fromStudentUid,
     required String toParentUid,
     required String eventType,
     required String payload,
   }) async {
     await _connector
-        .insertNotificationEvent(
+        .insertLocalNotificationEvent(
           fromStudentUid: fromStudentUid,
           toParentUid: toParentUid,
           eventType: eventType,
@@ -458,19 +458,19 @@ class DataConnectProvider {
         .execute();
   }
 
-  Future<void> markNotificationEventsRead(String toParentUid) async {
+  Future<void> markLocalNotificationEventsRead(String toParentUid) async {
     await _connector
-        .markNotificationEventsRead(toParentUid: toParentUid)
+        .markLocalNotificationEventsRead(toParentUid: toParentUid)
         .execute();
   }
 
-  Future<void> upsertNotificationPreference({
+  Future<void> upsertLocalNotificationPreference({
     required String userUid,
     required String category,
     required bool enabled,
     String? reminderTime,
   }) async {
-    final builder = _connector.upsertNotificationPreference(
+    final builder = _connector.upsertLocalNotificationPreference(
       userUid: userUid,
       category: category,
       enabled: enabled,
@@ -479,13 +479,13 @@ class DataConnectProvider {
     await builder.execute();
   }
 
-  Future<List<Map<String, dynamic>>> getUnreadNotificationEvents(
+  Future<List<Map<String, dynamic>>> getUnreadLocalNotificationEvents(
     String toParentUid,
   ) async {
     final result = await _connector
-        .getUnreadNotificationEvents(toParentUid: toParentUid)
+        .getUnreadLocalNotificationEvents(toParentUid: toParentUid)
         .execute();
-    return result.data.notificationEvents
+    return result.data.localNotificationEvents
         .map(
           (e) => {
             'id': e.id,
@@ -501,13 +501,13 @@ class DataConnectProvider {
         .toList();
   }
 
-  Future<List<Map<String, dynamic>>> getNotificationPreferences(
+  Future<List<Map<String, dynamic>>> getLocalNotificationPreferences(
     String userUid,
   ) async {
     final result = await _connector
-        .getNotificationPreferences(userUid: userUid)
+        .getLocalNotificationPreferences(userUid: userUid)
         .execute();
-    return result.data.notificationPreferences
+    return result.data.localNotificationPreferences
         .map(
           (p) => {
             'category': p.category,

@@ -259,15 +259,15 @@ mutation DeleteSubjectProgress($studentUid: String!, $subjectKey: String!) @auth
   subjectProgress_delete(key: { studentUid: $studentUid, subjectKey: $subjectKey })
 }
 
-# ── Notification System ───────────────────────────────────────────────────────
+# ── Local Notification System ─────────────────────────────────────────────────
 
-mutation InsertNotificationEvent(
+mutation InsertLocalNotificationEvent(
   $fromStudentUid: String!
   $toParentUid: String!
   $eventType: String!
   $payload: String!
 ) @auth(level: USER, insecureReason: "Student writes events for their own parent.") {
-  notificationEvent_insert(data: {
+  localNotificationEvent_insert(data: {
     fromStudentUid: $fromStudentUid
     toParentUid: $toParentUid
     eventType: $eventType
@@ -275,22 +275,22 @@ mutation InsertNotificationEvent(
   })
 }
 
-mutation MarkNotificationEventsRead(
+mutation MarkLocalNotificationEventsRead(
   $toParentUid: String!
 ) @auth(level: USER, insecureReason: "Parent marks their own events as read.") {
-  notificationEvent_updateMany(
+  localNotificationEvent_updateMany(
     where: { toParentUid: { eq: $toParentUid }, isRead: { eq: false } }
     data: { isRead: true }
   )
 }
 
-mutation UpsertNotificationPreference(
+mutation UpsertLocalNotificationPreference(
   $userUid: String!
   $category: String!
   $enabled: Boolean!
   $reminderTime: String
 ) @auth(level: USER, insecureReason: "Users manage their own preferences.") {
-  notificationPreference_upsert(data: {
+  localNotificationPreference_upsert(data: {
     userUid: $userUid
     category: $category
     enabled: $enabled
@@ -298,7 +298,7 @@ mutation UpsertNotificationPreference(
   })
 }
 
-mutation DeleteNotificationPreferencesForUser($userUid: String!)
+mutation DeleteLocalNotificationPreferencesForUser($userUid: String!)
 @auth(level: USER, insecureReason: "Parents delete their child's data.") {
-  notificationPreference_deleteMany(where: { userUid: { eq: $userUid } })
+  localNotificationPreference_deleteMany(where: { userUid: { eq: $userUid } })
 }
