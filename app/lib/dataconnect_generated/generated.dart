@@ -52,6 +52,12 @@ part 'upsert_subject_progress.dart';
 
 part 'delete_subject_progress.dart';
 
+part 'insert_notification_event.dart';
+
+part 'mark_notification_events_read.dart';
+
+part 'upsert_notification_preference.dart';
+
 part 'get_user_by_uid.dart';
 
 part 'get_students_by_parent.dart';
@@ -77,6 +83,10 @@ part 'get_student_avatar.dart';
 part 'get_app_config_for_student.dart';
 
 part 'get_all_subject_progress.dart';
+
+part 'get_unread_notification_events.dart';
+
+part 'get_notification_preferences.dart';
 
 
 
@@ -280,6 +290,21 @@ class ExampleConnector {
   }
   
   
+  InsertNotificationEventVariablesBuilder insertNotificationEvent ({required String fromStudentUid, required String toParentUid, required String eventType, required String payload, }) {
+    return InsertNotificationEventVariablesBuilder(dataConnect, fromStudentUid: fromStudentUid,toParentUid: toParentUid,eventType: eventType,payload: payload,);
+  }
+  
+  
+  MarkNotificationEventsReadVariablesBuilder markNotificationEventsRead ({required String toParentUid, }) {
+    return MarkNotificationEventsReadVariablesBuilder(dataConnect, toParentUid: toParentUid,);
+  }
+  
+  
+  UpsertNotificationPreferenceVariablesBuilder upsertNotificationPreference ({required String userUid, required String category, required bool enabled, }) {
+    return UpsertNotificationPreferenceVariablesBuilder(dataConnect, userUid: userUid,category: category,enabled: enabled,);
+  }
+  
+  
   GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
     return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
   }
@@ -342,6 +367,16 @@ class ExampleConnector {
   
   GetAllSubjectProgressVariablesBuilder getAllSubjectProgress ({required String studentUid, }) {
     return GetAllSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetUnreadNotificationEventsVariablesBuilder getUnreadNotificationEvents ({required String toParentUid, }) {
+    return GetUnreadNotificationEventsVariablesBuilder(dataConnect, toParentUid: toParentUid,);
+  }
+  
+  
+  GetNotificationPreferencesVariablesBuilder getNotificationPreferences ({required String userUid, }) {
+    return GetNotificationPreferencesVariablesBuilder(dataConnect, userUid: userUid,);
   }
   
 

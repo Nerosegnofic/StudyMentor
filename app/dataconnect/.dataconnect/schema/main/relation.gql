@@ -116,6 +116,158 @@ extend type InstalledApp {
   """
   _id: ID! @fdc_generated(from: "InstalledApp.id", purpose: ENTITY_ID)
 }
+extend type NotificationEvent {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "NotificationEvent", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `NotificationEvent` table.
+  """
+  _count: Int! @fdc_generated(from: "NotificationEvent.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationEvent` table where the `createdAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  createdAt_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationEvent.createdAt", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationEvent` table where the `eventType` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  eventType_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationEvent.eventType", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationEvent` table where the `fromStudentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  fromStudentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationEvent.fromStudentUid", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationEvent` table where the `id` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  id_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationEvent.id", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationEvent` table where the `isRead` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  isRead_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationEvent.isRead", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationEvent` table where the `payload` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  payload_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationEvent.payload", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationEvent` table where the `toParentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  toParentUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationEvent.toParentUid", purpose: QUERY_COUNT)
+  """
+  ✨ Minimum of the `createdAt` field in the `NotificationEvent` table.
+  """
+  createdAt_min: Timestamp @fdc_generated(from: "NotificationEvent.createdAt", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `createdAt` field in the `NotificationEvent` table.
+  """
+  createdAt_max: Timestamp @fdc_generated(from: "NotificationEvent.createdAt", purpose: QUERY_MAX)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "NotificationEvent.id", purpose: ENTITY_ID)
+}
+extend type NotificationPreference {
+  """
+  Implicit metadata field that cannot be written. It provides extra information about query results.
+  """
+  _metadata: _Metadata @fdc_generated(from: "NotificationPreference", purpose: METADATA_FIELD)
+  """
+  ✨ Count the number of rows in the `NotificationPreference` table.
+  """
+  _count: Int! @fdc_generated(from: "NotificationPreference.", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationPreference` table where the `category` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  category_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationPreference.category", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationPreference` table where the `enabled` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  enabled_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationPreference.enabled", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationPreference` table where the `reminderTime` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  reminderTime_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationPreference.reminderTime", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationPreference` table where the `updatedAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  updatedAt_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationPreference.updatedAt", purpose: QUERY_COUNT)
+  """
+  ✨ Count the number of rows in the `NotificationPreference` table where the `userUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  userUid_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "NotificationPreference.userUid", purpose: QUERY_COUNT)
+  """
+  ✨ Minimum of the `updatedAt` field in the `NotificationPreference` table.
+  """
+  updatedAt_min: Timestamp @fdc_generated(from: "NotificationPreference.updatedAt", purpose: QUERY_MIN)
+  """
+  ✨ Maximum of the `updatedAt` field in the `NotificationPreference` table.
+  """
+  updatedAt_max: Timestamp @fdc_generated(from: "NotificationPreference.updatedAt", purpose: QUERY_MAX)
+  """
+  A generated field that is used for caching results in SDKs.
+  """
+  _id: ID! @fdc_generated(from: "NotificationPreference.userUid,category", purpose: ENTITY_ID)
+}
 extend type Parent {
   """
   ✨ List `Student` objects in a one-to-many relationship (where `Student`.`parent` is this object).

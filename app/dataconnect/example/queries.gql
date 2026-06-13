@@ -146,3 +146,30 @@ query GetAllSubjectProgress($studentUid: String!) @auth(level: USER, insecureRea
     updatedAt
   }
 }
+
+# ── Notification System ───────────────────────────────────────────────────────
+
+query GetUnreadNotificationEvents(
+  $toParentUid: String!
+) @auth(level: USER, insecureReason: "Parent reads their own unread events.") {
+  notificationEvents(where: {
+    toParentUid: { eq: $toParentUid },
+    isRead: { eq: false }
+  }) {
+    id
+    fromStudentUid
+    eventType
+    payload
+    createdAt
+  }
+}
+
+query GetNotificationPreferences(
+  $userUid: String!
+) @auth(level: USER, insecureReason: "Users read their own preferences.") {
+  notificationPreferences(where: { userUid: { eq: $userUid } }) {
+    category
+    enabled
+    reminderTime
+  }
+}

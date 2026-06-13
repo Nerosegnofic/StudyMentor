@@ -1,5 +1,6 @@
 // lib/src/data/providers/dataconnect_provider.dart
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_data_connect/firebase_data_connect.dart';
 import '../../../dataconnect_generated/generated.dart';
 import '../../domain/models/app_config_model.dart';
@@ -36,6 +37,25 @@ class DataConnectProvider {
 
   Future<void> createParentProfile() async {
     await _connector.insertParent().execute();
+
+    // Seed default notification preferences for parent
+    final parentCategories = [
+      ('PARENT_CHILD_PROGRESS', true),
+      ('PARENT_STREAK_ALERTS', true),
+      ('PARENT_INACTIVITY', true),
+      ('PARENT_WEAK_SUBJECT', false),
+    ];
+    for (final (category, enabled) in parentCategories) {
+      try {
+        await _connector
+            .upsertNotificationPreference(
+              userUid: FirebaseAuth.instance.currentUser!.uid,
+              category: category,
+              enabled: enabled,
+            )
+            .execute();
+      } catch (_) {}
+    }
   }
 
   // Throws Exception('username-already-in-use') if the username is taken.
@@ -57,6 +77,26 @@ class DataConnectProvider {
         .insertStudent(parentUid: parentUid, username: username)
         .gradeLevel(gradeLevel)
         .execute();
+
+    // Seed default notification preferences for student
+    final studentUid = FirebaseAuth.instance.currentUser!.uid;
+    final studentCategories = [
+      ('CHILD_STREAK_REMINDER', true, '19:00'),
+      ('CHILD_NEAR_MILESTONE', true, null),
+      ('CHILD_GARDEN_NUDGE', true, null),
+      ('CHILD_MILESTONE_CELEBRATION', true, null),
+    ];
+    for (final (category, enabled, reminderTime) in studentCategories) {
+      try {
+        final builder = _connector.upsertNotificationPreference(
+          userUid: studentUid,
+          category: category,
+          enabled: enabled,
+        );
+        if (reminderTime != null) builder.reminderTime(reminderTime);
+        await builder.execute();
+      } catch (_) {}
+    }
   }
 
   Future<Map<String, dynamic>> getUserProfile(String uid) async {
@@ -241,11 +281,7 @@ class DataConnectProvider {
     final result = await _connector.getStudentProfile(uid: uid).execute();
     final s = result.data.student;
     if (s == null) throw Exception('Student not found');
-    return {
-      'uid': s.uid,
-      'username': s.username,
-      'grade_level': s.gradeLevel,
-    };
+    return {'uid': s.uid, 'username': s.username, 'grade_level': s.gradeLevel};
   }
 
   // ── Student Settings ──────────────────────────────────────────────────────
@@ -401,6 +437,84 @@ class DataConnectProvider {
         .execute();
   }
 
+  // ── Notification System ───────────────────────────────────────────────────
+
+  Future<void> insertNotificationEvent({
+    required String fromStudentUid,
+    required String toParentUid,
+    required String eventType,
+    required String payload,
+  }) async {
+    await _connector
+        .insertNotificationEvent(
+          fromStudentUid: fromStudentUid,
+          toParentUid: toParentUid,
+          eventType: eventType,
+          payload: payload,
+        )
+        .execute();
+  }
+
+  Future<void> markNotificationEventsRead(String toParentUid) async {
+    await _connector
+        .markNotificationEventsRead(toParentUid: toParentUid)
+        .execute();
+  }
+
+  Future<void> upsertNotificationPreference({
+    required String userUid,
+    required String category,
+    required bool enabled,
+    String? reminderTime,
+  }) async {
+    final builder = _connector.upsertNotificationPreference(
+      userUid: userUid,
+      category: category,
+      enabled: enabled,
+    );
+    if (reminderTime != null) builder.reminderTime(reminderTime);
+    await builder.execute();
+  }
+
+  Future<List<Map<String, dynamic>>> getUnreadNotificationEvents(
+    String toParentUid,
+  ) async {
+    final result = await _connector
+        .getUnreadNotificationEvents(toParentUid: toParentUid)
+        .execute();
+    return result.data.notificationEvents
+        .map(
+          (e) => {
+            'id': e.id,
+            'from_student_uid': e.fromStudentUid,
+            'event_type': e.eventType,
+            'payload': e.payload,
+            'created_at': DateTime.fromMillisecondsSinceEpoch(
+              e.createdAt.seconds * 1000,
+              isUtc: true,
+            ).toIso8601String(),
+          },
+        )
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getNotificationPreferences(
+    String userUid,
+  ) async {
+    final result = await _connector
+        .getNotificationPreferences(userUid: userUid)
+        .execute();
+    return result.data.notificationPreferences
+        .map(
+          (p) => {
+            'category': p.category,
+            'enabled': p.enabled,
+            'reminder_time': p.reminderTime,
+          },
+        )
+        .toList();
+  }
+
   // ── Garden System ─────────────────────────────────────────────────────────
 
   Future<List<SubjectProgressModel>> getAllSubjectProgress(
@@ -428,7 +542,7 @@ class DataConnectProvider {
     required String subjectKey,
   }) async {
     SubjectMetadataRegistry.getDefinition(subjectKey);
-    
+
     // Simulate real data from DataConnect
     int index = 0;
     final mockSkills = ['basics', 'intermediate', 'advanced'];
@@ -449,13 +563,16 @@ class DataConnectProvider {
 
   // ── Subjects & Quizzes Mocked for Sprint 2 ────────────────────────────────
 
-  Future<List<SubjectSummaryModel>> getSubjectsByStudent(String studentUid) async {
+  Future<List<SubjectSummaryModel>> getSubjectsByStudent(
+    String studentUid,
+  ) async {
     final progresses = await getAllSubjectProgress(studentUid);
     return progresses.map((p) {
       final def = SubjectMetadataRegistry.getDefinition(p.subjectKey);
       return SubjectSummaryModel(
         subjectKey: p.subjectKey,
-        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        colorHex:
+            '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: 0,
         masteryPercent: 0,
         quizzesCompleted: 0,
@@ -467,12 +584,21 @@ class DataConnectProvider {
 
   Future<List<SubjectSummaryModel>> getAvailableSubjects() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    final globalKeys = ['math', 'science', 'history', 'english', 'geography', 'art', 'music'];
+    final globalKeys = [
+      'math',
+      'science',
+      'history',
+      'english',
+      'geography',
+      'art',
+      'music',
+    ];
     return globalKeys.map((key) {
       final def = SubjectMetadataRegistry.getDefinition(key);
       return SubjectSummaryModel(
         subjectKey: def.key,
-        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        colorHex:
+            '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: 3,
         masteryPercent: 0,
         quizzesCompleted: 0,
@@ -482,7 +608,10 @@ class DataConnectProvider {
     }).toList();
   }
 
-  Future<void> addSubjectsForStudent({required String studentUid, required List<String> subjectKeys}) async {
+  Future<void> addSubjectsForStudent({
+    required String studentUid,
+    required List<String> subjectKeys,
+  }) async {
     for (final key in subjectKeys) {
       await upsertSubjectProgress(
         studentUid: studentUid,
@@ -499,12 +628,14 @@ class DataConnectProvider {
     }
   }
 
-  Future<void> removeSubject({required String studentUid, required String subjectKey}) async {
+  Future<void> removeSubject({
+    required String studentUid,
+    required String subjectKey,
+  }) async {
     // 1. Remove from DataConnect
-    await _connector.deleteSubjectProgress(
-      studentUid: studentUid,
-      subjectKey: subjectKey,
-    ).execute();
+    await _connector
+        .deleteSubjectProgress(studentUid: studentUid, subjectKey: subjectKey)
+        .execute();
 
     // 2. Delete subject from AI engine (garden, skills, embeddings, etc.)
     // Backend returns 404 for global subjects — caught and ignored below.
@@ -515,11 +646,15 @@ class DataConnectProvider {
     }
   }
 
-  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
+  Future<SubjectSummaryModel> getSubjectOverview(
+    String studentUid,
+    String subjectKey,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final subject = SubjectMetadataRegistry.getDefinition(subjectKey);
-    final colorHex = '#${subject.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
-        
+    final colorHex =
+        '#${subject.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
+
     return SubjectSummaryModel(
       subjectKey: subjectKey,
       colorHex: colorHex,
@@ -531,7 +666,11 @@ class DataConnectProvider {
     );
   }
 
-  Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, String subjectKey, {int limit = 10}) async {
+  Future<List<QuizAttemptModel>> getRecentQuizzes(
+    String studentUid,
+    String subjectKey, {
+    int limit = 10,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 500));
     return List.generate(limit, (index) {
       final isPassed = index % 3 != 0;
@@ -550,7 +689,10 @@ class DataConnectProvider {
     });
   }
 
-  Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber) async {
+  Future<QuestionDetailModel> getQuestionDetail(
+    String quizAttemptId,
+    int questionNumber,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return QuestionDetailModel(
       quizAttemptId: quizAttemptId,
@@ -584,21 +726,37 @@ class DataConnectProvider {
         WeeklyAccuracyPoint(weekLabel: 'This Wk', accuracy: 85),
       ],
       subjectAllocations: const [
-        SubjectTimeAllocation(subjectKey: 'math', percentage: 45.0, colorHex: '#2E7D32'),
-        SubjectTimeAllocation(subjectKey: 'science', percentage: 30.0, colorHex: '#AD1457'),
-        SubjectTimeAllocation(subjectKey: 'english', percentage: 25.0, colorHex: '#6A1B9A'),
+        SubjectTimeAllocation(
+          subjectKey: 'math',
+          percentage: 45.0,
+          colorHex: '#2E7D32',
+        ),
+        SubjectTimeAllocation(
+          subjectKey: 'science',
+          percentage: 30.0,
+          colorHex: '#AD1457',
+        ),
+        SubjectTimeAllocation(
+          subjectKey: 'english',
+          percentage: 25.0,
+          colorHex: '#6A1B9A',
+        ),
       ],
-      aiInsightText: "Ahmed is showing great progress in Mathematics, improving his accuracy by 5% this week. He is still struggling slightly with fractions, but his consistency is excellent. Keep encouraging daily practice!",
+      aiInsightText:
+          "Ahmed is showing great progress in Mathematics, improving his accuracy by 5% this week. He is still struggling slightly with fractions, but his consistency is excellent. Keep encouraging daily practice!",
     );
   }
 
-  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, String subjectKey) async {
+  Future<SubjectMasteryReport> getSubjectMasteryReport(
+    String studentUid,
+    String subjectKey,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 600));
     return SubjectMasteryReport(
       subjectKey: subjectKey,
       totalMasteryPercent: 88.0,
       masteryLabel: 'Proficient',
-      strongSkills: const [], // Mocked empty for now, UI will use them if present
+      strongSkills: const [],
       weakSkills: const [],
       errorAnalytics: const ErrorAnalyticModel(
         carelessPercent: 45.0,
@@ -610,15 +768,16 @@ class DataConnectProvider {
 
   Future<StudyHabitsReport> getStudyHabitsReport(String studentUid) async {
     await Future.delayed(const Duration(milliseconds: 700));
-    
-    // Generate mock heatmap data for the last 28 days
+
     final List<HeatmapDay> heatmap = [];
     final now = DateTime.now();
     for (int i = 27; i >= 0; i--) {
-      heatmap.add(HeatmapDay(
-        date: now.subtract(Duration(days: i)),
-        studyMinutes: (i % 7 == 0) ? 0 : 20 + (i % 40), // semi-random data
-      ));
+      heatmap.add(
+        HeatmapDay(
+          date: now.subtract(Duration(days: i)),
+          studyMinutes: (i % 7 == 0) ? 0 : 20 + (i % 40),
+        ),
+      );
     }
 
     return StudyHabitsReport(
@@ -627,13 +786,41 @@ class DataConnectProvider {
       longestStreakDays: 7,
       consistencyHeatmap: heatmap,
       correlation: const [
-        StudyVsAppCorrelationPoint(dayLabel: 'Mon', studyMinutes: 45, appUsageMinutes: 60),
-        StudyVsAppCorrelationPoint(dayLabel: 'Tue', studyMinutes: 50, appUsageMinutes: 55),
-        StudyVsAppCorrelationPoint(dayLabel: 'Wed', studyMinutes: 40, appUsageMinutes: 70),
-        StudyVsAppCorrelationPoint(dayLabel: 'Thu', studyMinutes: 60, appUsageMinutes: 40),
-        StudyVsAppCorrelationPoint(dayLabel: 'Fri', studyMinutes: 30, appUsageMinutes: 90),
-        StudyVsAppCorrelationPoint(dayLabel: 'Sat', studyMinutes: 20, appUsageMinutes: 120),
-        StudyVsAppCorrelationPoint(dayLabel: 'Sun', studyMinutes: 25, appUsageMinutes: 100),
+        StudyVsAppCorrelationPoint(
+          dayLabel: 'Mon',
+          studyMinutes: 45,
+          appUsageMinutes: 60,
+        ),
+        StudyVsAppCorrelationPoint(
+          dayLabel: 'Tue',
+          studyMinutes: 50,
+          appUsageMinutes: 55,
+        ),
+        StudyVsAppCorrelationPoint(
+          dayLabel: 'Wed',
+          studyMinutes: 40,
+          appUsageMinutes: 70,
+        ),
+        StudyVsAppCorrelationPoint(
+          dayLabel: 'Thu',
+          studyMinutes: 60,
+          appUsageMinutes: 40,
+        ),
+        StudyVsAppCorrelationPoint(
+          dayLabel: 'Fri',
+          studyMinutes: 30,
+          appUsageMinutes: 90,
+        ),
+        StudyVsAppCorrelationPoint(
+          dayLabel: 'Sat',
+          studyMinutes: 20,
+          appUsageMinutes: 120,
+        ),
+        StudyVsAppCorrelationPoint(
+          dayLabel: 'Sun',
+          studyMinutes: 25,
+          appUsageMinutes: 100,
+        ),
       ],
     );
   }
@@ -687,7 +874,9 @@ class DataConnectProvider {
     );
   }
 
-  Future<List<NotificationModel>> getNotificationsForParent(String parentUid) async {
+  Future<List<NotificationModel>> getNotificationsForParent(
+    String parentUid,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 400));
     return [
       NotificationModel(
