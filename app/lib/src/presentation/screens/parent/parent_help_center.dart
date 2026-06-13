@@ -19,13 +19,13 @@ class ParentHelpCenter extends StatefulWidget {
 class _ParentHelpCenterState extends State<ParentHelpCenter> {
   static const _issueTypes = [
     _IssueType(
-      label: 'App is glitchy',
+      label: "App isn't working properly",
       icon: Icons.bug_report_outlined,
       iconBg: Color(0xFFFFEBEE),
       iconColor: Color(0xFFE53935),
     ),
     _IssueType(
-      label: 'Question is wrong',
+      label: 'Quiz question has an error',
       icon: Icons.menu_book_outlined,
       iconBg: Color(0xFFE3F2FD),
       iconColor: Color(0xFF1E88E5),
@@ -90,7 +90,7 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to send: ${e.toString()}'),
+          content: const Text("Couldn't send your message. Please try again."),
           behavior: SnackBarBehavior.floating,
           backgroundColor: const Color(0xFFE53935),
         ),

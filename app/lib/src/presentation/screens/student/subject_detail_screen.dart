@@ -105,7 +105,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Text(
-                    'Could not load skills.\n${snapshot.error}',
+                    "Couldn't load skills. Please go back and try again.",
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.red),
                   ),

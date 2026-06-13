@@ -427,37 +427,89 @@ class DataConnectProvider {
     required String studentUid,
     required String subjectKey,
   }) async {
-    SubjectMetadataRegistry.getDefinition(subjectKey);
-    
-    // Simulate real data from DataConnect
-    int index = 0;
-    final mockSkills = ['basics', 'intermediate', 'advanced'];
-    return mockSkills.map((key) {
-      index++;
-      final isStrong = index % 3 == 0;
-      return SkillProgressModel(
-        studentUid: studentUid,
-        subjectKey: subjectKey,
-        skillKey: key,
-        correctAnswers: isStrong ? 20 : 5,
-        wrongAnswers: isStrong ? 2 : 10,
-        totalAttempts: isStrong ? 22 : 15,
-        lastPracticedAt: DateTime.now().subtract(Duration(days: index)),
+    final def = SubjectMetadataRegistry.getDefinition(subjectKey);
+    List<SkillProgressModel> skills = [];
+
+    try {
+      final analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
+      final keyLower = subjectKey.toLowerCase().trim();
+      final nameLower = def.name.toLowerCase().trim();
+      final a = analyticsList.firstWhere(
+        (element) {
+          final name = (element['name'] as String).toLowerCase().trim();
+          return name == keyLower || name == nameLower;
+        },
+        orElse: () => <String, dynamic>{},
       );
-    }).toList();
+
+      if (a.isNotEmpty) {
+        final subjectId = a['subject_id'] as int;
+        final masteryTree = await AiEngineRepository.instance.getSubjectMasteryTree(subjectId, studentUid: studentUid);
+        final units = masteryTree['units'] as List? ?? [];
+        
+        for (final u in units) {
+          final lessons = u['lessons'] as List? ?? [];
+          for (final l in lessons) {
+            final skillList = l['skills'] as List? ?? [];
+            for (final s in skillList) {
+              final skillName = s['name'] as String;
+              final mastery = ((s['mastery'] as num? ?? 0.0).toDouble() * 100).round();
+              final attempts = s['attempts'] as int? ?? 0;
+              
+              final correctAnswers = ((mastery / 100) * attempts).round();
+              final wrongAnswers = attempts - correctAnswers;
+
+              skills.add(SkillProgressModel(
+                studentUid: studentUid,
+                subjectKey: subjectKey,
+                skillKey: skillName,
+                correctAnswers: correctAnswers,
+                wrongAnswers: wrongAnswers >= 0 ? wrongAnswers : 0,
+                totalAttempts: attempts,
+                lastPracticedAt: DateTime.now(),
+              ));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Failed to get real skills for subject from AI engine: $e');
+    }
+
+    return skills;
   }
 
   // ── Subjects & Quizzes Mocked for Sprint 2 ────────────────────────────────
 
   Future<List<SubjectSummaryModel>> getSubjectsByStudent(String studentUid) async {
     final progresses = await getAllSubjectProgress(studentUid);
+    
+    List<Map<String, dynamic>> analyticsList = [];
+    try {
+      analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
+    } catch (e) {
+      print('Failed to fetch subjects analytics from AI engine: $e');
+    }
+
+    final analyticsMap = {
+      for (final a in analyticsList)
+        (a['name'] as String).toLowerCase().trim(): a
+    };
+
     return progresses.map((p) {
       final def = SubjectMetadataRegistry.getDefinition(p.subjectKey);
+      final keyLower = p.subjectKey.toLowerCase().trim();
+      final nameLower = def.name.toLowerCase().trim();
+      final a = analyticsMap[keyLower] ?? analyticsMap[nameLower];
+
+      final masteryPercent = a != null ? ((a['average_mastery'] as num).toDouble() * 100).round() : 0;
+      final skillsCount = a != null ? (a['total_skills'] as int) : 0;
+
       return SubjectSummaryModel(
         subjectKey: p.subjectKey,
         colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
-        skillsCount: 0,
-        masteryPercent: 0,
+        skillsCount: skillsCount,
+        masteryPercent: masteryPercent,
         quizzesCompleted: 0,
         totalTimeSpent: Duration.zero,
         accuracyPercent: 0,
@@ -516,18 +568,76 @@ class DataConnectProvider {
   }
 
   Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final subject = SubjectMetadataRegistry.getDefinition(subjectKey);
-    final colorHex = '#${subject.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
-        
+    final def = SubjectMetadataRegistry.getDefinition(subjectKey);
+    final colorHex = '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
+    
+    int skillsCount = 0;
+    int masteryPercent = 0;
+    int quizzesCompleted = 0;
+    Duration totalTimeSpent = Duration.zero;
+    double accuracyPercent = 0.0;
+
+    try {
+      final analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
+      final keyLower = subjectKey.toLowerCase().trim();
+      final nameLower = def.name.toLowerCase().trim();
+      final a = analyticsList.firstWhere(
+        (element) {
+          final name = (element['name'] as String).toLowerCase().trim();
+          return name == keyLower || name == nameLower;
+        },
+        orElse: () => <String, dynamic>{},
+      );
+
+      if (a.isNotEmpty) {
+        skillsCount = a['total_skills'] as int? ?? 0;
+        masteryPercent = ((a['average_mastery'] as num? ?? 0.0).toDouble() * 100).round();
+        final subjectId = a['subject_id'] as int;
+
+        final history = await AiEngineRepository.instance.getSubjectQuizHistory(subjectId, page: 1, pageSize: 50, studentUid: studentUid);
+        final sessions = history['sessions'] as List? ?? [];
+        quizzesCompleted = history['total'] as int? ?? sessions.length;
+
+        if (sessions.isNotEmpty) {
+          double totalScore = 0;
+          int sessionsWithScore = 0;
+          int totalDurationSeconds = 0;
+
+          for (final s in sessions) {
+            final score = s['score'] as num?;
+            if (score != null) {
+              totalScore += score.toDouble();
+              sessionsWithScore++;
+            }
+            final startStr = s['start_time'] as String?;
+            final endStr = s['end_time'] as String?;
+            if (startStr != null && endStr != null) {
+              try {
+                final start = DateTime.parse(startStr);
+                final end = DateTime.parse(endStr);
+                totalDurationSeconds += end.difference(start).inSeconds;
+              } catch (_) {}
+            }
+          }
+
+          if (sessionsWithScore > 0) {
+            accuracyPercent = double.parse((totalScore / sessionsWithScore).toStringAsFixed(1));
+          }
+          totalTimeSpent = Duration(seconds: totalDurationSeconds);
+        }
+      }
+    } catch (e) {
+      print('Failed to get real subject overview from AI engine: $e');
+    }
+
     return SubjectSummaryModel(
       subjectKey: subjectKey,
       colorHex: colorHex,
-      skillsCount: 3,
-      masteryPercent: 88,
-      quizzesCompleted: 24,
-      totalTimeSpent: const Duration(hours: 5, minutes: 10),
-      accuracyPercent: 85.5,
+      skillsCount: skillsCount,
+      masteryPercent: masteryPercent,
+      quizzesCompleted: quizzesCompleted,
+      totalTimeSpent: totalTimeSpent,
+      accuracyPercent: accuracyPercent,
     );
   }
 

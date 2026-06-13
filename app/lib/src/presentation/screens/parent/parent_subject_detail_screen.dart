@@ -10,6 +10,7 @@ import '../../../domain/models/subject_summary_model.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import 'all_skills_screen.dart';
 import 'all_quizzes_screen.dart';
+import '../../../data/catalog/subject_metadata_registry.dart';
 
 class ParentSubjectDetailScreen extends StatefulWidget {
   final String studentUid;
@@ -211,7 +212,10 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen> {
           ),
           CircleAvatar(
             backgroundColor: widget.color.withOpacity(0.2),
-            child: Icon(Icons.book, color: widget.color),
+            child: Icon(
+              SubjectMetadataRegistry.getSubjectIcon(widget.subjectKey) ?? Icons.book,
+              color: widget.color,
+            ),
           ),
         ],
       ),

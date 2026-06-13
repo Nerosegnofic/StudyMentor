@@ -100,7 +100,7 @@ class _ParentStudentsState extends State<ParentStudents> {
               Icon(Icons.group_outlined, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
               Text(
-                'No students yet.',
+                'No children added yet.',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
@@ -409,7 +409,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
               ),
               const SizedBox(width: 12),
               const Text(
-                'Delete Student',
+                'Delete Child Account',
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
             ],

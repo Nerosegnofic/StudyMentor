@@ -84,9 +84,10 @@ _SELF_ASSESSMENT_ITEM = re.compile(
 
 # Matches: Arabic objective section headers (all publishers, all subjects)
 # Uses #{0,6} to handle arbitrary markdown header depth from OCR.
+# Also matches **bold** format (LlamaParse sometimes renders headers as bold text).
 # Includes translated variants that LlamaParse may produce.
 _AR_OBJECTIVES_HEADER = re.compile(
-    r'^#{0,6}\s*(?:'
+    r'^#{0,6}\s*\*{0,2}\s*(?:'
     r'(?:أهداف|هدف)\s+(?:التعلم|الدرس|الوحدة)'
     r'|نواتج\s+التعلم'
     r'|نتائج\s+التعلم'               # LlamaParse-translated "Learning Outcomes"
@@ -95,7 +96,7 @@ _AR_OBJECTIVES_HEADER = re.compile(
     r'|ماذا\s+(?:سنتعلم|ستتعلم|نتعلم)'
     r'|ماذا\s+سوف\s+(?:نتعلم|أتعلم)'
     r'|المهارات\s*(?:اللغوية)?'      # "Language Skills" — common in English/Arabic textbooks
-    r')\s*[:\?؟]?\s*$', re.MULTILINE
+    r')\s*\*{0,2}\s*[:\?؟]?\s*$', re.MULTILINE
 )
 
 # Matches: Arabic inline objective intros (not headers, but inline text)
@@ -205,10 +206,12 @@ _EN_OBJECTIVE = re.compile(
 def _clean_objective_text(text: str) -> str:
     """
     Normalize an extracted objective string:
+    - Strip <mark>...</mark> tags (LlamaParse highlight artifacts)
     - Strip leading conjunction و (OCR artifact from "وأستطيع أن...")
     - Strip trailing period
     - Normalize whitespace
     """
+    text = re.sub(r'</?mark>', '', text)
     text = text.strip().rstrip('.')
     # Strip leading و if followed by أستطيع/أن (conjunction artifact)
     if text.startswith('و') and len(text) > 1 and text[1] in 'أا':
