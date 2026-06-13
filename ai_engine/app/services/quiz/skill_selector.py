@@ -72,11 +72,13 @@ def classify_skills(
             "locked":   [{"skill": Skill}, ...],
         }
     """
-    # Get all skills ordered by curriculum sequence
+    # Get all skills ordered by curriculum sequence. lesson_index is a PER-UNIT
+    # counter, so unit_name must lead the ordering — otherwise the frontier walk
+    # interleaves units (all "lesson 1" skills first, across every unit).
     all_skills = (
         db.query(Skill)
         .filter(Skill.subject_id == subject_id)
-        .order_by(Skill.lesson_index.asc(), Skill.skill_id.asc())
+        .order_by(Skill.unit_name.asc(), Skill.lesson_index.asc(), Skill.skill_id.asc())
         .all()
     )
 

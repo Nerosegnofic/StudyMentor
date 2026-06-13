@@ -1,14 +1,8 @@
-from typing import List
-from .base import SubjectStrategy
+from .profile import SubjectProfile
 
-class ScienceStrategy(SubjectStrategy):
-
-    @property
-    def subject_key(self) -> str:
-        return "science"
-
-    def difficulty_scale(self) -> str:
-        return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFILE = SubjectProfile(
+    subject_key="science",
+    difficulty_scale="""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIFFICULTY SCALE (CRITICAL — follow strictly)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Each difficulty level has specific cognitive requirements. Questions MUST match these criteria EXACTLY:
@@ -36,36 +30,27 @@ Level 4 — Hard (تحليل / Analysis):
 
 Level 5 — Very Hard (تقييم وإبداع / Evaluation & Synthesis):
   • Evaluate a scientific claim, design an experiment, or synthesize multiple concepts.
-  • ✅ CORRECT: "أي التجارب التالية تثبت أن النبات يحتاج إلى ضوء الشمس للنمو؟\""""
-
-    def difficulty_violations(self) -> str:
-        return """⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
+  • ✅ CORRECT: "أي التجارب التالية تثبت أن النبات يحتاج إلى ضوء الشمس للنمو؟\"""",
+    difficulty_violations="""⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
   • Difficulty 1 with cause-effect reasoning → WRONG (Level 1 is pure recall of a term/fact)
   • Difficulty 1 with "ماذا يحدث عند..." → WRONG (prediction requires reasoning → Level 2+)
   • Difficulty 1 or 2 with experiment analysis → WRONG (experiment analysis is Level 4+)
-  • Difficulty 5 with a simple term recall → WRONG (Level 5 requires synthesis or evaluation)"""
-
-    def self_check_rules(self) -> str:
-        return """MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
+  • Difficulty 5 with a simple term recall → WRONG (Level 5 requires synthesis or evaluation)""",
+    self_check_rules="""MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
   1. Does the question require more than recalling a single fact? Level 1 = ONLY recall a term or definition.
   2. Does the question ask "ماذا يحدث" or "ما النتيجة"? These require reasoning → Level 2+ minimum.
   3. Does the question involve experiment analysis? Experiment analysis starts at Level 4.
-  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty."""
-
-    def formatting_rules(self) -> str:
-        return """Science Formatting Rules:
+  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty.""",
+    formatting_rules="""Science Formatting Rules:
 - Write scientific terms accurately in Arabic with optional English in parentheses for clarity (e.g., التمثيل الضوئي (Photosynthesis)).
 - Use proper Arabic punctuation.
-- When mentioning measurements, use standard units (سم, م, كجم, °م)."""
-
-    def pedagogical_tone(self) -> str:
-        return """Pedagogical Tone & Style:
+- When mentioning measurements, use standard units (سم, م, كجم, °م).""",
+    pedagogical_tone="""Pedagogical Tone & Style:
 - Write like a professional Egyptian science teacher using Modern Standard Arabic.
 - Adjust vocabulary and scientific depth to the student's grade level.
 - Use real-world Egyptian examples where appropriate (e.g., نهر النيل, الصحراء, المحاصيل المصرية).
-- The tone must be clear, encouraging, and exactly like a school science exam paper."""
-
-    _FORMAT_POOLS = {
+- The tone must be clear, encouraging, and exactly like a school science exam paper.""",
+    format_pools={
         1: [
             "recall a scientific fact or term (ما هو / ما اسم...)",
             "identify an organ, body part, or organism",
@@ -96,7 +81,5 @@ Level 5 — Very Hard (تقييم وإبداع / Evaluation & Synthesis):
             "synthesize information from multiple concepts",
             "compare and evaluate two experimental approaches",
         ],
-    }
-
-    def get_format_pool(self, difficulty: int) -> List[str]:
-        return self._FORMAT_POOLS.get(difficulty, self._FORMAT_POOLS[3])
+    },
+)

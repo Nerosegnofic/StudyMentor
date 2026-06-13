@@ -9,7 +9,7 @@ from app.services.rag.chunkers.markdown_strategy import MarkdownRecursiveChunker
 from app.repositories.vector_repo import save_chunks_to_pgvector
 from app.repositories import save_skills_from_mastery_data
 from app.services.rag.processors.objective_extractor import extract_all_objectives
-from app.services.rag.processors.mastery_refiner import refine_mastery_points
+from app.services.rag.processors.mastery_refiner import extract_skills_with_llm, refine_mastery_points
 from app.services.rag.preprocessors import preprocess_parsed_text
 from app.core.database import SessionLocal
 
@@ -76,26 +76,37 @@ def process_and_ingest_document(
                 json.dump(chunks_dump, f, indent=4, ensure_ascii=False)
 
 
-            # Step 5: Refine mastery points via Gemini LLM (needed before tagging and saving)
-            refined_mastery_data = None
-            if raw_mastery_data:
-                refined_mastery_data = refine_mastery_points(raw_mastery_data, cleaned_text)
-            
-            # DEBUG DUMP 4: Refined Skills
-            if refined_mastery_data:
+            # Step 5: Extract skills. PRIMARY = LLM reads the full cleaned markdown
+            # (general across any subject/language). FALLBACK = regex output refined
+            # by the LLM, used only when the primary path is unavailable / fails.
+            mastery_source = "llm"
+            final_mastery_data = extract_skills_with_llm(cleaned_text)
+            if not final_mastery_data:
+                mastery_source = "regex"
+                final_mastery_data = (
+                    refine_mastery_points(raw_mastery_data, cleaned_text)
+                    if raw_mastery_data else []
+                )
+
+            skill_count = sum(len(e.get("objectives", [])) for e in final_mastery_data)
+            print(f"[{document_id}] Skill extraction source={mastery_source}, "
+                  f"{skill_count} skills across {len(final_mastery_data)} groups.", flush=True)
+
+            # DEBUG DUMP 4: Final Skills
+            if final_mastery_data:
                 with open(f"{debug_prefix}_refined_skills.json", "w", encoding="utf-8") as f:
-                    json.dump(refined_mastery_data, f, indent=4, ensure_ascii=False)
+                    json.dump(final_mastery_data, f, indent=4, ensure_ascii=False)
 
             # Step 6: Tag chunks with skill_names from mastery data (for precision retrieval)
-            # Build a lesson → skill_names mapping from refined (or raw) mastery data
-            active_mastery_data = refined_mastery_data if refined_mastery_data else raw_mastery_data
+            # Build a lesson → skill_names mapping from the extracted mastery data.
+            active_mastery_data = final_mastery_data
             if active_mastery_data:
                 lesson_to_skills = {}
                 for entry in active_mastery_data:
-                    lesson = entry.get("lesson_name", "") or entry.get("lesson", "")
-                    skills = entry.get("skills", [])
+                    lesson = entry.get("lesson", "")
+                    skills = entry.get("objectives", [])
                     if lesson and skills:
-                        skill_names = [s["name"] if isinstance(s, dict) else str(s) for s in skills]
+                        skill_names = [str(s) for s in skills]
                         lesson_to_skills[lesson] = skill_names
 
                 # Tag each chunk with its lesson's skills
@@ -115,12 +126,8 @@ def process_and_ingest_document(
             save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
             
             # Step 8: Save skills to DB
-            if raw_mastery_data:
-                # Only save if refinement produced different data (not a fallback)
-                if refined_mastery_data:
-                    save_skills_from_mastery_data(db, refined_mastery_data, subject_id=subject_id)
-                else:
-                    save_skills_from_mastery_data(db, raw_mastery_data, subject_id=subject_id)
+            if final_mastery_data:
+                save_skills_from_mastery_data(db, final_mastery_data, subject_id=subject_id)
                 
         finally:
             if os.path.exists(temp_file_path):

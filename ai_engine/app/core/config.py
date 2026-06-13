@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     FIREBASE_PROJECT_ID: str = "studymentor-2026"
     FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = None
 
+    # Admin key for publishing GLOBAL (shared) curriculum via /documents/upload-global.
+    # Sent as the `X-Admin-Key` header. If unset, the admin upload endpoint is disabled
+    # (returns 403) — global subjects can then only be created via the seed script.
+    ADMIN_API_KEY: Optional[str] = "test-admin-key-12345"
+
     # --- AI Model Configuration ---
     # Gemini Models:
     # - "gemini-2.5-flash" (Recommended default: fast, cheap, highly capable)
@@ -29,6 +34,10 @@ class Settings(BaseSettings):
     # - "command-r-08-2024" (Current default)
     # - "command-r-plus" (Recommended for advanced multi-step tools & reasoning)
     COHERE_MODEL: str = "command-r-08-2024"
+
+    # Temperature for Cohere-based quiz generation.
+    # Raised to 0.7 to match Gemini and produce varied questions (was hardcoded 0.2).
+    COHERE_GENERATION_TEMPERATURE: float = 0.7
 
     # Cohere Embeddings:
     # - "embed-multilingual-v3.0" (Recommended: high-quality vector embeddings for Arabic)
@@ -43,6 +52,15 @@ class Settings(BaseSettings):
     # Cosine distance threshold: chunks with score > this value are too irrelevant to inject.
     # Range: 0.0 (identical) → 2.0 (opposite). 0.45 retains reasonably on-topic chunks.
     RETRIEVAL_SCORE_THRESHOLD: float = 0.55
+
+    # Subject-tunable override for the retrieval threshold. Language subjects (Arabic/English)
+    # often have short rule/vocabulary chunks that score less similar, so they get a more
+    # lenient threshold. Falls back to RETRIEVAL_SCORE_THRESHOLD when a subject isn't matched.
+    RETRIEVAL_SCORE_THRESHOLD_BY_SUBJECT: dict = {"language": 0.70, "default": 0.55}
+
+    # Vector store collection name (langchain-postgres). Subject scoping is done via the
+    # subject_id metadata filter, so a single neutral collection serves all subjects.
+    PGVECTOR_COLLECTION_NAME: str = "curriculum"
 
     # Quiz Bank Fallback (used when LLM generation fails)
     # Minimum fraction of required questions the bank must cover before using it.
