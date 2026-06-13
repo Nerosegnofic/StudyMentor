@@ -114,6 +114,7 @@ class _StudentScreenState extends State<StudentScreen>
     _initMascotService();
 
     _loadCoinsAndLevel();
+    _loadAvatar();
 
     // Sync the installed-app inventory on every login so DataConnect always
     // has an up-to-date list for this account. The repository's diff logic
@@ -196,25 +197,22 @@ class _StudentScreenState extends State<StudentScreen>
 
   Future<void> _loadCoinsAndLevel() async {
     try {
-      final dataconnect = DataConnectProvider();
-      final aiEngine = AiEngineRepository.instance;
-      final results = await Future.wait([
-        aiEngine.getGamificationProfile(widget.uid),
-        dataconnect.getStudentAvatar(widget.uid),
-      ]);
+      final profile = await AiEngineRepository.instance.getGamificationProfile(widget.uid);
       if (mounted) {
-        final profile = results[0] as Map<String, dynamic>;
-        final avatarMap = results[1];
         setState(() {
-
           _coins = (profile['coins_total'] as int?) ?? 0;
           _xp = (profile['xp_total'] as int?) ?? 0;
           _level = (profile['current_level'] as int?) ?? levelForXp(_xp).levelNumber;
-
-          if (avatarMap != null) {
-            _avatarConfig = AvatarConfig.fromMap(avatarMap);
-          }
         });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadAvatar() async {
+    try {
+      final avatarMap = await DataConnectProvider().getStudentAvatar(widget.uid);
+      if (mounted && avatarMap != null) {
+        setState(() => _avatarConfig = AvatarConfig.fromMap(avatarMap));
       }
     } catch (_) {}
   }
@@ -281,6 +279,29 @@ class _StudentScreenState extends State<StudentScreen>
   void _onShellReady() {
     if (!mounted) return;
     if (_initializing || _checkingPermissions || !_permissionsGranted) return;
+
+    // The BlocListener for GamificationBloc only enters the tree once the shell
+    // is rendered (after permissions are granted). If gamification events were
+    // emitted earlier (while the spinner / permission gate was showing), the
+    // listener missed them. Read the current BLoC state here and apply it so
+    // the coins/xp/level bar is always up-to-date on first render.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final s = _gamificationBloc.state;
+      if (s is GamificationLoaded) {
+        setState(() {
+          _coins = s.profile.coinsTotal;
+          _xp = s.profile.xpTotal;
+          _level = s.profile.currentLevel;
+        });
+      } else if (s is GamificationRewardProcessed) {
+        setState(() {
+          _coins = s.profile.coinsTotal;
+          _xp = s.profile.xpTotal;
+          _level = s.profile.currentLevel;
+        });
+      }
+    });
 
     if (_pendingQuizAfterInit && MascotOverlayService.instance.shouldShowQuiz) {
       _pendingQuizAfterInit = false;
@@ -496,6 +517,7 @@ class _StudentScreenState extends State<StudentScreen>
                 if (state is ShopLoaded) {
                   setState(() {
                     _coins = state.coins;
+                    _avatarConfig = state.avatarConfig;
                   });
                 }
               },
@@ -617,7 +639,10 @@ class _StudentScreenState extends State<StudentScreen>
                       ),
                     ),
                   ).then((_) {
-                    if (mounted) _loadCoinsAndLevel();
+                    if (mounted) {
+                      _loadCoinsAndLevel();
+                      _loadAvatar();
+                    }
                   });
                 },
                 child: Container(

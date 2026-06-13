@@ -465,7 +465,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
             icon: Icons.lock_outline,
           ).copyWith(
             helperText: emailChanged
-                ? 'Required to change your email address.'
+                ? 'Enter your current password to change your email.'
                 : null,
             helperStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             suffixIcon: _visibilityToggle(

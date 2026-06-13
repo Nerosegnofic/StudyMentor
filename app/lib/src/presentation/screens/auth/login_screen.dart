@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!didPop && !canGoBack) SystemNavigator.pop();
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Login')),
+        appBar: AppBar(title: const Text('Sign In')),
         body: BlocConsumer<AuthBloc, AuthState>(
           // Only rebuild the button when loading state changes.
           buildWhen: (prev, curr) => curr is AuthLoading || prev is AuthLoading,
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailCtl,
                       decoration: const InputDecoration(labelText: 'Email'),
                       validator: (v) =>
-                          v!.contains('@') ? null : 'Invalid email',
+                          v!.contains('@') ? null : 'Please enter a valid email address.',
                     ),
                     TextFormField(
                       controller: _passCtl,
@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       obscureText: _obscurePassword,
-                      validator: (v) => v!.isNotEmpty ? null : 'Required',
+                      validator: (v) => v!.isNotEmpty ? null : 'Password is required.',
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                       child: loading
                           ? const CircularProgressIndicator()
-                          : const Text('Login'),
+                          : const Text('Sign In'),
                     ),
                     TextButton(
                       onPressed: () =>

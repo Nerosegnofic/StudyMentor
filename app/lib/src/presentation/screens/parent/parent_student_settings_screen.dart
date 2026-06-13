@@ -130,25 +130,38 @@ class _ParentStudentSettingsScreenState
   }
 
   void _onSaveSuccess(StudentProfileUpdateSuccess state) {
-    _originalFullName = state.updatedStudent.fullName;
-    _fullNameCtl.text = state.updatedStudent.fullName;
-    
-    // If email changed we keep _originalEmail as-is until student verifies.
-    _currentPassCtl.clear();
-    _newPassCtl.clear();
-    _confirmPassCtl.clear();
-
-    // In a real app we might handle pending email here.
-    setState(() {
-      _isSaving = false;
-      _isDirty = false;
-    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Student profile updated successfully.'),
+        content: Text('Profile updated successfully.'),
         backgroundColor: Color(0xFF34A853),
       ),
     );
+    Navigator.of(context).pop(state.updatedStudent);
+  }
+
+  Future<bool> _onWillPop() async {
+    if (!_isDirty) return true;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsaved Changes'),
+        content: const Text('You have unsaved changes. Leave without saving?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Stay'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+            ),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    return leave ?? false;
   }
 
   // ── build ─────────────────────────────────────────────────────────────────────
@@ -172,9 +185,16 @@ class _ParentStudentSettingsScreenState
           );
         }
       },
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Scaffold(
+      child: PopScope(
+        canPop: !_isDirty,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final leave = await _onWillPop();
+          if (leave && context.mounted) Navigator.of(context).pop();
+        },
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Scaffold(
           backgroundColor: const Color(0xFFF5F7FA),
           appBar: AppBar(
             backgroundColor: const Color(0xFF2196F3),
@@ -294,7 +314,8 @@ class _ParentStudentSettingsScreenState
             ),
           ),
         ),
-      ),
+          ),
+        ),
       ),
     );
   }
@@ -464,7 +485,7 @@ class _ParentStudentSettingsScreenState
         ),
         const SizedBox(height: 6),
         const Text(
-          'Username cannot be changed.',
+          'Usernames cannot be changed after registration.',
           style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
       ],
