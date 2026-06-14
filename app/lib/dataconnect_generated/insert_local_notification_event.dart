@@ -1,29 +1,29 @@
 part of 'generated.dart';
 
-class InsertNotificationEventVariablesBuilder {
+class InsertLocalNotificationEventVariablesBuilder {
   String fromStudentUid;
   String toParentUid;
   String eventType;
   String payload;
 
   final FirebaseDataConnect _dataConnect;
-  InsertNotificationEventVariablesBuilder(this._dataConnect, {required  this.fromStudentUid,required  this.toParentUid,required  this.eventType,required  this.payload,});
-  Deserializer<InsertNotificationEventData> dataDeserializer = (dynamic json)  => InsertNotificationEventData.fromJson(jsonDecode(json));
-  Serializer<InsertNotificationEventVariables> varsSerializer = (InsertNotificationEventVariables vars) => jsonEncode(vars.toJson());
-  Future<OperationResult<InsertNotificationEventData, InsertNotificationEventVariables>> execute() {
+  InsertLocalNotificationEventVariablesBuilder(this._dataConnect, {required  this.fromStudentUid,required  this.toParentUid,required  this.eventType,required  this.payload,});
+  Deserializer<InsertLocalNotificationEventData> dataDeserializer = (dynamic json)  => InsertLocalNotificationEventData.fromJson(jsonDecode(json));
+  Serializer<InsertLocalNotificationEventVariables> varsSerializer = (InsertLocalNotificationEventVariables vars) => jsonEncode(vars.toJson());
+  Future<OperationResult<InsertLocalNotificationEventData, InsertLocalNotificationEventVariables>> execute() {
     return ref().execute();
   }
 
-  MutationRef<InsertNotificationEventData, InsertNotificationEventVariables> ref() {
-    InsertNotificationEventVariables vars= InsertNotificationEventVariables(fromStudentUid: fromStudentUid,toParentUid: toParentUid,eventType: eventType,payload: payload,);
-    return _dataConnect.mutation("InsertNotificationEvent", dataDeserializer, varsSerializer, vars);
+  MutationRef<InsertLocalNotificationEventData, InsertLocalNotificationEventVariables> ref() {
+    InsertLocalNotificationEventVariables vars= InsertLocalNotificationEventVariables(fromStudentUid: fromStudentUid,toParentUid: toParentUid,eventType: eventType,payload: payload,);
+    return _dataConnect.mutation("InsertLocalNotificationEvent", dataDeserializer, varsSerializer, vars);
   }
 }
 
 @immutable
-class InsertNotificationEventNotificationEventInsert {
+class InsertLocalNotificationEventLocalNotificationEventInsert {
   final String id;
-  InsertNotificationEventNotificationEventInsert.fromJson(dynamic json):
+  InsertLocalNotificationEventLocalNotificationEventInsert.fromJson(dynamic json):
   
   id = nativeFromJson<String>(json['id']);
   @override
@@ -35,7 +35,7 @@ class InsertNotificationEventNotificationEventInsert {
       return false;
     }
 
-    final InsertNotificationEventNotificationEventInsert otherTyped = other as InsertNotificationEventNotificationEventInsert;
+    final InsertLocalNotificationEventLocalNotificationEventInsert otherTyped = other as InsertLocalNotificationEventLocalNotificationEventInsert;
     return id == otherTyped.id;
     
   }
@@ -49,17 +49,17 @@ class InsertNotificationEventNotificationEventInsert {
     return json;
   }
 
-  InsertNotificationEventNotificationEventInsert({
+  InsertLocalNotificationEventLocalNotificationEventInsert({
     required this.id,
   });
 }
 
 @immutable
-class InsertNotificationEventData {
-  final InsertNotificationEventNotificationEventInsert notificationEvent_insert;
-  InsertNotificationEventData.fromJson(dynamic json):
+class InsertLocalNotificationEventData {
+  final InsertLocalNotificationEventLocalNotificationEventInsert localNotificationEvent_insert;
+  InsertLocalNotificationEventData.fromJson(dynamic json):
   
-  notificationEvent_insert = InsertNotificationEventNotificationEventInsert.fromJson(json['notificationEvent_insert']);
+  localNotificationEvent_insert = InsertLocalNotificationEventLocalNotificationEventInsert.fromJson(json['localNotificationEvent_insert']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -69,33 +69,33 @@ class InsertNotificationEventData {
       return false;
     }
 
-    final InsertNotificationEventData otherTyped = other as InsertNotificationEventData;
-    return notificationEvent_insert == otherTyped.notificationEvent_insert;
+    final InsertLocalNotificationEventData otherTyped = other as InsertLocalNotificationEventData;
+    return localNotificationEvent_insert == otherTyped.localNotificationEvent_insert;
     
   }
   @override
-  int get hashCode => notificationEvent_insert.hashCode;
+  int get hashCode => localNotificationEvent_insert.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['notificationEvent_insert'] = notificationEvent_insert.toJson();
+    json['localNotificationEvent_insert'] = localNotificationEvent_insert.toJson();
     return json;
   }
 
-  InsertNotificationEventData({
-    required this.notificationEvent_insert,
+  InsertLocalNotificationEventData({
+    required this.localNotificationEvent_insert,
   });
 }
 
 @immutable
-class InsertNotificationEventVariables {
+class InsertLocalNotificationEventVariables {
   final String fromStudentUid;
   final String toParentUid;
   final String eventType;
   final String payload;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
-  InsertNotificationEventVariables.fromJson(Map<String, dynamic> json):
+  InsertLocalNotificationEventVariables.fromJson(Map<String, dynamic> json):
   
   fromStudentUid = nativeFromJson<String>(json['fromStudentUid']),
   toParentUid = nativeFromJson<String>(json['toParentUid']),
@@ -110,7 +110,7 @@ class InsertNotificationEventVariables {
       return false;
     }
 
-    final InsertNotificationEventVariables otherTyped = other as InsertNotificationEventVariables;
+    final InsertLocalNotificationEventVariables otherTyped = other as InsertLocalNotificationEventVariables;
     return fromStudentUid == otherTyped.fromStudentUid && 
     toParentUid == otherTyped.toParentUid && 
     eventType == otherTyped.eventType && 
@@ -130,7 +130,7 @@ class InsertNotificationEventVariables {
     return json;
   }
 
-  InsertNotificationEventVariables({
+  InsertLocalNotificationEventVariables({
     required this.fromStudentUid,
     required this.toParentUid,
     required this.eventType,

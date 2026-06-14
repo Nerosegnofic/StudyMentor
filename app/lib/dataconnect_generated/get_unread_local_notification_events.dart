@@ -1,30 +1,30 @@
 part of 'generated.dart';
 
-class GetUnreadNotificationEventsVariablesBuilder {
+class GetUnreadLocalNotificationEventsVariablesBuilder {
   String toParentUid;
 
   final FirebaseDataConnect _dataConnect;
-  GetUnreadNotificationEventsVariablesBuilder(this._dataConnect, {required  this.toParentUid,});
-  Deserializer<GetUnreadNotificationEventsData> dataDeserializer = (dynamic json)  => GetUnreadNotificationEventsData.fromJson(jsonDecode(json));
-  Serializer<GetUnreadNotificationEventsVariables> varsSerializer = (GetUnreadNotificationEventsVariables vars) => jsonEncode(vars.toJson());
-  Future<QueryResult<GetUnreadNotificationEventsData, GetUnreadNotificationEventsVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
+  GetUnreadLocalNotificationEventsVariablesBuilder(this._dataConnect, {required  this.toParentUid,});
+  Deserializer<GetUnreadLocalNotificationEventsData> dataDeserializer = (dynamic json)  => GetUnreadLocalNotificationEventsData.fromJson(jsonDecode(json));
+  Serializer<GetUnreadLocalNotificationEventsVariables> varsSerializer = (GetUnreadLocalNotificationEventsVariables vars) => jsonEncode(vars.toJson());
+  Future<QueryResult<GetUnreadLocalNotificationEventsData, GetUnreadLocalNotificationEventsVariables>> execute({QueryFetchPolicy fetchPolicy = QueryFetchPolicy.preferCache}) {
     return ref().execute(fetchPolicy: fetchPolicy);
   }
 
-  QueryRef<GetUnreadNotificationEventsData, GetUnreadNotificationEventsVariables> ref() {
-    GetUnreadNotificationEventsVariables vars= GetUnreadNotificationEventsVariables(toParentUid: toParentUid,);
-    return _dataConnect.query("GetUnreadNotificationEvents", dataDeserializer, varsSerializer, vars);
+  QueryRef<GetUnreadLocalNotificationEventsData, GetUnreadLocalNotificationEventsVariables> ref() {
+    GetUnreadLocalNotificationEventsVariables vars= GetUnreadLocalNotificationEventsVariables(toParentUid: toParentUid,);
+    return _dataConnect.query("GetUnreadLocalNotificationEvents", dataDeserializer, varsSerializer, vars);
   }
 }
 
 @immutable
-class GetUnreadNotificationEventsNotificationEvents {
+class GetUnreadLocalNotificationEventsLocalNotificationEvents {
   final String id;
   final String fromStudentUid;
   final String eventType;
   final String payload;
   final Timestamp createdAt;
-  GetUnreadNotificationEventsNotificationEvents.fromJson(dynamic json):
+  GetUnreadLocalNotificationEventsLocalNotificationEvents.fromJson(dynamic json):
   
   id = nativeFromJson<String>(json['id']),
   fromStudentUid = nativeFromJson<String>(json['fromStudentUid']),
@@ -40,7 +40,7 @@ class GetUnreadNotificationEventsNotificationEvents {
       return false;
     }
 
-    final GetUnreadNotificationEventsNotificationEvents otherTyped = other as GetUnreadNotificationEventsNotificationEvents;
+    final GetUnreadLocalNotificationEventsLocalNotificationEvents otherTyped = other as GetUnreadLocalNotificationEventsLocalNotificationEvents;
     return id == otherTyped.id && 
     fromStudentUid == otherTyped.fromStudentUid && 
     eventType == otherTyped.eventType && 
@@ -62,7 +62,7 @@ class GetUnreadNotificationEventsNotificationEvents {
     return json;
   }
 
-  GetUnreadNotificationEventsNotificationEvents({
+  GetUnreadLocalNotificationEventsLocalNotificationEvents({
     required this.id,
     required this.fromStudentUid,
     required this.eventType,
@@ -72,12 +72,12 @@ class GetUnreadNotificationEventsNotificationEvents {
 }
 
 @immutable
-class GetUnreadNotificationEventsData {
-  final List<GetUnreadNotificationEventsNotificationEvents> notificationEvents;
-  GetUnreadNotificationEventsData.fromJson(dynamic json):
+class GetUnreadLocalNotificationEventsData {
+  final List<GetUnreadLocalNotificationEventsLocalNotificationEvents> localNotificationEvents;
+  GetUnreadLocalNotificationEventsData.fromJson(dynamic json):
   
-  notificationEvents = (json['notificationEvents'] as List<dynamic>)
-        .map((e) => GetUnreadNotificationEventsNotificationEvents.fromJson(e))
+  localNotificationEvents = (json['localNotificationEvents'] as List<dynamic>)
+        .map((e) => GetUnreadLocalNotificationEventsLocalNotificationEvents.fromJson(e))
         .toList();
   @override
   bool operator ==(Object other) {
@@ -88,30 +88,30 @@ class GetUnreadNotificationEventsData {
       return false;
     }
 
-    final GetUnreadNotificationEventsData otherTyped = other as GetUnreadNotificationEventsData;
-    return notificationEvents == otherTyped.notificationEvents;
+    final GetUnreadLocalNotificationEventsData otherTyped = other as GetUnreadLocalNotificationEventsData;
+    return localNotificationEvents == otherTyped.localNotificationEvents;
     
   }
   @override
-  int get hashCode => notificationEvents.hashCode;
+  int get hashCode => localNotificationEvents.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['notificationEvents'] = notificationEvents.map((e) => e.toJson()).toList();
+    json['localNotificationEvents'] = localNotificationEvents.map((e) => e.toJson()).toList();
     return json;
   }
 
-  GetUnreadNotificationEventsData({
-    required this.notificationEvents,
+  GetUnreadLocalNotificationEventsData({
+    required this.localNotificationEvents,
   });
 }
 
 @immutable
-class GetUnreadNotificationEventsVariables {
+class GetUnreadLocalNotificationEventsVariables {
   final String toParentUid;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
-  GetUnreadNotificationEventsVariables.fromJson(Map<String, dynamic> json):
+  GetUnreadLocalNotificationEventsVariables.fromJson(Map<String, dynamic> json):
   
   toParentUid = nativeFromJson<String>(json['toParentUid']);
   @override
@@ -123,7 +123,7 @@ class GetUnreadNotificationEventsVariables {
       return false;
     }
 
-    final GetUnreadNotificationEventsVariables otherTyped = other as GetUnreadNotificationEventsVariables;
+    final GetUnreadLocalNotificationEventsVariables otherTyped = other as GetUnreadLocalNotificationEventsVariables;
     return toParentUid == otherTyped.toParentUid;
     
   }
@@ -137,7 +137,7 @@ class GetUnreadNotificationEventsVariables {
     return json;
   }
 
-  GetUnreadNotificationEventsVariables({
+  GetUnreadLocalNotificationEventsVariables({
     required this.toParentUid,
   });
 }

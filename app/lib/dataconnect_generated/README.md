@@ -560,11 +560,11 @@ ref.subscribe(...);
 ```
 
 
-### GetUnreadNotificationEvents
+### GetUnreadLocalNotificationEvents
 #### Required Arguments
 ```dart
 String toParentUid = ...;
-ExampleConnector.instance.getUnreadNotificationEvents(
+ExampleConnector.instance.getUnreadLocalNotificationEvents(
   toParentUid: toParentUid,
 ).execute();
 ```
@@ -572,7 +572,7 @@ ExampleConnector.instance.getUnreadNotificationEvents(
 
 
 #### Return Type
-`execute()` returns a `QueryResult<GetUnreadNotificationEventsData, GetUnreadNotificationEventsVariables>`
+`execute()` returns a `QueryResult<GetUnreadLocalNotificationEventsData, GetUnreadLocalNotificationEventsVariables>`
 ```dart
 /// Result of an Operation Request (query/mutation).
 class OperationResult<Data, Variables> {
@@ -587,10 +587,10 @@ class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
   QueryResult(super.dataConnect, super.data, super.ref);
 }
 
-final result = await ExampleConnector.instance.getUnreadNotificationEvents(
+final result = await ExampleConnector.instance.getUnreadLocalNotificationEvents(
   toParentUid: toParentUid,
 );
-GetUnreadNotificationEventsData data = result.data;
+GetUnreadLocalNotificationEventsData data = result.data;
 final ref = result.ref;
 ```
 
@@ -600,7 +600,7 @@ An example of how to use the `Ref` object is shown below:
 ```dart
 String toParentUid = ...;
 
-final ref = ExampleConnector.instance.getUnreadNotificationEvents(
+final ref = ExampleConnector.instance.getUnreadLocalNotificationEvents(
   toParentUid: toParentUid,
 ).ref();
 ref.execute();
@@ -609,11 +609,11 @@ ref.subscribe(...);
 ```
 
 
-### GetNotificationPreferences
+### GetLocalNotificationPreferences
 #### Required Arguments
 ```dart
 String userUid = ...;
-ExampleConnector.instance.getNotificationPreferences(
+ExampleConnector.instance.getLocalNotificationPreferences(
   userUid: userUid,
 ).execute();
 ```
@@ -621,7 +621,7 @@ ExampleConnector.instance.getNotificationPreferences(
 
 
 #### Return Type
-`execute()` returns a `QueryResult<GetNotificationPreferencesData, GetNotificationPreferencesVariables>`
+`execute()` returns a `QueryResult<GetLocalNotificationPreferencesData, GetLocalNotificationPreferencesVariables>`
 ```dart
 /// Result of an Operation Request (query/mutation).
 class OperationResult<Data, Variables> {
@@ -636,10 +636,10 @@ class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
   QueryResult(super.dataConnect, super.data, super.ref);
 }
 
-final result = await ExampleConnector.instance.getNotificationPreferences(
+final result = await ExampleConnector.instance.getLocalNotificationPreferences(
   userUid: userUid,
 );
-GetNotificationPreferencesData data = result.data;
+GetLocalNotificationPreferencesData data = result.data;
 final ref = result.ref;
 ```
 
@@ -649,7 +649,7 @@ An example of how to use the `Ref` object is shown below:
 ```dart
 String userUid = ...;
 
-final ref = ExampleConnector.instance.getNotificationPreferences(
+final ref = ExampleConnector.instance.getLocalNotificationPreferences(
   userUid: userUid,
 ).ref();
 ref.execute();
@@ -1887,14 +1887,14 @@ ref.execute();
 ```
 
 
-### InsertNotificationEvent
+### InsertLocalNotificationEvent
 #### Required Arguments
 ```dart
 String fromStudentUid = ...;
 String toParentUid = ...;
 String eventType = ...;
 String payload = ...;
-ExampleConnector.instance.insertNotificationEvent(
+ExampleConnector.instance.insertLocalNotificationEvent(
   fromStudentUid: fromStudentUid,
   toParentUid: toParentUid,
   eventType: eventType,
@@ -1905,7 +1905,7 @@ ExampleConnector.instance.insertNotificationEvent(
 
 
 #### Return Type
-`execute()` returns a `OperationResult<InsertNotificationEventData, InsertNotificationEventVariables>`
+`execute()` returns a `OperationResult<InsertLocalNotificationEventData, InsertLocalNotificationEventVariables>`
 ```dart
 /// Result of an Operation Request (query/mutation).
 class OperationResult<Data, Variables> {
@@ -1915,13 +1915,13 @@ class OperationResult<Data, Variables> {
   FirebaseDataConnect dataConnect;
 }
 
-final result = await ExampleConnector.instance.insertNotificationEvent(
+final result = await ExampleConnector.instance.insertLocalNotificationEvent(
   fromStudentUid: fromStudentUid,
   toParentUid: toParentUid,
   eventType: eventType,
   payload: payload,
 );
-InsertNotificationEventData data = result.data;
+InsertLocalNotificationEventData data = result.data;
 final ref = result.ref;
 ```
 
@@ -1934,7 +1934,7 @@ String toParentUid = ...;
 String eventType = ...;
 String payload = ...;
 
-final ref = ExampleConnector.instance.insertNotificationEvent(
+final ref = ExampleConnector.instance.insertLocalNotificationEvent(
   fromStudentUid: fromStudentUid,
   toParentUid: toParentUid,
   eventType: eventType,
@@ -1944,11 +1944,11 @@ ref.execute();
 ```
 
 
-### MarkNotificationEventsRead
+### MarkLocalNotificationEventsRead
 #### Required Arguments
 ```dart
 String toParentUid = ...;
-ExampleConnector.instance.markNotificationEventsRead(
+ExampleConnector.instance.markLocalNotificationEventsRead(
   toParentUid: toParentUid,
 ).execute();
 ```
@@ -1956,7 +1956,7 @@ ExampleConnector.instance.markNotificationEventsRead(
 
 
 #### Return Type
-`execute()` returns a `OperationResult<MarkNotificationEventsReadData, MarkNotificationEventsReadVariables>`
+`execute()` returns a `OperationResult<MarkLocalNotificationEventsReadData, MarkLocalNotificationEventsReadVariables>`
 ```dart
 /// Result of an Operation Request (query/mutation).
 class OperationResult<Data, Variables> {
@@ -1966,10 +1966,10 @@ class OperationResult<Data, Variables> {
   FirebaseDataConnect dataConnect;
 }
 
-final result = await ExampleConnector.instance.markNotificationEventsRead(
+final result = await ExampleConnector.instance.markLocalNotificationEventsRead(
   toParentUid: toParentUid,
 );
-MarkNotificationEventsReadData data = result.data;
+MarkLocalNotificationEventsReadData data = result.data;
 final ref = result.ref;
 ```
 
@@ -1979,20 +1979,20 @@ An example of how to use the `Ref` object is shown below:
 ```dart
 String toParentUid = ...;
 
-final ref = ExampleConnector.instance.markNotificationEventsRead(
+final ref = ExampleConnector.instance.markLocalNotificationEventsRead(
   toParentUid: toParentUid,
 ).ref();
 ref.execute();
 ```
 
 
-### UpsertNotificationPreference
+### UpsertLocalNotificationPreference
 #### Required Arguments
 ```dart
 String userUid = ...;
 String category = ...;
 bool enabled = ...;
-ExampleConnector.instance.upsertNotificationPreference(
+ExampleConnector.instance.upsertLocalNotificationPreference(
   userUid: userUid,
   category: category,
   enabled: enabled,
@@ -2000,19 +2000,19 @@ ExampleConnector.instance.upsertNotificationPreference(
 ```
 
 #### Optional Arguments
-We return a builder for each query. For UpsertNotificationPreference, we created `UpsertNotificationPreferenceBuilder`. For queries and mutations with optional parameters, we return a builder class.
+We return a builder for each query. For UpsertLocalNotificationPreference, we created `UpsertLocalNotificationPreferenceBuilder`. For queries and mutations with optional parameters, we return a builder class.
 The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
 ```dart
-class UpsertNotificationPreferenceVariablesBuilder {
+class UpsertLocalNotificationPreferenceVariablesBuilder {
   ...
-   UpsertNotificationPreferenceVariablesBuilder reminderTime(String? t) {
+   UpsertLocalNotificationPreferenceVariablesBuilder reminderTime(String? t) {
    _reminderTime.value = t;
    return this;
   }
 
   ...
 }
-ExampleConnector.instance.upsertNotificationPreference(
+ExampleConnector.instance.upsertLocalNotificationPreference(
   userUid: userUid,
   category: category,
   enabled: enabled,
@@ -2022,7 +2022,7 @@ ExampleConnector.instance.upsertNotificationPreference(
 ```
 
 #### Return Type
-`execute()` returns a `OperationResult<UpsertNotificationPreferenceData, UpsertNotificationPreferenceVariables>`
+`execute()` returns a `OperationResult<UpsertLocalNotificationPreferenceData, UpsertLocalNotificationPreferenceVariables>`
 ```dart
 /// Result of an Operation Request (query/mutation).
 class OperationResult<Data, Variables> {
@@ -2032,12 +2032,12 @@ class OperationResult<Data, Variables> {
   FirebaseDataConnect dataConnect;
 }
 
-final result = await ExampleConnector.instance.upsertNotificationPreference(
+final result = await ExampleConnector.instance.upsertLocalNotificationPreference(
   userUid: userUid,
   category: category,
   enabled: enabled,
 );
-UpsertNotificationPreferenceData data = result.data;
+UpsertLocalNotificationPreferenceData data = result.data;
 final ref = result.ref;
 ```
 
@@ -2049,10 +2049,52 @@ String userUid = ...;
 String category = ...;
 bool enabled = ...;
 
-final ref = ExampleConnector.instance.upsertNotificationPreference(
+final ref = ExampleConnector.instance.upsertLocalNotificationPreference(
   userUid: userUid,
   category: category,
   enabled: enabled,
+).ref();
+ref.execute();
+```
+
+
+### DeleteLocalNotificationPreferencesForUser
+#### Required Arguments
+```dart
+String userUid = ...;
+ExampleConnector.instance.deleteLocalNotificationPreferencesForUser(
+  userUid: userUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<DeleteLocalNotificationPreferencesForUserData, DeleteLocalNotificationPreferencesForUserVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.deleteLocalNotificationPreferencesForUser(
+  userUid: userUid,
+);
+DeleteLocalNotificationPreferencesForUserData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String userUid = ...;
+
+final ref = ExampleConnector.instance.deleteLocalNotificationPreferencesForUser(
+  userUid: userUid,
 ).ref();
 ref.execute();
 ```

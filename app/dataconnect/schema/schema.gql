@@ -116,11 +116,11 @@ type StudentAvatar @table(name: "student_avatars", key: ["studentUid"]) {
   avatarConfig: String @col(dataType: "text")
 }
 
-# ── Notification System ───────────────────────────────────────────────────────
+# ── Local Notification System ─────────────────────────────────────────────────
 
-# Cross-device notification event queue.
+# Cross-device local notification event queue.
 # Written by the student's device, read and cleared by the parent's device.
-type NotificationEvent @table(name: "notification_events", key: ["id"]) {
+type LocalNotificationEvent @table(name: "local_notification_events", key: ["id"]) {
   id: UUID! @default(expr: "uuidV4()")
   fromStudentUid: String! @col(dataType: "varchar(128)")
   toParentUid: String! @col(dataType: "varchar(128)")
@@ -131,10 +131,10 @@ type NotificationEvent @table(name: "notification_events", key: ["id"]) {
   isRead: Boolean! @default(expr: "false")
 }
 
-# Notification preferences for both parents and students.
+# Local notification preferences for both parents and students.
 # One row per user per category.
-type NotificationPreference @table(
-  name: "notification_preferences",
+type LocalNotificationPreference @table(
+  name: "local_notification_preferences",
   key: ["userUid", "category"]
 ) {
   userUid: String! @col(dataType: "varchar(128)")

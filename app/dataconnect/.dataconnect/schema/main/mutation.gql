@@ -18,23 +18,23 @@ extend type Mutation {
     data: InstalledApp_Data!
   ): InstalledApp_KeyOutput! @fdc_generated(from: "InstalledApp", purpose: INSERT_SINGLE)
   """
-  ✨ Insert a single `NotificationEvent` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  ✨ Insert a single `LocalNotificationEvent` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
-  notificationEvent_insert(
+  localNotificationEvent_insert(
     """
     Data object to insert into the table.
     """
-    data: NotificationEvent_Data!
-  ): NotificationEvent_KeyOutput! @fdc_generated(from: "NotificationEvent", purpose: INSERT_SINGLE)
+    data: LocalNotificationEvent_Data!
+  ): LocalNotificationEvent_KeyOutput! @fdc_generated(from: "LocalNotificationEvent", purpose: INSERT_SINGLE)
   """
-  ✨ Insert a single `NotificationPreference` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  ✨ Insert a single `LocalNotificationPreference` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
-  notificationPreference_insert(
+  localNotificationPreference_insert(
     """
     Data object to insert into the table.
     """
-    data: NotificationPreference_Data!
-  ): NotificationPreference_KeyOutput! @fdc_generated(from: "NotificationPreference", purpose: INSERT_SINGLE)
+    data: LocalNotificationPreference_Data!
+  ): LocalNotificationPreference_KeyOutput! @fdc_generated(from: "LocalNotificationPreference", purpose: INSERT_SINGLE)
   """
   ✨ Insert a single `Parent` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
@@ -135,23 +135,23 @@ extend type Mutation {
     data: [InstalledApp_Data!]!
   ): [InstalledApp_KeyOutput!]! @fdc_generated(from: "InstalledApp", purpose: INSERT_MULTIPLE)
   """
-  ✨ Insert `NotificationEvent` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  ✨ Insert `LocalNotificationEvent` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
-  notificationEvent_insertMany(
+  localNotificationEvent_insertMany(
     """
     List of data objects to insert into the table.
     """
-    data: [NotificationEvent_Data!]!
-  ): [NotificationEvent_KeyOutput!]! @fdc_generated(from: "NotificationEvent", purpose: INSERT_MULTIPLE)
+    data: [LocalNotificationEvent_Data!]!
+  ): [LocalNotificationEvent_KeyOutput!]! @fdc_generated(from: "LocalNotificationEvent", purpose: INSERT_MULTIPLE)
   """
-  ✨ Insert `NotificationPreference` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  ✨ Insert `LocalNotificationPreference` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
-  notificationPreference_insertMany(
+  localNotificationPreference_insertMany(
     """
     List of data objects to insert into the table.
     """
-    data: [NotificationPreference_Data!]!
-  ): [NotificationPreference_KeyOutput!]! @fdc_generated(from: "NotificationPreference", purpose: INSERT_MULTIPLE)
+    data: [LocalNotificationPreference_Data!]!
+  ): [LocalNotificationPreference_KeyOutput!]! @fdc_generated(from: "LocalNotificationPreference", purpose: INSERT_MULTIPLE)
   """
   ✨ Insert `Parent` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
@@ -252,23 +252,23 @@ extend type Mutation {
     data: InstalledApp_Data!
   ): InstalledApp_KeyOutput! @fdc_generated(from: "InstalledApp", purpose: UPSERT_SINGLE)
   """
-  ✨ Insert or update a single `NotificationEvent` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `NotificationEvent`.
+  ✨ Insert or update a single `LocalNotificationEvent` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `LocalNotificationEvent`.
   """
-  notificationEvent_upsert(
+  localNotificationEvent_upsert(
     """
     Data object to insert or update if it already exists.
     """
-    data: NotificationEvent_Data!
-  ): NotificationEvent_KeyOutput! @fdc_generated(from: "NotificationEvent", purpose: UPSERT_SINGLE)
+    data: LocalNotificationEvent_Data!
+  ): LocalNotificationEvent_KeyOutput! @fdc_generated(from: "LocalNotificationEvent", purpose: UPSERT_SINGLE)
   """
-  ✨ Insert or update a single `NotificationPreference` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `NotificationPreference`.
+  ✨ Insert or update a single `LocalNotificationPreference` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `LocalNotificationPreference`.
   """
-  notificationPreference_upsert(
+  localNotificationPreference_upsert(
     """
     Data object to insert or update if it already exists.
     """
-    data: NotificationPreference_Data!
-  ): NotificationPreference_KeyOutput! @fdc_generated(from: "NotificationPreference", purpose: UPSERT_SINGLE)
+    data: LocalNotificationPreference_Data!
+  ): LocalNotificationPreference_KeyOutput! @fdc_generated(from: "LocalNotificationPreference", purpose: UPSERT_SINGLE)
   """
   ✨ Insert or update a single `Parent` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Parent`.
   """
@@ -369,23 +369,23 @@ extend type Mutation {
     data: [InstalledApp_Data!]!
   ): [InstalledApp_KeyOutput!]! @fdc_generated(from: "InstalledApp", purpose: UPSERT_MULTIPLE)
   """
-  ✨ Insert or update `NotificationEvent` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `NotificationEvent`.
+  ✨ Insert or update `LocalNotificationEvent` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `LocalNotificationEvent`.
   """
-  notificationEvent_upsertMany(
+  localNotificationEvent_upsertMany(
     """
     List of data objects to insert or update if it already exists.
     """
-    data: [NotificationEvent_Data!]!
-  ): [NotificationEvent_KeyOutput!]! @fdc_generated(from: "NotificationEvent", purpose: UPSERT_MULTIPLE)
+    data: [LocalNotificationEvent_Data!]!
+  ): [LocalNotificationEvent_KeyOutput!]! @fdc_generated(from: "LocalNotificationEvent", purpose: UPSERT_MULTIPLE)
   """
-  ✨ Insert or update `NotificationPreference` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `NotificationPreference`.
+  ✨ Insert or update `LocalNotificationPreference` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `LocalNotificationPreference`.
   """
-  notificationPreference_upsertMany(
+  localNotificationPreference_upsertMany(
     """
     List of data objects to insert or update if it already exists.
     """
-    data: [NotificationPreference_Data!]!
-  ): [NotificationPreference_KeyOutput!]! @fdc_generated(from: "NotificationPreference", purpose: UPSERT_MULTIPLE)
+    data: [LocalNotificationPreference_Data!]!
+  ): [LocalNotificationPreference_KeyOutput!]! @fdc_generated(from: "LocalNotificationPreference", purpose: UPSERT_MULTIPLE)
   """
   ✨ Insert or update `Parent` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Parent`.
   """
@@ -516,9 +516,9 @@ extend type Mutation {
     data: InstalledApp_Data!
   ): InstalledApp_KeyOutput @fdc_generated(from: "InstalledApp", purpose: UPDATE_SINGLE)
   """
-  ✨ Update a single `NotificationEvent` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `NotificationEvent` or `null` if not found.
+  ✨ Update a single `LocalNotificationEvent` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `LocalNotificationEvent` or `null` if not found.
   """
-  notificationEvent_update(
+  localNotificationEvent_update(
     """
     The unique ID of the object.
     """
@@ -527,37 +527,37 @@ extend type Mutation {
     """
     The key used to identify the object.
     """
-    key: NotificationEvent_Key
+    key: LocalNotificationEvent_Key
 
     """
     Fetch the first row based on the filters and ordering.
     """
-    first: NotificationEvent_FirstRow
+    first: LocalNotificationEvent_FirstRow
 
     """
     Data object containing fields to be updated.
     """
-    data: NotificationEvent_Data!
-  ): NotificationEvent_KeyOutput @fdc_generated(from: "NotificationEvent", purpose: UPDATE_SINGLE)
+    data: LocalNotificationEvent_Data!
+  ): LocalNotificationEvent_KeyOutput @fdc_generated(from: "LocalNotificationEvent", purpose: UPDATE_SINGLE)
   """
-  ✨ Update a single `NotificationPreference` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `NotificationPreference` or `null` if not found.
+  ✨ Update a single `LocalNotificationPreference` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `LocalNotificationPreference` or `null` if not found.
   """
-  notificationPreference_update(
+  localNotificationPreference_update(
     """
     The key used to identify the object.
     """
-    key: NotificationPreference_Key
+    key: LocalNotificationPreference_Key
 
     """
     Fetch the first row based on the filters and ordering.
     """
-    first: NotificationPreference_FirstRow
+    first: LocalNotificationPreference_FirstRow
 
     """
     Data object containing fields to be updated.
     """
-    data: NotificationPreference_Data!
-  ): NotificationPreference_KeyOutput @fdc_generated(from: "NotificationPreference", purpose: UPDATE_SINGLE)
+    data: LocalNotificationPreference_Data!
+  ): LocalNotificationPreference_KeyOutput @fdc_generated(from: "LocalNotificationPreference", purpose: UPDATE_SINGLE)
   """
   ✨ Update a single `Parent` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `Parent` or `null` if not found.
   """
@@ -778,13 +778,13 @@ extend type Mutation {
     data: InstalledApp_Data!
   ): Int! @fdc_generated(from: "InstalledApp", purpose: UPDATE_MULTIPLE)
   """
-  ✨ Update `NotificationEvent` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  ✨ Update `LocalNotificationEvent` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
-  notificationEvent_updateMany(
+  localNotificationEvent_updateMany(
     """
     Filter condition to specify which rows to update.
     """
-    where: NotificationEvent_Filter
+    where: LocalNotificationEvent_Filter
 
     """
     Set to true to update all rows.
@@ -794,16 +794,16 @@ extend type Mutation {
     """
     Data object containing fields to update.
     """
-    data: NotificationEvent_Data!
-  ): Int! @fdc_generated(from: "NotificationEvent", purpose: UPDATE_MULTIPLE)
+    data: LocalNotificationEvent_Data!
+  ): Int! @fdc_generated(from: "LocalNotificationEvent", purpose: UPDATE_MULTIPLE)
   """
-  ✨ Update `NotificationPreference` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  ✨ Update `LocalNotificationPreference` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
-  notificationPreference_updateMany(
+  localNotificationPreference_updateMany(
     """
     Filter condition to specify which rows to update.
     """
-    where: NotificationPreference_Filter
+    where: LocalNotificationPreference_Filter
 
     """
     Set to true to update all rows.
@@ -813,8 +813,8 @@ extend type Mutation {
     """
     Data object containing fields to update.
     """
-    data: NotificationPreference_Data!
-  ): Int! @fdc_generated(from: "NotificationPreference", purpose: UPDATE_MULTIPLE)
+    data: LocalNotificationPreference_Data!
+  ): Int! @fdc_generated(from: "LocalNotificationPreference", purpose: UPDATE_MULTIPLE)
   """
   ✨ Update `Parent` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
@@ -1025,9 +1025,9 @@ extend type Mutation {
     first: InstalledApp_FirstRow
   ): InstalledApp_KeyOutput @fdc_generated(from: "InstalledApp", purpose: DELETE_SINGLE)
   """
-  ✨ Delete a single `NotificationEvent` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  ✨ Delete a single `LocalNotificationEvent` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
-  notificationEvent_delete(
+  localNotificationEvent_delete(
     """
     The unique ID of the object.
     """
@@ -1036,27 +1036,27 @@ extend type Mutation {
     """
     The key used to identify the object.
     """
-    key: NotificationEvent_Key
+    key: LocalNotificationEvent_Key
 
     """
     Fetch the first row based on the filters and ordering.
     """
-    first: NotificationEvent_FirstRow
-  ): NotificationEvent_KeyOutput @fdc_generated(from: "NotificationEvent", purpose: DELETE_SINGLE)
+    first: LocalNotificationEvent_FirstRow
+  ): LocalNotificationEvent_KeyOutput @fdc_generated(from: "LocalNotificationEvent", purpose: DELETE_SINGLE)
   """
-  ✨ Delete a single `NotificationPreference` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  ✨ Delete a single `LocalNotificationPreference` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
-  notificationPreference_delete(
+  localNotificationPreference_delete(
     """
     The key used to identify the object.
     """
-    key: NotificationPreference_Key
+    key: LocalNotificationPreference_Key
 
     """
     Fetch the first row based on the filters and ordering.
     """
-    first: NotificationPreference_FirstRow
-  ): NotificationPreference_KeyOutput @fdc_generated(from: "NotificationPreference", purpose: DELETE_SINGLE)
+    first: LocalNotificationPreference_FirstRow
+  ): LocalNotificationPreference_KeyOutput @fdc_generated(from: "LocalNotificationPreference", purpose: DELETE_SINGLE)
   """
   ✨ Delete a single `Parent` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
@@ -1222,33 +1222,33 @@ extend type Mutation {
     all: Boolean = false
   ): Int! @fdc_generated(from: "InstalledApp", purpose: DELETE_MULTIPLE)
   """
-  ✨ Delete `NotificationEvent` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  ✨ Delete `LocalNotificationEvent` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """
-  notificationEvent_deleteMany(
+  localNotificationEvent_deleteMany(
     """
     Filter condition to specify which rows to delete.
     """
-    where: NotificationEvent_Filter
+    where: LocalNotificationEvent_Filter
 
     """
     Set to true to delete all rows.
     """
     all: Boolean = false
-  ): Int! @fdc_generated(from: "NotificationEvent", purpose: DELETE_MULTIPLE)
+  ): Int! @fdc_generated(from: "LocalNotificationEvent", purpose: DELETE_MULTIPLE)
   """
-  ✨ Delete `NotificationPreference` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  ✨ Delete `LocalNotificationPreference` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """
-  notificationPreference_deleteMany(
+  localNotificationPreference_deleteMany(
     """
     Filter condition to specify which rows to delete.
     """
-    where: NotificationPreference_Filter
+    where: LocalNotificationPreference_Filter
 
     """
     Set to true to delete all rows.
     """
     all: Boolean = false
-  ): Int! @fdc_generated(from: "NotificationPreference", purpose: DELETE_MULTIPLE)
+  ): Int! @fdc_generated(from: "LocalNotificationPreference", purpose: DELETE_MULTIPLE)
   """
   ✨ Delete `Parent` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """
