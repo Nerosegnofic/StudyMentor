@@ -825,10 +825,11 @@ class DataConnectProvider {
         }
 
         final totalQuestions = (s['total_questions'] as int?) ?? 5;
+        // score is stored as 0–100 percentage (not 0–1 ratio)
         final score = (s['score'] as num?)?.toDouble() ?? 0.0;
-        final correctAnswers =
-            (s['correct_answers'] as int?) ?? (score * totalQuestions).round();
-        final passed = (s['passed'] as bool?) ?? (score >= 0.6);
+        final correctAnswers = (s['correct_answers'] as int?) ??
+            ((score / 100.0) * totalQuestions).round();
+        final passed = (s['passed'] as bool?) ?? (score >= 60);
         final skillTag = (s['skill_tag'] as String?) ?? subjectKey;
         final correctAnswerNumbers =
             (s['correct_answer_numbers'] as List<dynamic>?)
@@ -855,19 +856,37 @@ class DataConnectProvider {
     }
   }
 
+  Future<List<QuestionDetailModel>> getSessionQuestions(String quizAttemptId, {String? studentUid}) async {
+    try {
+      final data = await AiEngineRepository.instance
+          .getSessionQuestions(quizAttemptId, studentUid: studentUid);
+      final questions = (data['questions'] as List<dynamic>?) ?? [];
+      return questions.map((q) {
+        final m = q as Map<String, dynamic>;
+        return QuestionDetailModel(
+          quizAttemptId: quizAttemptId,
+          questionNumber: m['question_number'] as int,
+          isCorrect: m['is_correct'] as bool? ?? false,
+          questionText: m['question_text'] as String,
+          options: (m['options'] as List<dynamic>).cast<String>(),
+          selectedAnswer: m['selected_answer'] as String? ?? '',
+          correctAnswer: m['correct_answer'] as String,
+        );
+      }).toList();
+    } catch (e) {
+      print('Failed to load session questions: $e');
+      rethrow;
+    }
+  }
+
   Future<QuestionDetailModel> getQuestionDetail(
     String quizAttemptId,
     int questionNumber,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return QuestionDetailModel(
-      quizAttemptId: quizAttemptId,
-      questionNumber: questionNumber,
-      isCorrect: true,
-      questionText: 'What is 8 x 7?',
-      options: const ['54', '56', '64', '42'],
-      selectedAnswer: '56',
-      correctAnswer: '56',
+    final all = await getSessionQuestions(quizAttemptId);
+    return all.firstWhere(
+      (q) => q.questionNumber == questionNumber,
+      orElse: () => throw Exception('Question $questionNumber not found in session $quizAttemptId'),
     );
   }
 

@@ -83,6 +83,7 @@ abstract class AuthRepository {
   // ── Quizzes ─────────────────────────────────────────────────────────────
   Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, String subjectKey, {int limit = 10});
   Future<List<QuizAttemptModel>> getAllQuizzes(String studentUid, String subjectKey);
+  Future<List<QuestionDetailModel>> getSessionQuestions(String quizAttemptId, {String? studentUid});
   Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber);
 
   // ── Reports & Analytics ──────────────────────────────────────────────────

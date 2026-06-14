@@ -332,31 +332,29 @@ class _ChildCardState extends State<ChildCard> {
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2D1A),
+              color: const Color(0xFF14532D),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2D4A2D), width: 1),
+              border: Border.all(color: const Color(0xFF166534), width: 1),
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.monetization_on_rounded,
-                    size: 15, color: Color(0xFFFFC107)),
-                const SizedBox(width: 6),
+                    size: 16, color: Color(0xFFFBBF24)),
+                const SizedBox(width: 8),
                 Text(
                   '+3 coins will be awarded on first login',
                   style: GoogleFonts.roboto(
-                      color: const Color(0xFF86EFAC),
+                      color: const Color(0xFFBBF7D0),
                       fontSize: 12,
-                      fontWeight: FontWeight.w500),
+                      fontWeight: FontWeight.w600),
                 ),
               ],
             ),
           ),
           if (widget.onDelete != null) ...[
-            const SizedBox(height: 12),
-            const Divider(color: Color(0xFF2D3748), height: 1),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -372,15 +370,15 @@ class _ChildCardState extends State<ChildCard> {
                   style: GoogleFonts.roboto(
                     color: const Color(0xFFFC8181),
                     fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF742A2A), width: 1),
+                  side: const BorderSide(color: Color(0xFF991B1B), width: 1),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                 ),
               ),
             ),
