@@ -39,9 +39,11 @@ class StudentProfileDashboard extends StatefulWidget {
 }
 
 class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
-  String get _firstName => widget.student.fullName.split(' ').first;
-  String get _initial => widget.student.fullName.isNotEmpty
-      ? widget.student.fullName[0].toUpperCase()
+  late StudentModel _student;
+
+  String get _firstName => _student.fullName.split(' ').first;
+  String get _initial => _student.fullName.isNotEmpty
+      ? _student.fullName[0].toUpperCase()
       : '?';
 
   int _xp = 0;
@@ -52,15 +54,16 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
   @override
   void initState() {
     super.initState();
+    _student = widget.student;
     // Load daily snapshot (quizzes today, study time, accuracy)
     context.read<SnapshotBloc>().add(
-          LoadDailySnapshotRequested(studentUid: widget.student.uid),
+          LoadDailySnapshotRequested(studentUid: _student.uid),
         );
     // Load weekly report (accuracy trend, streak)
     context.read<ReportsBloc>().add(
-          LoadWeeklyReportRequested(studentUid: widget.student.uid),
+          LoadWeeklyReportRequested(studentUid: _student.uid),
         );
-        
+
     _loadGamification();
   }
 
@@ -80,14 +83,23 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
     }
   }
 
+  void _popWithStudent(BuildContext context) {
+    Navigator.of(context).pop(_student);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _popWithStudent(context);
+      },
+      child: Scaffold(
       backgroundColor: _kCanvas,
       body: Column(
         children: [
           // ── Sticky Branded Header ─────────────────────────────────────────
-          _StickyHeader(name: _firstName),
+          _StickyHeader(name: _firstName, onBack: () => _popWithStudent(context)),
 
           // ── Scrollable Body ───────────────────────────────────────────────
           Expanded(
@@ -97,7 +109,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
                 children: [
                   // 1 — Hero Profile Card
                   _HeroProfileCard(
-                    student: widget.student,
+                    student: _student,
                     initial: _initial,
                     xp: _xp,
                     coins: _coins,
@@ -106,11 +118,14 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
                   const SizedBox(height: 16),
 
                   // 2 — Quick Stats 2x2 Grid (BLoC-driven)
-                  _QuickStatsGrid(student: widget.student),
+                  _QuickStatsGrid(student: _student),
                   const SizedBox(height: 16),
 
                   // 3 — Navigation List
-                  _NavigationList(student: widget.student),
+                  _NavigationList(
+                    student: _student,
+                    onStudentUpdated: (updated) => setState(() => _student = updated),
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -118,6 +133,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -126,7 +142,8 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
 
 class _StickyHeader extends StatelessWidget {
   final String name;
-  const _StickyHeader({required this.name});
+  final VoidCallback onBack;
+  const _StickyHeader({required this.name, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +167,7 @@ class _StickyHeader extends StatelessWidget {
             children: [
               // Back button
               InkWell(
-                onTap: () => Navigator.of(context).pop(),
+                onTap: onBack,
                 borderRadius: BorderRadius.circular(24),
                 child: const Padding(
                   padding: EdgeInsets.all(4),
@@ -489,7 +506,8 @@ class _StatCard extends StatelessWidget {
 
 class _NavigationList extends StatelessWidget {
   final StudentModel student;
-  const _NavigationList({required this.student});
+  final void Function(StudentModel) onStudentUpdated;
+  const _NavigationList({required this.student, required this.onStudentUpdated});
 
   @override
   Widget build(BuildContext context) {
@@ -527,8 +545,8 @@ class _NavigationList extends StatelessWidget {
           icon: Icons.settings_rounded,
           title: 'App Configurations',
           subtitle: 'Gateway timers, monitored apps, quiz rules',
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final updated = await Navigator.push<StudentModel>(
               context,
               MaterialPageRoute(
                 builder: (_) => BlocProvider.value(
@@ -537,6 +555,9 @@ class _NavigationList extends StatelessWidget {
                 ),
               ),
             );
+            if (updated != null && context.mounted) {
+              onStudentUpdated(updated);
+            }
           },
         ),
       ],

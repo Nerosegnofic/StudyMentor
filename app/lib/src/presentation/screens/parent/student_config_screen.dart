@@ -33,6 +33,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   final List<PendingAppRule> _rules = [];
   StudentConfigModel _config = const StudentConfigModel();
   String _parentUid = '';
+  late StudentModel _student;
 
   List<InstalledAppModel> _installedApps = [];
   bool _appsLoading = true;
@@ -51,6 +52,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   @override
   void initState() {
     super.initState();
+    _student = widget.student;
     final authState = context.read<AuthBloc>().state;
     _parentUid = authState is AuthAuthenticated ? authState.user.uid : '';
     context.read<AppConfigBloc>().add(
@@ -156,7 +158,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${widget.student.fullName.split(' ').first}\'s device hasn\'t synced yet. '
+            '${_student.fullName.split(' ').first}\'s device hasn\'t synced yet. '
             'Ask them to open the app once.',
           ),
         ),
@@ -221,6 +223,28 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         _config = _config.copyWith(
           usageHours: result['hours']!,
           usageMinutes: result['minutes']!,
+        );
+      });
+      _markDirty();
+    }
+  }
+
+  Future<void> _showCooldownTimePicker() async {
+    final result = await showModalBottomSheet<Map<String, int>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _SetRewardTimeSheet(
+        initialHours: _config.cooldownHours,
+        initialMinutes: _config.cooldownMinutes,
+        title: 'Set Cooldown Time',
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _config = _config.copyWith(
+          cooldownHours: result['hours']!,
+          cooldownMinutes: result['minutes']!,
         );
       });
       _markDirty();
@@ -418,6 +442,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                   children: [
                     _buildStickyHeader(),
                     Expanded(child: _buildNewBody()),
+                    _buildStickySaveButton(),
                   ],
                 ),
         ),
@@ -426,7 +451,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   Widget _buildStickyHeader() {
-    final canSave = _isDirty && !_isSaving && !_hasTimingErrors;
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -473,18 +497,47 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                         onPressed: _isSaving ? null : _refresh,
                       ),
               ),
-              AnimatedOpacity(
-                opacity: canSave ? 1.0 : 0.4,
-                duration: const Duration(milliseconds: 200),
-                child: IconButton(
-                  icon: _isSaving
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save_rounded, color: Colors.white),
-                  onPressed: canSave ? _save : null,
-                ),
-              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStickySaveButton() {
+    final canSave = _isDirty && !_isSaving && !_hasTimingErrors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, -3)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: ElevatedButton(
+          onPressed: canSave ? _save : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2196F3),
+            disabledBackgroundColor: const Color(0xFFBDBDBD),
+            foregroundColor: Colors.white,
+            disabledForegroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            elevation: 0,
+          ),
+          child: _isSaving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : Text(
+                  'Save Changes',
+                  style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
         ),
       ),
     );
@@ -496,8 +549,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       child: Column(
         children: [
           _buildRewardCard(),
+          const SizedBox(height: 12),
+          _buildCooldownCard(),
           const SizedBox(height: 16),
-          _buildMonitoredAppsCard(),
+          _buildAppRulesCard(),
           const SizedBox(height: 16),
           _buildQuizSettingsCard(),
           const SizedBox(height: 24),
@@ -553,9 +608,92 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     );
   }
 
-  // ── Card 2: Monitored Apps ────────────────────────────────────────────────
+  // ── Card 1b: Cooldown Period ──────────────────────────────────────────────
 
-  Widget _buildMonitoredAppsCard() {
+  Widget _buildCooldownCard() {
+    final hrs = _config.cooldownHours.toString().padLeft(2, '0');
+    final mins = _config.cooldownMinutes.toString().padLeft(2, '0');
+    return GestureDetector(
+      onTap: _showCooldownTimePicker,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF8E1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFFCC02).withOpacity(0.5)),
+          boxShadow: const [
+            BoxShadow(color: Color(0x08000000), blurRadius: 8, offset: Offset(0, 3)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF9800).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.hourglass_bottom_rounded,
+                color: Color(0xFFFF9800),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cooldown Period',
+                    style: GoogleFonts.roboto(
+                      color: const Color(0xFF1E293B),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Lock duration after screen time runs out.',
+                    style: GoogleFonts.roboto(
+                      color: const Color(0xFF92400E),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$hrs : $mins',
+                  style: GoogleFonts.roboto(
+                    color: const Color(0xFFFF9800),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.edit, color: Color(0xFFFF9800), size: 15),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Card 2: App Rules ────────────────────────────────────────────────────
+
+  Widget _buildAppRulesCard() {
+    final monitored = _rules.where((r) => !r.isPaused).length;
+    final paused = _rules.where((r) => r.isPaused).length;
+    final total = _rules.length;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -570,7 +708,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Monitored Apps',
+              Text('App Rules',
                   style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
               GestureDetector(
                 onTap: _showAppPicker,
@@ -585,71 +723,90 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           if (_rules.isEmpty) ...[
             const SizedBox(height: 16),
             Center(
-              child: Text('No apps monitored yet. Tap + to add apps.',
+              child: Text('No apps configured yet. Tap + to add your first app.',
                   style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 13)),
             ),
           ] else ...[
             const SizedBox(height: 16),
-            for (int i = 0; i < _rules.length; i++) ...[
-              _buildAppRow(_rules[i], i),
-              if (i < _rules.length - 1) const Divider(height: 1, color: Color(0xFFF1F5F9)),
-            ],
+            Row(
+              children: [
+                _buildRuleStatChip(Icons.visibility_rounded, '$monitored monitored',
+                    const Color(0xFF2196F3), const Color(0xFFE3F2FD)),
+                if (paused > 0) ...[
+                  const SizedBox(width: 8),
+                  _buildRuleStatChip(Icons.pause_circle_outline_rounded, '$paused paused',
+                      const Color(0xFF94A3B8), const Color(0xFFF1F5F9)),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _showAppRulesSheet,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.apps_rounded, color: Color(0xFF2196F3), size: 16),
+                    const SizedBox(width: 8),
+                    Text('Manage all $total apps',
+                        style: GoogleFonts.roboto(
+                            color: const Color(0xFF2196F3), fontWeight: FontWeight.w600, fontSize: 13)),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right_rounded, color: Color(0xFF2196F3), size: 18),
+                  ],
+                ),
+              ),
+            ),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildAppRow(PendingAppRule rule, int index) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+  Widget _buildRuleStatChip(IconData icon, String label, Color color, Color bg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)),
-            child: Center(
-              child: Text(rule.appLabel.isNotEmpty ? rule.appLabel[0].toUpperCase() : '?',
-                  style: GoogleFonts.roboto(color: const Color(0xFF2196F3), fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(rule.appLabel,
-                    style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(
-                  rule.isPaused ? 'Unmonitored' : 'Monitored',
-                  style: GoogleFonts.roboto(
-                    color: rule.isPaused ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 24,
-            child: Switch(
-              value: !rule.isPaused,
-              onChanged: (isOn) {
-                setState(() {
-                  _rules[index] = rule.copyWith(isPaused: !isOn);
-                });
-                _markDirty();
-              },
-              activeColor: const Color(0xFF2196F3),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
+          Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
-          GestureDetector(
-            onTap: () => _confirmRemoveRule(rule, index),
-            child: const Icon(Icons.delete_outline, color: Color(0xFFE53935), size: 20),
-          ),
+          Text(label,
+              style: GoogleFonts.roboto(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showAppRulesSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _AppRulesSheet(
+        rules: List.from(_rules),
+        onChanged: (updated) {
+          setState(() {
+            _rules
+              ..clear()
+              ..addAll(updated);
+          });
+          _markDirty();
+        },
+        onAddApp: () {
+          Navigator.of(ctx).pop();
+          _showAppPicker();
+        },
       ),
     );
   }
@@ -744,12 +901,20 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => BlocProvider.value(
-                value: context.read<AuthBloc>(),
-                child: ParentStudentSettingsScreen(student: widget.student),
-              ),
-            )),
+            onPressed: () async {
+              final updated = await Navigator.push<StudentModel>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<AuthBloc>(),
+                    child: ParentStudentSettingsScreen(student: _student),
+                  ),
+                ),
+              );
+              if (updated != null && mounted) {
+                Navigator.of(context).pop(updated);
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2196F3), foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -788,7 +953,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<AuthBloc>(),
         child: _DeleteStudentDialog(
-          student: widget.student,
+          student: _student,
           parentUid: parentUid,
         ),
       ),
@@ -948,7 +1113,7 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
                       ),
                       const TextSpan(
                         text:
-                            '\'s account — progress, items, friends, and settings. '
+                            '\'s account — progress, items, and settings. '
                             'This cannot be undone.',
                       ),
                     ],
@@ -1303,6 +1468,270 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── _AppRulesSheet ────────────────────────────────────────────────────────────
+
+class _AppRulesSheet extends StatefulWidget {
+  final List<PendingAppRule> rules;
+  final void Function(List<PendingAppRule> updated) onChanged;
+  final VoidCallback onAddApp;
+
+  const _AppRulesSheet({
+    required this.rules,
+    required this.onChanged,
+    required this.onAddApp,
+  });
+
+  @override
+  State<_AppRulesSheet> createState() => _AppRulesSheetState();
+}
+
+class _AppRulesSheetState extends State<_AppRulesSheet> {
+  late List<PendingAppRule> _rules;
+
+  @override
+  void initState() {
+    super.initState();
+    _rules = List.from(widget.rules);
+  }
+
+  void _toggle(int index, bool isMonitored) {
+    setState(() => _rules[index] = _rules[index].copyWith(isPaused: !isMonitored));
+    widget.onChanged(_rules);
+  }
+
+  Future<void> _confirmRemove(int index) async {
+    final rule = _rules[index];
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Remove ${rule.appLabel}?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.bold, color: const Color(0xFF1E293B), fontSize: 18),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Are you sure you want to stop monitoring this app? Your child will have unrestricted access to it.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(dialogContext).pop(false),
+                      child: Container(
+                        decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(24)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text('Cancel',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.roboto(
+                                fontWeight: FontWeight.bold, color: const Color(0xFF64748B))),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(dialogContext).pop(true),
+                      child: Container(
+                        decoration: BoxDecoration(
+                            color: const Color(0xFFE53935),
+                            borderRadius: BorderRadius.circular(24)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text('Remove',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.roboto(
+                                fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirm == true) {
+      setState(() => _rules.removeAt(index));
+      widget.onChanged(_rules);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final monitored = _rules.where((r) => !r.isPaused).length;
+    final paused = _rules.where((r) => r.isPaused).length;
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      builder: (ctx, scrollCtl) => Column(
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 8),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(4)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('App Rules',
+                        style: GoogleFonts.cairo(
+                            color: const Color(0xFF1E293B),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold)),
+                    Text('$monitored monitored · $paused paused',
+                        style: GoogleFonts.roboto(
+                            color: const Color(0xFF64748B), fontSize: 12)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _rules.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.apps_outlined, size: 48, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text('No apps configured yet.',
+                            style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        Text('Tap "Add App" below to get started.',
+                            style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    controller: scrollCtl,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _rules.length,
+                    separatorBuilder: (_, __) => const Divider(
+                        height: 1, color: Color(0xFFF1F5F9), indent: 16, endIndent: 16),
+                    itemBuilder: (_, i) {
+                      final rule = _rules[i];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40, height: 40,
+                              decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(10)),
+                              child: Center(
+                                child: Text(
+                                  rule.appLabel.isNotEmpty
+                                      ? rule.appLabel[0].toUpperCase()
+                                      : '?',
+                                  style: GoogleFonts.roboto(
+                                      color: const Color(0xFF2196F3),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(rule.appLabel,
+                                      style: GoogleFonts.roboto(
+                                          color: const Color(0xFF1E293B),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14)),
+                                  Text(
+                                    rule.isPaused ? 'Paused' : 'Monitored',
+                                    style: GoogleFonts.roboto(
+                                      color: rule.isPaused
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF34A853),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: 24,
+                              child: Switch(
+                                value: !rule.isPaused,
+                                onChanged: (isOn) => _toggle(i, isOn),
+                                activeColor: const Color(0xFF2196F3),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () => _confirmRemove(i),
+                              child: const Icon(Icons.delete_outline,
+                                  color: Color(0xFFE53935), size: 20),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, -4))
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: widget.onAddApp,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text('Add App',
+                  style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2196F3),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1961,10 +2390,12 @@ class _QuickActionButton extends StatelessWidget {
 class _SetRewardTimeSheet extends StatefulWidget {
   final int initialHours;
   final int initialMinutes;
+  final String title;
 
   const _SetRewardTimeSheet({
     required this.initialHours,
     required this.initialMinutes,
+    this.title = 'Set Reward Time',
   });
 
   @override
@@ -2048,7 +2479,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Text(
-                "Set Reward Time",
+                widget.title,
                 style: GoogleFonts.cairo(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -2088,8 +2519,10 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
                         mode: CupertinoTimerPickerMode.hm,
                         initialTimerDuration: Duration(hours: _hours, minutes: _minutes),
                         onTimerDurationChanged: (duration) {
-                          _hours = duration.inHours;
-                          _minutes = duration.inMinutes % 60;
+                          setState(() {
+                            _hours = duration.inHours;
+                            _minutes = duration.inMinutes % 60;
+                          });
                         },
                       ),
                     ),

@@ -424,7 +424,8 @@ class MascotOverlayService {
   int _usageLimitSecondsFromConfig() =>
       (_config.usageHours * 3600) + (_config.usageMinutes * 60);
 
-  int _cooldownLimitSecondsFromConfig() => 30; // 30 seconds for fast testing
+  int _cooldownLimitSecondsFromConfig() =>
+      (_config.cooldownHours * 3600) + (_config.cooldownMinutes * 60);
 
   // ── Native → Dart callback: timer service ─────────────────────────────────
 

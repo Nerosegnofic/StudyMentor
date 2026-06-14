@@ -57,13 +57,13 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                   TextFormField(
                     controller: _fullNameCtl,
                     decoration: const InputDecoration(labelText: 'Full Name'),
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    validator: (v) => v!.isEmpty ? 'Full name is required.' : null,
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _emailCtl,
                     decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (v) => v!.contains('@') ? null : 'Invalid email',
+                    validator: (v) => v!.contains('@') ? null : 'Please enter a valid email address.',
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -82,7 +82,7 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                       ),
                     ),
                     obscureText: _obscurePassword,
-                    validator: (v) => v!.length >= 6 ? null : 'Min 6 chars',
+                    validator: (v) => v!.length >= 6 ? null : 'Password must be at least 6 characters.',
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -125,7 +125,7 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                   TextButton(
                     onPressed: () =>
                         Navigator.pushReplacementNamed(context, '/login'),
-                    child: const Text('Already registered? Login'),
+                    child: const Text('Already registered? Sign In'),
                   ),
                 ],
               ),

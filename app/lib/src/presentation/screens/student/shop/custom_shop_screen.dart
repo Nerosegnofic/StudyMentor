@@ -215,7 +215,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
 
         if (state is ShopError) {
           return Scaffold(
-            body: Center(child: Text('Error: ${state.message}')),
+            body: Center(child: Text(state.message)),
           );
         }
 

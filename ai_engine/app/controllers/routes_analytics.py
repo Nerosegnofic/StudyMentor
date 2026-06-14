@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.repositories.vector_repo import delete_vector_embeddings_by_subject
@@ -35,8 +35,9 @@ router = APIRouter(prefix="/analytics", tags=["Analytics Dashboard"])
 
 @router.get("/subjects")
 async def list_subjects_analytics(
+    student_uid: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    student_uid: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user),
 ):
     """
     Returns every subject the student is enrolled in, with:
@@ -44,15 +45,29 @@ async def list_subjects_analytics(
     - learning velocity (recent activity proxy)
     - color hex for the UI
     """
-    subjects = db.query(Subject).all()
+    target_uid = student_uid if student_uid else current_user
+    subjects = db.query(Subject).filter(
+        or_(Subject.is_global == True, Subject.student_uid == target_uid)
+    ).all()
+
+    # Query cached garden plants to match the student-side garden exactly
+    plant_map = {
+        p.subject_id: p.mastery_percent
+        for p in db.query(GardenPlant).filter_by(student_uid=target_uid).all()
+    }
+
     results = []
     for subj in subjects:
-        stats = get_subject_stats(db, student_uid, subj.subject_id)
+        stats = get_subject_stats(db, target_uid, subj.subject_id)
+        
+        cached_mastery = plant_map.get(subj.subject_id)
+        average_mastery = (cached_mastery / 100.0) if cached_mastery is not None else stats["average_mastery"]
+
         results.append({
             "subject_id": subj.subject_id,
             "name": subj.name,
             "color_hex": subj.color_hex,
-            "average_mastery": stats["average_mastery"],
+            "average_mastery": average_mastery,
             "learning_velocity": stats["learning_velocity"],
             "total_skills": stats["total_skills"],
             "mastered_skills": stats["mastered_skills"],
@@ -67,18 +82,20 @@ async def list_subjects_analytics(
 @router.get("/subjects/{subject_id}/mastery")
 async def get_subject_mastery_tree(
     subject_id: int,
+    student_uid: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    student_uid: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user),
 ):
     """
     Returns the Unit > Lesson > Skill mastery tree for a single subject.
     Each skill node includes: mastery, status (LOCKED/ACTIVE/MASTERED), attempts.
     """
+    target_uid = student_uid if student_uid else current_user
     subject = db.query(Subject).filter(Subject.subject_id == subject_id).first()
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found.")
 
-    hierarchy = get_subject_mastery_hierarchy(db, student_uid, subject_id)
+    hierarchy = get_subject_mastery_hierarchy(db, target_uid, subject_id)
     enriched = enrich_hierarchy_with_status(hierarchy)
 
     return {
@@ -97,12 +114,14 @@ async def get_subject_quiz_history(
     subject_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=50),
+    student_uid: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    student_uid: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user),
 ):
     """
     Returns paginated quiz session history for a given subject.
     """
+    target_uid = student_uid if student_uid else current_user
     subject = db.query(Subject).filter(Subject.subject_id == subject_id).first()
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found.")
@@ -110,7 +129,7 @@ async def get_subject_quiz_history(
     query = (
         db.query(QuizSession)
         .filter(
-            QuizSession.student_uid == student_uid,
+            QuizSession.student_uid == target_uid,
             QuizSession.subject_id == subject_id,
         )
         .order_by(QuizSession.start_time.desc())

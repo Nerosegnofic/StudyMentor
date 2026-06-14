@@ -44,6 +44,9 @@ class _ParentStudentSettingsScreenState
   // Shown after a successful email-change request.
   String? _pendingEmailNotice;
 
+  // Set in _save() when email is being changed, consumed in _onSaveSuccess.
+  String? _pendingEmailAddress;
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +116,8 @@ class _ParentStudentSettingsScreenState
     final isChangingPassword = _newPassCtl.text.isNotEmpty;
     final emailChanged = newEmail != _originalEmail && newEmail.isNotEmpty;
 
+    _pendingEmailAddress = emailChanged ? newEmail : null;
+
     context.read<StudentProfileBloc>().add(
       UpdateStudentProfileRequested(
         studentUid: widget.student.uid,
@@ -130,25 +135,52 @@ class _ParentStudentSettingsScreenState
   }
 
   void _onSaveSuccess(StudentProfileUpdateSuccess state) {
-    _originalFullName = state.updatedStudent.fullName;
-    _fullNameCtl.text = state.updatedStudent.fullName;
-    
-    // If email changed we keep _originalEmail as-is until student verifies.
-    _currentPassCtl.clear();
-    _newPassCtl.clear();
-    _confirmPassCtl.clear();
+    final newName = _fullNameCtl.text.trim();
+    final nameChanged = newName.isNotEmpty && newName != _originalFullName;
+    final pendingEmail = _pendingEmailAddress;
+    _pendingEmailAddress = null;
 
-    // In a real app we might handle pending email here.
-    setState(() {
-      _isSaving = false;
-      _isDirty = false;
-    });
+    final updatedStudent = widget.student.copyWith(
+      fullName: nameChanged ? newName : null,
+    );
+
+    final message = pendingEmail != null
+        ? 'Profile updated. A verification link was sent to $pendingEmail.'
+        : 'Profile updated successfully.';
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Student profile updated successfully.'),
-        backgroundColor: Color(0xFF34A853),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF34A853),
+        duration: const Duration(seconds: 4),
       ),
     );
+    Navigator.of(context).pop(updatedStudent);
+  }
+
+  Future<bool> _onWillPop() async {
+    if (!_isDirty) return true;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsaved Changes'),
+        content: const Text('You have unsaved changes. Leave without saving?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Stay'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+            ),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    return leave ?? false;
   }
 
   // ── build ─────────────────────────────────────────────────────────────────────
@@ -172,9 +204,16 @@ class _ParentStudentSettingsScreenState
           );
         }
       },
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Scaffold(
+      child: PopScope(
+        canPop: !_isDirty,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final leave = await _onWillPop();
+          if (leave && context.mounted) Navigator.of(context).pop();
+        },
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Scaffold(
           backgroundColor: const Color(0xFFF5F7FA),
           appBar: AppBar(
             backgroundColor: const Color(0xFF2196F3),
@@ -294,7 +333,8 @@ class _ParentStudentSettingsScreenState
             ),
           ),
         ),
-      ),
+          ),
+        ),
       ),
     );
   }
@@ -464,7 +504,7 @@ class _ParentStudentSettingsScreenState
         ),
         const SizedBox(height: 6),
         const Text(
-          'Username cannot be changed.',
+          'Usernames cannot be changed after registration.',
           style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
       ],
@@ -505,6 +545,8 @@ class _ParentStudentSettingsScreenState
               obscure: _obscureCurrent,
               onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
             ),
+            errorStyle: const TextStyle(fontSize: 11),
+            errorMaxLines: 2,
           ),
           validator: (v) {
             final changingPassword = _newPassCtl.text.isNotEmpty;

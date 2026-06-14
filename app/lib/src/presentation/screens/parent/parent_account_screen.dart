@@ -189,9 +189,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Your Account'),
         content: const Text(
-          'This will permanently delete your account and all associated data. '
-          'You must delete all student accounts first.\n\n'
-          'This action cannot be undone. Continue?',
+          'This will permanently delete your account. Are you sure?',
         ),
         actions: [
           TextButton(
@@ -465,7 +463,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
             icon: Icons.lock_outline,
           ).copyWith(
             helperText: emailChanged
-                ? 'Required to change your email address.'
+                ? 'Enter your current password to change your email.'
                 : null,
             helperStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             suffixIcon: _visibilityToggle(
@@ -1012,10 +1010,8 @@ class _ParentDeletePasswordDialogState
           if (state is ParentProfileLoading) {
             setState(() => _isLoading = true);
           } else if (state is ParentAccountDeleted) {
-            // Close the dialog. AuthUnauthenticated follows immediately and the
-            // root navigator redirects to the login screen — no extra navigation
-            // needed here.
-            Navigator.of(context).pop();
+            Navigator.of(context, rootNavigator: true)
+                .pushNamedAndRemoveUntil('/login', (route) => false);
           } else if (state is ParentProfileError) {
             setState(() {
               _isLoading = false;

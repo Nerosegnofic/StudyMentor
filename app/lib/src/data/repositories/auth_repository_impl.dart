@@ -514,7 +514,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<WeeklyReportModel> getWeeklyReport(String studentUid) {
-    return dataConnect.getWeeklyReport(studentUid);
+    return AiEngineRepository.instance.getWeeklyReport(studentUid);
   }
 
   @override
@@ -529,7 +529,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid) {
-    return dataConnect.getDailySnapshot(studentUid);
+    return AiEngineRepository.instance.getDailySnapshot(studentUid);
   }
 
   @override

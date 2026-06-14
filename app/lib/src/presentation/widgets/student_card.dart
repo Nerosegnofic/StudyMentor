@@ -2,11 +2,11 @@
 //
 // Displays a single student with two distinct visual states:
 //
-//   • Unverified — darkened card, desaturated avatar, red "UNVERIFIED" badge,
-//     tapping does nothing.
-//   • Verified   — full-colour card, normal appearance, tapping does nothing
-//     yet (future feature hook provided via [onTap]).
+//   • Unverified — darkened card, desaturated avatar, amber "UNVERIFIED" badge,
+//     tapping does nothing. Polls gamification every 30 s so coins update live.
+//   • Verified   — full-colour card, normal appearance.
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../domain/models/student_model.dart';
 import '../../data/repositories/ai_engine_repository.dart';
@@ -15,7 +15,6 @@ class StudentCard extends StatefulWidget {
   final StudentModel student;
 
   /// Called when the card is tapped AND the student is verified.
-  /// Leave null until card-interaction functionality is implemented.
   final VoidCallback? onTap;
 
   const StudentCard({super.key, required this.student, this.onTap});
@@ -27,11 +26,37 @@ class StudentCard extends StatefulWidget {
 class _StudentCardState extends State<StudentCard> {
   int _xp = 0;
   int _coins = 0;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadGamification();
+    _startPollingIfUnverified();
+  }
+
+  @override
+  void didUpdateWidget(StudentCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.student.isEmailVerified != widget.student.isEmailVerified) {
+      _startPollingIfUnverified();
+    }
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPollingIfUnverified() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+    if (!widget.student.isEmailVerified) {
+      _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+        if (mounted) _loadGamification();
+      });
+    }
   }
 
   Future<void> _loadGamification() async {
@@ -179,9 +204,8 @@ class _StudentCardState extends State<StudentCard> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 3),
-        // ── Show "Tap to view" for verified students; email for unverified ──
         Text(
-          verified ? 'Tap to view' : widget.student.email,
+          verified ? 'Tap to view' : 'Awaiting email verification',
           style: TextStyle(fontSize: 12, color: subtitleColor),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -295,7 +319,7 @@ class _StudentCardState extends State<StudentCard> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: const BoxDecoration(
-          color: Color(0xFFD32F2F),
+          color: Color(0xFF78350F),
           borderRadius: BorderRadius.only(
             topRight: Radius.circular(16),
             bottomLeft: Radius.circular(10),
@@ -307,13 +331,13 @@ class _StudentCardState extends State<StudentCard> {
             Icon(
               Icons.mark_email_unread_outlined,
               size: 11,
-              color: Colors.white,
+              color: Color(0xFFFBBF24),
             ),
             SizedBox(width: 4),
             Text(
               'UNVERIFIED',
               style: TextStyle(
-                color: Colors.white,
+                color: Color(0xFFFBBF24),
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.8,

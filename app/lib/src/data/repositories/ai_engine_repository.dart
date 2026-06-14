@@ -1,10 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../catalog/document_models.dart';
 import '../../domain/models/garden_plant_model.dart';
 import '../../domain/models/skill_detail_model.dart';
+import '../../domain/models/report_models.dart';
 
 // ---------------------------------------------------------------------------
 // Quiz DTOs (mirrors ai_engine/app/models/schemas/quiz_schemas.py)
@@ -175,7 +176,7 @@ class AiEngineRepository {
   /// - Physical device → your machine's LAN IP, e.g. `http://192.168.x.x:8000`
   ///
   /// Change this single constant when switching environments.
-  static const String defaultBaseUrl = 'http://192.168.100.2:8000';
+  static const String defaultBaseUrl = 'http://172.20.10.2:8000';
 
   /// Lazy singleton — created on first access, reused everywhere.
   static final AiEngineRepository instance = AiEngineRepository(
@@ -394,6 +395,47 @@ class AiEngineRepository {
     _assertSuccess(response, 'ensureSubjects');
   }
 
+  /// `GET /analytics/subjects` — returns every subject the student is enrolled in with stats
+  Future<List<Map<String, dynamic>>> getSubjectsAnalytics({String? studentUid}) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects').replace(
+      queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
+    );
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getSubjectsAnalytics');
+    final list = jsonDecode(response.body) as List;
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  /// `GET /analytics/subjects/{id}/mastery` — returns unit/lesson/skill mastery tree
+  Future<Map<String, dynamic>> getSubjectMasteryTree(int subjectId, {String? studentUid}) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectId/mastery').replace(
+      queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
+    );
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getSubjectMasteryTree');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// `GET /analytics/subjects/{id}/history` — returns paginated quiz sessions
+  Future<Map<String, dynamic>> getSubjectQuizHistory(int subjectId, {int page = 1, int pageSize = 10, String? studentUid}) async {
+    final headers = await _getJsonHeaders();
+    final queryParams = <String, String>{
+      'page': page.toString(),
+      'page_size': pageSize.toString(),
+    };
+    if (studentUid != null) {
+      queryParams['student_uid'] = studentUid;
+    }
+    final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectId/history').replace(
+      queryParameters: queryParams,
+    );
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getSubjectQuizHistory');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   /// `DELETE /analytics/students/{studentUid}` — wipe all AI-engine data for a student.
   /// Called during student account deletion; uses the parent's JWT for auth.
   Future<void> deleteStudentAllData(String studentUid) async {
@@ -412,5 +454,60 @@ class AiEngineRepository {
         .replace(queryParameters: {'student_uid': studentUid});
     final response = await http.delete(uri, headers: headers);
     _assertSuccess(response, 'deleteSubject');
+  }
+
+  // -------------------------------------------------------------------------
+  // Snapshot & reporting endpoints
+  // -------------------------------------------------------------------------
+
+  /// `GET /gamification/student/{uid}/daily-snapshot` — real today's stats.
+  Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final clientLocalDate = DateTime.now().toIso8601String().split('T')[0];
+    final uri = Uri.parse(
+      '$baseUrl/api/v1/gamification/student/$studentUid/daily-snapshot',
+    ).replace(queryParameters: {'client_local_date': clientLocalDate});
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getDailySnapshot');
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return DailyStudentSnapshotModel(
+      studentUid: studentUid,
+      quizzesCompletedToday: (data['quizzes_today'] as int?) ?? 0,
+      totalStudyTimeToday: Duration(minutes: (data['study_time_minutes'] as int?) ?? 0),
+      averageAccuracyToday: (data['accuracy_today'] as int?) ?? 0,
+    );
+  }
+
+  /// `GET /gamification/student/{uid}/weekly-report` — real 7-day stats.
+  Future<WeeklyReportModel> getWeeklyReport(String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse(
+      '$baseUrl/api/v1/gamification/student/$studentUid/weekly-report',
+    );
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getWeeklyReport');
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    final trendRaw = (data['accuracy_trend'] as List<dynamic>?) ?? [];
+    final trend = trendRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return WeeklyAccuracyPoint(
+        weekLabel: m['week_label'] as String,
+        accuracy: (m['accuracy'] as num).toDouble(),
+      );
+    }).toList();
+
+    return WeeklyReportModel(
+      studentUid: studentUid,
+      weekStartDate: DateTime.parse(data['week_start_date'] as String),
+      overallAccuracyPercent: (data['overall_accuracy_percent'] as num?)?.toDouble() ?? 0.0,
+      totalQuizzes: (data['total_quizzes'] as int?) ?? 0,
+      totalStudyTime: Duration(minutes: (data['study_time_minutes'] as int?) ?? 0),
+      currentStreakDays: (data['current_streak_days'] as int?) ?? 0,
+      longestStreakDays: (data['longest_streak_days'] as int?) ?? 0,
+      accuracyTrend: trend,
+      subjectAllocations: const [],
+      aiInsightText: '',
+    );
   }
 }

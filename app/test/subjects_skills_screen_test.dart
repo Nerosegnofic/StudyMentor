@@ -93,16 +93,9 @@ void main() {
     expect(find.text('60%'), findsOneWidget);
     expect(find.text('92%'), findsOneWidget);
 
-    // Find the three-dots menu icon for Mathematics (first widget)
-    final threeDots = find.byIcon(Icons.more_vert).first;
-    await tester.tap(threeDots);
-    await tester.pumpAndSettle();
-
-    // Verify the "Remove Subject" dropdown item option appears
-    expect(find.text('Remove Subject'), findsOneWidget);
-
-    // Tap "Remove Subject" from dropdown
-    await tester.tap(find.text('Remove Subject'));
+    // Find the delete icon for Mathematics (first widget)
+    final deleteIcon = find.byIcon(Icons.delete_outline).first;
+    await tester.tap(deleteIcon);
     await tester.pumpAndSettle();
 
     // Verify styled deletion confirmation dialog is shown
@@ -120,10 +113,8 @@ void main() {
     expect(find.text('Remove mathematics?'), findsNothing);
     expect(find.text('Mathematics'), findsOneWidget);
 
-    // Open menu again to proceed with removal
-    await tester.tap(threeDots);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Remove Subject'));
+    // Tap the delete icon again to proceed with removal
+    await tester.tap(deleteIcon);
     await tester.pumpAndSettle();
 
     // Tap "Remove" on the dialog

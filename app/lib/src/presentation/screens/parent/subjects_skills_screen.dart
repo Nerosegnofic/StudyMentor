@@ -10,6 +10,7 @@ import '../../../bloc/subject/subject_bloc.dart';
 import '../../../bloc/subject/subject_event.dart';
 import '../../../bloc/subject/subject_state.dart';
 import '../student/student_documents.dart';
+import '../../../data/catalog/subject_metadata_registry.dart';
 
 // SubjectData removed, using SubjectSummaryModel directly
 
@@ -24,7 +25,7 @@ class SubjectsSkillsScreen extends StatefulWidget {
 }
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
-  static const _kAiEngineBaseUrl = 'http://192.168.100.2:8000';
+  static const _kAiEngineBaseUrl = 'http://172.20.10.2:8000';
 
   @override
   void initState() {
@@ -84,17 +85,64 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
               children: [
                 _buildHeader(context, existingKeys),
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: subjects.length,
-                    itemBuilder: (context, index) {
-                      return _buildSubjectCard(context, subjects[index]);
-                    },
-                  ),
+                  child: subjects.isEmpty
+                      ? _buildEmptyState(context)
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          itemCount: subjects.length,
+                          itemBuilder: (context, index) {
+                            return _buildSubjectCard(context, subjects[index]);
+                          },
+                        ),
                 ),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE3F2FD),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.school_outlined,
+                size: 48,
+                color: Color(0xFF2196F3),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "No Subjects Yet",
+              style: GoogleFonts.cairo(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Tap the '+' button in the top right to start tracking subjects or upload a new curriculum for ${widget.student.fullName}.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(
+                fontSize: 14,
+                color: const Color(0xFF64748B),
+                height: 1.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -192,7 +240,10 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.book, color: color),
+              child: Icon(
+                SubjectMetadataRegistry.getSubjectIcon(subject.subjectKey) ?? Icons.book,
+                color: color,
+              ),
             ),
             const SizedBox(width: 16),
             // Right-hand content area: flex-column taking up remaining space (Expanded)
@@ -227,84 +278,66 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Color(0xFFE53935), size: 20),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        onSelected: (value) {
-                          if (value == 'remove') {
-                            _showRemoveConfirmationDialog(context, subject);
-                          }
+                        onPressed: () {
+                          _showRemoveConfirmationDialog(context, subject);
                         },
-                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                          PopupMenuItem<String>(
-                            value: 'remove',
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.delete,
-                                  color: Color(0xFFE53935),
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Remove Subject",
-                                  style: GoogleFonts.roboto(
-                                    color: const Color(0xFFE53935),
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Bottom Row: Progress bar + Percentage text
+                  // Progress label and percentage row
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final maxWidth = constraints.maxWidth;
-                            return Stack(
-                              alignment: Alignment.centerLeft,
-                              children: [
-                                Container(
-                                  width: maxWidth,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE2E8F0),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                                Container(
-                                  width: maxWidth * (progress / 100),
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2196F3),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                      Text(
+                        "Mastery Progress",
+                        style: GoogleFonts.roboto(
+                          color: const Color(0xFF64748B),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Text(
                         "$progress%",
                         style: GoogleFonts.roboto(
-                          color: const Color(0xFF2196F3),
-                          fontSize: 10,
+                          color: color,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Progress bar
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final maxWidth = constraints.maxWidth;
+                      return Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          Container(
+                            width: maxWidth,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE2E8F0),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          Container(
+                            width: maxWidth * (progress / 100),
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2196F3),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -340,7 +373,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Are you sure you want to stop tracking this subject? This will remove it from your dashboard.",
+                  "Are you sure you want to remove this subject?",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.roboto(
                     color: const Color(0xFF64748B),
@@ -412,6 +445,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
   void _showAddSubjectModal(BuildContext context, List<String> existingKeys) {
     context.read<SubjectBloc>().add(LoadAvailableSubjectsRequested());
     final selectedKeys = <String>{};
+    String searchQuery = '';
 
     showModalBottomSheet(
       context: context,
@@ -444,6 +478,11 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
+                      onChanged: (value) {
+                        setModalState(() {
+                          searchQuery = value;
+                        });
+                      },
                       decoration: InputDecoration(
                         hintText: "Search subjects...",
                         prefixIcon: const Icon(Icons.search),
@@ -457,6 +496,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+
                   Expanded(
                     child: BlocBuilder<SubjectBloc, SubjectState>(
                       buildWhen: (prev, curr) => curr is SubjectsLoading || curr is AvailableSubjectsLoaded,
@@ -466,6 +506,10 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                         }
                         if (state is AvailableSubjectsLoaded) {
                           final subjects = state.subjects.where((s) => !existingKeys.contains(s.subjectKey)).toList();
+                          final filteredSubjects = subjects.where((s) {
+                            final name = s.subjectKey.toLowerCase();
+                            return name.startsWith(searchQuery.toLowerCase());
+                          }).toList();
                           return GridView.builder(
                             padding: const EdgeInsets.all(16),
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -474,10 +518,16 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                               crossAxisSpacing: 12,
                               childAspectRatio: 1.5,
                             ),
-                            itemCount: subjects.length,
+                            itemCount: filteredSubjects.length,
                             itemBuilder: (context, index) {
-                              final subject = subjects[index];
+                              final subject = filteredSubjects[index];
                               final isSelected = selectedKeys.contains(subject.subjectKey);
+                              Color color;
+                              try {
+                                color = Color(int.parse(subject.colorHex.replaceFirst('#', '0xFF')));
+                              } catch (_) {
+                                color = Colors.blue;
+                              }
                               return GestureDetector(
                                 onTap: () {
                                   setModalState(() {
@@ -500,6 +550,12 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
+                                      Icon(
+                                        SubjectMetadataRegistry.getSubjectIcon(subject.subjectKey) ?? Icons.book,
+                                        color: color,
+                                        size: 28,
+                                      ),
+                                      const SizedBox(height: 8),
                                       Text(
                                         subject.subjectKey.substring(0, 1).toUpperCase() + subject.subjectKey.substring(1),
                                         style: GoogleFonts.roboto(
