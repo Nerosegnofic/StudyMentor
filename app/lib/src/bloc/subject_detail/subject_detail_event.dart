@@ -26,3 +26,12 @@ class FetchQuestionDetailRequested extends SubjectDetailEvent {
   @override
   List<Object?> get props => [quizAttemptId, questionNumber];
 }
+
+class FetchSessionQuestionsRequested extends SubjectDetailEvent {
+  final String quizAttemptId;
+
+  const FetchSessionQuestionsRequested({required this.quizAttemptId});
+
+  @override
+  List<Object?> get props => [quizAttemptId];
+}

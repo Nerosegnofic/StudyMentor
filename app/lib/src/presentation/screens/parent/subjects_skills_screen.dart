@@ -193,9 +193,8 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
 
   Widget _buildSubjectCard(BuildContext context, SubjectSummaryModel subject) {
     final title = subject.subjectKey[0].toUpperCase() + subject.subjectKey.substring(1);
-    final subtitle = "${subject.skillsCount} skills tracked";
     final progress = subject.masteryPercent;
-    
+
     Color color;
     try {
       color = Color(int.parse(subject.colorHex.replaceFirst('#', '0xFF')));
@@ -209,102 +208,112 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
           context,
           MaterialPageRoute(
             builder: (ctx) => ParentSubjectDetailScreen(
-                studentUid: widget.student.uid,
-                subjectKey: subject.subjectKey,
-                subjectName: title, 
-                color: color,
-              ),
+              studentUid: widget.student.uid,
+              subjectKey: subject.subjectKey,
+              subjectName: title,
+              color: color,
+            ),
           ),
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border(left: BorderSide(width: 4, color: color)),
           boxShadow: const [
             BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.05),
-              blurRadius: 12,
+              color: Color.fromRGBO(0, 0, 0, 0.07),
+              blurRadius: 14,
               offset: Offset(0, 4),
             ),
           ],
         ),
+        padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Left-hand Icon block exactly as it is
             Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 SubjectMetadataRegistry.getSubjectIcon(subject.subjectKey) ?? Icons.book,
                 color: color,
+                size: 26,
               ),
             ),
-            const SizedBox(width: 16),
-            // Right-hand content area: flex-column taking up remaining space (Expanded)
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: GoogleFonts.roboto(
-                                color: const Color(0xFF1E293B),
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle,
-                              style: GoogleFonts.roboto(
-                                color: const Color(0xFF64748B),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          title,
+                          style: GoogleFonts.cairo(
+                            color: const Color(0xFF1E293B),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Color(0xFFE53935), size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          _showRemoveConfirmationDialog(context, subject);
-                        },
+                      GestureDetector(
+                        onTap: () => _showRemoveConfirmationDialog(context, subject),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFEBEE),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline,
+                            color: Color(0xFFE53935),
+                            size: 16,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  // Progress label and percentage row
+                  const SizedBox(height: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${subject.skillsCount} skills tracked',
+                      style: GoogleFonts.roboto(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Mastery Progress",
+                        'Mastery',
                         style: GoogleFonts.roboto(
-                          color: const Color(0xFF64748B),
-                          fontSize: 12,
+                          color: const Color(0xFF94A3B8),
+                          fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       Text(
-                        "$progress%",
+                        '$progress%',
                         style: GoogleFonts.roboto(
                           color: color,
                           fontSize: 12,
@@ -313,28 +322,27 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  // Progress bar
+                  const SizedBox(height: 5),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final maxWidth = constraints.maxWidth;
                       return Stack(
-                        alignment: Alignment.centerLeft,
                         children: [
                           Container(
-                            width: maxWidth,
-                            height: 8,
+                            width: constraints.maxWidth,
+                            height: 6,
                             decoration: BoxDecoration(
                               color: const Color(0xFFE2E8F0),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(3),
                             ),
                           ),
-                          Container(
-                            width: maxWidth * (progress / 100),
-                            height: 8,
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeOut,
+                            width: constraints.maxWidth * (progress / 100),
+                            height: 6,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2196F3),
-                              borderRadius: BorderRadius.circular(4),
+                              color: color,
+                              borderRadius: BorderRadius.circular(3),
                             ),
                           ),
                         ],

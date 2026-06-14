@@ -16,12 +16,14 @@ class SubjectDetailInitial extends SubjectDetailState {}
 class SubjectDetailLoading extends SubjectDetailState {}
 
 class SubjectDetailLoaded extends SubjectDetailState {
+  final String studentUid;
   final SubjectSummaryModel summary;
   final List<SkillProgressModel> skills;
   final List<QuizAttemptModel> recentQuizzes;
   final Map<String, QuestionDetailModel> questionDetails;
 
   const SubjectDetailLoaded({
+    required this.studentUid,
     required this.summary,
     required this.skills,
     required this.recentQuizzes,
@@ -29,12 +31,14 @@ class SubjectDetailLoaded extends SubjectDetailState {
   });
 
   SubjectDetailLoaded copyWith({
+    String? studentUid,
     SubjectSummaryModel? summary,
     List<SkillProgressModel>? skills,
     List<QuizAttemptModel>? recentQuizzes,
     Map<String, QuestionDetailModel>? questionDetails,
   }) {
     return SubjectDetailLoaded(
+      studentUid: studentUid ?? this.studentUid,
       summary: summary ?? this.summary,
       skills: skills ?? this.skills,
       recentQuizzes: recentQuizzes ?? this.recentQuizzes,
@@ -43,7 +47,7 @@ class SubjectDetailLoaded extends SubjectDetailState {
   }
 
   @override
-  List<Object?> get props => [summary, skills, recentQuizzes, questionDetails];
+  List<Object?> get props => [studentUid, summary, skills, recentQuizzes, questionDetails];
 }
 
 class SubjectDetailError extends SubjectDetailState {
