@@ -37,7 +37,7 @@ class DataConnectProvider {
   Future<void> createParentProfile() async {
     await _connector.insertParent().execute();
 
-    // Seed default notification preferences for parent
+    // Seed default local notification preferences for parent
     final parentCategories = [
       ('PARENT_CHILD_PROGRESS', true),
       ('PARENT_STREAK_ALERTS', true),
@@ -47,7 +47,7 @@ class DataConnectProvider {
     for (final (category, enabled) in parentCategories) {
       try {
         await _connector
-            .upsertNotificationPreference(
+            .upsertLocalNotificationPreference(
               userUid: FirebaseAuth.instance.currentUser!.uid,
               category: category,
               enabled: enabled,
@@ -77,7 +77,7 @@ class DataConnectProvider {
         .gradeLevel(gradeLevel)
         .execute();
 
-    // Seed default notification preferences for student
+    // Seed default local notification preferences for student
     final studentUid = FirebaseAuth.instance.currentUser!.uid;
     final studentCategories = [
       ('CHILD_STREAK_REMINDER', true, '19:00'),
@@ -87,7 +87,7 @@ class DataConnectProvider {
     ];
     for (final (category, enabled, reminderTime) in studentCategories) {
       try {
-        final builder = _connector.upsertNotificationPreference(
+        final builder = _connector.upsertLocalNotificationPreference(
           userUid: studentUid,
           category: category,
           enabled: enabled,
@@ -396,6 +396,9 @@ class DataConnectProvider {
       _connector
           .deleteAllInstalledAppsForStudent(studentUid: studentUid)
           .execute(),
+      _connector
+          .deleteLocalNotificationPreferencesForUser(userUid: studentUid)
+          .execute(),
     ]);
     await _connector.deleteStudentRecord(uid: studentUid).execute();
     await _connector.deleteUserRecord(uid: studentUid).execute();
@@ -436,16 +439,16 @@ class DataConnectProvider {
         .execute();
   }
 
-  // ── Notification System ───────────────────────────────────────────────────
+  // ── Local Notification System ─────────────────────────────────────────────
 
-  Future<void> insertNotificationEvent({
+  Future<void> insertLocalNotificationEvent({
     required String fromStudentUid,
     required String toParentUid,
     required String eventType,
     required String payload,
   }) async {
     await _connector
-        .insertNotificationEvent(
+        .insertLocalNotificationEvent(
           fromStudentUid: fromStudentUid,
           toParentUid: toParentUid,
           eventType: eventType,
@@ -454,19 +457,19 @@ class DataConnectProvider {
         .execute();
   }
 
-  Future<void> markNotificationEventsRead(String toParentUid) async {
+  Future<void> markLocalNotificationEventsRead(String toParentUid) async {
     await _connector
-        .markNotificationEventsRead(toParentUid: toParentUid)
+        .markLocalNotificationEventsRead(toParentUid: toParentUid)
         .execute();
   }
 
-  Future<void> upsertNotificationPreference({
+  Future<void> upsertLocalNotificationPreference({
     required String userUid,
     required String category,
     required bool enabled,
     String? reminderTime,
   }) async {
-    final builder = _connector.upsertNotificationPreference(
+    final builder = _connector.upsertLocalNotificationPreference(
       userUid: userUid,
       category: category,
       enabled: enabled,
@@ -475,13 +478,13 @@ class DataConnectProvider {
     await builder.execute();
   }
 
-  Future<List<Map<String, dynamic>>> getUnreadNotificationEvents(
+  Future<List<Map<String, dynamic>>> getUnreadLocalNotificationEvents(
     String toParentUid,
   ) async {
     final result = await _connector
-        .getUnreadNotificationEvents(toParentUid: toParentUid)
+        .getUnreadLocalNotificationEvents(toParentUid: toParentUid)
         .execute();
-    return result.data.notificationEvents
+    return result.data.localNotificationEvents
         .map(
           (e) => {
             'id': e.id,
@@ -497,13 +500,13 @@ class DataConnectProvider {
         .toList();
   }
 
-  Future<List<Map<String, dynamic>>> getNotificationPreferences(
+  Future<List<Map<String, dynamic>>> getLocalNotificationPreferences(
     String userUid,
   ) async {
     final result = await _connector
-        .getNotificationPreferences(userUid: userUid)
+        .getLocalNotificationPreferences(userUid: userUid)
         .execute();
-    return result.data.notificationPreferences
+    return result.data.localNotificationPreferences
         .map(
           (p) => {
             'category': p.category,
@@ -776,10 +779,11 @@ class DataConnectProvider {
         }
 
         final totalQuestions = (s['total_questions'] as int?) ?? 5;
+        // score is stored as 0–100 percentage (not 0–1 ratio)
         final score = (s['score'] as num?)?.toDouble() ?? 0.0;
-        final correctAnswers =
-            (s['correct_answers'] as int?) ?? (score * totalQuestions).round();
-        final passed = (s['passed'] as bool?) ?? (score >= 0.6);
+        final correctAnswers = (s['correct_answers'] as int?) ??
+            ((score / 100.0) * totalQuestions).round();
+        final passed = (s['passed'] as bool?) ?? (score >= 60);
         final skillTag = (s['skill_tag'] as String?) ?? subjectKey;
         final correctAnswerNumbers =
             (s['correct_answer_numbers'] as List<dynamic>?)
@@ -806,19 +810,37 @@ class DataConnectProvider {
     }
   }
 
+  Future<List<QuestionDetailModel>> getSessionQuestions(String quizAttemptId, {String? studentUid}) async {
+    try {
+      final data = await AiEngineRepository.instance
+          .getSessionQuestions(quizAttemptId, studentUid: studentUid);
+      final questions = (data['questions'] as List<dynamic>?) ?? [];
+      return questions.map((q) {
+        final m = q as Map<String, dynamic>;
+        return QuestionDetailModel(
+          quizAttemptId: quizAttemptId,
+          questionNumber: m['question_number'] as int,
+          isCorrect: m['is_correct'] as bool? ?? false,
+          questionText: m['question_text'] as String,
+          options: (m['options'] as List<dynamic>).cast<String>(),
+          selectedAnswer: m['selected_answer'] as String? ?? '',
+          correctAnswer: m['correct_answer'] as String,
+        );
+      }).toList();
+    } catch (e) {
+      print('Failed to load session questions: $e');
+      rethrow;
+    }
+  }
+
   Future<QuestionDetailModel> getQuestionDetail(
     String quizAttemptId,
     int questionNumber,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return QuestionDetailModel(
-      quizAttemptId: quizAttemptId,
-      questionNumber: questionNumber,
-      isCorrect: true,
-      questionText: 'What is 8 x 7?',
-      options: const ['54', '56', '64', '42'],
-      selectedAnswer: '56',
-      correctAnswer: '56',
+    final all = await getSessionQuestions(quizAttemptId);
+    return all.firstWhere(
+      (q) => q.questionNumber == questionNumber,
+      orElse: () => throw Exception('Question $questionNumber not found in session $quizAttemptId'),
     );
   }
 

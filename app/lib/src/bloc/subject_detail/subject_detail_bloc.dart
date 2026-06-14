@@ -1,6 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/models/question_detail_model.dart';
+import '../../domain/models/skill_progress_model.dart';
+import '../../domain/models/subject_summary_model.dart';
+import '../../domain/models/quiz_attempt_model.dart';
 import 'subject_detail_event.dart';
 import 'subject_detail_state.dart';
 
@@ -10,6 +13,7 @@ class SubjectDetailBloc extends Bloc<SubjectDetailEvent, SubjectDetailState> {
   SubjectDetailBloc({required this.authRepository}) : super(SubjectDetailInitial()) {
     on<LoadSubjectDetailRequested>(_onLoadSubjectDetailRequested);
     on<FetchQuestionDetailRequested>(_onFetchQuestionDetailRequested);
+    on<FetchSessionQuestionsRequested>(_onFetchSessionQuestionsRequested);
   }
 
   Future<void> _onLoadSubjectDetailRequested(
@@ -18,14 +22,18 @@ class SubjectDetailBloc extends Bloc<SubjectDetailEvent, SubjectDetailState> {
   ) async {
     emit(SubjectDetailLoading());
     try {
-      final summary = await authRepository.getSubjectOverview(event.studentUid, event.subjectKey);
-      final skills = await authRepository.getSkillsForSubject(event.studentUid, event.subjectKey);
-      final recentQuizzes = await authRepository.getRecentQuizzes(event.studentUid, event.subjectKey);
+      // Run all 3 fetches in parallel to reduce total load time
+      final results = await Future.wait<dynamic>([
+        authRepository.getSubjectOverview(event.studentUid, event.subjectKey),
+        authRepository.getSkillsForSubject(event.studentUid, event.subjectKey),
+        authRepository.getAllQuizzes(event.studentUid, event.subjectKey),
+      ]);
 
       emit(SubjectDetailLoaded(
-        summary: summary,
-        skills: skills,
-        recentQuizzes: recentQuizzes,
+        studentUid: event.studentUid,
+        summary: results[0] as SubjectSummaryModel,
+        skills: results[1] as List<SkillProgressModel>,
+        recentQuizzes: results[2] as List<QuizAttemptModel>,
       ));
     } catch (e) {
       emit(SubjectDetailError('Failed to load subject details: $e'));
@@ -39,15 +47,36 @@ class SubjectDetailBloc extends Bloc<SubjectDetailEvent, SubjectDetailState> {
     final currentState = state;
     if (currentState is SubjectDetailLoaded) {
       try {
-        final detail = await authRepository.getQuestionDetail(event.quizAttemptId, event.questionNumber);
-        
-        final updatedDetails = Map<String, QuestionDetailModel>.from(currentState.questionDetails);
-        final key = '${event.quizAttemptId}_${event.questionNumber}';
-        updatedDetails[key] = detail;
-        
+        final detail = await authRepository.getQuestionDetail(
+            event.quizAttemptId, event.questionNumber);
+        final updatedDetails =
+            Map<String, QuestionDetailModel>.from(currentState.questionDetails);
+        updatedDetails['${event.quizAttemptId}_${event.questionNumber}'] = detail;
         emit(currentState.copyWith(questionDetails: updatedDetails));
       } catch (e) {
-        // Silently ignore or emit an error state depending on requirements
+        // silently ignore — bottom sheet shows loading spinner
+      }
+    }
+  }
+
+  Future<void> _onFetchSessionQuestionsRequested(
+    FetchSessionQuestionsRequested event,
+    Emitter<SubjectDetailState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is SubjectDetailLoaded) {
+      try {
+        final questions = await authRepository.getSessionQuestions(
+            event.quizAttemptId,
+            studentUid: currentState.studentUid);
+        final updatedDetails =
+            Map<String, QuestionDetailModel>.from(currentState.questionDetails);
+        for (final q in questions) {
+          updatedDetails['${event.quizAttemptId}_${q.questionNumber}'] = q;
+        }
+        emit(currentState.copyWith(questionDetails: updatedDetails));
+      } catch (e) {
+        // silently ignore
       }
     }
   }

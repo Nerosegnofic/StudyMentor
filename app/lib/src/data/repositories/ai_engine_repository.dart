@@ -438,6 +438,17 @@ class AiEngineRepository {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  /// `GET /analytics/sessions/{sessionId}/questions` — per-question review data for a completed quiz.
+  Future<Map<String, dynamic>> getSessionQuestions(String sessionId, {String? studentUid}) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/analytics/sessions/$sessionId/questions').replace(
+      queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
+    );
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getSessionQuestions');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   /// `DELETE /analytics/students/{studentUid}` — wipe all AI-engine data for a student.
   /// Called during student account deletion; uses the parent's JWT for auth.
   Future<void> deleteStudentAllData(String studentUid) async {

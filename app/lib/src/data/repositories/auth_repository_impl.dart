@@ -506,6 +506,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<List<QuestionDetailModel>> getSessionQuestions(String quizAttemptId, {String? studentUid}) {
+    return dataConnect.getSessionQuestions(quizAttemptId, studentUid: studentUid);
+  }
+
+  @override
   Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber) {
     return dataConnect.getQuestionDetail(quizAttemptId, questionNumber);
   }

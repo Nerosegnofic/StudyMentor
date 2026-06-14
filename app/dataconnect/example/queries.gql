@@ -137,10 +137,10 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
 
 # ── Notification System ───────────────────────────────────────────────────────
 
-query GetUnreadNotificationEvents(
+query GetUnreadLocalNotificationEvents(
   $toParentUid: String!
 ) @auth(level: USER, insecureReason: "Parent reads their own unread events.") {
-  notificationEvents(where: {
+  localNotificationEvents(where: {
     toParentUid: { eq: $toParentUid },
     isRead: { eq: false }
   }) {
@@ -152,10 +152,10 @@ query GetUnreadNotificationEvents(
   }
 }
 
-query GetNotificationPreferences(
+query GetLocalNotificationPreferences(
   $userUid: String!
 ) @auth(level: USER, insecureReason: "Users read their own preferences.") {
-  notificationPreferences(where: { userUid: { eq: $userUid } }) {
+  localNotificationPreferences(where: { userUid: { eq: $userUid } }) {
     category
     enabled
     reminderTime

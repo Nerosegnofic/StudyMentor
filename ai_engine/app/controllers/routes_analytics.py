@@ -14,10 +14,14 @@ from app.services.evaluation.analytics_service import (
     enrich_hierarchy_with_status,
     get_overall_dashboard_stats,
 )
+from collections import defaultdict
 from app.models.domain import (
     Subject,
     QuizSession,
     GardenPlant,
+    Question,
+    QuestionResponse,
+    Skill,
 )
 from app.models.domain.student import StudentSubjectProfile, StudentSkillState
 from app.models.domain.gamification import (
@@ -113,7 +117,7 @@ async def get_subject_mastery_tree(
 async def get_subject_quiz_history(
     subject_id: int,
     page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=50),
+    page_size: int = Query(10, ge=1, le=200),
     student_uid: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),
@@ -137,15 +141,59 @@ async def get_subject_quiz_history(
 
     total = query.count()
     sessions = query.offset((page - 1) * page_size).limit(page_size).all()
+    session_ids = [s.session_id for s in sessions]
+
+    # Batch: correct question IDs per session (avoids N+1)
+    correct_q_records = (
+        db.query(Question.session_id, Question.question_id)
+        .join(QuestionResponse, QuestionResponse.question_id == Question.question_id)
+        .filter(
+            Question.session_id.in_(session_ids),
+            QuestionResponse.student_uid == target_uid,
+            QuestionResponse.is_correct == True,
+        )
+        .all()
+    )
+    correct_ids_by_session = defaultdict(set)
+    for (sid, qid) in correct_q_records:
+        correct_ids_by_session[str(sid)].add(str(qid))
+
+    # Batch: questions with skill name per session, ordered for stable numbering
+    all_q_rows = (
+        db.query(Question.session_id, Question.question_id, Question.created_at, Skill.name)
+        .join(Skill, Question.skill_id == Skill.skill_id)
+        .filter(Question.session_id.in_(session_ids))
+        .order_by(Question.session_id, Question.created_at)
+        .all()
+    )
+    questions_by_session = defaultdict(list)
+    for (sid, qid, created_at, skill_name) in all_q_rows:
+        questions_by_session[str(sid)].append({"qid": str(qid), "skill": skill_name})
 
     items = []
     for s in sessions:
+        sid_str = str(s.session_id)
+        qs = questions_by_session.get(sid_str, [])
+        qid_to_num = {q["qid"]: i + 1 for i, q in enumerate(qs)}
+        correct_ids = correct_ids_by_session.get(sid_str, set())
+        correct_answer_numbers = sorted(
+            qid_to_num[qid] for qid in correct_ids if qid in qid_to_num
+        )
+        correct_count = len(correct_ids)
+        skill_tag = qs[0]["skill"] if qs else None
+        score_val = s.score
+        passed = (score_val >= 60) if score_val is not None else False
+
         items.append({
-            "session_id": str(s.session_id),
+            "session_id": sid_str,
             "start_time": s.start_time.isoformat() if s.start_time else None,
             "end_time": s.end_time.isoformat() if s.end_time else None,
             "total_questions": s.total_questions,
-            "score": s.score,
+            "score": score_val,
+            "correct_answers": correct_count,
+            "passed": passed,
+            "skill_tag": skill_tag,
+            "correct_answer_numbers": correct_answer_numbers,
         })
 
     return {
@@ -259,6 +307,62 @@ async def delete_subject(
 # ═══════════════════════════════════════════════════════════════════════════
 # DELETE /analytics/students/{student_uid}  — Wipe all AI-engine data for a student
 # ═══════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GET  /analytics/sessions/{session_id}/questions  — Per-question review data
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/sessions/{session_id}/questions")
+async def get_session_questions(
+    session_id: str,
+    student_uid: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    """
+    Returns every question in a quiz session together with the student's
+    selected answer and correctness, ordered by creation time (question 1 first).
+    """
+    target_uid = student_uid if student_uid else current_user
+
+    session = db.query(QuizSession).filter(QuizSession.session_id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    if session.student_uid != target_uid:
+        raise HTTPException(status_code=403, detail="Not authorized.")
+
+    questions = (
+        db.query(Question)
+        .filter(Question.session_id == session_id)
+        .order_by(Question.created_at)
+        .all()
+    )
+    q_ids = [q.question_id for q in questions]
+
+    responses = (
+        db.query(QuestionResponse)
+        .filter(
+            QuestionResponse.question_id.in_(q_ids),
+            QuestionResponse.student_uid == target_uid,
+        )
+        .all()
+    )
+    resp_map = {str(r.question_id): r for r in responses}
+
+    result = []
+    for i, q in enumerate(questions):
+        r = resp_map.get(str(q.question_id))
+        result.append({
+            "question_number": i + 1,
+            "question_text": q.text_content,
+            "options": q.options,
+            "correct_answer": q.correct_answer,
+            "selected_answer": r.selected_option if r else None,
+            "is_correct": r.is_correct if r else False,
+        })
+
+    return {"session_id": session_id, "questions": result}
+
 
 @router.delete("/students/{student_uid}")
 async def delete_student_all_data(

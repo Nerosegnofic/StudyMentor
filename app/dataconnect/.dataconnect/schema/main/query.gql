@@ -38,9 +38,9 @@ extend type Query {
     first: InstalledApp_FirstRow
   ): InstalledApp @fdc_generated(from: "InstalledApp", purpose: QUERY_SINGLE)
   """
-  ✨ Look up a single `NotificationEvent` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
+  ✨ Look up a single `LocalNotificationEvent` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
   """
-  notificationEvent(
+  localNotificationEvent(
     """
     The unique ID of the object.
     """
@@ -49,27 +49,27 @@ extend type Query {
     """
     The key used to identify the object.
     """
-    key: NotificationEvent_Key
+    key: LocalNotificationEvent_Key
 
     """
     Fetch the first row based on the filters and ordering.
     """
-    first: NotificationEvent_FirstRow
-  ): NotificationEvent @fdc_generated(from: "NotificationEvent", purpose: QUERY_SINGLE)
+    first: LocalNotificationEvent_FirstRow
+  ): LocalNotificationEvent @fdc_generated(from: "LocalNotificationEvent", purpose: QUERY_SINGLE)
   """
-  ✨ Look up a single `NotificationPreference` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
+  ✨ Look up a single `LocalNotificationPreference` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
   """
-  notificationPreference(
+  localNotificationPreference(
     """
     The key used to identify the object.
     """
-    key: NotificationPreference_Key
+    key: LocalNotificationPreference_Key
 
     """
     Fetch the first row based on the filters and ordering.
     """
-    first: NotificationPreference_FirstRow
-  ): NotificationPreference @fdc_generated(from: "NotificationPreference", purpose: QUERY_SINGLE)
+    first: LocalNotificationPreference_FirstRow
+  ): LocalNotificationPreference @fdc_generated(from: "LocalNotificationPreference", purpose: QUERY_SINGLE)
   """
   ✨ Look up a single `Parent` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
   """
@@ -261,18 +261,18 @@ extend type Query {
     having: InstalledApp_Having
   ): [InstalledApp!]! @fdc_generated(from: "InstalledApp", purpose: QUERY_MULTIPLE)
   """
-  ✨ List `NotificationEvent` objects in the table and return selected fields, optionally filtered by `where` conditions
+  ✨ List `LocalNotificationEvent` objects in the table and return selected fields, optionally filtered by `where` conditions
   """
-  notificationEvents(
+  localNotificationEvents(
     """
     Filter condition to narrow down the query results.
     """
-    where: NotificationEvent_Filter
+    where: LocalNotificationEvent_Filter
 
     """
     Order the query results by specific fields.
     """
-    orderBy: [NotificationEvent_Order!]
+    orderBy: [LocalNotificationEvent_Order!]
 
     """
     Number of rows to skip before starting to return the results.
@@ -292,21 +292,21 @@ extend type Query {
     """
     Filter condition to apply to the groups of aggregate queries.
     """
-    having: NotificationEvent_Having
-  ): [NotificationEvent!]! @fdc_generated(from: "NotificationEvent", purpose: QUERY_MULTIPLE)
+    having: LocalNotificationEvent_Having
+  ): [LocalNotificationEvent!]! @fdc_generated(from: "LocalNotificationEvent", purpose: QUERY_MULTIPLE)
   """
-  ✨ List `NotificationPreference` objects in the table and return selected fields, optionally filtered by `where` conditions
+  ✨ List `LocalNotificationPreference` objects in the table and return selected fields, optionally filtered by `where` conditions
   """
-  notificationPreferences(
+  localNotificationPreferences(
     """
     Filter condition to narrow down the query results.
     """
-    where: NotificationPreference_Filter
+    where: LocalNotificationPreference_Filter
 
     """
     Order the query results by specific fields.
     """
-    orderBy: [NotificationPreference_Order!]
+    orderBy: [LocalNotificationPreference_Order!]
 
     """
     Number of rows to skip before starting to return the results.
@@ -326,8 +326,8 @@ extend type Query {
     """
     Filter condition to apply to the groups of aggregate queries.
     """
-    having: NotificationPreference_Having
-  ): [NotificationPreference!]! @fdc_generated(from: "NotificationPreference", purpose: QUERY_MULTIPLE)
+    having: LocalNotificationPreference_Having
+  ): [LocalNotificationPreference!]! @fdc_generated(from: "LocalNotificationPreference", purpose: QUERY_MULTIPLE)
   """
   ✨ List `Parent` objects in the table and return selected fields, optionally filtered by `where` conditions
   """
