@@ -7,7 +7,6 @@ import '../../domain/models/app_config_model.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
 import '../../domain/models/quiz_count.dart';
-import '../../domain/models/subject_progress_model.dart';
 import '../../domain/models/skill_progress_model.dart';
 import '../../domain/models/report_models.dart';
 import '../../domain/models/subject_summary_model.dart';
@@ -518,28 +517,6 @@ class DataConnectProvider {
         .toList();
   }
 
-  // ── Garden System ─────────────────────────────────────────────────────────
-
-  Future<List<SubjectProgressModel>> getAllSubjectProgress(
-    String studentUid,
-  ) async {
-    final result = await _connector
-        .getAllSubjectProgress(studentUid: studentUid)
-        .execute();
-    return result.data.subjectProgresses.map((r) {
-      return SubjectProgressModel(
-        studentUid: r.studentUid,
-        subjectKey: r.subjectKey,
-        totalXp: r.totalXp,
-        level: r.level,
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(
-          r.updatedAt.seconds * 1000,
-          isUtc: true,
-        ),
-      );
-    }).toList();
-  }
-
   Future<List<SkillProgressModel>> getSkillsForSubject({
     required String studentUid,
     required String subjectKey,
@@ -602,8 +579,6 @@ class DataConnectProvider {
   Future<List<SubjectSummaryModel>> getSubjectsByStudent(
     String studentUid,
   ) async {
-    final progresses = await getAllSubjectProgress(studentUid);
-    
     List<Map<String, dynamic>> analyticsList = [];
     try {
       analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
@@ -611,22 +586,14 @@ class DataConnectProvider {
       print('Failed to fetch subjects analytics from AI engine: $e');
     }
 
-    final analyticsMap = {
-      for (final a in analyticsList)
-        (a['name'] as String).toLowerCase().trim(): a
-    };
-
-    return progresses.map((p) {
-      final def = SubjectMetadataRegistry.getDefinition(p.subjectKey);
-      final keyLower = p.subjectKey.toLowerCase().trim();
-      final nameLower = def.name.toLowerCase().trim();
-      final a = analyticsMap[keyLower] ?? analyticsMap[nameLower];
-
-      final masteryPercent = a != null ? ((a['average_mastery'] as num).toDouble() * 100).round() : 0;
-      final skillsCount = a != null ? (a['total_skills'] as int) : 0;
+    return analyticsList.map((a) {
+      final name = (a['name'] as String).toLowerCase().trim();
+      final def = SubjectMetadataRegistry.getDefinition(name);
+      final masteryPercent = ((a['average_mastery'] as num? ?? 0.0).toDouble() * 100).round();
+      final skillsCount = a['total_skills'] as int? ?? 0;
 
       return SubjectSummaryModel(
-        subjectKey: p.subjectKey,
+        subjectKey: def.key,
         colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: skillsCount,
         masteryPercent: masteryPercent,
@@ -667,15 +634,6 @@ class DataConnectProvider {
     required String studentUid,
     required List<String> subjectKeys,
   }) async {
-    for (final key in subjectKeys) {
-      await upsertSubjectProgress(
-        studentUid: studentUid,
-        subjectKey: key,
-        totalXp: 0,
-        level: 1,
-      );
-    }
-    // Create Subject rows in AI engine so assigned subjects appear in the garden.
     try {
       await AiEngineRepository.instance.ensureSubjects(subjectKeys, studentUid);
     } catch (e) {
@@ -687,13 +645,6 @@ class DataConnectProvider {
     required String studentUid,
     required String subjectKey,
   }) async {
-    // 1. Remove from DataConnect
-    await _connector
-        .deleteSubjectProgress(studentUid: studentUid, subjectKey: subjectKey)
-        .execute();
-
-    // 2. Delete subject from AI engine (garden, skills, embeddings, etc.)
-    // Backend returns 404 for global subjects — caught and ignored below.
     try {
       await AiEngineRepository.instance.deleteSubject(subjectKey, studentUid);
     } catch (e) {
@@ -1021,22 +972,6 @@ class DataConnectProvider {
       totalStudyTimeToday: const Duration(minutes: 45),
       averageAccuracyToday: 88,
     );
-  }
-
-  Future<void> upsertSubjectProgress({
-    required String studentUid,
-    required String subjectKey,
-    required int totalXp,
-    required int level,
-  }) async {
-    await _connector
-        .upsertSubjectProgress(
-          studentUid: studentUid,
-          subjectKey: subjectKey,
-          totalXp: totalXp,
-          level: level,
-        )
-        .execute();
   }
 
   Future<void> upsertSkillProgress({

@@ -82,6 +82,8 @@ class _CustomShopScreenState extends State<CustomShopScreen>
         SnackBar(content: Text('Not enough coins! Need ${item.price - state.coins} more.')),
       );
     } else {
+      // Block opening a second purchase dialog while one is already processing.
+      if (state.isPurchasing) return;
       showDialog(
         context: context,
         builder: (dialogCtx) => AlertDialog(
@@ -195,9 +197,15 @@ class _CustomShopScreenState extends State<CustomShopScreen>
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ShopBloc, ShopState>(
-      listenWhen: (prev, curr) => curr is ShopLoaded && curr.feedbackMessage != null,
+      listenWhen: (prev, curr) =>
+          curr is ShopLoaded &&
+          (curr.feedbackMessage != null || curr.avatarSaved),
       listener: (context, state) {
         if (state is ShopLoaded) {
+          if (state.avatarSaved) {
+            Navigator.pop(context);
+            return;
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.feedbackMessage!),
@@ -305,7 +313,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
               context.read<ShopBloc>().add(
                 SaveAvatarRequested(studentUid: widget.studentUid),
               );
-              Navigator.pop(context);
+              // Navigator.pop is handled by the listener once the DB write completes.
             },
             backgroundColor: const Color(0xFF4A6CF7),
             icon: const Icon(Icons.check),

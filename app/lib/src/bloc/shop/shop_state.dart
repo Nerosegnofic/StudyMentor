@@ -34,6 +34,12 @@ class ShopLoaded extends ShopState {
   final String? feedbackMessage;
   final bool feedbackIsError;
 
+  /// True while a purchase network call is in-flight — blocks the buy dialog.
+  final bool isPurchasing;
+
+  /// True for one event cycle after avatar save completes — triggers Navigator.pop.
+  final bool avatarSaved;
+
   const ShopLoaded({
     required this.catalog,
     required this.ownedItemIds,
@@ -42,6 +48,8 @@ class ShopLoaded extends ShopState {
     required this.level,
     this.feedbackMessage,
     this.feedbackIsError = false,
+    this.isPurchasing = false,
+    this.avatarSaved = false,
   });
 
   bool isOwned(String itemId) => ownedItemIds.contains(itemId);
@@ -68,6 +76,9 @@ class ShopLoaded extends ShopState {
     int? coins,
     String? feedbackMessage,
     bool? feedbackIsError,
+    bool? isPurchasing,
+    // avatarSaved and feedbackMessage are transient — not preserved across copyWith calls.
+    bool avatarSaved = false,
   }) {
     return ShopLoaded(
       catalog: catalog,
@@ -75,11 +86,10 @@ class ShopLoaded extends ShopState {
       avatarConfig: avatarConfig ?? this.avatarConfig,
       coins: coins ?? this.coins,
       level: level,
-      // feedbackMessage is intentionally NOT preserved — it is transient.
-      // Any copyWith call that doesn't explicitly pass it clears it to null,
-      // preventing the SnackBar from re-firing on the next state change.
       feedbackMessage: feedbackMessage,
       feedbackIsError: feedbackIsError ?? this.feedbackIsError,
+      isPurchasing: isPurchasing ?? this.isPurchasing,
+      avatarSaved: avatarSaved,
     );
   }
 
@@ -92,6 +102,6 @@ class ShopLoaded extends ShopState {
     avatarConfig.equippedFacialHair, avatarConfig.equippedFacialHairColor,
     avatarConfig.equippedEyes, avatarConfig.equippedEyebrow,
     avatarConfig.equippedMouth, avatarConfig.equippedSkinTone,
-    coins, level, feedbackMessage,
+    coins, level, feedbackMessage, isPurchasing, avatarSaved,
   ];
 }

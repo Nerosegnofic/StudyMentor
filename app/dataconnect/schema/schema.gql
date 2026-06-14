@@ -89,17 +89,6 @@ type StudentOwnedItem @table(name: "student_owned_items", key: ["id"]) {
   purchasedAt: Timestamp! @default(expr: "request.time")
 }
 
-# ── Garden System ─────────────────────────────────────────────────────────────
-
-type SubjectProgress @table(name: "subject_progress", key: ["studentUid", "subjectKey"]) {
-  studentUid: String!
-  student: Student!
-  subjectKey: String! @col(dataType: "varchar(50)")
-  totalXp: Int! @default(expr: "0")
-  level: Int! @default(expr: "1")
-  updatedAt: Timestamp! @default(expr: "request.time")
-}
-
 # Stores the student's current avatar configuration.
 type StudentAvatar @table(name: "student_avatars", key: ["studentUid"]) {
   studentUid: String!
