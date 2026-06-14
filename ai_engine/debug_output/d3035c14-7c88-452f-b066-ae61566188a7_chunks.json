@@ -1,0 +1,323 @@
+[
+    {
+        "page_content": "Cairo University logo\nFaculty logo\n\n# Math 1 (MA111)\n\n# Fall 2019\n\n# Lecture # 1  \nCairo University logo\nFaculty logo\n\n# Engineering need for mathematics  \n```mermaid\ngraph TD\nA[\"Real world problemDesign a car...\"] -- \"modeling\" --> B[\"Mathematical ModelWrite the equations\"]\nB --> C[\"Mathematicalconclusions\"]\nC -- \"interpretation\" --> D[\"PredictionsExplanationsComputer code\"]\nD --> A\n```  \nDr. Ahmad Moursy <page_number>2</page_number>  \nCairo University logo",
+        "metadata": {
+            "h1": "Math 1 (MA111)",
+            "substantive_score": 23,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 61,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# Lecture 1  \n## Numbers\n\n## Fundamental Concepts  \n1.1 The real numbers; the real number line  \n1.2 Integer exponents of real numbers  \n1.3 Radicals and Rational exponents  \nDr. Ahmad Moursy <page_number>3</page_number>  \nCairo University logo\n\n# 1.1 The real numbers; the number line\nCairo University globe logo  \n* The natural number: N = {1, 2, 3, 4, ...}.\n* The whole numbers: Z<sup>+</sup> = {0, 1, 2, 3, 4, ...}.\n* The integers: Z = {..., -3, -2, -1, 0, 1, 2, 3, ...}.\n* The rational numbers: Q = {x| x = n/m, m ≠ 0}.\n* The irrational numbers Q’ like e, π, √5\n* The real numbers: R = Q ∪ Q’ (constants)  \nNotice that for any two real numbers a and b\n(1) we define unique numbers a+b and ab  \n```description\nDiagram showing the terms 'First term' and 'Second term' pointing to 'a' and 'b' in 'a+b', and 'First factor' and 'Second factor' pointing to 'a' and 'b' in 'ab'.\n```  \n(2) a-b = a + (-b) and a/b = a.(1/b), b ≠ 0.  \nCairo University logo",
+        "metadata": {
+            "h1": "Lecture 1",
+            "h2": "Numbers",
+            "substantive_score": 22,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 180,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# REAL NUMBERS  \nVenn diagram showing the classification of real numbers into Rationals (containing Integers, Whole, and Natural numbers) and Irrationals  \nSpiral of Theodorus showing square roots of integers  \nDr. Ahmad Moursy <page_number>5</page_number>  \nCairo University logo\nFaculty logo\n\n# Geometric representation of real numbers; the number line  \nEvery real number is represented by a point on a horizontal straight line called the number line, and conversely, every point on the number line represents one and only one real number  \nNumber line diagram showing positive and negative numbers relative to zero",
+        "metadata": {
+            "h1": "REAL NUMBERS",
+            "substantive_score": 4,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 90,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "## Ordering of real numbers:  \n* We say that a < b if b-a is a positive real number or equivalently, a precedes b on the number line.\n* $a \\leq b$ if a < b or a = b.  \nDr. Ahmad Moursy <page_number>6</page_number>  \nCairo University logo\nCairo University globe logo\n\n# Some Remarks  \n* 1- If the **decimal part** “after the decimal point” in the **decimal representation** of a number **consists** of **[no digits (like 2) <u>or</u> finite number of digits (like 11.562) <u>or</u> infinite number of digits with repeated period]** then the number can be written in the **rational** form.\n**<u>But</u>**, if the **decimal part <u>consists</u>** of **infinite number of digits <u>without</u> a repeated period** then the number is **<u>irrational</u>**.  \n**Example:** 0.9999999999... **= 1 ???**\n**Solution:** Let p = 0. 9999999999... , then 10 p = 9.9999999999...\nthen 10 p = 9 + p, then 9p = 9. Thus, **p = 1**. Therefore, **0.999999... = 1**.  \n* 4- The sum “difference” of two integers is an integer? → **Yes**\n* 5- The sum “difference” of two rationals is a rational ? → **Yes**\n* 6- The sum “difference” of two reals is a real ? → **Yes**\n* 7- The sum of two irrationals is an irrational? → **Not true for all.**  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "Geometric representation of real numbers; the number line",
+            "h2": "Ordering of real numbers:",
+            "substantive_score": 23,
+            "structural_score": 5,
+            "content_type": "substantive",
+            "word_count": 219,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# 1.2 Integer exponents of real numbers  \nIf <span style=\"color: red\">a</span> is any real number and <span style=\"color: red\">n</span> is any positive integer then we define:  \n$$a^n = \\underbrace{a \\cdot a \\cdot \\dots \\cdot a}_{n\\text{-times}}, \\quad a^0 = 1, \\quad a^{-n} = \\frac{1}{a^n}$$\n\n## Laws of exponents  \n$$(i) a^m \\cdot a^n = a^{m+n} \\quad (ii) (a^m)^n = a^{mn} \\quad (iii) \\frac{a^m}{a^n} = a^{m-n}$$  \n$$(iv) (ab)^n = a^n b^n \\quad (v) (\\frac{a}{b})^n = \\frac{a^n}{b^n}$$  \nDr. Ahmad Moursy <page_number>8</page_number>  \nCairo University logo",
+        "metadata": {
+            "h1": "1.2 Integer exponents of real numbers",
+            "h2": "Laws of exponents",
+            "substantive_score": 19,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 80,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# 1.3 Radicals and Rational exponents\nCairo University logo  \nIf **a** is any nonnegative real number and **m**, **n** are any positive integers then we define:  \n$$\\sqrt[n]{a} = a^{\\frac{1}{n}}, \\quad a^{\\frac{m}{n}} = \\sqrt[n]{a^m} = (\\sqrt[n]{a})^m$$\n\n## Laws of radicals  \n$$(i) \\sqrt[n]{a^n} = a \\quad \\quad \\quad \\quad (ii) \\sqrt[m]{\\sqrt[n]{a}} = \\sqrt[mn]{a}$$\n$$(iii) \\sqrt[n]{ab} = \\sqrt[n]{a} \\cdot \\sqrt[n]{b} \\quad \\quad \\quad \\quad (iv) \\sqrt[n]{\\frac{a}{b}} = \\frac{\\sqrt[n]{a}}{\\sqrt[n]{b}}$$  \nDr. Ahmad Moursy <page_number>9</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "1.3 Radicals and Rational exponents",
+            "h2": "Laws of radicals",
+            "substantive_score": 15,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 74,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# Techniques of solving equations and inequalities  \n* 1.4 Introduction\n* 1.5 Solving linear equations\n* 1.6 Solving quadratic equations\n* 1.7 Solving other types of equations\n* 1.8 Solutions of inequalities\n* 1.9 Equations and inequalities involving absolute value  \nTeacher pointing at a green board  \nDr. Ahmad Moursy <page_number>10</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "Techniques of solving equations and inequalities",
+            "substantive_score": 12,
+            "structural_score": 5,
+            "content_type": "substantive",
+            "word_count": 55,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "explanation",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# 1.4 Introduction  \n**What is the equation?**  \nIt is a statement in which two algebraic expressions are equal.  \n**Examples of equations:**  \n* a- 2x+4x = 6x True for all values of x\n* b- 2x+1 = 5\n* c- x<sup>2</sup> + 2x - 3 = 0  \nDr. Ahmad Moursy <page_number>11</page_number>  \nCairo University logo\nCartoon characters\nUniversity emblem\n\n# What is the solution of an equation?  \nIt is the set of values of the variable/variables which make the equation a true statement.",
+        "metadata": {
+            "h1": "1.4 Introduction",
+            "substantive_score": 18,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 81,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "## Examples of equations:  \n| 2x+4x = 6x               | 2x+1 = 5                  |\n| ------------------------ | ------------------------- |\n| True for all values of x | True for some values of x |\n|                          | (x = 2 only)              |\n| Identity                 | Conditional equation      |  \nDr. Ahmad Moursy <page_number>12</page_number>  \nCairo University logo\nTeacher pointing at a board\nUniversity emblem",
+        "metadata": {
+            "h1": "What is the solution of an equation?",
+            "h2": "Examples of equations:",
+            "substantive_score": 9,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 60,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# How to find solutions of an equation?  \nUse the following rules to simplify the algebraic expressions that appear in both sides of the given equation:  \n1. Add or subtract the same expression to both sides of the equation\n2. Multiply or divide both sides by a nonzero expression\n3. Interchange both sides of the equation  \n(Applying the above rules produces an equivalent equation)  \nDr. Ahmad Moursy <page_number>15</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "How to find solutions of an equation?",
+            "substantive_score": 15,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 73,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# 1.5 Solving linear equations  \nStandard form of a linear equation:\n$$ax + b = c$$  \nIt has only one solution in the form:\n$$x = \\frac{c - b}{a}$$  \n**Example:** Solve the equation: $2x + 1 = 7$  \n**Solution:** $2x + 1 = 7 \\implies 2x = 6 \\implies x = 3$  \nDr. Ahmad Moursy <page_number>14</page_number>  \nCairo University logo Faculty logo  \n*Standard form of a quadratic equation:*  \n$$ax^2 + bx + c = 0$$  \n*It has TWO solutions obtained by one of the following two methods:*  \n<u>*Method 1:*</u> *By factorizing*  \n<u>*Method 2:*</u> *By using the standard quadratic formula*  \nDr. Ahmad Moursy <page_number>15</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "1.5 Solving linear equations",
+            "substantive_score": 26,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 107,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# 1.6 Solving quadratic equations  \n**Method 1:** By factorizing, as in the following example:  \n**Example:** Solve the equation: $x^2 - x - 12 = 0$  \n**Solution:** $x^2 - x - 12 = (x - 4)(x + 3) = 0 \\Rightarrow$\n$(x - 4) = 0 \\Rightarrow x = 4$ **or** $(x + 3) = 0 \\Rightarrow x = -3$  \nHence, the equation has two solutions x = - 3 and x = 4.  \nDr. Ahmad Moursy <page_number>16</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "1.6 Solving quadratic equations",
+            "substantive_score": 26,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 82,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# Method 2: By using the standard quadratic formula:  \n$$x_1 = \\frac{-b - \\sqrt{b^2 - 4ac}}{2a} \\quad \\text{and} \\quad x_2 = \\frac{-b + \\sqrt{b^2 - 4ac}}{2a}$$\n\n# **Example: Solve the equation:** $$x^2 - x - 12 = 0$$\n\n# **Solution:** $$a = 1, \\text{ } b = -1, \\text{ } c = -12 \\text{ Hence, we have:}$$  \n$$x_1 = \\frac{-b - \\sqrt{b^2 - 4ac}}{2a}$$\n$$= \\frac{1 - \\sqrt{1 - 4(1)(-12)}}{2(1)}$$\n$$= \\frac{1 - \\sqrt{49}}{2} = \\frac{1 - 7}{2}$$\n$$= \\frac{-6}{2} = -3$$  \n$$\\text{and}$$  \n$$x_2 = \\frac{-b + \\sqrt{b^2 - 4ac}}{2a}$$\n$$= \\frac{1 + \\sqrt{1 - 4(1)(-12)}}{2(1)}$$\n$$= \\frac{1 + \\sqrt{49}}{2} = \\frac{1 + 7}{2}$$\n$$= \\frac{8}{2} = 4$$  \nDr. Ahmad Moursy <page_number>17</page_number>  \nCairo University logo",
+        "metadata": {
+            "h1": "Method 2: By using the standard quadratic formula:",
+            "substantive_score": 28,
+            "structural_score": 12,
+            "content_type": "substantive",
+            "word_count": 115,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# 1.7 Solving other types of equations  \n**Example:** Solve each of the following equations:  \n1. $(x - 2)^2 = 12$  \n2. $(x - 1)^6 = 64$  \n3. $(x + 5)^3 = -27$  \nA group of people sitting around a table in a meeting  \nDr. Ahmad Moursy <page_number>18</page_number>  \nCairo University logo Faculty of Engineering logo\n\n# 1.8 Solution of inequalities  \n**What is the interval?**  \nIt is any portion of the number line  \n**Bounded interval (finite)**\nif it corresponds to\nline segment on\nthe number line  \n**unbounded interval (infinite)**\nif it corresponds to a ray on\nthe number line  \n```description\nA diagram showing the definition of an interval, with two red arrows pointing from the text \"It is any portion of the number line\" to the two types of intervals: \"Bounded interval (finite)\" and \"unbounded interval (infinite)\".\n```  \nDr. Ahmad Moursy <page_number>19</page_number>  \nCairo University logo",
+        "metadata": {
+            "h1": "1.7 Solving other types of equations",
+            "substantive_score": 30,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 143,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# Types of intervals  \n| Notation          | Set description | Type                        | Picture              |          |\n| ----------------- | --------------- | --------------------------- | -------------------- | -------- |\n| \\*\\*Finite:\\*\\*   | (a, b)          | {x\\|a < x < b}              | Open                 | \\[image] |\n|                   | \\[a, b]         | {x\\|a ≤ x ≤ b}              | Closed               | \\[image] |\n|                   | \\[a, b)         | {x\\|a ≤ x < b}              | Half-open            | \\[image] |\n|                   | (a, b]          | {x\\|a < x ≤ b}              | Half-open            | \\[image] |\n| \\*\\*Infinite:\\*\\* | (a, ∞)          | {x\\|x > a}                  | Open                 | \\[image] |\n|                   | \\[a, ∞)         | {x\\|x ≥ a}                  | Closed               | \\[image] |\n|                   | (−∞, b)         | {x\\|x < b}                  | Open                 | \\[image] |\n|                   | (−∞, b]         | {x\\|x ≤ b}                  | Closed               | \\[image] |\n|                   | (−∞, ∞)         | ℝ (set of all real numbers) | Both open and closed | \\[image] |  \nDr. Ahmad Moursy <page_number>20</page_number>  \nCairo University logo\nUniversity emblem",
+        "metadata": {
+            "h1": "Types of intervals",
+            "substantive_score": 10,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 168,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# 1.8 Solution of inequalities  \n**What is the inequality?**\nIt is a statement that two (or many) algebraic expressions are related to each other by one (or more than one) of the symbols <, >, or ≤ ≥.  \n**What is the solution of an inequality?**\nIt is the set of all values (<mark>usually an interval</mark>) of the variable that makes the inequality a true statement (satisfy the inequality).  \nDr. Ahmad Moursy <page_number>21</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "1.8 Solution of inequalities",
+            "substantive_score": 18,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 77,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# How to find solutions of an inequality?  \nUse the following rules to simplify the given inequality:  \n1. Add or subtract the same expression to both sides of the inequality\n2. Multiply or divide both sides by a nonzero positive expression\n3. Multiply or divide both sides by a nonzero negative expression and reverse the inequality sign\n4. Interchange both sides of the inequality and reverse the inequality sign  \n(Applying the above rules produces an equivalent inequality)  \nDr. Ahmad Moursy <page_number>22</page_number>  \nCairo University logo\nFaculty logo  \n*Solve each of the following inequalities:*  \n1. $2x - 1 \\leq 7$  \n2. $5(x + 1) < 2(4 - 3x) + 2x$  \n3. $2x < 6 - x \\leq 3x + 2$  \n4. $x^2 - x - 2 > 0$  \n5. $\\frac{5x - 2}{x - 1} \\leq 4$  \nIllustration of a group of people in a meeting  \nDr. Ahmad Moursy <page_number>23</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "How to find solutions of an inequality?",
+            "substantive_score": 29,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 152,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# 1.9 Equations and inequalities involving absolute value  \n## (a) Equations involving absolute value  \nAn equation of the form:  \n$$|u| = k \\implies$$  \n<mark>u = ±k, if k > 0</mark> <mark>u = 0, if k = 0</mark> <mark>no solution if k < 0</mark>  \nAn equation of the form:  \n$$|u| = |v| \\implies u = ±v$$  \nDr. Ahmad Moursy <page_number>24</page_number>  \nCairo University logo\nFaculty logo  \n**Example:** *Solve each of the following equations:*  \n1. $|4x - 3| = 5$  \n2. $|x^2 - 6x| = 12 - 7x$  \n3. $|2x - 3| = |x - 6|$  \nDr. Ahmad Moursy <page_number>25</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "1.9 Equations and inequalities involving absolute value",
+            "h2": "(a) Equations involving absolute value",
+            "substantive_score": 26,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 102,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# (b) Inequalities involving absolute value  \nRemember that:  \n$$|u| < k \\implies -k < u < k$$  \n$$|u| > k \\implies u > k \\text{ or } u < -k$$  \nDr. Ahmad Moursy <page_number>26</page_number>  \nCairo University logo\nUniversity emblem  \n**Example:** *Solve each of the following inequalities:*  \n1. $|2x - 3| < 5$  \n2. $|x^2 - 3| > 1$  \n3. $\\frac{|x - 4|}{|x - 1|} \\geq 2$  \nDr. Ahmad Moursy <page_number>27</page_number>  \nCairo University logo Cairo University logo  \n**Remark**: We will be in need for the following remarks while solving some inequalities:  \n**#1**: if $-a < x < a \\Rightarrow 0 \\le x^2 < a^2$\nLike: $-2 < x < 2 \\Rightarrow 0 \\le x^2 < 4$  \n**#2**: if $-a < x < b \\Rightarrow 0 \\le x^2 < \\text{maximum of } \"a^2 \\text{ or } b^2\"$\nLike: $-2 < x < 3 \\Rightarrow 0 \\le x^2 < 9 \\quad \\& \\quad -5 < x < 4 \\Rightarrow 0 \\le x^2 < 25$  \n**#3**: if $x < y$ multiplying by a constant \"$c$\"\n$\\Rightarrow cx < cy$ if $c > 0 \\quad \\text{While} \\quad cx > cy$ if $c < 0$  \n**#4**: Knowing that the outputs of \"$\\sqrt{\\cdot}$\" & \"$|.|$\" must be \"$\\ge 0$\", then, one can see that:\n$\\sqrt{x^2} = |x| \\text{ not } \"x\" \\quad \\& \\quad \\sqrt{25} = 5 \\text{ not } \"\\pm 5\"$  \nDr. Ahmad Moursy <page_number>28</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "(b) Inequalities involving absolute value",
+            "substantive_score": 30,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 234,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# Important formulas  \n$$A^2 - B^2 = (A + B)(A - B)$$\n$$A^3 + B^3 = (A + B)(A^2 - AB + B^2)$$\n$$A^3 - B^3 = (A - B)(A^2 + AB + B^2)$$\n$$(A + B)^2 = A^2 + 2AB + B^2$$\n$$(A - B)^2 = A^2 - 2AB + B^2$$\n$$(A + B)^3 = A^3 + 3A^2B + 3AB^2 + B^3$$\n$$(A - B)^3 = A^3 - 3A^2B + 3AB^2 - B^3$$  \n<page_number>29</page_number>  \nCairo University logo\nFaculty logo",
+        "metadata": {
+            "h1": "Important formulas",
+            "substantive_score": 25,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 80,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "rule",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    },
+    {
+        "page_content": "# Thank you  \nDr. Ahmad Moursy <page_number>30</page_number>",
+        "metadata": {
+            "h1": "Thank you",
+            "substantive_score": 4,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 7,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "d3035c14-7c88-452f-b066-ae61566188a7"
+        }
+    }
+]
