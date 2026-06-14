@@ -48,10 +48,6 @@ part 'delete_parent_record.dart';
 
 part 'upsert_student_config.dart';
 
-part 'upsert_subject_progress.dart';
-
-part 'delete_subject_progress.dart';
-
 part 'insert_notification_event.dart';
 
 part 'mark_notification_events_read.dart';
@@ -81,8 +77,6 @@ part 'get_student_owned_items.dart';
 part 'get_student_avatar.dart';
 
 part 'get_app_config_for_student.dart';
-
-part 'get_all_subject_progress.dart';
 
 part 'get_unread_notification_events.dart';
 
@@ -280,16 +274,6 @@ class ExampleConnector {
   }
   
   
-  UpsertSubjectProgressVariablesBuilder upsertSubjectProgress ({required String studentUid, required String subjectKey, required int totalXp, required int level, }) {
-    return UpsertSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,subjectKey: subjectKey,totalXp: totalXp,level: level,);
-  }
-  
-  
-  DeleteSubjectProgressVariablesBuilder deleteSubjectProgress ({required String studentUid, required String subjectKey, }) {
-    return DeleteSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,subjectKey: subjectKey,);
-  }
-  
-  
   InsertNotificationEventVariablesBuilder insertNotificationEvent ({required String fromStudentUid, required String toParentUid, required String eventType, required String payload, }) {
     return InsertNotificationEventVariablesBuilder(dataConnect, fromStudentUid: fromStudentUid,toParentUid: toParentUid,eventType: eventType,payload: payload,);
   }
@@ -362,11 +346,6 @@ class ExampleConnector {
   
   GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
     return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetAllSubjectProgressVariablesBuilder getAllSubjectProgress ({required String studentUid, }) {
-    return GetAllSubjectProgressVariablesBuilder(dataConnect, studentUid: studentUid,);
   }
   
   

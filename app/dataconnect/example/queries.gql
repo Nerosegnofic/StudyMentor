@@ -135,18 +135,6 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
   }
 }
 
-# ── Garden System ─────────────────────────────────────────────────────────────
-
-query GetAllSubjectProgress($studentUid: String!) @auth(level: USER, insecureReason: "Student queries their own progress by passing their UID.") {
-  subjectProgresses(where: { studentUid: { eq: $studentUid } }) {
-    studentUid
-    subjectKey
-    totalXp
-    level
-    updatedAt
-  }
-}
-
 # ── Notification System ───────────────────────────────────────────────────────
 
 query GetUnreadNotificationEvents(

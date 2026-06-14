@@ -177,7 +177,7 @@ class AiEngineRepository {
   ///
   /// Change this single constant when switching environments.
 
-  static const String defaultBaseUrl = 'http://192.168.1.6:8000';
+  static const String defaultBaseUrl = 'http://192.168.0.219:8000';
 
 
   /// Lazy singleton — created on first access, reused everywhere.

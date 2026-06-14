@@ -90,15 +90,6 @@ extend type Mutation {
     data: StudentSettings_Data!
   ): StudentSettings_KeyOutput! @fdc_generated(from: "StudentSettings", purpose: INSERT_SINGLE)
   """
-  ✨ Insert a single `SubjectProgress` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
-  """
-  subjectProgress_insert(
-    """
-    Data object to insert into the table.
-    """
-    data: SubjectProgress_Data!
-  ): SubjectProgress_KeyOutput! @fdc_generated(from: "SubjectProgress", purpose: INSERT_SINGLE)
-  """
   ✨ Insert a single `SupportTicket` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
   supportTicket_insert(
@@ -206,15 +197,6 @@ extend type Mutation {
     """
     data: [StudentSettings_Data!]!
   ): [StudentSettings_KeyOutput!]! @fdc_generated(from: "StudentSettings", purpose: INSERT_MULTIPLE)
-  """
-  ✨ Insert `SubjectProgress` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
-  """
-  subjectProgress_insertMany(
-    """
-    List of data objects to insert into the table.
-    """
-    data: [SubjectProgress_Data!]!
-  ): [SubjectProgress_KeyOutput!]! @fdc_generated(from: "SubjectProgress", purpose: INSERT_MULTIPLE)
   """
   ✨ Insert `SupportTicket` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
   """
@@ -324,15 +306,6 @@ extend type Mutation {
     data: StudentSettings_Data!
   ): StudentSettings_KeyOutput! @fdc_generated(from: "StudentSettings", purpose: UPSERT_SINGLE)
   """
-  ✨ Insert or update a single `SubjectProgress` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `SubjectProgress`.
-  """
-  subjectProgress_upsert(
-    """
-    Data object to insert or update if it already exists.
-    """
-    data: SubjectProgress_Data!
-  ): SubjectProgress_KeyOutput! @fdc_generated(from: "SubjectProgress", purpose: UPSERT_SINGLE)
-  """
   ✨ Insert or update a single `SupportTicket` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `SupportTicket`.
   """
   supportTicket_upsert(
@@ -440,15 +413,6 @@ extend type Mutation {
     """
     data: [StudentSettings_Data!]!
   ): [StudentSettings_KeyOutput!]! @fdc_generated(from: "StudentSettings", purpose: UPSERT_MULTIPLE)
-  """
-  ✨ Insert or update `SubjectProgress` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `SubjectProgress`.
-  """
-  subjectProgress_upsertMany(
-    """
-    List of data objects to insert or update if it already exists.
-    """
-    data: [SubjectProgress_Data!]!
-  ): [SubjectProgress_KeyOutput!]! @fdc_generated(from: "SubjectProgress", purpose: UPSERT_MULTIPLE)
   """
   ✨ Insert or update `SupportTicket` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `SupportTicket`.
   """
@@ -677,25 +641,6 @@ extend type Mutation {
     """
     data: StudentSettings_Data!
   ): StudentSettings_KeyOutput @fdc_generated(from: "StudentSettings", purpose: UPDATE_SINGLE)
-  """
-  ✨ Update a single `SubjectProgress` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `SubjectProgress` or `null` if not found.
-  """
-  subjectProgress_update(
-    """
-    The key used to identify the object.
-    """
-    key: SubjectProgress_Key
-
-    """
-    Fetch the first row based on the filters and ordering.
-    """
-    first: SubjectProgress_FirstRow
-
-    """
-    Data object containing fields to be updated.
-    """
-    data: SubjectProgress_Data!
-  ): SubjectProgress_KeyOutput @fdc_generated(from: "SubjectProgress", purpose: UPDATE_SINGLE)
   """
   ✨ Update a single `SupportTicket` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `SupportTicket` or `null` if not found.
   """
@@ -930,25 +875,6 @@ extend type Mutation {
     data: StudentSettings_Data!
   ): Int! @fdc_generated(from: "StudentSettings", purpose: UPDATE_MULTIPLE)
   """
-  ✨ Update `SubjectProgress` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
-  """
-  subjectProgress_updateMany(
-    """
-    Filter condition to specify which rows to update.
-    """
-    where: SubjectProgress_Filter
-
-    """
-    Set to true to update all rows.
-    """
-    all: Boolean = false
-
-    """
-    Data object containing fields to update.
-    """
-    data: SubjectProgress_Data!
-  ): Int! @fdc_generated(from: "SubjectProgress", purpose: UPDATE_MULTIPLE)
-  """
   ✨ Update `SupportTicket` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
   """
   supportTicket_updateMany(
@@ -1147,20 +1073,6 @@ extend type Mutation {
     first: StudentSettings_FirstRow
   ): StudentSettings_KeyOutput @fdc_generated(from: "StudentSettings", purpose: DELETE_SINGLE)
   """
-  ✨ Delete a single `SubjectProgress` based on `id`, `key` or `first` and return its key (or `null` if not found).
-  """
-  subjectProgress_delete(
-    """
-    The key used to identify the object.
-    """
-    key: SubjectProgress_Key
-
-    """
-    Fetch the first row based on the filters and ordering.
-    """
-    first: SubjectProgress_FirstRow
-  ): SubjectProgress_KeyOutput @fdc_generated(from: "SubjectProgress", purpose: DELETE_SINGLE)
-  """
   ✨ Delete a single `SupportTicket` based on `id`, `key` or `first` and return its key (or `null` if not found).
   """
   supportTicket_delete(
@@ -1333,20 +1245,6 @@ extend type Mutation {
     """
     all: Boolean = false
   ): Int! @fdc_generated(from: "StudentSettings", purpose: DELETE_MULTIPLE)
-  """
-  ✨ Delete `SubjectProgress` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
-  """
-  subjectProgress_deleteMany(
-    """
-    Filter condition to specify which rows to delete.
-    """
-    where: SubjectProgress_Filter
-
-    """
-    Set to true to delete all rows.
-    """
-    all: Boolean = false
-  ): Int! @fdc_generated(from: "SubjectProgress", purpose: DELETE_MULTIPLE)
   """
   ✨ Delete `SupportTicket` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
   """

@@ -36,7 +36,7 @@ import 'shop/custom_shop_screen.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
-const _kAiEngineBaseUrl = 'http://192.168.1.6:8000';
+const _kAiEngineBaseUrl = 'http://192.168.0.219:8000';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -516,7 +516,11 @@ class _StudentScreenState extends State<StudentScreen>
                 if (state is ShopLoaded) {
                   setState(() {
                     _coins = state.coins;
-                    _avatarConfig = state.avatarConfig;
+                    // Only commit avatar changes after the user taps Done and
+                    // the DB write completes — not on every equip toggle.
+                    if (state.avatarSaved) {
+                      _avatarConfig = state.avatarConfig;
+                    }
                   });
                 }
               },

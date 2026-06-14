@@ -160,20 +160,6 @@ extend type Query {
     first: StudentSettings_FirstRow
   ): StudentSettings @fdc_generated(from: "StudentSettings", purpose: QUERY_SINGLE)
   """
-  ✨ Look up a single `SubjectProgress` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
-  """
-  subjectProgress(
-    """
-    The key used to identify the object.
-    """
-    key: SubjectProgress_Key
-
-    """
-    Fetch the first row based on the filters and ordering.
-    """
-    first: SubjectProgress_FirstRow
-  ): SubjectProgress @fdc_generated(from: "SubjectProgress", purpose: QUERY_SINGLE)
-  """
   ✨ Look up a single `SupportTicket` based on `id`, `key` or `first` and return selected fields (or `null` if not found).
   """
   supportTicket(
@@ -546,40 +532,6 @@ extend type Query {
     """
     having: StudentSettings_Having
   ): [StudentSettings!]! @fdc_generated(from: "StudentSettings", purpose: QUERY_MULTIPLE)
-  """
-  ✨ List `SubjectProgress` objects in the table and return selected fields, optionally filtered by `where` conditions
-  """
-  subjectProgresses(
-    """
-    Filter condition to narrow down the query results.
-    """
-    where: SubjectProgress_Filter
-
-    """
-    Order the query results by specific fields.
-    """
-    orderBy: [SubjectProgress_Order!]
-
-    """
-    Number of rows to skip before starting to return the results.
-    """
-    offset: Int
-
-    """
-    Maximum number of rows to return (defaults to 100 rows).
-    """
-    limit: Int = 100
-
-    """
-    Set to true to return distinct results.
-    """
-    distinct: Boolean = false
-
-    """
-    Filter condition to apply to the groups of aggregate queries.
-    """
-    having: SubjectProgress_Having
-  ): [SubjectProgress!]! @fdc_generated(from: "SubjectProgress", purpose: QUERY_MULTIPLE)
   """
   ✨ List `SupportTicket` objects in the table and return selected fields, optionally filtered by `where` conditions
   """

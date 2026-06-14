@@ -62,6 +62,9 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     final current = state;
     if (current is! ShopLoaded) return;
 
+    // Block re-entry while a purchase is already in-flight.
+    if (current.isPurchasing) return;
+
     // Already owned?
     if (current.isOwned(event.item.id)) {
       emit(current.copyWith(
@@ -81,18 +84,21 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
       return;
     }
 
-    // Insufficient coins
-    if (event.currentCoins < event.item.price) {
+    // Use current.coins (live state), not event.currentCoins (stale dispatch value).
+    if (current.coins < event.item.price) {
       emit(current.copyWith(
         feedbackMessage:
-            'Not enough coins! You need ${event.item.price - event.currentCoins} more.',
+            'Not enough coins! You need ${event.item.price - current.coins} more.',
         feedbackIsError: true,
       ));
       return;
     }
 
+    // Lock purchases immediately so any queued tap is dropped.
+    emit(current.copyWith(isPurchasing: true));
+
     try {
-      final newCoins = event.currentCoins - event.item.price;
+      final newCoins = current.coins - event.item.price;
       await Future.wait([
         _provider.insertStudentOwnedItem(
           studentUid: event.studentUid,
@@ -109,11 +115,13 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
       emit(current.copyWith(
         ownedItemIds: newOwned,
         coins: newCoins,
+        isPurchasing: false,
         feedbackMessage: '${event.item.name} purchased! 🎉',
         feedbackIsError: false,
       ));
     } catch (e) {
       emit(current.copyWith(
+        isPurchasing: false,
         feedbackMessage: 'Purchase failed. Please try again.',
         feedbackIsError: true,
       ));
@@ -171,6 +179,8 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     } catch (_) {
       // Silently fail; avatar is visual-only
     }
+    // Signal the UI to pop regardless of success/failure — DB write is complete.
+    emit(current.copyWith(avatarSaved: true));
   }
 
   // ── Equip/Unequip helpers ─────────────────────────────────────────────────
