@@ -62,7 +62,7 @@ class _ParentStudentsState extends State<ParentStudents> {
   }
 
   Future<void> _openConfigScreen(StudentModel student) async {
-    await Navigator.of(context).push(
+    final updated = await Navigator.of(context).push<StudentModel>(
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
           value: context.read<StudentsBloc>(),
@@ -70,6 +70,12 @@ class _ParentStudentsState extends State<ParentStudents> {
         ),
       ),
     );
+    if (mounted && updated != null) {
+      setState(() {
+        final idx = _students.indexWhere((s) => s.uid == updated.uid);
+        if (idx != -1) _students[idx] = updated;
+      });
+    }
   }
 
   Future<void> _confirmAndDeleteStudent(StudentModel student) async {

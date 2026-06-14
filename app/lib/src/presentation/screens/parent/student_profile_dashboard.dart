@@ -83,14 +83,23 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
     }
   }
 
+  void _popWithStudent(BuildContext context) {
+    Navigator.of(context).pop(_student);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _popWithStudent(context);
+      },
+      child: Scaffold(
       backgroundColor: _kCanvas,
       body: Column(
         children: [
           // ── Sticky Branded Header ─────────────────────────────────────────
-          _StickyHeader(name: _firstName),
+          _StickyHeader(name: _firstName, onBack: () => _popWithStudent(context)),
 
           // ── Scrollable Body ───────────────────────────────────────────────
           Expanded(
@@ -124,6 +133,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -132,7 +142,8 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
 
 class _StickyHeader extends StatelessWidget {
   final String name;
-  const _StickyHeader({required this.name});
+  final VoidCallback onBack;
+  const _StickyHeader({required this.name, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +167,7 @@ class _StickyHeader extends StatelessWidget {
             children: [
               // Back button
               InkWell(
-                onTap: () => Navigator.of(context).pop(),
+                onTap: onBack,
                 borderRadius: BorderRadius.circular(24),
                 child: const Padding(
                   padding: EdgeInsets.all(4),

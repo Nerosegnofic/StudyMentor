@@ -44,6 +44,9 @@ class _ParentStudentSettingsScreenState
   // Shown after a successful email-change request.
   String? _pendingEmailNotice;
 
+  // Set in _save() when email is being changed, consumed in _onSaveSuccess.
+  String? _pendingEmailAddress;
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +116,8 @@ class _ParentStudentSettingsScreenState
     final isChangingPassword = _newPassCtl.text.isNotEmpty;
     final emailChanged = newEmail != _originalEmail && newEmail.isNotEmpty;
 
+    _pendingEmailAddress = emailChanged ? newEmail : null;
+
     context.read<StudentProfileBloc>().add(
       UpdateStudentProfileRequested(
         studentUid: widget.student.uid,
@@ -130,13 +135,27 @@ class _ParentStudentSettingsScreenState
   }
 
   void _onSaveSuccess(StudentProfileUpdateSuccess state) {
+    final newName = _fullNameCtl.text.trim();
+    final nameChanged = newName.isNotEmpty && newName != _originalFullName;
+    final pendingEmail = _pendingEmailAddress;
+    _pendingEmailAddress = null;
+
+    final updatedStudent = widget.student.copyWith(
+      fullName: nameChanged ? newName : null,
+    );
+
+    final message = pendingEmail != null
+        ? 'Profile updated. A verification link was sent to $pendingEmail.'
+        : 'Profile updated successfully.';
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile updated successfully.'),
-        backgroundColor: Color(0xFF34A853),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF34A853),
+        duration: const Duration(seconds: 4),
       ),
     );
-    Navigator.of(context).pop(state.updatedStudent);
+    Navigator.of(context).pop(updatedStudent);
   }
 
   Future<bool> _onWillPop() async {
@@ -526,6 +545,8 @@ class _ParentStudentSettingsScreenState
               obscure: _obscureCurrent,
               onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
             ),
+            errorStyle: const TextStyle(fontSize: 11),
+            errorMaxLines: 2,
           ),
           validator: (v) {
             final changingPassword = _newPassCtl.text.isNotEmpty;

@@ -25,7 +25,7 @@ class SubjectsSkillsScreen extends StatefulWidget {
 }
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
-  static const _kAiEngineBaseUrl = 'http://192.168.100.2:8000';
+  static const _kAiEngineBaseUrl = 'http://172.20.10.2:8000';
 
   @override
   void initState() {
@@ -373,7 +373,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Are you sure you want to stop tracking this subject? This will remove it from your dashboard.",
+                  "Are you sure you want to remove this subject?",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.roboto(
                     color: const Color(0xFF64748B),
