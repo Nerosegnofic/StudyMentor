@@ -23,7 +23,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           if (state is PasswordResetEmailSent) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text('Reset email sent.')));
+            ).showSnackBar(SnackBar(content: Text('Password reset link sent! Check your inbox.')));
             Navigator.pop(context);
           }
           if (state is AuthError) {
@@ -41,7 +41,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 TextFormField(
                   controller: _emailCtl,
                   decoration: InputDecoration(labelText: 'Email'),
-                  validator: (v) => v!.contains('@') ? null : 'Invalid email',
+                  validator: (v) => v!.contains('@') ? null : 'Please enter a valid email address.',
                 ),
                 SizedBox(height: 16),
                 ElevatedButton(

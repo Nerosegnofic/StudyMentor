@@ -11,7 +11,6 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../bloc/gamification/gamification_bloc.dart';
-import '../../../data/providers/dataconnect_provider.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../domain/models/garden_plant_model.dart';
 import '../../../services/installed_apps_service.dart';
@@ -90,7 +89,7 @@ class StudentHomeState extends State<StudentHome> {
     }
 
     try {
-      final snapshot = await DataConnectProvider().getDailySnapshot(widget.uid);
+      final snapshot = await AiEngineRepository.instance.getDailySnapshot(widget.uid);
       if (mounted) {
         setState(() {
           _quizzesCompletedToday = snapshot.quizzesCompletedToday;
@@ -258,7 +257,7 @@ class StudentHomeState extends State<StudentHome> {
               height: 180,
               child: Center(
                 child: Text(
-                  'Could not load garden',
+                  "Couldn't load your garden. Pull down to retry.",
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
               ),
@@ -843,6 +842,29 @@ class StudentHomeState extends State<StudentHome> {
               ),
             ],
           ),
+          if (_config.cooldownHours > 0 || _config.cooldownMinutes > 0) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1, color: Color(0xFFF3F4F6)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(
+                  Icons.hourglass_bottom_rounded,
+                  size: 13,
+                  color: Color(0xFFFF9800),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  'Cooldown after limit: ${_formatDuration(_config.cooldownHours, _config.cooldownMinutes)}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFFF9800),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -959,7 +981,7 @@ class StudentHomeState extends State<StudentHome> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'All restricted apps share the same limits:',
+              'Your parent set these rules for all restricted apps:',
               style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
             ),
           ),

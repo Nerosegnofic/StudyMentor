@@ -130,4 +130,27 @@ class SubjectMetadataRegistry {
       defaultPlantType: defaultPlantType,
     );
   }
+
+  static IconData? getSubjectIcon(String subjectKey) {
+    final keyLower = subjectKey.toLowerCase().trim();
+    switch (keyLower) {
+      case 'math':
+      case 'mathematics':
+        return Icons.calculate;
+      case 'science':
+        return Icons.science;
+      case 'history':
+        return Icons.history_edu;
+      case 'english':
+        return Icons.menu_book;
+      case 'geography':
+        return Icons.public;
+      case 'art':
+        return Icons.palette;
+      case 'music':
+        return Icons.music_note;
+      default:
+        return null;
+    }
+  }
 }

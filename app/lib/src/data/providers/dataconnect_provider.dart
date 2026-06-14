@@ -1,4 +1,4 @@
-// lib/src/data/providers/dataconnect_provider.dart
+  // lib/src/data/providers/dataconnect_provider.dart
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_data_connect/firebase_data_connect.dart';
@@ -544,24 +544,57 @@ class DataConnectProvider {
     required String studentUid,
     required String subjectKey,
   }) async {
-    SubjectMetadataRegistry.getDefinition(subjectKey);
 
-    // Simulate real data from DataConnect
-    int index = 0;
-    final mockSkills = ['basics', 'intermediate', 'advanced'];
-    return mockSkills.map((key) {
-      index++;
-      final isStrong = index % 3 == 0;
-      return SkillProgressModel(
-        studentUid: studentUid,
-        subjectKey: subjectKey,
-        skillKey: key,
-        correctAnswers: isStrong ? 20 : 5,
-        wrongAnswers: isStrong ? 2 : 10,
-        totalAttempts: isStrong ? 22 : 15,
-        lastPracticedAt: DateTime.now().subtract(Duration(days: index)),
+    final def = SubjectMetadataRegistry.getDefinition(subjectKey);
+    List<SkillProgressModel> skills = [];
+
+    try {
+      final analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
+      final keyLower = subjectKey.toLowerCase().trim();
+      final nameLower = def.name.toLowerCase().trim();
+      final a = analyticsList.firstWhere(
+        (element) {
+          final name = (element['name'] as String).toLowerCase().trim();
+          return name == keyLower || name == nameLower;
+        },
+        orElse: () => <String, dynamic>{},
       );
-    }).toList();
+
+      if (a.isNotEmpty) {
+        final subjectId = a['subject_id'] as int;
+        final masteryTree = await AiEngineRepository.instance.getSubjectMasteryTree(subjectId, studentUid: studentUid);
+        final units = masteryTree['units'] as List? ?? [];
+        
+        for (final u in units) {
+          final lessons = u['lessons'] as List? ?? [];
+          for (final l in lessons) {
+            final skillList = l['skills'] as List? ?? [];
+            for (final s in skillList) {
+              final skillName = s['name'] as String;
+              final mastery = ((s['mastery'] as num? ?? 0.0).toDouble() * 100).round();
+              final attempts = s['attempts'] as int? ?? 0;
+              
+              final correctAnswers = ((mastery / 100) * attempts).round();
+              final wrongAnswers = attempts - correctAnswers;
+
+              skills.add(SkillProgressModel(
+                studentUid: studentUid,
+                subjectKey: subjectKey,
+                skillKey: skillName,
+                correctAnswers: correctAnswers,
+                wrongAnswers: wrongAnswers >= 0 ? wrongAnswers : 0,
+                totalAttempts: attempts,
+                lastPracticedAt: DateTime.now(),
+              ));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Failed to get real skills for subject from AI engine: $e');
+    }
+
+    return skills;
   }
 
   // ── Subjects & Quizzes Mocked for Sprint 2 ────────────────────────────────
@@ -570,14 +603,33 @@ class DataConnectProvider {
     String studentUid,
   ) async {
     final progresses = await getAllSubjectProgress(studentUid);
+    
+    List<Map<String, dynamic>> analyticsList = [];
+    try {
+      analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
+    } catch (e) {
+      print('Failed to fetch subjects analytics from AI engine: $e');
+    }
+
+    final analyticsMap = {
+      for (final a in analyticsList)
+        (a['name'] as String).toLowerCase().trim(): a
+    };
+
     return progresses.map((p) {
       final def = SubjectMetadataRegistry.getDefinition(p.subjectKey);
+      final keyLower = p.subjectKey.toLowerCase().trim();
+      final nameLower = def.name.toLowerCase().trim();
+      final a = analyticsMap[keyLower] ?? analyticsMap[nameLower];
+
+      final masteryPercent = a != null ? ((a['average_mastery'] as num).toDouble() * 100).round() : 0;
+      final skillsCount = a != null ? (a['total_skills'] as int) : 0;
+
       return SubjectSummaryModel(
         subjectKey: p.subjectKey,
-        colorHex:
-            '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
-        skillsCount: 0,
-        masteryPercent: 0,
+        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        skillsCount: skillsCount,
+        masteryPercent: masteryPercent,
         quizzesCompleted: 0,
         totalTimeSpent: Duration.zero,
         accuracyPercent: 0,
@@ -649,23 +701,77 @@ class DataConnectProvider {
     }
   }
 
-  Future<SubjectSummaryModel> getSubjectOverview(
-    String studentUid,
-    String subjectKey,
-  ) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final subject = SubjectMetadataRegistry.getDefinition(subjectKey);
-    final colorHex =
-        '#${subject.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
+  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
+    final def = SubjectMetadataRegistry.getDefinition(subjectKey);
+    final colorHex = '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
+
+    int skillsCount = 0;
+    int masteryPercent = 0;
+    int quizzesCompleted = 0;
+    Duration totalTimeSpent = Duration.zero;
+    double accuracyPercent = 0.0;
+
+    try {
+      final analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
+      final keyLower = subjectKey.toLowerCase().trim();
+      final nameLower = def.name.toLowerCase().trim();
+      final a = analyticsList.firstWhere(
+        (element) {
+          final name = (element['name'] as String).toLowerCase().trim();
+          return name == keyLower || name == nameLower;
+        },
+        orElse: () => <String, dynamic>{},
+      );
+
+      if (a.isNotEmpty) {
+        skillsCount = a['total_skills'] as int? ?? 0;
+        masteryPercent = ((a['average_mastery'] as num? ?? 0.0).toDouble() * 100).round();
+        final subjectId = a['subject_id'] as int;
+
+        final history = await AiEngineRepository.instance.getSubjectQuizHistory(subjectId, page: 1, pageSize: 50, studentUid: studentUid);
+        final sessions = history['sessions'] as List? ?? [];
+        quizzesCompleted = history['total'] as int? ?? sessions.length;
+
+        if (sessions.isNotEmpty) {
+          double totalScore = 0;
+          int sessionsWithScore = 0;
+          int totalDurationSeconds = 0;
+
+          for (final s in sessions) {
+            final score = s['score'] as num?;
+            if (score != null) {
+              totalScore += score.toDouble();
+              sessionsWithScore++;
+            }
+            final startStr = s['start_time'] as String?;
+            final endStr = s['end_time'] as String?;
+            if (startStr != null && endStr != null) {
+              try {
+                final start = DateTime.parse(startStr);
+                final end = DateTime.parse(endStr);
+                totalDurationSeconds += end.difference(start).inSeconds;
+              } catch (_) {}
+            }
+          }
+
+          if (sessionsWithScore > 0) {
+            accuracyPercent = double.parse((totalScore / sessionsWithScore).toStringAsFixed(1));
+          }
+          totalTimeSpent = Duration(seconds: totalDurationSeconds);
+        }
+      }
+    } catch (e) {
+      print('Failed to get real subject overview from AI engine: $e');
+    }
 
     return SubjectSummaryModel(
       subjectKey: subjectKey,
       colorHex: colorHex,
-      skillsCount: 3,
-      masteryPercent: 88,
-      quizzesCompleted: 24,
-      totalTimeSpent: const Duration(hours: 5, minutes: 10),
-      accuracyPercent: 85.5,
+      skillsCount: skillsCount,
+      masteryPercent: masteryPercent,
+      quizzesCompleted: quizzesCompleted,
+      totalTimeSpent: totalTimeSpent,
+      accuracyPercent: accuracyPercent,
     );
   }
 
@@ -674,37 +780,116 @@ class DataConnectProvider {
     String subjectKey, {
     int limit = 10,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return List.generate(limit, (index) {
-      final isPassed = index % 3 != 0;
-      return QuizAttemptModel(
-        id: 'quiz_$index',
-        studentUid: studentUid,
-        subjectKey: subjectKey,
-        skillTag: 'Fractions',
-        attemptedAt: DateTime.now().subtract(Duration(days: index)),
-        correctAnswers: isPassed ? 4 : 2,
-        totalQuestions: 5,
-        duration: Duration(minutes: 2, seconds: 15 + index * 10),
-        passed: isPassed,
-        correctAnswerNumbers: isPassed ? [1, 2, 4, 5] : [1, 3],
+    try {
+      final def = SubjectMetadataRegistry.getDefinition(subjectKey);
+      final keyLower = subjectKey.toLowerCase().trim();
+      final nameLower = def.name.toLowerCase().trim();
+
+      final analyticsList = await AiEngineRepository.instance
+          .getSubjectsAnalytics(studentUid: studentUid);
+      final a = analyticsList.firstWhere(
+        (e) {
+          final name = (e['name'] as String).toLowerCase().trim();
+          return name == keyLower || name == nameLower;
+        },
+        orElse: () => <String, dynamic>{},
       );
-    });
+
+      if (a.isEmpty) return [];
+
+      final subjectId = a['subject_id'] as int;
+      final history = await AiEngineRepository.instance.getSubjectQuizHistory(
+        subjectId,
+        page: 1,
+        pageSize: limit,
+        studentUid: studentUid,
+      );
+
+      final sessions = history['sessions'] as List? ?? [];
+      return sessions.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final s = entry.value as Map<String, dynamic>;
+
+        final sessionId = s['session_id'] as String? ?? 'session_$idx';
+        final startStr = s['start_time'] as String?;
+        final endStr = s['end_time'] as String?;
+
+        var attemptedAt = DateTime.now().subtract(Duration(days: idx));
+        var duration = Duration.zero;
+        if (startStr != null) {
+          try { attemptedAt = DateTime.parse(startStr); } catch (_) {}
+        }
+        if (startStr != null && endStr != null) {
+          try {
+            final start = DateTime.parse(startStr);
+            final end = DateTime.parse(endStr);
+            duration = end.difference(start);
+          } catch (_) {}
+        }
+
+        final totalQuestions = (s['total_questions'] as int?) ?? 5;
+        // score is stored as 0–100 percentage (not 0–1 ratio)
+        final score = (s['score'] as num?)?.toDouble() ?? 0.0;
+        final correctAnswers = (s['correct_answers'] as int?) ??
+            ((score / 100.0) * totalQuestions).round();
+        final passed = (s['passed'] as bool?) ?? (score >= 60);
+        final skillTag = (s['skill_tag'] as String?) ?? subjectKey;
+        final correctAnswerNumbers =
+            (s['correct_answer_numbers'] as List<dynamic>?)
+                ?.map((e) => e as int)
+                .toList() ??
+            [];
+
+        return QuizAttemptModel(
+          id: sessionId,
+          studentUid: studentUid,
+          subjectKey: subjectKey,
+          skillTag: skillTag,
+          attemptedAt: attemptedAt,
+          correctAnswers: correctAnswers,
+          totalQuestions: totalQuestions,
+          duration: duration,
+          passed: passed,
+          correctAnswerNumbers: correctAnswerNumbers,
+        );
+      }).toList();
+    } catch (e) {
+      print('Failed to load quiz history from AI engine: $e');
+      return [];
+    }
+  }
+
+  Future<List<QuestionDetailModel>> getSessionQuestions(String quizAttemptId, {String? studentUid}) async {
+    try {
+      final data = await AiEngineRepository.instance
+          .getSessionQuestions(quizAttemptId, studentUid: studentUid);
+      final questions = (data['questions'] as List<dynamic>?) ?? [];
+      return questions.map((q) {
+        final m = q as Map<String, dynamic>;
+        return QuestionDetailModel(
+          quizAttemptId: quizAttemptId,
+          questionNumber: m['question_number'] as int,
+          isCorrect: m['is_correct'] as bool? ?? false,
+          questionText: m['question_text'] as String,
+          options: (m['options'] as List<dynamic>).cast<String>(),
+          selectedAnswer: m['selected_answer'] as String? ?? '',
+          correctAnswer: m['correct_answer'] as String,
+        );
+      }).toList();
+    } catch (e) {
+      print('Failed to load session questions: $e');
+      rethrow;
+    }
   }
 
   Future<QuestionDetailModel> getQuestionDetail(
     String quizAttemptId,
     int questionNumber,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return QuestionDetailModel(
-      quizAttemptId: quizAttemptId,
-      questionNumber: questionNumber,
-      isCorrect: true,
-      questionText: 'What is 8 x 7?',
-      options: const ['54', '56', '64', '42'],
-      selectedAnswer: '56',
-      correctAnswer: '56',
+    final all = await getSessionQuestions(quizAttemptId);
+    return all.firstWhere(
+      (q) => q.questionNumber == questionNumber,
+      orElse: () => throw Exception('Question $questionNumber not found in session $quizAttemptId'),
     );
   }
 

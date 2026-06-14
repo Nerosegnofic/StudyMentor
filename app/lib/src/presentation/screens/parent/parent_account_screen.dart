@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart' show LogoutRequested;
@@ -38,22 +37,12 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   bool _isSaving = false;
   bool _isDirty = false;
 
-  // Baselines for dirty detection.
   String _originalFullName = '';
   String _originalEmail = '';
 
-  // Shown after a successful email-change request.
   String? _pendingEmailNotice;
 
-  // Student list — loaded once on init and updated whenever StudentsLoaded
-  // is emitted (e.g. after a student is deleted in the Students tab).
-  // null  → still loading (show a spinner on the delete button)
-  // empty → no children, delete is allowed
-  // non-empty → children exist, delete is blocked
   int? _linkedChildCount;
-
-  // Set to true when LoadStudentsRequested fails so the UI can surface a
-  // retry option instead of leaving the delete button frozen indefinitely.
   bool _childLoadError = false;
 
   @override
@@ -75,9 +64,6 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     _newPassCtl.addListener(_onFieldChanged);
     _confirmPassCtl.addListener(_onFieldChanged);
 
-    // Kick off a student-list load so we know whether the parent has any
-    // linked children. Re-uses the same event/state as ParentStudents —
-    // no new BLoC wiring needed.
     if (user != null) {
       context.read<StudentsBloc>().add(LoadStudentsRequested(parentUid: user.uid));
     }
@@ -107,7 +93,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     if (dirty != _isDirty) setState(() => _isDirty = dirty);
   }
 
-  // ── save logic ──────────────────────────────────────────────────────────────
+  // ── save ────────────────────────────────────────────────────────────────────
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
@@ -115,37 +101,28 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     final newName = _fullNameCtl.text.trim();
     final newEmail = _emailCtl.text.trim();
     final isChangingPassword = _newPassCtl.text.isNotEmpty;
-
-    // Email or password changes both require the current password.
     final emailChanged = newEmail != _originalEmail && newEmail.isNotEmpty;
 
     context.read<ParentProfileBloc>().add(
       UpdateParentProfileRequested(
-        parentUid: context.read<AuthBloc>().state is AuthAuthenticated ? (context.read<AuthBloc>().state as AuthAuthenticated).user.uid : '',
-        newFullName: newName != _originalFullName && newName.isNotEmpty
-            ? newName
-            : null,
+        parentUid: context.read<AuthBloc>().state is AuthAuthenticated
+            ? (context.read<AuthBloc>().state as AuthAuthenticated).user.uid
+            : '',
+        newFullName: newName != _originalFullName && newName.isNotEmpty ? newName : null,
         newEmail: emailChanged ? newEmail : null,
-        currentPassword: (isChangingPassword || emailChanged)
-            ? _currentPassCtl.text
-            : null,
+        currentPassword: (isChangingPassword || emailChanged) ? _currentPassCtl.text : null,
         newPassword: isChangingPassword ? _newPassCtl.text : null,
       ),
     );
   }
 
-  // ── after successful save ───────────────────────────────────────────────────
-
   void _onSaveSuccess(UserModel updatedUser) {
     _originalFullName = updatedUser.fullName;
     _originalEmail = updatedUser.email;
     _fullNameCtl.text = updatedUser.fullName;
-    // Keep the email field showing what the user typed (the pending address).
-
     _currentPassCtl.clear();
     _newPassCtl.clear();
     _confirmPassCtl.clear();
-
     setState(() => _isDirty = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -156,42 +133,53 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     );
   }
 
-  // ── retry child-list load ───────────────────────────────────────────────────
+  // ── child-list retry ────────────────────────────────────────────────────────
 
   void _retryLoadChildren() {
     final authState = context.read<AuthBloc>().state;
     final uid = authState is AuthAuthenticated ? authState.user.uid : null;
     if (uid == null) return;
-
     setState(() {
       _childLoadError = false;
-      _linkedChildCount = null; // back to loading state
+      _linkedChildCount = null;
     });
     context.read<StudentsBloc>().add(LoadStudentsRequested(parentUid: uid));
   }
 
+  // ── unsaved changes guard ───────────────────────────────────────────────────
+
+  Future<bool> _onWillPop() async {
+    if (!_isDirty) return true;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsaved Changes'),
+        content: const Text('You have unsaved changes. Leave without saving?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Stay'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    return leave ?? false;
+  }
+
   // ── delete account ──────────────────────────────────────────────────────────
-  //
-  // Two-step flow:
-  //   1. Warning dialog (unchanged) — asks the user to confirm they understand
-  //      all student accounts must be deleted first.
-  //   2. _ParentDeletePasswordDialog — a self-contained StatefulWidget that
-  //      dispatches DeleteParentAccountRequested, shows a spinner while the
-  //      request is in flight, surfaces auth errors inline, and only closes
-  //      when the deletion succeeds or the user cancels.
-  //      The dialog is non-dismissible (barrier + back) while loading to prevent
-  //      the user from abandoning an in-flight delete without feedback.
 
   Future<void> _confirmDeleteAccount() async {
-    // Step 1: Warn user they must delete all children first.
     final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Your Account'),
         content: const Text(
-          'This will permanently delete your account and all associated data. '
-          'You must delete all student accounts first.\n\n'
-          'This action cannot be undone. Continue?',
+          'This will permanently delete your account. Are you sure?',
         ),
         actions: [
           TextButton(
@@ -208,17 +196,8 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     );
     if (proceed != true || !mounted) return;
 
-    // Step 2: Password confirmation dialog — self-contained, stays open on
-    // error, closes automatically on ParentAccountDeleted.
-    //
-    // barrierDismissible is false here: _ParentDeletePasswordDialog also
-    // uses PopScope(canPop: !_isLoading) to block the back gesture while a
-    // delete is in flight, but setting barrierDismissible: false closes the
-    // second dismissal path (tapping the scrim) for the same period.
-    // When _isLoading is false the dialog controls its own dismissal via the
-    // Cancel button, so the tighter default is the correct one.
-    final parentUid = context.read<AuthBloc>().state is AuthAuthenticated 
-        ? (context.read<AuthBloc>().state as AuthAuthenticated).user.uid 
+    final parentUid = context.read<AuthBloc>().state is AuthAuthenticated
+        ? (context.read<AuthBloc>().state as AuthAuthenticated).user.uid
         : '';
 
     await showDialog<void>(
@@ -231,122 +210,258 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     );
   }
 
+  // ── logout ──────────────────────────────────────────────────────────────────
+
+  Future<void> _confirmLogout() async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.logout_rounded, color: Colors.red, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Log Out',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to log out of your account?',
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Log Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (proceed == true && mounted) {
+      context.read<AuthBloc>().add(LogoutRequested());
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    }
+  }
+
   // ── build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2196F3),
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Account Settings',
-          style: GoogleFonts.cairo(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<StudentsBloc, StudentsState>(
-            listener: (context, state) {
-              if (state is StudentsLoaded) {
-                setState(() {
-                  _linkedChildCount = state.students.length;
-                  _childLoadError = false;
-                });
-              } else if (state is StudentsError && _linkedChildCount == null) {
-                setState(() {
-                  _childLoadError = true;
-                  _linkedChildCount = null;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text(
-                      'Could not load linked students. Check your connection.',
-                    ),
-                    backgroundColor: Colors.red.shade700,
-                    action: SnackBarAction(
-                      label: 'Retry',
-                      textColor: Colors.white,
-                      onPressed: _retryLoadChildren,
-                    ),
+    final authState = context.read<AuthBloc>().state;
+    final parentName = authState is AuthAuthenticated ? authState.user.fullName : '';
+
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<StudentsBloc, StudentsState>(
+          listener: (context, state) {
+            if (state is StudentsLoaded) {
+              setState(() {
+                _linkedChildCount = state.students.length;
+                _childLoadError = false;
+              });
+            } else if (state is StudentsError && _linkedChildCount == null) {
+              setState(() {
+                _childLoadError = true;
+                _linkedChildCount = null;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Could not load linked students. Check your connection.',
                   ),
+                  backgroundColor: Colors.red.shade700,
+                  action: SnackBarAction(
+                    label: 'Retry',
+                    textColor: Colors.white,
+                    onPressed: _retryLoadChildren,
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+        BlocListener<ParentProfileBloc, ParentProfileState>(
+          listener: (context, state) {
+            if (state is ParentProfileLoading) {
+              setState(() => _isSaving = true);
+            } else if (state is EmailVerificationPending) {
+              setState(() => _pendingEmailNotice = state.pendingEmail);
+            } else if (state is ParentProfileUpdateSuccess) {
+              setState(() => _isSaving = false);
+              _onSaveSuccess(state.updatedUser);
+            } else if (state is ParentAccountDeleted) {
+              context.read<AuthBloc>().add(LogoutRequested());
+              if (context.mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false,
                 );
               }
-            },
-          ),
-          BlocListener<ParentProfileBloc, ParentProfileState>(
-            listener: (context, state) {
-              if (state is ParentProfileLoading) {
-                setState(() => _isSaving = true);
-              } else if (state is EmailVerificationPending) {
-                setState(() => _pendingEmailNotice = state.pendingEmail);
-              } else if (state is ParentProfileUpdateSuccess) {
-                setState(() => _isSaving = false);
-                _onSaveSuccess(state.updatedUser);
-              } else if (state is ParentProfileError) {
-                setState(() => _isSaving = false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: Colors.red.shade700,
+            } else if (state is ParentProfileError) {
+              setState(() => _isSaving = false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red.shade700,
+                ),
+              );
+            }
+          },
+        ),
+      ],
+      child: PopScope(
+        canPop: !_isDirty,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final leave = await _onWillPop();
+          if (leave && context.mounted) Navigator.of(context).pop();
+        },
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF5F7FA),
+            appBar: AppBar(
+              backgroundColor: const Color(0xFF2196F3),
+              elevation: 4,
+              shadowColor: Colors.black.withValues(alpha: 0.15),
+              surfaceTintColor: Colors.transparent,
+              iconTheme: const IconThemeData(color: Colors.white),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Account Settings',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
-                );
-              }
-            },
-          ),
-        ],
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_pendingEmailNotice != null) ...[
-                  _buildEmailPendingBanner(_pendingEmailNotice!),
-                  const SizedBox(height: 16),
+                  if (parentName.isNotEmpty)
+                    Text(
+                      parentName,
+                      style: const TextStyle(fontSize: 12, color: Colors.white),
+                    ),
                 ],
-                _buildSectionHeader('Account Information'),
-                const SizedBox(height: 12),
-                _buildFullNameField(),
-                const SizedBox(height: 12),
-                _buildEmailField(),
-                const SizedBox(height: 32),
-                _buildSectionHeader('Change Password'),
-                const SizedBox(height: 4),
-                _buildPasswordHint(),
-                const SizedBox(height: 12),
-                _buildCurrentPasswordField(),
-                const SizedBox(height: 12),
-                _buildNewPasswordField(),
-                const SizedBox(height: 12),
-                _buildConfirmPasswordField(),
-                const SizedBox(height: 32),
-                _buildSaveButton(),
-                const SizedBox(height: 40),
-                _buildDeleteAccountSection(),
-                const SizedBox(height: 24),
-                _buildLogoutButton(),
-              ],
+              ),
+            ),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_pendingEmailNotice != null) ...[
+                      _buildEmailPendingBanner(_pendingEmailNotice!),
+                      const SizedBox(height: 16),
+                    ],
+                    // Card 1: Account Information
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Account Information',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildFullNameField(),
+                          const SizedBox(height: 16),
+                          _buildEmailField(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Card 2: Change Password
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Change Password',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Leave all password fields empty to keep your current password.',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildCurrentPasswordField(),
+                          const SizedBox(height: 16),
+                          _buildNewPasswordField(),
+                          const SizedBox(height: 16),
+                          _buildConfirmPasswordField(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildSaveButton(),
+                    const SizedBox(height: 32),
+                    _buildDangerZoneCard(),
+                    const SizedBox(height: 16),
+                    _buildLogoutButton(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ── pending-email banner ────────────────────────────────────────────────────
 
@@ -361,11 +476,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.mark_email_unread_outlined,
-            color: Color(0xFFF9A825),
-            size: 20,
-          ),
+          const Icon(Icons.mark_email_unread_outlined, color: Color(0xFFF9A825), size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -383,121 +494,148 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     );
   }
 
-  // ── section header ──────────────────────────────────────────────────────────
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-        color: Colors.grey.shade500,
-        letterSpacing: 0.8,
-      ),
-    );
-  }
-
-  // ── password hint ───────────────────────────────────────────────────────────
-
-  Widget _buildPasswordHint() {
-    return Text(
-      'Leave all password fields empty to keep your current password.',
-      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-    );
-  }
-
   // ── full name ───────────────────────────────────────────────────────────────
 
   Widget _buildFullNameField() {
-    return TextFormField(
-      controller: _fullNameCtl,
-      textCapitalization: TextCapitalization.words,
-      decoration: _inputDecoration(
-        label: 'Full Name',
-        icon: Icons.person_outline,
-      ),
-      validator: (v) {
-        if (v == null || v.trim().isEmpty) return 'Full name is required.';
-        if (v.trim().length < 2) return 'Name must be at least 2 characters.';
-        return null;
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Full Name',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _fullNameCtl,
+          textCapitalization: TextCapitalization.words,
+          style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
+          decoration: _inputDecoration(label: 'Full Name', icon: Icons.person_outline),
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) return 'Full name is required.';
+            if (v.trim().length < 2) return 'Name must be at least 2 characters.';
+            return null;
+          },
+        ),
+      ],
     );
   }
 
-  // ── email (now editable) ────────────────────────────────────────────────────
+  // ── email ───────────────────────────────────────────────────────────────────
 
   Widget _buildEmailField() {
-    return TextFormField(
-      controller: _emailCtl,
-      keyboardType: TextInputType.emailAddress,
-      decoration: _inputDecoration(label: 'Email', icon: Icons.email_outlined)
-          .copyWith(
-            helperText:
-                'Changing your email will send a verification link to the new address.',
-            helperStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-            helperMaxLines: 2,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Email',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
-      validator: (v) {
-        if (v == null || v.trim().isEmpty) return 'Email is required.';
-        final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-        if (!emailRegex.hasMatch(v.trim())) {
-          return 'Enter a valid email address.';
-        }
-        return null;
-      },
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _emailCtl,
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
+          decoration: _inputDecoration(label: 'Email', icon: Icons.email_outlined),
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) return 'Email is required.';
+            final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+            if (!emailRegex.hasMatch(v.trim())) return 'Enter a valid email address.';
+            return null;
+          },
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Changing your email will send a verification link to the new address.',
+          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+        ),
+      ],
     );
   }
 
   // ── current password ────────────────────────────────────────────────────────
 
   Widget _buildCurrentPasswordField() {
-    // Required when changing email OR password.
     final emailChanged =
         _emailCtl.text.trim() != _originalEmail &&
         _emailCtl.text.trim().isNotEmpty;
 
-    return TextFormField(
-      controller: _currentPassCtl,
-      obscureText: _obscureCurrent,
-      decoration:
-          _inputDecoration(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Current Password',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _currentPassCtl,
+          obscureText: _obscureCurrent,
+          style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
+          decoration: _inputDecoration(
             label: 'Current Password',
             icon: Icons.lock_outline,
           ).copyWith(
-            helperText: emailChanged
-                ? 'Required to change your email address.'
-                : null,
-            helperStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             suffixIcon: _visibilityToggle(
               obscure: _obscureCurrent,
-              onToggle: () =>
-                  setState(() => _obscureCurrent = !_obscureCurrent),
+              onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
             ),
           ),
-      validator: (v) {
-        final changingPassword = _newPassCtl.text.isNotEmpty;
-        final changingEmail =
-            _emailCtl.text.trim() != _originalEmail &&
-            _emailCtl.text.trim().isNotEmpty;
-
-        if ((changingPassword || changingEmail) && (v == null || v.isEmpty)) {
-          return changingEmail
-              ? 'Enter your current password to change your email.'
-              : 'Enter your current password to set a new one.';
-        }
-        return null;
-      },
+          validator: (v) {
+            final changingPassword = _newPassCtl.text.isNotEmpty;
+            final changingEmail =
+                _emailCtl.text.trim() != _originalEmail &&
+                _emailCtl.text.trim().isNotEmpty;
+            if ((changingPassword || changingEmail) && (v == null || v.isEmpty)) {
+              return changingEmail
+                  ? 'Enter your current password to change your email.'
+                  : 'Enter your current password to set a new one.';
+            }
+            return null;
+          },
+        ),
+        if (emailChanged) ...[
+          const SizedBox(height: 6),
+          const Text(
+            'Required to change the email address.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          ),
+        ],
+      ],
     );
   }
 
   // ── new password ────────────────────────────────────────────────────────────
 
   Widget _buildNewPasswordField() {
-    return TextFormField(
-      controller: _newPassCtl,
-      obscureText: _obscureNew,
-      decoration:
-          _inputDecoration(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'New Password',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _newPassCtl,
+          obscureText: _obscureNew,
+          style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
+          decoration: _inputDecoration(
             label: 'New Password',
             icon: Icons.lock_reset_outlined,
           ).copyWith(
@@ -506,39 +644,52 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
               onToggle: () => setState(() => _obscureNew = !_obscureNew),
             ),
           ),
-      validator: (v) {
-        if (v == null || v.isEmpty) return null;
-        if (v.length < 6) return 'Password must be at least 6 characters.';
-        if (_currentPassCtl.text.isEmpty) {
-          return 'Enter your current password first.';
-        }
-        return null;
-      },
+          validator: (v) {
+            if (v == null || v.isEmpty) return null;
+            if (v.length < 6) return 'Password must be at least 6 characters.';
+            if (_currentPassCtl.text.isEmpty) return 'Enter your current password first.';
+            return null;
+          },
+        ),
+      ],
     );
   }
 
   // ── confirm password ────────────────────────────────────────────────────────
 
   Widget _buildConfirmPasswordField() {
-    return TextFormField(
-      controller: _confirmPassCtl,
-      obscureText: _obscureConfirm,
-      decoration:
-          _inputDecoration(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Confirm New Password',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _confirmPassCtl,
+          obscureText: _obscureConfirm,
+          style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
+          decoration: _inputDecoration(
             label: 'Confirm New Password',
             icon: Icons.lock_outline,
           ).copyWith(
             suffixIcon: _visibilityToggle(
               obscure: _obscureConfirm,
-              onToggle: () =>
-                  setState(() => _obscureConfirm = !_obscureConfirm),
+              onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
             ),
           ),
-      validator: (v) {
-        if (_newPassCtl.text.isEmpty) return null;
-        if (v != _newPassCtl.text) return 'Passwords do not match.';
-        return null;
-      },
+          validator: (v) {
+            if (_newPassCtl.text.isEmpty) return null;
+            if (v != _newPassCtl.text) return 'Passwords do not match.';
+            return null;
+          },
+        ),
+      ],
     );
   }
 
@@ -546,160 +697,144 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
 
   Widget _buildSaveButton() {
     final canSave = _isDirty && !_isSaving;
-
-    return AnimatedOpacity(
-      opacity: canSave ? 1.0 : 0.4,
-      duration: const Duration(milliseconds: 200),
+    return SizedBox(
+      width: double.infinity,
       child: FilledButton(
         onPressed: canSave ? _save : null,
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: const Color(0xFF4A6CF7),
+          shape: const StadiumBorder(),
+          backgroundColor: const Color(0xFF2196F3),
+          disabledBackgroundColor: const Color(0xFFE2E8F0),
+          foregroundColor: Colors.white,
+          disabledForegroundColor: const Color(0xFF94A3B8),
+          elevation: 0,
         ),
         child: _isSaving
             ? const SizedBox(
                 height: 20,
                 width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.white,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
               )
-            : const Text(
+            : Text(
                 'Save Changes',
                 style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: canSave ? Colors.white : const Color(0xFF94A3B8),
                 ),
               ),
       ),
     );
   }
 
-  // ── delete account section ──────────────────────────────────────────────────
+  // ── danger zone card ────────────────────────────────────────────────────────
 
-  Widget _buildDeleteAccountSection() {
-    // _childLoadError    → load failed; show retry instead of frozen spinner
-    // _linkedChildCount == null  → still loading, disable the button
-    // _linkedChildCount == 0     → no children, allow deletion
-    // _linkedChildCount  > 0     → children exist, block deletion
+  Widget _buildDangerZoneCard() {
     final isLoadingChildren = !_childLoadError && _linkedChildCount == null;
-    final hasLinkedChildren =
-        _linkedChildCount != null && _linkedChildCount! > 0;
-    final canDelete =
-        !isLoadingChildren && !hasLinkedChildren && !_childLoadError;
+    final hasLinkedChildren = _linkedChildCount != null && _linkedChildCount! > 0;
+    final canDelete = !isLoadingChildren && !hasLinkedChildren && !_childLoadError;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildSectionHeader('Danger Zone'),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.red.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.shade200),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.red.shade600,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Delete Account',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.red.shade700,
-                    ),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.warning_amber_rounded, color: Colors.red.shade600, size: 18),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Permanently removes your account and all data. '
-                'You must delete all student accounts first.',
-                style: TextStyle(fontSize: 12, color: Colors.red.shade800),
-              ),
-              // ── Child-load error notice with retry ─────────────────────
-              if (_childLoadError) ...[
-                const SizedBox(height: 10),
-                _buildChildLoadErrorNotice(),
-              ],
-              // ── Linked-children restriction notice ─────────────────────
-              if (hasLinkedChildren) ...[
-                const SizedBox(height: 10),
-                _buildLinkedChildrenNotice(),
-              ],
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: Tooltip(
-                  message: hasLinkedChildren
-                      ? 'Remove all linked children before deleting your account.'
-                      : _childLoadError
-                      ? 'Could not verify linked students. Please retry.'
-                      : '',
-                  child: OutlinedButton.icon(
-                    onPressed: canDelete ? _confirmDeleteAccount : null,
-                    icon: isLoadingChildren
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.grey.shade400,
-                            ),
-                          )
-                        : Icon(
-                            Icons.delete_forever_rounded,
-                            size: 18,
-                            color: canDelete
-                                ? Colors.red.shade600
-                                : Colors.grey.shade400,
-                          ),
-                    label: Text(
-                      'Delete My Account',
-                      style: TextStyle(
-                        color: canDelete
-                            ? Colors.red.shade600
-                            : Colors.grey.shade400,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(
-                        color: canDelete
-                            ? Colors.red.shade400
-                            : Colors.grey.shade300,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
+              const SizedBox(width: 10),
+              const Text(
+                'Danger Zone',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            'Permanently removes your account and all data. '
+            'You must delete all student accounts first.',
+            style: TextStyle(fontSize: 13, color: Colors.red.shade800, height: 1.4),
+          ),
+          if (_childLoadError) ...[
+            const SizedBox(height: 10),
+            _buildChildLoadErrorNotice(),
+          ],
+          if (hasLinkedChildren) ...[
+            const SizedBox(height: 10),
+            _buildLinkedChildrenNotice(),
+          ],
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: Tooltip(
+              message: hasLinkedChildren
+                  ? 'Remove all linked children before deleting your account.'
+                  : _childLoadError
+                      ? 'Could not verify linked students. Please retry.'
+                      : '',
+              child: OutlinedButton.icon(
+                onPressed: canDelete ? _confirmDeleteAccount : null,
+                icon: isLoadingChildren
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.grey.shade400,
+                        ),
+                      )
+                    : Icon(
+                        Icons.delete_forever_rounded,
+                        size: 18,
+                        color: canDelete ? Colors.red.shade600 : Colors.grey.shade400,
+                      ),
+                label: Text(
+                  'Delete My Account',
+                  style: TextStyle(
+                    color: canDelete ? Colors.red.shade600 : Colors.grey.shade400,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  side: BorderSide(
+                    color: canDelete ? Colors.red.shade400 : Colors.grey.shade300,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
-
-  // ── child-load error notice ────────────────────────────────────────────────
 
   Widget _buildChildLoadErrorNotice() {
     return Container(
@@ -714,22 +849,14 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 1),
-            child: Icon(
-              Icons.wifi_off_rounded,
-              size: 15,
-              color: Color(0xFFF57C00),
-            ),
+            child: Icon(Icons.wifi_off_rounded, size: 15, color: Color(0xFFF57C00)),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Could not verify linked students. '
               'Deletion is disabled until this is resolved.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.orange.shade900,
-                height: 1.4,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.orange.shade900, height: 1.4),
             ),
           ),
           const SizedBox(width: 8),
@@ -743,11 +870,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
               ),
               child: const Text(
                 'Retry',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
           ),
@@ -755,8 +878,6 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
       ),
     );
   }
-
-  // ── linked-children restriction notice ────────────────────────────────────
 
   Widget _buildLinkedChildrenNotice() {
     return Container(
@@ -771,26 +892,39 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 1),
-            child: Icon(
-              Icons.child_care_rounded,
-              size: 15,
-              color: Color(0xFFF57C00),
-            ),
+            child: Icon(Icons.child_care_rounded, size: 15, color: Color(0xFFF57C00)),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'You can only delete your account after removing all linked '
-              'children. Go to the Students tab to delete each child\'s '
-              'account first.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.orange.shade900,
-                height: 1.4,
-              ),
+              'children. Go to the Students tab to delete each child\'s account first.',
+              style: TextStyle(fontSize: 12, color: Colors.orange.shade900, height: 1.4),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── logout button ───────────────────────────────────────────────────────────
+
+  Widget _buildLogoutButton() {
+    return OutlinedButton.icon(
+      onPressed: _confirmLogout,
+      icon: const Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 18),
+      label: const Text(
+        'Log Out',
+        style: TextStyle(
+          color: Color(0xFFEF4444),
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -800,18 +934,34 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   InputDecoration _inputDecoration({
     required String label,
     required IconData icon,
+    bool enabled = true,
   }) {
     return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      prefixIcon: Icon(
+        icon,
+        color: enabled ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+      ),
+      filled: true,
+      fillColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.focused)) return Colors.white;
+        if (states.contains(WidgetState.disabled)) return const Color(0xFFF1F5F9);
+        return const Color(0xFFF8FAFC);
+      }),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF4A6CF7), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFF2196F3)),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -825,146 +975,21 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     );
   }
 
-  Widget _visibilityToggle({
-    required bool obscure,
-    required VoidCallback onToggle,
-  }) {
+  Widget _visibilityToggle({required bool obscure, required VoidCallback onToggle}) {
     return IconButton(
       icon: Icon(
         obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-        color: Colors.grey.shade500,
+        color: const Color(0xFF64748B),
       ),
       onPressed: onToggle,
-    );
-  }
-
-  Future<void> _confirmLogout() async {
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.logout,
-                color: Colors.red,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Log Out',
-              style: GoogleFonts.cairo(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Are you sure you want to log out of your account?',
-          style: GoogleFonts.roboto(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.cairo(
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Log Out',
-              style: GoogleFonts.cairo(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (proceed == true && mounted) {
-      context.read<AuthBloc>().add(LogoutRequested());
-      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-    }
-  }
-
-  Widget _buildLogoutButton() {
-    return OutlinedButton.icon(
-      onPressed: _confirmLogout,
-      icon: const Icon(
-        Icons.logout,
-        color: Colors.red,
-        size: 18,
-      ),
-      label: Text(
-        'Log Out',
-        style: GoogleFonts.cairo(
-          color: Colors.red,
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-        ),
-      ),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        side: const BorderSide(color: Colors.red, width: 1.5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
     );
   }
 }
 
 // ── _ParentDeletePasswordDialog ───────────────────────────────────────────────
-//
-// Self-contained password-confirmation dialog for parent account deletion.
-//
-// Lifecycle:
-//   • "Delete Account" pressed        → dispatches DeleteParentAccountRequested,
-//                                       shows an inline spinner, disables buttons.
-//   • ParentAccountDeleteLoading      → spinner visible, buttons disabled,
-//                                       back gesture and barrier both blocked
-//                                       via PopScope(canPop: false).
-//   • ParentAccountDeleted            → pops itself; AuthUnauthenticated follows
-//                                       and the root navigator handles sign-out.
-//   • ParentAccountDeleteError        → stops spinner, shows the error message
-//                                       inline as the field's errorText; dialog
-//                                       remains open for the user to correct.
-//   • "Cancel" pressed / tap outside  → pops normally (only when not loading).
-//
-// Dismissal is guarded on two levels:
-//   1. showDialog(barrierDismissible: false) — prevents scrim taps at all times.
-//      The Cancel button provides a deliberate exit when not loading.
-//   2. PopScope(canPop: !_isLoading) — blocks the Android back gesture / back
-//      button exclusively while the delete request is in flight.
 
 class _ParentDeletePasswordDialog extends StatefulWidget {
   final String parentUid;
-
   const _ParentDeletePasswordDialog({required this.parentUid});
 
   @override
@@ -1003,19 +1028,16 @@ class _ParentDeletePasswordDialogState
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      // Block the back gesture / Android back button while the delete request
-      // is in flight. When not loading, the back gesture dismisses normally
-      // (equivalent to tapping Cancel).
       canPop: !_isLoading,
       child: BlocListener<ParentProfileBloc, ParentProfileState>(
         listener: (context, state) {
           if (state is ParentProfileLoading) {
             setState(() => _isLoading = true);
           } else if (state is ParentAccountDeleted) {
-            // Close the dialog. AuthUnauthenticated follows immediately and the
-            // root navigator redirects to the login screen — no extra navigation
-            // needed here.
-            Navigator.of(context).pop();
+            // Navigation is handled by the parent screen's listener via
+            // pushNamedAndRemoveUntil — popping here would race with it.
+            Navigator.of(context, rootNavigator: true)
+                .pushNamedAndRemoveUntil('/login', (route) => false);
           } else if (state is ParentProfileError) {
             setState(() {
               _isLoading = false;
@@ -1024,9 +1046,7 @@ class _ParentDeletePasswordDialogState
           }
         },
         child: AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Container(
@@ -1035,11 +1055,7 @@ class _ParentDeletePasswordDialogState
                   color: const Color(0xFFFFEBEE),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.lock_outline,
-                  color: Colors.red.shade600,
-                  size: 20,
-                ),
+                child: Icon(Icons.lock_outline, color: Colors.red.shade600, size: 20),
               ),
               const SizedBox(width: 12),
               const Text(
@@ -1068,9 +1084,7 @@ class _ParentDeletePasswordDialogState
                   autofocus: true,
                   enabled: !_isLoading,
                   onChanged: (_) {
-                    if (_errorMessage != null) {
-                      setState(() => _errorMessage = null);
-                    }
+                    if (_errorMessage != null) setState(() => _errorMessage = null);
                   },
                   onSubmitted: (_) {
                     if (!_isLoading) _submit();
@@ -1079,15 +1093,10 @@ class _ParentDeletePasswordDialogState
                     labelText: 'Current Password',
                     errorText: _errorMessage,
                     isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: Colors.red.shade600,
-                        width: 1.5,
-                      ),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 1.5),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1095,10 +1104,7 @@ class _ParentDeletePasswordDialogState
                     ),
                     focusedErrorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: Colors.red.shade600,
-                        width: 1.5,
-                      ),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 1.5),
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -1108,9 +1114,8 @@ class _ParentDeletePasswordDialogState
                         size: 18,
                         color: Colors.grey.shade500,
                       ),
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() => _obscure = !_obscure),
+                      onPressed:
+                          _isLoading ? null : () => setState(() => _obscure = !_obscure),
                     ),
                   ),
                 ),
@@ -1130,18 +1135,13 @@ class _ParentDeletePasswordDialogState
               onPressed: _isLoading ? null : _submit,
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.red.shade600,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: _isLoading
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Text('Delete Account'),
             ),

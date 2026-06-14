@@ -5,9 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/snapshot/snapshot_bloc.dart';
-import '../../../bloc/snapshot/snapshot_event.dart';
-import '../../../bloc/snapshot/snapshot_state.dart';
 import '../../../bloc/reports/reports_bloc.dart';
 import '../../../bloc/reports/reports_event.dart';
 import '../../../bloc/reports/reports_state.dart';
@@ -39,9 +36,11 @@ class StudentProfileDashboard extends StatefulWidget {
 }
 
 class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
-  String get _firstName => widget.student.fullName.split(' ').first;
-  String get _initial => widget.student.fullName.isNotEmpty
-      ? widget.student.fullName[0].toUpperCase()
+  late StudentModel _student;
+
+  String get _firstName => _student.fullName.split(' ').first;
+  String get _initial => _student.fullName.isNotEmpty
+      ? _student.fullName[0].toUpperCase()
       : '?';
 
   int _xp = 0;
@@ -52,15 +51,11 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
   @override
   void initState() {
     super.initState();
-    // Load daily snapshot (quizzes today, study time, accuracy)
-    context.read<SnapshotBloc>().add(
-          LoadDailySnapshotRequested(studentUid: widget.student.uid),
-        );
-    // Load weekly report (accuracy trend, streak)
+    _student = widget.student;
     context.read<ReportsBloc>().add(
-          LoadWeeklyReportRequested(studentUid: widget.student.uid),
+          LoadWeeklyReportRequested(studentUid: _student.uid),
         );
-        
+
     _loadGamification();
   }
 
@@ -80,14 +75,23 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
     }
   }
 
+  void _popWithStudent(BuildContext context) {
+    Navigator.of(context).pop(_student);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _popWithStudent(context);
+      },
+      child: Scaffold(
       backgroundColor: _kCanvas,
       body: Column(
         children: [
           // ── Sticky Branded Header ─────────────────────────────────────────
-          _StickyHeader(name: _firstName),
+          _StickyHeader(name: _firstName, onBack: () => _popWithStudent(context)),
 
           // ── Scrollable Body ───────────────────────────────────────────────
           Expanded(
@@ -97,7 +101,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
                 children: [
                   // 1 — Hero Profile Card
                   _HeroProfileCard(
-                    student: widget.student,
+                    student: _student,
                     initial: _initial,
                     xp: _xp,
                     coins: _coins,
@@ -106,11 +110,14 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
                   const SizedBox(height: 16),
 
                   // 2 — Quick Stats 2x2 Grid (BLoC-driven)
-                  _QuickStatsGrid(student: widget.student),
+                  _QuickStatsGrid(student: _student),
                   const SizedBox(height: 16),
 
                   // 3 — Navigation List
-                  _NavigationList(student: widget.student),
+                  _NavigationList(
+                    student: _student,
+                    onStudentUpdated: (updated) => setState(() => _student = updated),
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -118,6 +125,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -126,7 +134,8 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
 
 class _StickyHeader extends StatelessWidget {
   final String name;
-  const _StickyHeader({required this.name});
+  final VoidCallback onBack;
+  const _StickyHeader({required this.name, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +159,7 @@ class _StickyHeader extends StatelessWidget {
             children: [
               // Back button
               InkWell(
-                onTap: () => Navigator.of(context).pop(),
+                onTap: onBack,
                 borderRadius: BorderRadius.circular(24),
                 child: const Padding(
                   padding: EdgeInsets.all(4),
@@ -315,15 +324,11 @@ class _GamPill extends StatelessWidget {
 }
 
 // ── Quick Stats Grid ──────────────────────────────────────────────────────────
-// Reads from SnapshotBloc (quizzes today, study time) and ReportsBloc
-// (weekly accuracy %, active streak days). Shows a small spinner while loading
-// and a dash '—' on error/no data.
 
 class _QuickStatsGrid extends StatelessWidget {
   final StudentModel student;
   const _QuickStatsGrid({required this.student});
 
-  // Format a Duration as "Xh Ym" or "Xm" when under an hour.
   String _formatDuration(Duration d) {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
@@ -333,87 +338,69 @@ class _QuickStatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SnapshotBloc, SnapshotState>(
-      builder: (context, snapState) {
-        return BlocBuilder<ReportsBloc, ReportsState>(
-          builder: (context, reportsState) {
-            // ── resolve values ──────────────────────────────────────────────
-            final isSnapLoading = snapState is SnapshotLoading ||
-                snapState is SnapshotInitial;
-            final snap = snapState is SnapshotLoaded ? snapState.snapshot : null;
+    return BlocBuilder<ReportsBloc, ReportsState>(
+      builder: (context, state) {
+        final isLoading = state.isWeeklyLoading;
+        final hasError = !state.isWeeklyLoading && state.weeklyReport == null;
+        final report = state.weeklyReport;
 
-            final isReportLoading = reportsState.isWeeklyLoading ||
-                reportsState.weeklyReport == null;
-            final report = reportsState.weeklyReport;
+        String v(String? loaded) =>
+            isLoading ? '' : (hasError || loaded == null) ? '—' : loaded;
 
-            return Column(
+        return Column(
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        icon: Icons.quiz_outlined,
-                        iconColor: _kPrimary,
-                        value: isSnapLoading
-                            ? null
-                            : snap != null
-                                ? '${snap.quizzesCompletedToday}'
-                                : '—',
-                        label: 'Quizzes Today',
-                        isLoading: isSnapLoading,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _StatCard(
-                        icon: Icons.access_time_rounded,
-                        iconColor: _kPrimary,
-                        value: isSnapLoading
-                            ? null
-                            : snap != null
-                                ? _formatDuration(snap.totalStudyTimeToday)
-                                : '—',
-                        label: 'Study Time Today',
-                        isLoading: isSnapLoading,
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.quiz_rounded,
+                    color: _kPrimary,
+                    value: v(report != null ? '${report.totalQuizzes}' : null),
+                    label: 'Quizzes',
+                    sublabel: 'This week',
+                    isLoading: isLoading,
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        icon: Icons.track_changes_rounded,
-                        iconColor: _kPrimary,
-                        value: isReportLoading
-                            ? null
-                            : report != null
-                                ? '${report.overallAccuracyPercent.toInt()}%'
-                                : '—',
-                        label: 'Weekly Accuracy',
-                        isLoading: isReportLoading,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _StatCard(
-                        icon: Icons.local_fire_department_rounded,
-                        iconColor: _kAmber,
-                        value: isReportLoading
-                            ? null
-                            : report != null
-                                ? '${report.currentStreakDays} days'
-                                : '—',
-                        label: 'Active Streak',
-                        isLoading: isReportLoading,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.schedule_rounded,
+                    color: const Color(0xFF8B5CF6),
+                    value: v(report != null ? _formatDuration(report.totalStudyTime) : null),
+                    label: 'Study Time',
+                    sublabel: 'This week',
+                    isLoading: isLoading,
+                  ),
                 ),
               ],
-            );
-          },
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.track_changes_rounded,
+                    color: const Color(0xFF22C55E),
+                    value: v(report != null ? '${report.overallAccuracyPercent.toInt()}%' : null),
+                    label: 'Accuracy',
+                    sublabel: 'Weekly avg',
+                    isLoading: isLoading,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.local_fire_department_rounded,
+                    color: _kAmber,
+                    value: v(report != null ? '${report.currentStreakDays}' : null),
+                    label: 'Day Streak',
+                    sublabel: 'Current',
+                    isLoading: isLoading,
+                  ),
+                ),
+              ],
+            ),
+          ],
         );
       },
     );
@@ -422,17 +409,18 @@ class _QuickStatsGrid extends StatelessWidget {
 
 class _StatCard extends StatelessWidget {
   final IconData icon;
-  final Color iconColor;
-  /// Null means still loading — shows a spinner. '—' means loaded but no data.
-  final String? value;
+  final Color color;
+  final String value;
   final String label;
+  final String sublabel;
   final bool isLoading;
 
   const _StatCard({
     required this.icon,
-    required this.iconColor,
+    required this.color,
     required this.value,
     required this.label,
+    required this.sublabel,
     this.isLoading = false,
   });
 
@@ -442,7 +430,7 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _kWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0D000000),
@@ -454,29 +442,50 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(height: 10),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 14),
           if (isLoading)
-            const SizedBox(
-              height: 24,
-              width: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
+            SizedBox(
+              height: 22,
+              width: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: color,
+              ),
             )
           else
             Text(
-              value ?? '—',
+              value,
               style: GoogleFonts.roboto(
                 color: _kDarkText,
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
+                height: 1,
               ),
             ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             label,
             style: GoogleFonts.roboto(
+              color: _kDarkText,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            sublabel,
+            style: GoogleFonts.roboto(
               color: _kSubText,
-              fontSize: 12,
+              fontSize: 11,
             ),
           ),
         ],
@@ -489,7 +498,8 @@ class _StatCard extends StatelessWidget {
 
 class _NavigationList extends StatelessWidget {
   final StudentModel student;
-  const _NavigationList({required this.student});
+  final void Function(StudentModel) onStudentUpdated;
+  const _NavigationList({required this.student, required this.onStudentUpdated});
 
   @override
   Widget build(BuildContext context) {
@@ -527,8 +537,8 @@ class _NavigationList extends StatelessWidget {
           icon: Icons.settings_rounded,
           title: 'App Configurations',
           subtitle: 'Gateway timers, monitored apps, quiz rules',
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final updated = await Navigator.push<StudentModel>(
               context,
               MaterialPageRoute(
                 builder: (_) => BlocProvider.value(
@@ -537,6 +547,9 @@ class _NavigationList extends StatelessWidget {
                 ),
               ),
             );
+            if (updated != null && context.mounted) {
+              onStudentUpdated(updated);
+            }
           },
         ),
       ],

@@ -27,7 +27,7 @@ class ConfirmEmailScreen extends StatelessWidget {
           }
           if (state is AuthEmailUnverified) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Email is not verified yet.')),
+              const SnackBar(content: Text("Your email hasn't been verified yet. Check your inbox.")),
             );
           }
           if (state is EmailVerificationSent) {
@@ -54,7 +54,7 @@ class ConfirmEmailScreen extends StatelessWidget {
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Please verify your email.'),
+                        const Text('Please check your inbox and verify your email to continue.'),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () => context.read<AuthBloc>().add(
@@ -66,12 +66,12 @@ class ConfirmEmailScreen extends StatelessWidget {
                           onPressed: () => context.read<AuthBloc>().add(
                             CheckEmailVerificationRequested(),
                           ),
-                          child: const Text('I have verified — Refresh'),
+                          child: const Text("I've Verified My Email"),
                         ),
                         TextButton(
                           onPressed: () =>
                               context.read<AuthBloc>().add(LogoutRequested()),
-                          child: const Text('Cancel / Logout'),
+                          child: const Text('Log Out'),
                         ),
                       ],
                     ),

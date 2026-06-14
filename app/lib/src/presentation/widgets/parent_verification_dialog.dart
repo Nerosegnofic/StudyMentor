@@ -92,7 +92,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   validator: (v) =>
-                      (v != null && v.contains('@')) ? null : 'Invalid email',
+                      (v != null && v.contains('@')) ? null : 'Please enter a valid email address.',
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -130,7 +130,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: widget.isLoading ? null : (_) => _submit(),
                   validator: (v) =>
-                      (v != null && v.isNotEmpty) ? null : 'Required',
+                      (v != null && v.isNotEmpty) ? null : 'Password is required.',
                 ),
               ],
             ),
@@ -157,7 +157,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text('Verify & Logout'),
+                : const Text('Verify & Log Out'),
           ),
         ],
       ),

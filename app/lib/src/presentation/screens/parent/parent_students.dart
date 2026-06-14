@@ -62,7 +62,7 @@ class _ParentStudentsState extends State<ParentStudents> {
   }
 
   Future<void> _openConfigScreen(StudentModel student) async {
-    await Navigator.of(context).push(
+    final updated = await Navigator.of(context).push<StudentModel>(
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
           value: context.read<StudentsBloc>(),
@@ -70,6 +70,12 @@ class _ParentStudentsState extends State<ParentStudents> {
         ),
       ),
     );
+    if (mounted && updated != null) {
+      setState(() {
+        final idx = _students.indexWhere((s) => s.uid == updated.uid);
+        if (idx != -1) _students[idx] = updated;
+      });
+    }
   }
 
   Future<void> _confirmAndDeleteStudent(StudentModel student) async {
@@ -100,7 +106,7 @@ class _ParentStudentsState extends State<ParentStudents> {
               Icon(Icons.group_outlined, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
               Text(
-                'No students yet.',
+                'No children added yet.',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
@@ -409,7 +415,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
               ),
               const SizedBox(width: 12),
               const Text(
-                'Delete Student',
+                'Delete Child Account',
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
             ],

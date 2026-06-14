@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../lib/src/data/catalog/subject_metadata_registry.dart';
 
@@ -44,6 +45,18 @@ void main() {
       // Because it trims and lowercases, both should hash to the exact same fallback values
       expect(def1.emoji, def2.emoji);
       expect(def1.primaryColor.value, def2.primaryColor.value);
+    });
+
+    test('getSubjectIcon returns correct representative icons for global keys', () {
+      expect(SubjectMetadataRegistry.getSubjectIcon('math'), Icons.calculate);
+      expect(SubjectMetadataRegistry.getSubjectIcon('Mathematics'), Icons.calculate);
+      expect(SubjectMetadataRegistry.getSubjectIcon('science'), Icons.science);
+      expect(SubjectMetadataRegistry.getSubjectIcon('history'), Icons.history_edu);
+      expect(SubjectMetadataRegistry.getSubjectIcon('english'), Icons.menu_book);
+      expect(SubjectMetadataRegistry.getSubjectIcon('geography'), Icons.public);
+      expect(SubjectMetadataRegistry.getSubjectIcon('art'), Icons.palette);
+      expect(SubjectMetadataRegistry.getSubjectIcon('music'), Icons.music_note);
+      expect(SubjectMetadataRegistry.getSubjectIcon('unknown_custom_subject'), isNull);
     });
   });
 }

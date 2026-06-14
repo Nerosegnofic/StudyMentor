@@ -506,6 +506,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<List<QuestionDetailModel>> getSessionQuestions(String quizAttemptId, {String? studentUid}) {
+    return dataConnect.getSessionQuestions(quizAttemptId, studentUid: studentUid);
+  }
+
+  @override
   Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber) {
     return dataConnect.getQuestionDetail(quizAttemptId, questionNumber);
   }
@@ -514,7 +519,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<WeeklyReportModel> getWeeklyReport(String studentUid) {
-    return dataConnect.getWeeklyReport(studentUid);
+    return AiEngineRepository.instance.getWeeklyReport(studentUid);
   }
 
   @override
@@ -529,7 +534,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid) {
-    return dataConnect.getDailySnapshot(studentUid);
+    return AiEngineRepository.instance.getDailySnapshot(studentUid);
   }
 
   @override
