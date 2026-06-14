@@ -1,0 +1,213 @@
+[
+    {
+        "page_content": "# Solution of Sheet 1 Version 8.0 of **CS111**: Fundamentals of CS  \nDr Muhammad Al-Ramly  \nBy: Ahmed Abdelnabi (20220027) and Ahmed Alaa (20220028)\n\n## Part I – Introduction  \n**1. Fill in the spaces**  \na) The goals of this course are **(1)** To learn the fundamentals of computer science, how hardware works and how to represent data in various ways (numeral systems). **(2)** To learn the basic computer terminology and computer architecture. **(3)** and to develop problem solving skills using algorithms and flowcharts.  \nb) To operate a computing device to solve a problem, we need hardware and software.  \nc) In his MSc thesis, “A Symbolic Analysis of Relay and Switching Circuits”, published in 1938, MIT computer science pioneer Claude E. Shannon showed the possibility of solving problems simply by manipulating two symbols: 1 and 0 in an automatic electric circuit. In this work, he invented the term **Bit** which is an abbreviation for Binary Digit that can store either 0 or 1.  \nd) Every 8 bits are called a **byte**. Every 1024 bytes are called **Kilobytes** and every 1024 megabyte is called **Gigabytes** and a zetabyte is 10<sup>21</sup> bytes.\ne) A super computer is an extremely powerful computer with huge processing power and large memory, typically used to process large data for scientific purposes, such as NASA projects. One company that manufactures super computers is **IBM**.",
+        "metadata": {
+            "h1": "Solution of Sheet 1 Version 8.0 of **CS111**: Fundamentals of CS",
+            "h2": "Part I – Introduction",
+            "substantive_score": 18,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 225,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "exercise",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "# 2. Fill in the spaces.\na) A **flip-flop** is an electronic circuit that is capable of storing one bit.\nb) **E-Commerce** is trading and selling and buying through the internet.\nc) Voice Over IP (**VoIP**) is a **technology developed in 1995 to make calls on the internet instead of traditional phone calls.**\nd) **Python**, **C**, **Java**, **C++** and **C#** are the top programming languages in use today according to **TIOBE Index**.\ne) Flowcharts and pseudo-code are methods to represent **algorithms**.\nf) The most used language for writing software for embedded systems (software inside cars or other devices) is **C**.  \n**3. Answer the following questions.**  \na) **I.** The digital revolution has made it possible to play games at any moment at the tips of your fingers, and play it online with others around the world. Furthermore, the digital revolution has made it possible to be fully engaged in the game using VR and AR.  \n**II.** The internet and mobile phones were one of the biggest revolutions in communication as these two has communication much easier and available with no regard to time or location. The internet has made it possible to send a message to anyone in the world in seconds and made people express themselves by posting on Facebook and twitter and et cetera.  \n**III.** In the past, people used to go to the library and search through books and journals to find information they need. Now that Google’s search engine was introduced 24 years ago, people often no longer need to go to the library for information as they can now find the information that they need using search engines in seconds.  \nIV. Not so long ago, businesses used to attract customers using newspaper ads, billboards, TV commercials and so on. When social media was made, businesses focused more on advertising on online platforms because reaching more customers was easier there.",
+        "metadata": {
+            "h1": "2. Fill in the spaces.",
+            "substantive_score": 22,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 313,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "toc",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "b) It is easier to make circuits with only two states (1 or 0) than to make circuits with 10 states (0 to 9).  \nc) A computer user is a person who takes advantage of programs that programmers made. A computer user knows how to use these programs but doesn’t know how they were made or how they work.  \nWhile a computer programmer is a person who understands computers from a technical standpoint and therefore creates programs for computers using code. A computer programmer usually knows how a program was made and/or how to make it.  \nd) The most popular programming languages are: Java, PHP, JavaScript, Python, Objective-C, Ruby, Perl, C, C++, C#, SQL and Swift.  \ne) There are approximately 688 programming languages.  \nf) Modern general-purpose computers typically use a word size of 32 bits or 64 bits.  \ng) Being a computer programmer offers flexibility as you can work in a company, or from home, or as a freelancer. Programming also enhances your cognitive abilities and reasoning as it trains your mind to solve problems using logical thinking. Also, by becoming a programmer, you help make life easier for others. Finally, software development is one of the highest-paid jobs in the world.  \nh) In Egypt, a junior programmer’s salary usually ranges from 6,000 EGP to 20,000 EGP a month. In the US, a junior programmer’s salary ranges from $46,537 to $58,297.  \ni) If an algorithm is correct, it means that it works and does what it is required to do. If an algorithm is efficient, it means that it takes the least time possible to execute and the least amount possible of memory usage.  \nj) Yes, I can. Let’s take an example, 1010 in binary is equal to 10 in decimal, and 1111 in binary is equal to 15 in decimal. 1110 in binary is equal to 14 in decimal, and 0101 is equal to 5 in decimal. By looking at the two examples, we can conclude that if a binary number’s rightmost is 0 then it is even, and if a binary number’s rightmost is 1 then it is odd.",
+        "metadata": {
+            "h1": "2. Fill in the spaces.",
+            "substantive_score": 20,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 351,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "k) Signed magnitude requires complicated hardware and erroneously allows two different representations for zero: positive zero and negative zero. While two’s complement requires only the “adder” circuit for addition and subtraction and has only one representation for zero.  \nl) The main difference between one’s complement and two’s complement is that one’s complement allows two representations of zero: negative zero and positive zero, while two’s complement allows for only one representation of zero. Computers use two’s complement as it doesn’t require ending-around-carry when performing addition therefore it offers reduced costs in comparison with one’s complement.  \n4. Answer the following questions.  \na) E-learning, short for “electronic learning”, is learning using electronic devices on the internet. Five important E-Learning sites for computer scientists are: Udemy, Coursera, Udacity, YouTube and Pluralsight.  \nb) The most 3 important websites for programmers are: Stack Overflow, Github and Codeforces.  \nc) 1/3 is an infinite repeating sequence of 0.33333…, and in binary it’s 0.010101010101010101010…., but the computer cannot store an infinite number, so it has to output the truncated value of 1/3  \nd) As for integers, we consider (78 + 186) which is 264\nLet’s compute the value using binary system:\n0 1 0 0 1 1 1 0\n1 0 1 1 1 0 1 0\n-------------------\n0 0 0 0 1 0 0 0\nAs we can conclude, the value is 8 and not 264, this is due to the limited number of bits used for this computation.\nAs for floating point numbers, we consider (2.5 + 0.125) which is 2.625\nWhen we attempt to produce the value 2.625 in binary with an 8-bit system, we get 01101010 which gives us the erroneous result of 2.5  \ne) A round-off error occurs because computers have memory and CPU limitations when it comes to representing extremely accurate and infinite numbers. This error could be reduced by  \nincreasing the number of bits that represent the digits allowed to be represented.",
+        "metadata": {
+            "h1": "2. Fill in the spaces.",
+            "substantive_score": 13,
+            "structural_score": 12,
+            "content_type": "substantive",
+            "word_count": 320,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "increasing the number of bits that represent the digits allowed to be represented.  \nf) (1) In two’s complement, we know a number is positive when the sign bit is 0, and negative if the sign bit is 1.\n(2) In excess notation, we know a number is positive when the sign bit is 1, and negative if the sign bit is 0.  \ng) In ASCII, the difference between a capital letter and its small letter is 32.\nTherefore, if we want to convert a capital letter to a small letter, we simply add 100000 (which is 32) to the capital letter’s binary value.  \nh) Hexadecimal is more understandable to humans than binary. For instance, 12C is easier to understand than 100101100.  \ni) A computational problem is a problem that can be solved by following a sequence of computational steps.\n**Steps to solve a computational problem:**\n1- Analyze the problem.\n2- Develop an algorithm for performing the task.\n3- Represent this algorithm in a language that the computer machine can understand (program).\n4- Run the program on the computer machine.  \n**Types of Computational Problems:**  \n1- **Decision Problem:** Given a positive integer *n*, determine if *n* is prime.\n2- **Counting Problem:** Given a positive integer *n*, count the number of nontrivial prime factors of *n*.\n3- **Optimization Problem:** Given a graph G, find an independent set of G of maximum size.\n4- **Function Problem:** Given a list of cities and the distances between each pair of cities, find the shortest possible route that visits each city exactly once and returns to the origin city.  \nj) **The main properties of an algorithm are:**  \n1- **Ordered**\nExample:\nStep one: Print n\nStep two: Read n\nThis algorithm is unordered because n needs to be read before getting printed.  \n2- **Unambiguous**\nExample:\nStep one: Get n1, n2, n3\nStep two: Calculate the average of n1, n2 and n3  \nStep three: Print the average.\nThis algorithm is ambiguous because we didn’t provide instructions to the computer about how to calculate the average.",
+        "metadata": {
+            "h1": "2. Fill in the spaces.",
+            "substantive_score": 35,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 336,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "Step three: Print the average.\nThis algorithm is ambiguous because we didn’t provide instructions to the computer about how to calculate the average.  \n**3- Executable**\nExample:\nStep one: Let number = -5\nStep two: Print SQRT (number)\nStep three: Add 1 to number\nStep four: If number = 5, END\nStep five: Else repeat from step 2\nThis algorithm is inexecutable because there is no square root for -5  \n**4- Terminating**\nExample:\nStep one: Let number = 1\nStep two: Print number\nStep three: Add 1 to number\nStep four: Repeat from step 2\nThis algorithm is non-terminating because it will keep infinitely adding 1 to number.  \n5. Write a short article on each of the following topics  \na) Muhammad ibn Musa al-Khwarizmi was a mathematician who was one of the pioneers in Algebra. He introduced Europe to the Hindu-Arabic numerals and Algebra. The words “Algorithm” and “Algebra” are actually derived from his name, Al-Khwarizmi. Beside being the “father of algebra”, he made major contributions in astronomy and geography. He also made improvements in Sundials, and developed a world map for al-Mamun and took part in a project to find the Earth’s circumference.  \nb) There are different types of computers, such as: Mainframe Computers, Mini Computers, Micro Computers and Super Computers.  \nMainframe Computers: Huge computers with huge computational power and speed used by banks and airlines, used by thousands through terminal and more secure against attacks.  \nMini Computers: Powerful fast computers, used by hundreds of users through terminals and used by medium size companies and factories.  \nMicro computers: Smaller computers with less speed, designed to be used by individuals.  \nSuper computers: Computers with huge processing power and large memory, used to process large data like in space apps.  \n6. Write a short article on each of the following articles.  \na) **The main components of every computer system are:**",
+        "metadata": {
+            "h1": "2. Fill in the spaces.",
+            "substantive_score": 23,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 308,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "example",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "6. Write a short article on each of the following articles.  \na) **The main components of every computer system are:**  \n* **A motherboard:** a motherboard is a component that holds all computer parts together in one place.\n* **A Central Processing Unit (CPU):** The computer’s brain, it basically does all calculations and processes for the computer.\n* **A Graphics Processing Unit (GPU):** The GPU processes all visuals and graphics in the computer, like the visuals in video games or resource-intensive software like 3Ds Max.\n* **A Random Access Memory (RAM):** a memory that stores programs’ temporary information to be processed by other computer components.\n* **Storage:** Some computers use HDD hard drives to permanently store information to be accessed anytime. SSD hard drives are speedier but they’re more costly.  \nb) **(1) Advantages of Natural Language Algorithms:** easily understandable to a wide audience.  \n**Disadvantages of Natural Language Algorithms:** communication problems may arise regarding the level of detail required when choosing correct vocabulary which will lead to misunderstandings.  \n**(2) Advantages of Pseudocode:** easier for humans to understand than programming languages, and more precise than natural language.\n**Disadvantages of Pseudocode:** There is no accepted standard of how to write pseudocode, so it may lead to confusions.  \n**(3) Advantages of Flowcharts:** considered a fun way to represent algorithms as it’s more visual and easier to follow.\n**Disadvantages of Flowcharts:** if the algorithm is very long and/or very complex, designing it using flowcharts will often result in tangled webs of crisscrossing arrows that made understanding the structure of the underlying algorithm difficult.  \n**(4) Advantages of Programming Language Algorithms:** very easy to understand for programmers and could be checked for errors using compilers.",
+        "metadata": {
+            "h1": "2. Fill in the spaces.",
+            "substantive_score": 14,
+            "structural_score": 5,
+            "content_type": "substantive",
+            "word_count": 277,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "**(4) Advantages of Programming Language Algorithms:** very easy to understand for programmers and could be checked for errors using compilers.\n**Disadvantages of Programming Language Algorithms:** Difficult to understand by inexperienced programmers and/or programmers who don’t know the programming language which the algorithm was written with.  \n7. Connect each entry from the left column to ALL correct entries in the right column.\n(1) (a → 3) (a → 4) (b → 1) (c → 6) (d → 4) (d → 5) (e → 2) (e → 4) (f → 4)\n(2) (a → 2) (a → 5) (b → 1) (b → 5) (c → 3) (c → 4)  \n8. Connect each entry from the left column to ALL correct entries in the right column.\n(1) (a → 2) (a → 5) (b → 3) (b → 4) (c → 1) (c → 6) (c → 7) (c → 8) (c → 9) (c → 10)\n(2) (a → 6) (b → 4) (c → 2) (c → 5) (d → 1) (e → 3)  \n9. Choose the best and most correct answer\na) 4. Excess\nb) 2. Two’s complement\nc) 4. -1/4\nd) 1. Touch Screen\ne) 1. Secondary Memory",
+        "metadata": {
+            "h1": "2. Fill in the spaces.",
+            "substantive_score": 11,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 200,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "# Part II – Number Systems  \n10. Convert these decimal numbers into binary numbers.\na) 75.75\n64 32 16 8 4 2 1. 0.5 0.75\n1 0 0 1 0 1 1. 1 1\nb) 0.5\n0.5 * 2 = 1 → Remainder = 0\n0.1  \nc) 1.01875  \n0.01875 * 2 = 0.0375 → 0\n0.0375 * 2 = 0.075 → 0\n0.075 * 2 = 0.15 → 0\n0.15 * 2 = 0.3 → 0\n0.3 * 2 = 0.6 → 0\n0.6 * 2 = 1.2 → 1\n0.2 * 2 = 0.4 → 0\n0.4 * 2 = 0.8 → 0\n0.8 * 2 = 1.6 → 1  \n1.000001001  \nd) 30.25  \n16 8 4 2 1 . 0.5 0.25\n1 1 1 1 0 . 0 1  \ne) 13.375\n8 4 2 1\n1 1 0 1\n0.375 * 2 = 0.75 → 0\n0.75 * 2 = 1.5 → 1\n0.5 * 2 = 1 → 1\n1101.011  \n11. Convert the following decimal numbers into octal and hexadecimal numbers\na) 11.5\n11.5 * 8<sup>1</sup> = 92\n92 / 8 = 11.5 → Remainder = 0.5 * 8 = 4\n11 / 8 = 1.375 → Remainder = 0.375 * 8 = 3\n1 / 8 = 0.125 → Remainder = 0.125 * 8 = 1\nResult = 13.4  \n11.5 * 16<sup>1</sup> = 184\n184 / 16 = 11.5 → Remainder = 0.5 * 16 = 8\n11 / 16 = 0.6875 → Remainder = 0.6875 * 16 = B\nResult = B.8  \n**b) 8.1**\n8.1 * 8 = 64.8  \n64.8 / 8 = 8.1 → Remainder = 0.1 * 8 = 0.8 ≈ 1\n8 / 8 = 1 → Remainder = 0\nResult = 10.1  \n8.1 * 16 = 129.6\n129.6 / 16 = 8.1 → Remainder = 0.1 * 16 = 1.6 ≈ 2\n8 / 16 = 0.5 → Remainder = 0.5 * 16 = 8\nResult = 8.2  \n**c) 166.125**\n166 / 8 = 20.75 → Remainder = 0.75 * 8 = 6\n20 / 8 = 2.5 → Remainder = 0.5 * 8 = 4\n2 / 8 = 0.25 → Remainder = 0.25 * 8 = 2  \n0.125 * 8 = 1\nResult = 246.1  \n166 / 16 = 10.375 → Remainder = 0.375 * 16 = 6\n10 / 16 = 0.625 → Remainder = 0.625 * 16 = 10\n0.125 * 16 = 2\nResult = A6.2  \n**d) 12**  \n12 / 8 = 1.5 → Remainder = 0.5 * 8 = 4\n1 / 8 = 0.125 → Remainder = 0.125 * 8 = 1\nResult = 14\nResult = C (since C = 12 in decimal)  \n**e) 80.25**  \n80 / 8 = 10 → Remainder = 0\n10 / 8 = 1.25 → Remainder = 0.25 * 8 = 2\n1 / 8 = 0.125 → Remainder = 0.125 * 8 = 1  \n0.25 * 8 = 2\nResult = 120.2  \n80 / 16 = 5 → Remainder = 0\n5 / 16 = 0.3125 → Remainder = 0.3125 * 16 = 5  \n0.25 * 16 = 4\nResult = 50.4  \n12. Convert the following Binary numbers into Octal and Hexadecimal numbers.  \na) 01111111.11\n001 111 111 . 110\n1 7 7 . 6\nResult = 177.6",
+        "metadata": {
+            "h1": "Part II – Number Systems",
+            "substantive_score": 28,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 550,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "0.25 * 16 = 4\nResult = 50.4  \n12. Convert the following Binary numbers into Octal and Hexadecimal numbers.  \na) 01111111.11\n001 111 111 . 110\n1 7 7 . 6\nResult = 177.6  \n0111 1111 . 1100\n7 F . C\nResult = 7F.C  \nb) 011.1101\n011 . 110 100\n3 . 6 4\nResult = 3.64  \n0011 . 1101\n3 . D\nResult = 3.D  \nc) 101.11\n101 . 110\n5 . 6\nResult = 5.6  \n0101 . 1100\n5 . C\nResult = 5.C  \n**d)** 111.00001\n111 . 000 010\n7 . 0 2\n**Result = 7.02**  \n0111 . 0000 1000\n7 . 0\n**Result = 7.08**  \n**e)** 101010\n101 010\n5 2\n**Result = 52**  \n0010 1010\n2 A\n**Result = 2A**  \n**13.** Convert the following Octal numbers into Hexadecimal numbers without conversion to decimal.\n**a)** 717\n7 1 7\n111 001 111\n0001 1100 1111\n1 C F\n**Result = 1CF**  \n**b) 71.017**\n7 1 . 0 1 7\n111 001 . 000 001 111\n0011 1001 . 0000 0111 1000\n3 7 . 0 7 8\n**Result = 37.078**  \n**c) 34**\n3 4\n011 100\n0001 1100\n1 C\n**Result = 1C**  \n**d) 11.101**\n1 1 . 1 0 1\n001 001 . 001 000 001\n0000 1001 . 0010 0000 1000\n0 9 . 2 0 8\n**Result = 9.208**  \n**e) 13.65**\n1 3 . 6 5\n001 011 . 110 101\n0000 1011 . 1101 0100\n0 B . D 4\n**Result = B.D4**  \n14. Use 1’s and 2’s Complement to calculate the result of these operations. Assume that the numbers are represented in 8 bits.\na) (-15) + (-12)\n-15\n+ -12\n-----------\n-27  \nOne’s complement: 15 → 00001111\n-15 → 11110000\n00001100 → 12\n11110011 → -12  \n11110000\n+ 11110011\n-----------------\n11100011  \n-----------------\n11100100  \n**Two’s complement:**  \n11100100\n+     1\n-----------------\n11100101  \n**b) 13 + (-8)**  \n+ (-8)\n--------  \n**One’s complement:** 13 → 00001101\n8 → 00001000\n-8 → 11110111  \n00001101\n+ 11110111\n-----------------\n000000100\n+       1\n-----------------\n00000101  \n**Two’s Complement:**\n00000101  \n**c) 42 + (-32)**  \n+ (-32)\n---------  \n**One’s complement: 42 → 00101010**\n**32 → 00100000**\n**-32 → 11011111**  \n00101010\n+ 11011111\n-----------------\n00001001\n+ 1\n-------------------\n00001010  \n**Two’s Complement:**\n00001010  \n**d) 14 + (-3)**  \n+ (-3)\n--------",
+        "metadata": {
+            "h1": "Part II – Number Systems",
+            "substantive_score": 31,
+            "structural_score": 12,
+            "content_type": "substantive",
+            "word_count": 378,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "**32 → 00100000**\n**-32 → 11011111**  \n00101010\n+ 11011111\n-----------------\n00001001\n+ 1\n-------------------\n00001010  \n**Two’s Complement:**\n00001010  \n**d) 14 + (-3)**  \n+ (-3)\n--------  \n**One’s Complement:** 14 → 00001110\n3 → 00000011\n-3 → 11111100\n00001110\n+ 11111100\n-----------------\n00001010\n+ 1\n-----------------\n00001011  \n**Two’s Complement:**  \n00001011  \n**15. Represent the following decimal numbers in 32 bits using 1’s Complement, 2’s Complement and Excess 32 notation.**  \na) -31  \n31 → 11111\n31 (32 bits) → 00000000000000000000000000011111\n-31 (One’s Complement) → 11111111111111111111111111100000\n-31 (Two’s Complement) → 11111111111111111111111111100000 + 1 = 11111111111111111111111111100001\n-31 (Excess 32 Notation) → 01111111111111111111111111100001  \n**b) 0**  \n0 → 0000\n0 (32 bits) →\n00000000000000000000000000000000\n0 (One’s Complement) →\n00000000000000000000000000000000\n0 (Two’s Complement) →\n00000000000000000000000000000000\n0 (Excess 32 Notation) →\n10000000000000000000000000000000  \n**c) -12**  \n12 → 1100\n12 (32 bits) →\n00000000000000000000000000001100\n-12 (One’s Complement) →\n11111111111111111111111111110011\n-12 (Two’s Complement) →\n11111111111111111111111111110011 + 1 =\n11111111111111111111111111110100\n-12 (Excess 32 Notation) →\n01111111111111111111111111110100  \n**d) -17**  \n17 → 10001\n17 (32 bits) →\n00000000000000000000000000010001\n-17 (One’s Complement) →\n11111111111111111111111111101110\n-17 (Two’s Complement) →\n11111111111111111111111111101110 + 1 =\n11111111111111111111111111101111\n-17 (Excess 32 Notation) →\n01111111111111111111111111101111  \n**e) -1**  \n1 → 0001\n1 (32 bits) →\n00000000000000000000000000000001\n-1 (One’s Complement) →\n11111111111111111111111111111110\n-1 (Two’s Complement) →\n11111111111111111111111111111110 + 1 =\n11111111111111111111111111111111\n-1 (Excess 32 Notation) →\n01111111111111111111111111111111",
+        "metadata": {
+            "h1": "Part II – Number Systems",
+            "substantive_score": 20,
+            "structural_score": 12,
+            "content_type": "substantive",
+            "word_count": 212,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "11111111111111111111111111111110\n-1 (Two’s Complement) →\n11111111111111111111111111111110 + 1 =\n11111111111111111111111111111111\n-1 (Excess 32 Notation) →\n01111111111111111111111111111111  \n16. Assume that we have the following bit pattern in one byte: 01000001. What is the interpretation of this pattern if it is:  \na) A signed two’s complement binary integer.\n+65 → 01000001  \nb) A binary floating point number.\n0 100 0001\n+ 2<sup>0</sup>, then we don’t move any steps\n0.0001 = 0.0625  \nc) A signed binary integer in excess notation.\n10111111 → 63\n01000001 → -63  \nd) 01000001 → 65  \n17. Use the floating point notation (of the book) to represent the following Decimal numbers.  \na) 2.01875\n2 → 10\n0.01875 * 2 = 0.0375 → 0\n0.0375 * 2 = 0.075 → 0\n0.075 * 2 = 0.15 → 0\n0.15 * 2 = 0.3 → 0  \n0.3 * 2 = 0.6 → 0\n0.6 * 2 = 1.2 → 1\n0.2 * 2 = 0.4 → 0\n0.4 * 2 = 0.8 → 0\n0.8 * 2 = 1.6 → 1\nSo, 10.000001001 = 1.0000001001 * 2<sup>1</sup>\nMantissa = 0000001001\nSign bit = 0\nExponent = 1 + 3 = 4 = 100\nResult is 0 100 0000 = (-1)<sup>0</sup> * (1.0) * 2<sup>4-3</sup> = 2\nThere is definitely a truncation error.  \nb) -1.125\n1 → 1\n0.125 = 0.001\nSo, 1.001 = 1.001 * 2<sup>0</sup>\nMantissa = 0010\nSign bit = 1\nExponent = 0 + 3 = 3 = 011\n1 011 0010\nResult = 10110010 = (-1)<sup>1</sup> * (1.125) * 2<sup>3-3</sup> = -1.125\nNo truncation errors found.\nc) 2.75\n2 → 10\n0.75 → 0.11  \nSo, 10.11 = 1.011 * 2<sup>1</sup>\nMantissa = 0110\nSign bit = 0\nExponent = 1 + 3 = 4 = 100\nResult = 0 100 0110 = (-1)<sup>0</sup> *(1.375) * 2<sup>4-3</sup> = 2.75\nNo truncation errors found.  \nd) -7.25\n7 → 111\n0.25 → 0.01\nSo, 111.01 = 1.1101 * 2<sup>2</sup>\nMantissa = 1101\nSign bit = 1\nExponent = 2 + 3 = 5 = 101\nResult = 1 101 1101 = (-1)<sup>1</sup> *(1.8125) * 2<sup>5-3</sup> = -7.25\nNo truncation errors found.\ne) -6.125\n6 → 110\n0.125 → 0.001\nSo, 110.001 = 1.10001 * 2<sup>2</sup>  \nMantissa = 10001\nSign bit = 1\nExponent = 2 + 3 = 5 = 101\nResult = 1 101 1000 = (-1)<sup>1</sup> * (1.5) * 2<sup>5-3</sup> = -6",
+        "metadata": {
+            "h1": "Part II – Number Systems",
+            "substantive_score": 28,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 394,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "e) -6.125\n6 → 110\n0.125 → 0.001\nSo, 110.001 = 1.10001 * 2<sup>2</sup>  \nMantissa = 10001\nSign bit = 1\nExponent = 2 + 3 = 5 = 101\nResult = 1 101 1000 = (-1)<sup>1</sup> * (1.5) * 2<sup>5-3</sup> = -6\nThere is a definitely a truncation error.  \n18. Find the Decimal Number to the following IEEE 754 32-bit Single Precision Floating Point Binary number.  \na) 0 10000001 10110000000000000000000\nDecimal value = (-1)<sup>0</sup> * (1.6875) * 2<sup>129-127</sup> = 6.75  \nb) 0 00111111 00100000000000000000000\nDecimal value = (-1)<sup>0</sup> *(1.125) * 2<sup>63 – 127</sup> = 6 * 10<sup>-20</sup> (approximately)  \nc) 1 11111111 00000000000000000000000\nDecimal value = -∞  \nd) 0 10000011 10101100000000000000000\nDecimal value = (-1)<sup>0</sup> * (1.671875) * 2<sup>131-127</sup> = 26.75  \ne) 1 01111111 00111000000000000000000\nDecimal value = (-1)<sup>1</sup> * (1.21875) * 2<sup>127-127</sup> = -1.21875",
+        "metadata": {
+            "h1": "Part II – Number Systems",
+            "substantive_score": 31,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 135,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    },
+    {
+        "page_content": "# Part III – Algorithms\n\n# Part IV  \n**31. Information Technology - Operations Research and Decision Support - AI**  \nThe opposite: Scientific Calculations  \n**32. Yes, but in FCAI we will be able to:**\n(1) Get a degree in computer science which will increase the opportunity of getting hired.\n(2) Study computer science from scratch and build experience upon it.\n(3) be put in a community with students of the same passion.  \n**33. Considering that a student must get at least 50% of course work marks AND at least 30% of final exams marks to pass, then if a student gets 40/40 in course work and 15/60 in the final exam, they fail the course because they should at least get 18 marks which is 30% of 60.**  \n**34. If a student’s grade is B, their percentage is 75% to less than 80%. And if the grade is B+, their percentage is 80% to less than 85%.**  \n**35. 27 credit hours.**  \n36. Natural language processing is a branch of computer science concerned with giving computers the ability to understand text and spoken words. Computer science department studies it, and Google Assistant uses NLP.  \n37. Pattern Recognition is a method that uses machine learning algorithms to recognize patterns in data. IT department studies this.  \n38. Game theory is a study that provides tools for analyzing situations in which parties make decisions. DS department studies this.  \n39. The second term.  \n40. Computer science department.  \nNO_CONTENT_HERE  \nNO_CONTENT_HERE  \nNO_CONTENT_HERE",
+        "metadata": {
+            "h1": "Part III – Algorithms",
+            "substantive_score": 8,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 244,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "content",
+            "document_id": "64210c77-00d6-462b-99d8-145ad0ed5b2b"
+        }
+    }
+]

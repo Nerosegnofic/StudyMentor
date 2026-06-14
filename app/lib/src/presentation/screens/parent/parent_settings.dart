@@ -186,9 +186,7 @@ class _ParentSettingsState extends State<ParentSettings> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Your Account'),
         content: const Text(
-          'This will permanently delete your account and all associated data. '
-          'You must delete all student accounts first.\n\n'
-          'This action cannot be undone. Continue?',
+          'This will permanently delete your account. Are you sure?',
         ),
         actions: [
           TextButton(
@@ -888,10 +886,8 @@ class _ParentDeletePasswordDialogState
           if (state is ParentProfileLoading) {
             setState(() => _isLoading = true);
           } else if (state is ParentAccountDeleted) {
-            // Close the dialog. AuthUnauthenticated follows immediately and the
-            // root navigator redirects to the login screen — no extra navigation
-            // needed here.
-            Navigator.of(context).pop();
+            Navigator.of(context, rootNavigator: true)
+                .pushNamedAndRemoveUntil('/login', (route) => false);
           } else if (state is ParentProfileError) {
             setState(() {
               _isLoading = false;

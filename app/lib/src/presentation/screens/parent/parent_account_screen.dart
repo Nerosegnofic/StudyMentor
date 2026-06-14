@@ -179,9 +179,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Your Account'),
         content: const Text(
-          'This will permanently delete your account and all associated data. '
-          'You must delete all student accounts first.\n\n'
-          'This action cannot be undone. Continue?',
+          'This will permanently delete your account. Are you sure?',
         ),
         actions: [
           TextButton(
@@ -1038,6 +1036,8 @@ class _ParentDeletePasswordDialogState
           } else if (state is ParentAccountDeleted) {
             // Navigation is handled by the parent screen's listener via
             // pushNamedAndRemoveUntil — popping here would race with it.
+            Navigator.of(context, rootNavigator: true)
+                .pushNamedAndRemoveUntil('/login', (route) => false);
           } else if (state is ParentProfileError) {
             setState(() {
               _isLoading = false;

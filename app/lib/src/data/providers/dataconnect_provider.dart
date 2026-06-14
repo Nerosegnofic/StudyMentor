@@ -1,4 +1,4 @@
-// lib/src/data/providers/dataconnect_provider.dart
+  // lib/src/data/providers/dataconnect_provider.dart
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_data_connect/firebase_data_connect.dart';
@@ -541,6 +541,7 @@ class DataConnectProvider {
     required String studentUid,
     required String subjectKey,
   }) async {
+
     final def = SubjectMetadataRegistry.getDefinition(subjectKey);
     List<SkillProgressModel> skills = [];
 

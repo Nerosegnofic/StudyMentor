@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -176,7 +176,9 @@ class AiEngineRepository {
   /// - Physical device → your machine's LAN IP, e.g. `http://192.168.x.x:8000`
   ///
   /// Change this single constant when switching environments.
+
   static const String defaultBaseUrl = 'http://192.168.1.6:8000';
+
 
   /// Lazy singleton — created on first access, reused everywhere.
   static final AiEngineRepository instance = AiEngineRepository(

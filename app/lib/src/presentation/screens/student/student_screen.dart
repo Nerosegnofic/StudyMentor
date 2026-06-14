@@ -113,7 +113,6 @@ class _StudentScreenState extends State<StudentScreen>
 
     _initMascotService();
 
-    _loadCoinsAndLevel();
     _loadAvatar();
 
     // Sync the installed-app inventory on every login so DataConnect always

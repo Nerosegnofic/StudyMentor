@@ -32,11 +32,15 @@ class StudentModel {
     isEmailVerified: json['is_email_verified'] as bool? ?? false,
   );
 
-  StudentModel copyWith({bool? isEmailVerified, String? username}) =>
-      StudentModel(
+  StudentModel copyWith({
+    bool? isEmailVerified,
+    String? username,
+    String? fullName,
+    String? email,
+  }) => StudentModel(
         uid: uid,
-        fullName: fullName,
-        email: email,
+        fullName: fullName ?? this.fullName,
+        email: email ?? this.email,
         username: username ?? this.username,
         gradeLevel: gradeLevel,
         totalXp: totalXp,
