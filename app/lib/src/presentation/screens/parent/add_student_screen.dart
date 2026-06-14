@@ -43,190 +43,418 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     super.dispose();
   }
 
-  void _showSuccessAndPop() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '🎉 Student Registered Successfully!',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            SizedBox(height: 6),
-            Text(
-              'On your child\'s phone, open the app and log in with the credentials you just created. They\'ll need to verify their email before getting started.',
-              style: TextStyle(fontSize: 13),
-            ),
-          ],
-        ),
-        duration: Duration(seconds: 10),
+  void _submit(BuildContext context) {
+    if (!_formKey.currentState!.validate()) return;
+    context.read<StudentsBloc>().add(
+      CreateStudentRequested(
+        fullName: _fullNameCtl.text.trim(),
+        username: _usernameCtl.text.trim(),
+        email: _emailCtl.text.trim(),
+        password: _passCtl.text.trim(),
+        parentUid: widget.parentUid,
+        gradeLevel: _selectedGrade!,
+        rules: const [],
+        config: const StudentConfigModel(usageHours: 0, usageMinutes: 0),
       ),
     );
-    Navigator.pop(context);
   }
+
+  // ── build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) {
-          // No need to reset StudentsBloc state because the screen is popped
-          // and the parent (ParentStudents) will just fetch students again.
+    return BlocListener<StudentsBloc, StudentsState>(
+      listener: (context, state) {
+        if (state is StudentCreated) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Student Registered Successfully!',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'On your child\'s phone, open the app and log in with the credentials you just created. They\'ll need to verify their email before getting started.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+              backgroundColor: Color(0xFF34A853),
+              duration: Duration(seconds: 10),
+            ),
+          );
+          Navigator.pop(context);
+        }
+        if (state is StudentCreateError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
         }
       },
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Register Your Child')),
-        body: BlocConsumer<StudentsBloc, StudentsState>(
-          // Only rebuild the button when loading state changes.
-          buildWhen: (prev, curr) => curr is StudentCreateLoading || prev is StudentCreateLoading,
-          // Handle side effects without setState.
-          listener: (context, state) {
-            if (state is StudentCreated) {
-              _showSuccessAndPop();
-            }
-            if (state is StudentCreateError) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
-            }
-          },
-          builder: (context, state) {
-            final loading = state is StudentCreateLoading;
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  children: [
-                    TextFormField(
-                      controller: _fullNameCtl,
-                      decoration: const InputDecoration(labelText: 'Name'),
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _usernameCtl,
-                      decoration: const InputDecoration(
-                        labelText: 'Username',
-                        hintText: 'Shown on leaderboard (e.g. coolkid42)',
-                      ),
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Required';
-                        if (v.trim().length < 3) return 'At least 3 characters';
-                        if (v.trim().length > 50) return 'Max 50 characters';
-                        if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v.trim())) {
-                          return 'Only letters, numbers and underscores';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      value: _selectedGrade,
-                      style: TextStyle(
-                        fontWeight: FontWeight.normal,
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                      ),
-                      decoration: const InputDecoration(labelText: 'Grade'),
-                      items: _gradeOptions
-                          .map(
-                            (g) => DropdownMenuItem<int>(
-                              value: g['value'] as int,
-                              child: Text(g['label'] as String),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) =>
-                          setState(() => _selectedGrade = value),
-                      validator: (v) =>
-                          v == null ? 'Please select a grade' : null,
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _emailCtl,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                      validator: (v) =>
-                          v!.contains('@') ? null : 'Invalid email',
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _passCtl,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
-                        ),
-                      ),
-                      obscureText: _obscurePassword,
-                      validator: (v) =>
-                          v!.length >= 6 ? null : 'Min 6 characters',
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _confirmCtl,
-                      decoration: InputDecoration(
-                        labelText: 'Confirm Password',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirm
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: () => setState(
-                            () => _obscureConfirm = !_obscureConfirm,
-                          ),
-                        ),
-                      ),
-                      obscureText: _obscureConfirm,
-                      validator: (v) =>
-                          v == _passCtl.text ? null : 'Passwords do not match',
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: loading
-                          ? null
-                          : () {
-                              if (_formKey.currentState!.validate()) {
-                                context.read<StudentsBloc>().add(
-                                  CreateStudentRequested(
-                                    fullName: _fullNameCtl.text.trim(),
-                                    username: _usernameCtl.text.trim(),
-                                    email: _emailCtl.text.trim(),
-                                    password: _passCtl.text.trim(),
-                                    parentUid: widget.parentUid,
-                                    gradeLevel: _selectedGrade!,
-                                    rules: const [],
-                                    config: const StudentConfigModel(
-                                      usageHours: 0,
-                                      usageMinutes: 0,
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                      child: loading
-                          ? const CircularProgressIndicator()
-                          : const Text('Register Student'),
-                    ),
-                  ],
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F7FA),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF2196F3),
+            elevation: 4,
+            shadowColor: Colors.black.withValues(alpha: 0.15),
+            surfaceTintColor: Colors.transparent,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Register Student',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-            );
-          },
+                Text(
+                  'Create a new student account',
+                  style: TextStyle(fontSize: 12, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+          body: BlocBuilder<StudentsBloc, StudentsState>(
+            buildWhen: (prev, curr) =>
+                curr is StudentCreateLoading || prev is StudentCreateLoading,
+            builder: (context, state) {
+              final loading = state is StudentCreateLoading;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Card 1: Student Information
+                      _buildCard(
+                        title: 'Student Information',
+                        children: [
+                          _buildField(
+                            label: 'Full Name',
+                            child: TextFormField(
+                              controller: _fullNameCtl,
+                              textCapitalization: TextCapitalization.words,
+                              style: const TextStyle(
+                                  color: Color(0xFF1E293B), fontSize: 15),
+                              decoration: _inputDecoration(
+                                  label: 'Full Name', icon: Icons.person_outline),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Full name is required.';
+                                }
+                                if (v.trim().length < 2) {
+                                  return 'Name must be at least 2 characters.';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildField(
+                            label: 'Username',
+                            hint: 'Shown on the leaderboard (e.g. coolkid42)',
+                            child: TextFormField(
+                              controller: _usernameCtl,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              style: const TextStyle(
+                                  color: Color(0xFF1E293B), fontSize: 15),
+                              decoration: _inputDecoration(
+                                  label: 'Username',
+                                  icon: Icons.alternate_email_rounded),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Username is required.';
+                                }
+                                if (v.trim().length < 3) {
+                                  return 'At least 3 characters.';
+                                }
+                                if (v.trim().length > 50) {
+                                  return 'Max 50 characters.';
+                                }
+                                if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v.trim())) {
+                                  return 'Only letters, numbers and underscores.';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildField(
+                            label: 'Grade',
+                            child: DropdownButtonFormField<int>(
+                              value: _selectedGrade,
+                              style: const TextStyle(
+                                  color: Color(0xFF1E293B), fontSize: 15),
+                              decoration: _inputDecoration(
+                                  label: 'Grade', icon: Icons.school_outlined),
+                              items: _gradeOptions
+                                  .map(
+                                    (g) => DropdownMenuItem<int>(
+                                      value: g['value'] as int,
+                                      child: Text(g['label'] as String),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) =>
+                                  setState(() => _selectedGrade = value),
+                              validator: (v) =>
+                                  v == null ? 'Please select a grade.' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Card 2: Account Credentials
+                      _buildCard(
+                        title: 'Account Credentials',
+                        children: [
+                          _buildField(
+                            label: 'Email Address',
+                            hint: 'The student will use this to log in.',
+                            child: TextFormField(
+                              controller: _emailCtl,
+                              keyboardType: TextInputType.emailAddress,
+                              style: const TextStyle(
+                                  color: Color(0xFF1E293B), fontSize: 15),
+                              decoration: _inputDecoration(
+                                  label: 'Email Address',
+                                  icon: Icons.email_outlined),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Email is required.';
+                                }
+                                final emailRegex =
+                                    RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                                if (!emailRegex.hasMatch(v.trim())) {
+                                  return 'Enter a valid email address.';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildField(
+                            label: 'Password',
+                            child: TextFormField(
+                              controller: _passCtl,
+                              obscureText: _obscurePassword,
+                              style: const TextStyle(
+                                  color: Color(0xFF1E293B), fontSize: 15),
+                              decoration: _inputDecoration(
+                                label: 'Password',
+                                icon: Icons.lock_outline,
+                              ).copyWith(
+                                suffixIcon: _visibilityToggle(
+                                  obscure: _obscurePassword,
+                                  onToggle: () => setState(
+                                      () => _obscurePassword = !_obscurePassword),
+                                ),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) {
+                                  return 'Password is required.';
+                                }
+                                if (v.length < 6) {
+                                  return 'Password must be at least 6 characters.';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildField(
+                            label: 'Confirm Password',
+                            child: TextFormField(
+                              controller: _confirmCtl,
+                              obscureText: _obscureConfirm,
+                              style: const TextStyle(
+                                  color: Color(0xFF1E293B), fontSize: 15),
+                              decoration: _inputDecoration(
+                                label: 'Confirm Password',
+                                icon: Icons.lock_reset_outlined,
+                              ).copyWith(
+                                suffixIcon: _visibilityToggle(
+                                  obscure: _obscureConfirm,
+                                  onToggle: () => setState(
+                                      () => _obscureConfirm = !_obscureConfirm),
+                                ),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) {
+                                  return 'Please confirm your password.';
+                                }
+                                if (v != _passCtl.text) {
+                                  return 'Passwords do not match.';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: loading ? null : () => _submit(context),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: const StadiumBorder(),
+                            backgroundColor: const Color(0xFF2196F3),
+                            disabledBackgroundColor: const Color(0xFFE2E8F0),
+                            foregroundColor: Colors.white,
+                            disabledForegroundColor: const Color(0xFF94A3B8),
+                            elevation: 0,
+                          ),
+                          child: loading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.5, color: Colors.white),
+                                )
+                              : const Text(
+                                  'Register Student',
+                                  style: TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
+    );
+  }
+
+  // ── helpers ─────────────────────────────────────────────────────────────────
+
+  Widget _buildCard({required String title, required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required String label,
+    String? hint,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        if (hint != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            hint,
+            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+          ),
+        ],
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String label,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      prefixIcon: Icon(icon, color: const Color(0xFF64748B)),
+      filled: true,
+      fillColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.focused)) return Colors.white;
+        if (states.contains(WidgetState.disabled)) return const Color(0xFFF1F5F9);
+        return const Color(0xFFF8FAFC);
+      }),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF2196F3)),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red.shade400),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red.shade600, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
+  Widget _visibilityToggle({
+    required bool obscure,
+    required VoidCallback onToggle,
+  }) {
+    return IconButton(
+      icon: Icon(
+        obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        color: const Color(0xFF64748B),
+      ),
+      onPressed: onToggle,
     );
   }
 }

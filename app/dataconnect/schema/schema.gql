@@ -115,3 +115,32 @@ type StudentAvatar @table(name: "student_avatars", key: ["studentUid"]) {
   equippedSpecial: String @col(dataType: "varchar(50)")
   avatarConfig: String @col(dataType: "text")
 }
+
+# ── Notification System ───────────────────────────────────────────────────────
+
+# Cross-device notification event queue.
+# Written by the student's device, read and cleared by the parent's device.
+type NotificationEvent @table(name: "notification_events", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  fromStudentUid: String! @col(dataType: "varchar(128)")
+  toParentUid: String! @col(dataType: "varchar(128)")
+  eventType: String! @col(dataType: "varchar(50)")
+  # JSON string: { "title": "...", "body": "...", "screen": "...", "childId": "..." }
+  payload: String! @col(dataType: "text")
+  createdAt: Timestamp! @default(expr: "request.time")
+  isRead: Boolean! @default(expr: "false")
+}
+
+# Notification preferences for both parents and students.
+# One row per user per category.
+type NotificationPreference @table(
+  name: "notification_preferences",
+  key: ["userUid", "category"]
+) {
+  userUid: String! @col(dataType: "varchar(128)")
+  category: String! @col(dataType: "varchar(50)")
+  enabled: Boolean! @default(expr: "true")
+  # Only used for CHILD_STREAK_REMINDER — stores "19:00" format
+  reminderTime: String @col(dataType: "varchar(5)")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}

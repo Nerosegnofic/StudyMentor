@@ -559,6 +559,104 @@ ref.execute();
 ref.subscribe(...);
 ```
 
+
+### GetUnreadNotificationEvents
+#### Required Arguments
+```dart
+String toParentUid = ...;
+ExampleConnector.instance.getUnreadNotificationEvents(
+  toParentUid: toParentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetUnreadNotificationEventsData, GetUnreadNotificationEventsVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getUnreadNotificationEvents(
+  toParentUid: toParentUid,
+);
+GetUnreadNotificationEventsData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String toParentUid = ...;
+
+final ref = ExampleConnector.instance.getUnreadNotificationEvents(
+  toParentUid: toParentUid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
+
+### GetNotificationPreferences
+#### Required Arguments
+```dart
+String userUid = ...;
+ExampleConnector.instance.getNotificationPreferences(
+  userUid: userUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `QueryResult<GetNotificationPreferencesData, GetNotificationPreferencesVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+/// Result of a query request. Created to hold extra variables in the future.
+class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
+  QueryResult(super.dataConnect, super.data, super.ref);
+}
+
+final result = await ExampleConnector.instance.getNotificationPreferences(
+  userUid: userUid,
+);
+GetNotificationPreferencesData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String userUid = ...;
+
+final ref = ExampleConnector.instance.getNotificationPreferences(
+  userUid: userUid,
+).ref();
+ref.execute();
+
+ref.subscribe(...);
+```
+
 ## Mutations
 
 ### InsertUser
@@ -1784,6 +1882,177 @@ String subjectKey = ...;
 final ref = ExampleConnector.instance.deleteSubjectProgress(
   studentUid: studentUid,
   subjectKey: subjectKey,
+).ref();
+ref.execute();
+```
+
+
+### InsertNotificationEvent
+#### Required Arguments
+```dart
+String fromStudentUid = ...;
+String toParentUid = ...;
+String eventType = ...;
+String payload = ...;
+ExampleConnector.instance.insertNotificationEvent(
+  fromStudentUid: fromStudentUid,
+  toParentUid: toParentUid,
+  eventType: eventType,
+  payload: payload,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<InsertNotificationEventData, InsertNotificationEventVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.insertNotificationEvent(
+  fromStudentUid: fromStudentUid,
+  toParentUid: toParentUid,
+  eventType: eventType,
+  payload: payload,
+);
+InsertNotificationEventData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String fromStudentUid = ...;
+String toParentUid = ...;
+String eventType = ...;
+String payload = ...;
+
+final ref = ExampleConnector.instance.insertNotificationEvent(
+  fromStudentUid: fromStudentUid,
+  toParentUid: toParentUid,
+  eventType: eventType,
+  payload: payload,
+).ref();
+ref.execute();
+```
+
+
+### MarkNotificationEventsRead
+#### Required Arguments
+```dart
+String toParentUid = ...;
+ExampleConnector.instance.markNotificationEventsRead(
+  toParentUid: toParentUid,
+).execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<MarkNotificationEventsReadData, MarkNotificationEventsReadVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.markNotificationEventsRead(
+  toParentUid: toParentUid,
+);
+MarkNotificationEventsReadData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String toParentUid = ...;
+
+final ref = ExampleConnector.instance.markNotificationEventsRead(
+  toParentUid: toParentUid,
+).ref();
+ref.execute();
+```
+
+
+### UpsertNotificationPreference
+#### Required Arguments
+```dart
+String userUid = ...;
+String category = ...;
+bool enabled = ...;
+ExampleConnector.instance.upsertNotificationPreference(
+  userUid: userUid,
+  category: category,
+  enabled: enabled,
+).execute();
+```
+
+#### Optional Arguments
+We return a builder for each query. For UpsertNotificationPreference, we created `UpsertNotificationPreferenceBuilder`. For queries and mutations with optional parameters, we return a builder class.
+The builder pattern allows Data Connect to distinguish between fields that haven't been set and fields that have been set to null. A field can be set by calling its respective setter method like below:
+```dart
+class UpsertNotificationPreferenceVariablesBuilder {
+  ...
+   UpsertNotificationPreferenceVariablesBuilder reminderTime(String? t) {
+   _reminderTime.value = t;
+   return this;
+  }
+
+  ...
+}
+ExampleConnector.instance.upsertNotificationPreference(
+  userUid: userUid,
+  category: category,
+  enabled: enabled,
+)
+.reminderTime(reminderTime)
+.execute();
+```
+
+#### Return Type
+`execute()` returns a `OperationResult<UpsertNotificationPreferenceData, UpsertNotificationPreferenceVariables>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.upsertNotificationPreference(
+  userUid: userUid,
+  category: category,
+  enabled: enabled,
+);
+UpsertNotificationPreferenceData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+String userUid = ...;
+String category = ...;
+bool enabled = ...;
+
+final ref = ExampleConnector.instance.upsertNotificationPreference(
+  userUid: userUid,
+  category: category,
+  enabled: enabled,
 ).ref();
 ref.execute();
 ```

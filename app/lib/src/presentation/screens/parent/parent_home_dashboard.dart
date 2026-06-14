@@ -53,6 +53,22 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
         );
   }
 
+  // ── Delete unverified student ─────────────────────────────────────────────
+
+  Future<void> _confirmDeleteUnverified(StudentModel student) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<StudentsBloc>(),
+        child: _UnverifiedStudentDeleteDialog(
+          student: student,
+          parentUid: widget.parentUid,
+        ),
+      ),
+    );
+  }
+
   // ── Navigation to student profile ─────────────────────────────────────────
 
   Future<void> _openConfig(StudentModel student) async {
@@ -80,6 +96,10 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
           setState(() {
             _realStudents = state.students;
           });
+        } else if (state is StudentDeleted) {
+          context.read<StudentsBloc>().add(
+            LoadStudentsRequested(parentUid: widget.parentUid),
+          );
         }
       },
       builder: (context, state) {
@@ -141,6 +161,9 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
                             onTap: student.isEmailVerified
                                 ? () => _openConfig(student)
                                 : null,
+                            onDelete: student.isEmailVerified
+                                ? null
+                                : () => _confirmDeleteUnverified(student),
                           );
                         },
                         childCount: _realStudents.length,
@@ -163,6 +186,193 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
           ),
         );
       },
+    );
+  }
+}
+
+// ── Unverified student delete dialog ─────────────────────────────────────────
+
+class _UnverifiedStudentDeleteDialog extends StatefulWidget {
+  final StudentModel student;
+  final String parentUid;
+
+  const _UnverifiedStudentDeleteDialog({
+    required this.student,
+    required this.parentUid,
+  });
+
+  @override
+  State<_UnverifiedStudentDeleteDialog> createState() =>
+      _UnverifiedStudentDeleteDialogState();
+}
+
+class _UnverifiedStudentDeleteDialogState
+    extends State<_UnverifiedStudentDeleteDialog> {
+  final _passCtl = TextEditingController();
+  bool _obscure = true;
+  bool _isLoading = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _passCtl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final password = _passCtl.text.trim();
+    if (password.isEmpty) {
+      setState(() => _errorText = 'Please enter the student\'s password.');
+      return;
+    }
+    setState(() => _errorText = null);
+    context.read<StudentsBloc>().add(
+      DeleteStudentRequested(
+        studentUid: widget.student.uid,
+        studentEmail: widget.student.email,
+        studentPassword: password,
+        parentUid: widget.parentUid,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_isLoading,
+      child: BlocListener<StudentsBloc, StudentsState>(
+        listener: (context, state) {
+          if (state is StudentDeleteLoading) {
+            setState(() => _isLoading = true);
+          } else if (state is StudentDeleted &&
+              state.studentUid == widget.student.uid) {
+            Navigator.of(context).pop();
+          } else if (state is StudentDeleteError) {
+            setState(() {
+              _isLoading = false;
+              _errorText = state.message;
+            });
+          }
+        },
+        child: AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.person_remove_outlined,
+                  color: Colors.red.shade600,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Remove Student',
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This will permanently delete ${widget.student.fullName}\'s account. '
+                  'Enter the password you created for them to confirm.',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                      height: 1.5),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passCtl,
+                  obscureText: _obscure,
+                  autofocus: true,
+                  enabled: !_isLoading,
+                  onChanged: (_) {
+                    if (_errorText != null) {
+                      setState(() => _errorText = null);
+                    }
+                  },
+                  onSubmitted: (_) {
+                    if (!_isLoading) _submit();
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Student\'s Password',
+                    errorText: _errorText,
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: Colors.red.shade600, width: 1.5),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.red.shade400),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: Colors.red.shade600, width: 1.5),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscure
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        size: 18,
+                        color: Colors.grey.shade500,
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () => setState(() => _obscure = !_obscure),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            TextButton(
+              onPressed:
+                  _isLoading ? null : () => Navigator.of(context).pop(),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Color(0xFF666666))),
+            ),
+            FilledButton(
+              onPressed: _isLoading ? null : _submit,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Remove'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

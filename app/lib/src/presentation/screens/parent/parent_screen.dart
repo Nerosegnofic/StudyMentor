@@ -7,13 +7,9 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/students/students_bloc.dart';
 import '../../../bloc/students/students_event.dart';
-import '../../widgets/parent_navigation_bar.dart';
 import 'add_student_screen.dart';
 import 'parent_home_dashboard.dart';
 import 'parent_permission_gate_screen.dart';
-import 'parent_settings.dart';
-import 'parent_students.dart';
-import 'parent_help_center.dart';
 
 class ParentScreen extends StatefulWidget {
   final String fullName;
@@ -32,24 +28,7 @@ class ParentScreen extends StatefulWidget {
 }
 
 class _ParentScreenState extends State<ParentScreen> {
-  late int _selectedIndex = widget.initialIndex;
-
-  // False until the parent has granted the battery-optimisation permission.
   bool _permissionsCleared = false;
-
-  void _onTabSelected(int index) {
-    if (index == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              ParentHelpCenter(uid: widget.uid, fullName: widget.fullName),
-        ),
-      );
-      return;
-    }
-    setState(() => _selectedIndex = index);
-  }
 
   Future<void> _openAddStudentScreen() async {
     await Navigator.push(
@@ -67,7 +46,6 @@ class _ParentScreenState extends State<ParentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show the permission gate until it's cleared.
     if (!_permissionsCleared) {
       return ParentPermissionGateScreen(
         onAllGranted: () => setState(() => _permissionsCleared = true),
@@ -81,47 +59,12 @@ class _ParentScreenState extends State<ParentScreen> {
         if (!didPop) SystemNavigator.pop();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FF),
-
-        // Tab 0 uses its own branded curved header — hide the standard AppBar.
-        // All other tabs keep the standard AppBar.
-        appBar: _selectedIndex == 0
-            ? null
-            : AppBar(
-                title: Text('Welcome, ${widget.fullName}'),
-                automaticallyImplyLeading: false,
-              ),
-
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            // Tab 0 — New premium Home Dashboard
-            ParentHomeDashboard(
-              parentUid: widget.uid,
-              fullName: widget.fullName,
-              onAddStudentPressed: _openAddStudentScreen,
-            ),
-            // Tab 1 — My Students
-            ParentStudents(parentUid: widget.uid),
-            // Tab 2 — Settings
-            const ParentSettings(),
-          ],
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: ParentHomeDashboard(
+          parentUid: widget.uid,
+          fullName: widget.fullName,
+          onAddStudentPressed: _openAddStudentScreen,
         ),
-
-        bottomNavigationBar: ParentNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onTabSelected,
-        ),
-
-        // Tab 0 owns its own FAB via the Stack inside ParentHomeDashboard.
-        // Tab 1 keeps the original extended FAB for adding a student.
-        floatingActionButton: _selectedIndex == 1
-            ? FloatingActionButton.extended(
-                onPressed: _openAddStudentScreen,
-                icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Add Student'),
-              )
-            : null,
       ),
     );
   }

@@ -213,120 +213,73 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Weekly Accuracy Trend",
+                      "Accuracy Trend",
                       style: GoogleFonts.cairo(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: _kDarkText,
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      height: 140,
-                      width: double.infinity,
-                      child: CustomPaint(
-                        painter: _AccuracyTrendPainter(report.accuracyTrend),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: report.accuracyTrend
-                          .map((point) => _chartLabel(point.weekLabel))
-                          .toList(),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Subject Time Allocation (Donut Chart)
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: _cardDecoration(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                    const SizedBox(height: 4),
                     Text(
-                      "Subject Time Allocation",
-                      style: GoogleFonts.cairo(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _kDarkText,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "How learning time is split across different subjects this week.",
+                      "Weekly accuracy over the past 6 weeks",
                       style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
                     ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 120,
-                              height: 120,
-                              child: CustomPaint(
-                                painter: _SubjectDonutPainter(
-                                  report.subjectAllocations,
+                    const SizedBox(height: 20),
+                    if (report.accuracyTrend.length >= 2) ...[
+                      SizedBox(
+                        height: 140,
+                        width: double.infinity,
+                        child: CustomPaint(
+                          painter: _AccuracyTrendPainter(report.accuracyTrend),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: report.accuracyTrend
+                            .map((point) => _chartLabel(point.weekLabel))
+                            .toList(),
+                      ),
+                    ] else
+                      SizedBox(
+                        height: 100,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.show_chart_rounded,
+                                  size: 36, color: _kSubText.withValues(alpha: 0.4)),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Not enough data yet",
+                                style: GoogleFonts.roboto(
+                                  fontSize: 13,
+                                  color: _kSubText,
                                 ),
                               ),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  "${report.totalStudyTime.inHours}h ${report.totalStudyTime.inMinutes.remainder(60)}m",
-                                  style: GoogleFonts.roboto(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: _kDarkText,
-                                    height: 1.1,
-                                  ),
+                              Text(
+                                "Complete quizzes over multiple weeks to see a trend",
+                                style: GoogleFonts.roboto(
+                                  fontSize: 11,
+                                  color: _kSubText.withValues(alpha: 0.7),
                                 ),
-                                Text(
-                                  "Total Time",
-                                  style: GoogleFonts.roboto(
-                                    fontSize: 9,
-                                    color: _kSubText,
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: report.subjectAllocations.map((alloc) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: _donutLegendItem(
-                                  alloc.subjectKey.toUpperCase(),
-                                  "${alloc.percentage.toInt()}%",
-                                  Color(
-                                    int.parse(
-                                      alloc.colorHex.replaceFirst('#', '0xFF'),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
 
-              // Smart Insights
+              // Streak Progress Card
+              _buildStreakCard(report),
+              const SizedBox(height: 16),
+
+              // Smart Insights (auto-generated)
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: _cardDecoration(),
@@ -335,8 +288,16 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.insights_rounded, color: _kPrimary),
-                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: _kPrimary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.lightbulb_rounded,
+                              color: _kPrimary, size: 18),
+                        ),
+                        const SizedBox(width: 10),
                         Text(
                           "Smart Insights",
                           style: GoogleFonts.cairo(
@@ -347,12 +308,12 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     Text(
-                      report.aiInsightText,
+                      _generateInsight(report),
                       style: GoogleFonts.roboto(
                         fontSize: 14,
-                        height: 1.5,
+                        height: 1.6,
                         color: _kSubText,
                       ),
                     ),
@@ -367,35 +328,126 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     );
   }
 
-  Widget _donutLegendItem(String subject, String percentage, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            subject,
-            style: GoogleFonts.roboto(
-              fontSize: 13,
+  Widget _buildStreakCard(WeeklyReportModel report) {
+    final current = report.currentStreakDays;
+    final best = report.longestStreakDays;
+    final fraction = best > 0 ? (current / best).clamp(0.0, 1.0) : 0.0;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Streak Progress",
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
               color: _kDarkText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Current streak vs. personal best",
+            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _streakStat(Icons.local_fire_department_rounded, _kAmber,
+                  '$current', 'Current streak', 'days'),
+              const SizedBox(width: 12),
+              Expanded(child: Container(height: 1, color: const Color(0xFFE2E8F0))),
+              const SizedBox(width: 12),
+              _streakStat(Icons.emoji_events_rounded, _kTeal,
+                  '$best', 'Personal best', 'days'),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            best > 0
+                ? '${(fraction * 100).toInt()}% of personal best'
+                : 'No streak yet — start studying to build one!',
+            style: GoogleFonts.roboto(
+              fontSize: 12,
+              color: _kSubText,
               fontWeight: FontWeight.w500,
             ),
           ),
-        ),
-        Text(
-          percentage,
-          style: GoogleFonts.roboto(
-            fontSize: 13,
-            color: _kSubText,
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 8,
+              backgroundColor: const Color(0xFFE2E8F0),
+              color: current >= best && best > 0 ? _kTeal : _kAmber,
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _streakStat(
+      IconData icon, Color color, String value, String label, String unit) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 6),
+            Text(
+              value,
+              style: GoogleFonts.roboto(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: _kDarkText,
+                height: 1,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Text(
+                unit,
+                style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
         ),
       ],
     );
+  }
+
+  String _generateInsight(WeeklyReportModel report) {
+    final q = report.totalQuizzes;
+    final acc = report.overallAccuracyPercent.toInt();
+    final streak = report.currentStreakDays;
+
+    if (q == 0) {
+      return 'No quizzes completed this week yet. Encourage your student to log in and start a session to keep their streak alive!';
+    }
+    if (acc >= 85 && q >= 5) {
+      return '$q quizzes completed this week with $acc% accuracy — an outstanding performance! The student is mastering the material at a high level. Keep the momentum going.';
+    }
+    if (acc >= 70 && q >= 3) {
+      return 'Good week overall: $q quizzes at $acc% accuracy. To push higher, visit the Mastery tab and focus on skills rated below 60%.';
+    }
+    if (acc >= 55) {
+      return '$q quizzes completed with $acc% accuracy. There is room to improve — check the Mastery tab to identify specific concept gaps that need attention.';
+    }
+    if (streak >= 3) {
+      return 'The student has kept a $streak-day streak, which is great for consistency! Accuracy is at $acc% — reviewing weaker topics between sessions should help raise scores.';
+    }
+    return 'Accuracy was $acc% across $q quizzes this week. Encourage shorter, more focused study sessions and review any topics marked as weak in the Mastery tab.';
   }
 
   Widget _buildMetricCard(String title, String value, Color color) {
@@ -1204,6 +1256,7 @@ class _AccuracyTrendPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final points = data.map((d) => d.accuracy / 100.0).toList();
+    if (points.length < 2) return;
 
     final paintLine = Paint()
       ..color = _kPrimary
@@ -1303,58 +1356,6 @@ class _MasteryCirclePainter extends CustomPainter {
   bool shouldRepaint(covariant _MasteryCirclePainter oldDelegate) {
     return oldDelegate.percentage != percentage;
   }
-}
-
-class _SubjectDonutPainter extends CustomPainter {
-  final List<SubjectTimeAllocation> data;
-  _SubjectDonutPainter(this.data);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 8;
-    const strokeWidth = 14.0;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
-
-    final segments = data
-        .map(
-          (d) => _DonutSegment(
-            value: d.percentage / 100.0,
-            color: Color(int.parse(d.colorHex.replaceFirst('#', '0xFF'))),
-          ),
-        )
-        .toList();
-
-    double startAngle = -math.pi / 2;
-
-    for (var segment in segments) {
-      final sweepAngle = segment.value * 2 * math.pi;
-      paint.color = segment.color;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        false,
-        paint,
-      );
-      startAngle += sweepAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SubjectDonutPainter oldDelegate) {
-    return oldDelegate.data != data;
-  }
-}
-
-class _DonutSegment {
-  final double value;
-  final Color color;
-  _DonutSegment({required this.value, required this.color});
 }
 
 class _ErrorAnalyticsPainter extends CustomPainter {
