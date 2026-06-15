@@ -13,6 +13,7 @@ import '../../widgets/parent_home/branded_header.dart';
 import '../../widgets/parent_home/child_card.dart';
 import '../../widgets/parent_home/ai_summary_carousel.dart';
 import 'student_profile_dashboard.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ParentHomeDashboard extends StatefulWidget {
   final String parentUid;
@@ -141,7 +142,7 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
                           bottom: 12,
                         ),
                         child: Text(
-                          'My Children',
+                          AppLocalizations.of(context).myChildrenTitle,
                           style: GoogleFonts.cairo(
                             color: const Color(0xFF1E293B),
                             fontWeight: FontWeight.bold,
@@ -222,7 +223,8 @@ class _UnverifiedStudentDeleteDialogState
   void _submit() {
     final password = _passCtl.text.trim();
     if (password.isEmpty) {
-      setState(() => _errorText = 'Please enter the student\'s password.');
+      setState(() => _errorText =
+          AppLocalizations.of(context).validatorStudentPasswordRequired);
       return;
     }
     setState(() => _errorText = null);
@@ -238,6 +240,7 @@ class _UnverifiedStudentDeleteDialogState
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return PopScope(
       canPop: !_isLoading,
       child: BlocListener<StudentsBloc, StudentsState>(
@@ -274,7 +277,7 @@ class _UnverifiedStudentDeleteDialogState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Remove Student',
+                  loc.removeStudentTitle,
                   style: const TextStyle(
                       fontSize: 17, fontWeight: FontWeight.w700),
                 ),
@@ -287,8 +290,7 @@ class _UnverifiedStudentDeleteDialogState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'This will permanently delete ${widget.student.fullName}\'s account. '
-                  'Enter the password you created for them to confirm.',
+                  loc.removeStudentConfirmMessage(widget.student.fullName),
                   style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade700,
@@ -309,7 +311,7 @@ class _UnverifiedStudentDeleteDialogState
                     if (!_isLoading) _submit();
                   },
                   decoration: InputDecoration(
-                    labelText: 'Student\'s Password',
+                    labelText: loc.fieldStudentPassword,
                     errorText: _errorText,
                     isDense: true,
                     border: OutlineInputBorder(
@@ -351,8 +353,8 @@ class _UnverifiedStudentDeleteDialogState
             TextButton(
               onPressed:
                   _isLoading ? null : () => Navigator.of(context).pop(),
-              child: const Text('Cancel',
-                  style: TextStyle(color: Color(0xFF666666))),
+              child: Text(loc.commonCancel,
+                  style: const TextStyle(color: Color(0xFF666666))),
             ),
             FilledButton(
               onPressed: _isLoading ? null : _submit,
@@ -368,7 +370,7 @@ class _UnverifiedStudentDeleteDialogState
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Remove'),
+                  : Text(loc.removeButton),
             ),
           ],
         ),

@@ -1,0 +1,930 @@
+{
+  "@@locale": "en",
+  "appTitle": "StudyMentor",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  "languageSettingTitle": "Language",
+  "languageSettingSubtitle": "English / Arabic",
+  "languageDialogTitle": "Choose Language",
+  "languageEnglish": "English",
+  "languageArabic": "Arabic",
+  "commonCancel": "Cancel",
+  "commonOk": "OK",
+  "commonSave": "Save",
+  "commonRetry": "Retry",
+  "commonDelete": "Delete",
+  "commonClose": "Close",
+  "commonError": "Error",
+  "commonLoading": "Loading...",
+
+  "studentSettingsTitle": "Settings",
+  "preferencesSection": "Preferences",
+  "accountSection": "Account",
+  "aboutSection": "About",
+  "pushNotificationsTitle": "Push Notifications",
+  "pushNotificationsSubtitle": "Receive study reminders and updates",
+  "soundEffectsTitle": "Sound Effects",
+  "soundEffectsSubtitle": "Button clicks and interactions",
+  "backgroundMusicTitle": "Background Music",
+  "backgroundMusicSubtitle": "Play music while studying",
+  "usageTimerNotificationTitle": "Usage Timer Notification",
+  "usageTimerNotificationSubtitle": "Show a notification counting down your remaining app time",
+  "cooldownTimerNotificationTitle": "Cooldown Timer Notification",
+  "cooldownTimerNotificationSubtitle": "Show a notification counting down your remaining cooldown time",
+  "appVersionLabel": "App Version",
+
+  "parentSettingsEmailPendingBanner": "A verification link was sent to {email}. Your email address will update after you click it.",
+  "@parentSettingsEmailPendingBanner": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "parentSettingsAccountInfoSection": "Account Information",
+  "parentSettingsChangePasswordSection": "Change Password",
+  "parentSettingsPasswordHint": "Leave all password fields empty to keep your current password.",
+  "fieldFullName": "Full Name",
+  "validatorFullNameRequired": "Full name is required.",
+  "validatorFullNameMinLength": "Name must be at least 2 characters.",
+  "fieldEmail": "Email",
+  "parentSettingsEmailHelper": "Changing your email will send a verification link to the new address.",
+  "validatorEmailRequired": "Email is required.",
+  "validatorEmailInvalid": "Enter a valid email address.",
+  "fieldCurrentPassword": "Current Password",
+  "validatorCurrentPasswordForEmail": "Enter your current password to change your email.",
+  "validatorCurrentPasswordForNewPassword": "Enter your current password to set a new one.",
+  "fieldNewPassword": "New Password",
+  "validatorPasswordMinLength": "Password must be at least 6 characters.",
+  "validatorEnterCurrentPasswordFirst": "Enter your current password first.",
+  "fieldConfirmNewPassword": "Confirm New Password",
+  "validatorPasswordsDoNotMatch": "Passwords do not match.",
+  "saveChangesButton": "Save Changes",
+  "profileUpdatedSuccess": "Profile updated successfully.",
+  "couldNotLoadLinkedStudents": "Could not load linked students. Check your connection.",
+  "dangerZoneSection": "Danger Zone",
+  "deleteAccountTitle": "Delete Account",
+  "deleteAccountDescription": "Permanently removes your account and all data. You must delete all student accounts first.",
+  "deleteAccountBlockedTooltip": "Remove all linked children before deleting your account.",
+  "deleteAccountRetryTooltip": "Could not verify linked students. Please retry.",
+  "deleteMyAccountButton": "Delete My Account",
+  "childLoadErrorNotice": "Could not verify linked students. Deletion is disabled until this is resolved.",
+  "linkedChildrenNotice": "You can only delete your account after removing all linked children. Go to the Students tab to delete each child's account first.",
+  "deleteYourAccountDialogTitle": "Delete Your Account",
+  "deleteYourAccountDialogContent": "This will permanently delete your account. Are you sure?",
+  "continueButton": "Continue",
+  "confirmYourPasswordDialogTitle": "Confirm Your Password",
+  "confirmPasswordDeleteWarning": "Enter your current password to permanently delete your account. This cannot be undone.",
+  "validatorEnterCurrentPassword": "Please enter your current password.",
+
+  "signInTitle": "Sign In",
+  "fieldPassword": "Password",
+  "validatorPasswordRequired": "Password is required.",
+  "loginEmailValidator": "Please enter a valid email address.",
+  "registerPromptButton": "Not registered yet? Register as a Parent",
+  "forgotPasswordButton": "Forgot Password?",
+
+  "registerAsParentTitle": "Register as a Parent",
+  "fieldConfirmPassword": "Confirm Password",
+  "registerButton": "Register",
+  "alreadyRegisteredButton": "Already registered? Sign In",
+
+  "resetPasswordTitle": "Reset Password",
+  "passwordResetLinkSentMessage": "Password reset link sent! Check your inbox.",
+  "sendResetLinkButton": "Send Reset Link",
+
+  "confirmEmailTitle": "Confirm Email",
+  "emailNotVerifiedYetMessage": "Your email hasn't been verified yet. Check your inbox.",
+  "emailVerificationLinkSentMessage": "Email verification link sent!",
+  "confirmEmailInstructions": "Please check your inbox and verify your email to continue.",
+  "sendEmailVerificationButton": "Send Email Verification Link",
+  "emailVerifiedButton": "I've Verified My Email",
+  "logOutButton": "Log Out",
+
+  "dashboardTitle": "Dashboard",
+  "nothingHereYetTitle": "Nothing here yet.",
+  "activityAlertsWillAppearHere": "Activity and alerts will appear here.",
+  "myChildrenTitle": "My Children",
+  "validatorStudentPasswordRequired": "Please enter the student's password.",
+  "removeStudentTitle": "Remove Student",
+  "removeStudentConfirmMessage": "This will permanently delete {studentName}'s account. Enter the password you created for them to confirm.",
+  "@removeStudentConfirmMessage": {
+    "placeholders": {
+      "studentName": {"type": "String"}
+    }
+  },
+  "fieldStudentPassword": "Student's Password",
+  "removeButton": "Remove",
+
+  "noChildrenAddedYetTitle": "No children added yet.",
+  "useAddStudentButtonHint": "Use the Add Student button to register your first child.",
+  "studentNotActivatedBanner": "{count, plural, =1{{names} hasn't activated their account yet.} other{{names} haven't activated their accounts yet.}}",
+  "@studentNotActivatedBanner": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "names": {"type": "String"}
+    }
+  },
+  "verifyEmailInstructionBanner": "Ask them to open the app, log in with the credentials you created, and verify their email.",
+  "tapStudentCardHint": "Tap on a student card to monitor their activity, manage app usage rules, and review their academic status.",
+  "incorrectPasswordRetryMessage": "Incorrect password. Please try again.",
+  "deleteChildAccountTitle": "Delete Child Account",
+  "deleteChildAccountWarningPrefix": "You are about to permanently delete ",
+  "deleteChildAccountWarningSuffix": "'s account. This will remove all of their data and cannot be undone.",
+  "studentCredentialsWillBeDeleted": "{firstName}'s login credentials, progress, and settings will all be permanently deleted.",
+  "@studentCredentialsWillBeDeleted": {
+    "placeholders": {
+      "firstName": {"type": "String"}
+    }
+  },
+  "passwordYouCreatedForHint": "Password you created for {firstName}",
+  "@passwordYouCreatedForHint": {
+    "placeholders": {
+      "firstName": {"type": "String"}
+    }
+  },
+  "deletePermanentlyButton": "Delete Permanently",
+
+  "gradeLabel": "Grade {grade}",
+  "@gradeLabel": {
+    "placeholders": {
+      "grade": {"type": "int"}
+    }
+  },
+  "studentRegisteredSuccessTitle": "Student Registered Successfully!",
+  "studentRegisteredSuccessDetail": "On your child's phone, open the app and log in with the credentials you just created. They'll need to verify their email before getting started.",
+  "registerStudentTitle": "Register Student",
+  "createNewStudentAccountSubtitle": "Create a new student account",
+  "studentInformationSection": "Student Information",
+  "fieldUsername": "Username",
+  "usernameHint": "Shown on the leaderboard (e.g. coolkid42)",
+  "validatorUsernameRequired": "Username is required.",
+  "validatorUsernameMinLength": "At least 3 characters.",
+  "validatorUsernameMaxLength": "Max 50 characters.",
+  "validatorUsernameFormat": "Only letters, numbers and underscores.",
+  "fieldGrade": "Grade",
+  "validatorGradeRequired": "Please select a grade.",
+  "accountCredentialsSection": "Account Credentials",
+  "fieldEmailAddress": "Email Address",
+  "emailAddressHint": "The student will use this to log in.",
+  "validatorConfirmPasswordRequired": "Please confirm your password.",
+
+  "accountSettingsTitle": "Account Settings",
+  "unsavedChangesDialogTitle": "Unsaved Changes",
+  "unsavedChangesDialogContent": "You have unsaved changes. Leave without saving?",
+  "stayButton": "Stay",
+  "leaveButton": "Leave",
+  "logoutConfirmationMessage": "Are you sure you want to log out of your account?",
+  "requiredToChangeEmailHint": "Required to change the email address.",
+
+  "studentProfileStaticTitle": "Student Profile",
+  "studentProfileUpdatedEmailPending": "Profile updated. A verification link was sent to {email}.",
+  "@studentProfileUpdatedEmailPending": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "studentSettingsEmailPendingBanner": "A verification link was sent to {email}. The student's email will update after they click it.",
+  "@studentSettingsEmailPendingBanner": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "studentSettingsEmailHelper": "Changing the email will send a verification link to the new address.",
+  "usernameCannotBeChangedNotice": "Usernames cannot be changed after registration.",
+  "fieldStudentCurrentPassword": "Student's Current Password",
+  "validatorStudentCurrentPasswordForEmail": "Enter the student's current password to change their email.",
+  "validatorStudentCurrentPasswordForNewPassword": "Enter the student's current password to set a new one.",
+  "validatorEnterStudentCurrentPasswordFirst": "Enter the student's current password first.",
+
+  "discardChangesDialogContent": "Refreshing will discard your unsaved changes. Continue?",
+  "discardAndRefreshButton": "Discard & Refresh",
+  "stillLoadingAppListMessage": "Still loading app list — please wait.",
+  "deviceNotSyncedMessage": "{name}'s device hasn't synced yet. Ask them to open the app once.",
+  "@deviceNotSyncedMessage": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "allAppsAlreadyConfiguredMessage": "All installed apps have already been configured.",
+  "removeAppConfirmTitle": "Remove {appLabel}?",
+  "@removeAppConfirmTitle": {
+    "placeholders": {
+      "appLabel": {"type": "String"}
+    }
+  },
+  "removeAppConfirmMessage": "Are you sure you want to stop monitoring this app? Your child will have unrestricted access to it.",
+  "configSavedSuccessMessage": "Configuration saved successfully.",
+  "configurationsTitle": "Configurations",
+  "screenTimeRewardTitle": "Screen Time Reward per Quiz",
+  "screenTimeRewardDescription": "Child earns this much unlocked screen time for every quiz they pass.",
+  "setCooldownTimeTitle": "Set Cooldown Time",
+  "cooldownPeriodTitle": "Cooldown Period",
+  "cooldownPeriodDescription": "Lock duration after screen time runs out.",
+  "appRulesTitle": "App Rules",
+  "noAppsConfiguredHint": "No apps configured yet. Tap + to add your first app.",
+  "monitoredCountLabel": "{count} monitored",
+  "@monitoredCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pausedCountLabel": "{count} paused",
+  "@pausedCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "manageAllAppsLabel": "Manage all {count} apps",
+  "@manageAllAppsLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "quizSettingsTitle": "Quiz Settings",
+  "questionsPerQuizLabel": "Questions per Quiz",
+  "quizCountAutoLabel": "Auto",
+  "quizCountAutoDescription": "Smart Tutor will adjust the quiz length dynamically based on the child's current performance.",
+  "quizCountFixedDescription": "Child must correctly answer {count} questions to unlock their device.",
+  "@quizCountFixedDescription": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "editProfileButton": "Edit Profile",
+  "passwordRequiredToDeleteAccountMessage": "Password is required to delete the account.",
+  "deleteStudentDialogTitle": "Delete Student",
+  "deleteStudentWarningPrefix": "This will permanently delete ",
+  "deleteStudentWarningSuffix": "'s account — progress, items, and settings. This cannot be undone.",
+  "monitoredAndPausedLabel": "{monitored} monitored · {paused} paused",
+  "@monitoredAndPausedLabel": {
+    "placeholders": {
+      "monitored": {"type": "int"},
+      "paused": {"type": "int"}
+    }
+  },
+  "noAppsConfiguredTitle": "No apps configured yet.",
+  "tapAddAppHint": "Tap \"Add App\" below to get started.",
+  "appStatusPaused": "Paused",
+  "appStatusMonitored": "Monitored",
+  "addAppButton": "Add App",
+  "installedAppsFilterLabel": "Installed Apps",
+  "installedAppsFilterSubtitle": "Apps downloaded by the student",
+  "allAppsFilterLabel": "All Apps",
+  "allAppsFilterSubtitle": "Includes system & pre-installed apps",
+  "selectAppsTitle": "Select Apps",
+  "searchAppsHint": "Search apps…",
+  "addSelectedButton": "Add Selected",
+  "noAppsMatchQuery": "No apps match \"{query}\"",
+  "@noAppsMatchQuery": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "noUserInstalledAppsFound": "No user-installed apps found",
+  "switchToAllAppsHint": "Switch to All Apps to see system apps",
+  "setRewardTimeTitle": "Set Reward Time",
+  "presetMinutesLabel": "{minutes} mins",
+  "@presetMinutesLabel": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "preset1HourLabel": "1 hour",
+  "saveTimeButton": "Save Time",
+
+  "masteryTierAdvanced": "Advanced",
+  "masteryTierProficient": "Proficient",
+  "masteryTierDeveloping": "Developing",
+  "masteryTierBeginner": "Beginner",
+  "sortQuizzesTitle": "Sort Quizzes",
+  "sortDateNewestToOldest": "Date: Newest to Oldest",
+  "sortDateOldestToNewest": "Date: Oldest to Newest",
+  "sortScoreHighestToLowest": "Score: Highest to Lowest",
+  "sortScoreLowestToHighest": "Score: Lowest to Highest",
+  "overallMasteryLevelLabel": "Overall Mastery Level",
+  "accuracyLabel": "Accuracy",
+  "quizzesDoneLabel": "Quizzes Done",
+  "timeSpentLabel": "Time Spent",
+  "skillsProgressTitle": "Skills Progress",
+  "seeAllLabel": "See All",
+  "quizHistoryTitle": "Quiz History",
+  "sortSkillsTitle": "Sort Skills",
+  "sortMasteryLowestFirst": "Mastery: Lowest First",
+  "sortMasteryHighestFirst": "Mastery: Highest First",
+  "sortAZLabel": "A – Z",
+  "recommendationNotStarted": "Not started yet — encourage trying this skill",
+  "recommendationUrgent": "Needs urgent attention — short daily practice sessions recommended",
+  "recommendationProgress": "Making progress — reviewing past mistakes will help",
+  "recommendationOnTrack": "On track — a few more sessions will build mastery",
+  "recommendationStrong": "Strong skill — occasional review to maintain",
+  "statTotalLabel": "Total",
+  "allSkillsTitle": "All Skills",
+  "correctOfAttemptsLabel": "{correct} correct / {attempts} attempts",
+  "@correctOfAttemptsLabel": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "attempts": {"type": "int"}
+    }
+  },
+  "neverPracticedLabel": "Never practiced",
+  "lastPracticedLabel": "Last: {date}",
+  "@lastPracticedLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "uploadCurriculumTitle": "Upload Curriculum",
+  "noSubjectsYetTitle": "No Subjects Yet",
+  "noSubjectsYetDescription": "Tap the '+' button in the top right to start tracking subjects or upload a new curriculum for {studentName}.",
+  "@noSubjectsYetDescription": {
+    "placeholders": {
+      "studentName": {"type": "String"}
+    }
+  },
+  "subjectsAndSkillsTitle": "Subjects & Skills",
+  "skillsTrackedLabel": "{count} skills tracked",
+  "@skillsTrackedLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "masteryLabel": "Mastery",
+  "removeSubjectConfirmTitle": "Remove {subjectName}?",
+  "@removeSubjectConfirmTitle": {
+    "placeholders": {
+      "subjectName": {"type": "String"}
+    }
+  },
+  "removeSubjectConfirmMessage": "Are you sure you want to remove this subject?",
+  "searchSubjectsHint": "Search subjects...",
+  "addSelectedCountButton": "Add Selected ({count})",
+  "@addSelectedCountButton": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "noQuizzesYetMessage": "No quizzes yet",
+  "allQuizzesTitle": "All Quizzes",
+
+  "tabOverview": "Overview",
+  "tabMastery": "Mastery",
+  "tabHabits": "Habits",
+  "reportsAnalysisTitle": "Reports & Analysis",
+  "noReportAvailableMessage": "No report available.",
+  "metricQuizzesLabel": "Quizzes",
+  "studyTimeLabel": "Study Time",
+  "accuracyTrendTitle": "Accuracy Trend",
+  "weeklyAccuracyTrendSubtitle": "Weekly accuracy over the past 6 weeks",
+  "notEnoughDataYetMessage": "Not enough data yet",
+  "completeQuizzesTrendHint": "Complete quizzes over multiple weeks to see a trend",
+  "streakProgressTitle": "Streak Progress",
+  "currentStreakVsBestSubtitle": "Current streak vs. personal best",
+  "currentStreakLabel": "Current streak",
+  "personalBestLabel": "Personal best",
+  "daysUnitLabel": "days",
+  "percentOfPersonalBest": "{percent}% of personal best",
+  "@percentOfPersonalBest": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "noStreakYetMessage": "No streak yet — start studying to build one!",
+  "smartInsightsTitle": "Smart Insights",
+  "insightNoQuizzes": "No quizzes completed this week yet. Encourage your student to log in and start a session to keep their streak alive!",
+  "insightOutstanding": "{quizzes} quizzes completed this week with {accuracy}% accuracy — an outstanding performance! The student is mastering the material at a high level. Keep the momentum going.",
+  "@insightOutstanding": {
+    "placeholders": {
+      "quizzes": {"type": "int"},
+      "accuracy": {"type": "int"}
+    }
+  },
+  "insightGoodWeek": "Good week overall: {quizzes} quizzes at {accuracy}% accuracy. To push higher, visit the Mastery tab and focus on skills rated below 60%.",
+  "@insightGoodWeek": {
+    "placeholders": {
+      "quizzes": {"type": "int"},
+      "accuracy": {"type": "int"}
+    }
+  },
+  "insightRoomToImprove": "{quizzes} quizzes completed with {accuracy}% accuracy. There is room to improve — check the Mastery tab to identify specific concept gaps that need attention.",
+  "@insightRoomToImprove": {
+    "placeholders": {
+      "quizzes": {"type": "int"},
+      "accuracy": {"type": "int"}
+    }
+  },
+  "insightStreakKept": "The student has kept a {streak}-day streak, which is great for consistency! Accuracy is at {accuracy}% — reviewing weaker topics between sessions should help raise scores.",
+  "@insightStreakKept": {
+    "placeholders": {
+      "streak": {"type": "int"},
+      "accuracy": {"type": "int"}
+    }
+  },
+  "insightDefault": "Accuracy was {accuracy}% across {quizzes} quizzes this week. Encourage shorter, more focused study sessions and review any topics marked as weak in the Mastery tab.",
+  "@insightDefault": {
+    "placeholders": {
+      "accuracy": {"type": "int"},
+      "quizzes": {"type": "int"}
+    }
+  },
+  "noMasteryReportMessage": "No mastery report available.",
+  "totalAverageMasteryLabel": "Total Average Mastery",
+  "masteryScorePercentLabel": "{percent}% Mastery Score",
+  "@masteryScorePercentLabel": {
+    "placeholders": {
+      "percent": {"type": "String"}
+    }
+  },
+  "masteredLabel": "Mastered",
+  "strongAreasTitle": "🔥 Strong Areas",
+  "noStrongAreasMessage": "No strong areas identified yet.",
+  "needsWorkAreasTitle": "⚠️ Needs Work",
+  "noWeakAreasMessage": "No weak areas identified yet.",
+  "errorAnalyticsTitle": "Error Analytics",
+  "commonMistakeTypesLabel": "Common mistake types on {subject} quizzes.",
+  "@commonMistakeTypesLabel": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "carelessMistakesLabel": "Careless Mistakes ({percent}%)",
+  "@carelessMistakesLabel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "carelessMistakesDescription": "Answering too quickly on calculations",
+  "conceptGapsLabel": "Concept Gaps ({percent}%)",
+  "@conceptGapsLabel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "conceptGapsDescription": "Struggles with newly introduced topics",
+  "timePressureLabel": "Time Pressure ({percent}%)",
+  "@timePressureLabel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "timePressureDescription": "Failing to finish within the quiz timer",
+  "noHabitsReportMessage": "No habits report available.",
+  "currentStreakStatLabel": "Current Streak",
+  "longestStreakStatLabel": "Longest Streak",
+  "daysCountLabel": "{count} Days",
+  "@daysCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "studyVsAppUsageTitle": "Study vs Monitored App Usage",
+  "studyVsAppUsageSubtitle": "Compare active learning time vs time blocked on other apps.",
+  "appUsageLegendLabel": "App Usage",
+  "studyConsistencyGridTitle": "Study Consistency Grid",
+  "activeStudyDaysSubtitle": "Active study days over the last 4 weeks.",
+  "threeWeeksAgoLabel": "3w ago",
+  "twoWeeksAgoLabel": "2w ago",
+  "oneWeekAgoLabel": "1w ago",
+  "thisWeekLabel": "This wk",
+  "dayAbbrevMon": "M",
+  "dayAbbrevTue": "T",
+  "dayAbbrevWed": "W",
+  "dayAbbrevThu": "T",
+  "dayAbbrevFri": "F",
+  "dayAbbrevSat": "S",
+  "dayAbbrevSun": "S",
+  "legendLessLabel": "Less",
+  "legendMoreLabel": "More",
+
+  "studentProfileTitle": "{name}'s Profile",
+  "@studentProfileTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "gradeUnknownLabel": "Grade —",
+  "gradeLabel": "Grade {grade}",
+  "@gradeLabel": {
+    "placeholders": {
+      "grade": {"type": "int"}
+    }
+  },
+  "thisWeekSublabel": "This week",
+  "weeklyAvgSublabel": "Weekly avg",
+  "dayStreakLabel": "Day Streak",
+  "currentLabel": "Current",
+  "manageSubjectsSubtitle": "Manage subjects and view skill progress",
+  "reportsAnalyticsNavTitle": "Reports & Analytics",
+  "weeklyReportsSubtitle": "Weekly reports, accuracy trends, weak topics",
+  "appConfigurationsTitle": "App Configurations",
+  "appConfigurationsSubtitle": "Gateway timers, monitored apps, quiz rules",
+
+  "permissionDisplayNameSystemAlertWindow": "Display Over Other Apps",
+  "permissionDisplayNamePackageUsageStats": "Usage Access",
+  "permissionDisplayNamePostNotifications": "Post Notifications",
+  "permissionDisplayNameAccessibilityService": "Accessibility Service",
+  "permissionDisplayNameDeviceAdmin": "Device Administrator",
+  "permissionDisplayNameBatteryOptimization": "Disable Battery Optimization",
+  "permissionRationaleSystemAlertWindow": "Display Over Other Apps is required to show study reminders and enforce app rules while you use other apps.",
+  "permissionRationalePackageUsageStats": "Usage Access is required to track screen time and enforce the app usage limits set by the parent.",
+  "permissionRationalePostNotifications": "Post Notifications is required to send you study reminders and important alerts from the parent.",
+  "permissionRationaleAccessibilityService": "Accessibility Service is required to monitor which apps are open and enforce the rules set by the parent.",
+  "permissionRationaleDeviceAdmin": "Device Administrator is required to protect the app from being uninstalled without the parent's permission.",
+  "permissionRationaleBatteryOptimization": "Disabling Battery Optimization keeps background services running reliably. Without this, Android may shut down StudyMentor's background services on some devices, causing timers and app rules to stop working.",
+  "permissionParentRationalePostNotifications": "StudyMentor notifies you when your child levels up, earns a badge, or hasn't studied in a few days. You can change this any time in Settings.",
+  "permissionParentRationaleBatteryOptimization": "To reliably notify you about your child's activity, StudyMentor needs to run in the background. Without this, Android may delay or drop important alerts on some devices.",
+
+  "stepOfTotalLabel": "Step {step} of {total}",
+  "@stepOfTotalLabel": {
+    "placeholders": {
+      "step": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "permissionEnabledMessage": "{permissionName} has been enabled.",
+  "@permissionEnabledMessage": {
+    "placeholders": {
+      "permissionName": {"type": "String"}
+    }
+  },
+  "permissionNotGrantedMessage": "Permission not granted yet. Tap the button below to open Settings.",
+  "openSettingsButton": "Open Settings",
+  "postNotificationsHint": "Allow StudyMentor to send you notifications.",
+  "batteryOptimizationHint": "Find \"StudyMentor\", select \"Don't optimize\" or \"Unrestricted\", then confirm.",
+  "systemAlertWindowHint": "Find \"StudyMentor\" and enable \"Allow display over other apps\".",
+  "packageUsageStatsHint": "Find \"StudyMentor\" and toggle Usage Access on.",
+  "accessibilityServiceHint": "Under Installed Apps, select \"StudyMentor\" and enable it.",
+  "deviceAdminHint": "Tap \"Activate this device admin app\" to confirm.",
+
+  "helpCenterTitle": "Help Center",
+  "whatCanWeHelpWithTitle": "What can we help with?",
+  "issueAppNotWorking": "App isn't working properly",
+  "issueQuizQuestionError": "Quiz question has an error",
+  "issueHowDoI": "How do I...?",
+  "tellUsMoreTitle": "Tell us more",
+  "needHelpGreeting": "Need help, {name}? I'm here for you!",
+  "@needHelpGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "describeIssueHint": "Describe your issue here... Our team will help you out!",
+  "charCounterLabel": "{count}/500",
+  "@charCounterLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "sendToTeamButton": "Send to Team",
+  "messageSentSuccessMessage": "Message sent! Our team will get back to you soon.",
+  "messageSendErrorMessage": "Couldn't send your message. Please try again.",
+
+  "levelShortLabel": "Lv. {level}",
+  "@levelShortLabel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+
+  "welcomeBackGreeting": "Welcome back, {name}! ",
+  "@welcomeBackGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "gardenGrowingMessage": "Your garden is growing beautifully!",
+  "gardenLoadErrorMessage": "Couldn't load your garden. Pull down to retry.",
+  "askParentAddSubjectsMessage": "Ask a parent to add your subjects",
+  "owlEncouragementMessage": "Great job today! Keep studying to help your garden bloom! 🌸",
+  "owlNameLabel": "Hootie, your Study Buddy",
+  "streakDaysCountLabel": "{count, plural, =1{1 day} other{{count} days}}",
+  "@streakDaysCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "lessonsLabel": "Lessons",
+  "streakLabel": "Streak",
+  "yourParentLabel": "Your parent",
+  "appRulesTitle": "App Rules",
+  "rulesConfiguredByParentMessage": "Rules configured by your parent.",
+  "screenTimeLabel": "Screen Time",
+  "timeRemainingLabel": "{time} left",
+  "@timeRemainingLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "usedTimeLabel": "Used: {time}",
+  "@usedTimeLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "limitTimeLabel": "Limit: {time}",
+  "@limitTimeLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "cooldownAfterLimitLabel": "Cooldown after limit: {time}",
+  "@cooldownAfterLimitLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "onCooldownTitle": "You're on cooldown! 😴",
+  "cooldownMessage": "Apps will unlock again soon. Time to study! 📚",
+  "remainingLabel": "remaining",
+  "parentRulesIntroMessage": "Your parent set these rules for all restricted apps:",
+  "noAppRulesSetMessage": "No app rules set yet.",
+  "noAppRulesDescriptionMessage": "Your parent hasn't configured any rules for your device yet.",
+
+  "backTooltip": "Back",
+  "levelLabel": "Level {level}",
+  "@levelLabel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "myProgressTitle": "My Progress",
+  "totalXpLabel": "Total XP",
+  "dayStreakLabel": "Day Streak",
+  "questionsLabel": "Questions",
+  "coinsAvailableLabel": "coins available",
+  "appSettingsTitle": "App Settings",
+  "appSettingsSubtitle": "Notifications, Sound",
+
+  "selectPdfFirstMessage": "Please select a PDF file first.",
+  "enterSubjectNameMessage": "Please enter a Subject Name.",
+  "subjectAlreadyExistsMessage": "This subject already exists.",
+  "uploadingProcessingMessage": "Uploading & processing…",
+  "uploadCurriculumDescription": "Upload a PDF textbook to build an adaptive quiz from its content.",
+  "subjectNameLabel": "Subject Name",
+  "subjectNameHint": "e.g. Mathematics, Science...",
+  "removeFileButton": "Remove File",
+  "tapToBrowsePdfMessage": "Tap to browse PDF",
+  "onlyPdfSupportedMessage": "Only .pdf files are supported",
+  "uploadAndIngestButton": "Upload & Ingest",
+  "curriculumAddedSuccessTitle": "Curriculum Added Successfully!",
+  "curriculumAddedSuccessMessage": "We've successfully added '{subjectName}' to your dashboard. The AI is now processing your textbook in the background to generate quiz questions.",
+  "@curriculumAddedSuccessMessage": {
+    "placeholders": {
+      "subjectName": {"type": "String"}
+    }
+  },
+  "uploadAnotherButton": "Upload Another",
+
+  "studyQuizTitle": "Study Quiz",
+  "masteryUpdateMessage": "{subject}: {oldPct}% → {newPct}% (+{delta}%)",
+  "@masteryUpdateMessage": {
+    "placeholders": {
+      "subject": {"type": "String"},
+      "oldPct": {"type": "String"},
+      "newPct": {"type": "String"},
+      "delta": {"type": "String"}
+    }
+  },
+  "masteryUpdatedSimpleMessage": "{subject} mastery updated!",
+  "@masteryUpdatedSimpleMessage": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "generatingQuizMessage": "Generating your quiz…",
+  "submittingAnswersMessage": "Submitting answers…",
+  "timeToPracticeTitle": "Time to Practice!",
+  "quizPromptMessage": "Your focus time is up. Let's do a quick quiz to keep your brain sharp!",
+  "startQuizButton": "Start Quiz",
+  "tailoredToLevelMessage": "Tailored to your current level",
+  "selectAnswerFirstMessage": "Please select an answer first.",
+  "noMoreHintsMessage": "No more hints available.",
+  "hintNumberTitle": "Hint {number}",
+  "@hintNumberTitle": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "questionOfTotalLabel": "Question {current} of {total}",
+  "@questionOfTotalLabel": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "answeredCountLabel": "{count} answered",
+  "@answeredCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "hintCountLabel": "Hint ({count})",
+  "@hintCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "submitButton": "Submit",
+  "nextButton": "Next",
+  "veryEasyLabel": "Very Easy",
+  "easyLabel": "Easy",
+  "mediumLabel": "Medium",
+  "hardLabel": "Hard",
+  "veryHardLabel": "Very Hard",
+  "questionsCountLabel": "{count, plural, =1{1 question} other{{count} questions}}",
+  "@questionsCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "doneButton": "Done",
+  "takeAnotherQuizButton": "Take Another Quiz",
+  "somethingWentWrongTitle": "Something went wrong",
+  "tryAgainButton": "Try Again",
+
+  "subjectGardenTitle": "{subject} Garden",
+  "@subjectGardenTitle": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "loadSkillsErrorMessage": "Couldn't load skills. Please go back and try again.",
+  "overallMasteryLabel": "Overall mastery: {percent}%",
+  "@overallMasteryLabel": {
+    "placeholders": {
+      "percent": {"type": "String"}
+    }
+  },
+  "skillsTitle": "Skills",
+  "strengthsTitle": "Strengths",
+  "needsPracticeTitle": "Needs Practice",
+  "practiceNowButton": "Practice Now",
+  "growthProgressTitle": "Growth Progress",
+  "levelNumberLabel": "Level {level}",
+  "@levelNumberLabel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "maxLevelBadge": "MAX ✨",
+  "maxLevelReachedMessage": "You've reached the maximum level! 🌟",
+  "percentMoreToLevelMessage": "{percent}% more to reach Level {level}!",
+  "@percentMoreToLevelMessage": {
+    "placeholders": {
+      "percent": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "flourishingLabel": "Flourishing",
+  "masteryGrowingWellLabel": "Growing Well",
+  "masteryMakingProgressLabel": "Making Progress",
+  "masteryJustStartedLabel": "Just Started",
+  "masteryNotStartedYetLabel": "Not Started Yet",
+  "growthStageSeed": "Seed",
+  "growthStageSprout": "Sprout",
+  "growthStageSapling": "Sapling",
+  "growthStageGrowing": "Growing",
+  "masteryAttemptsLabel": "{percent}% mastery  ·  {attempts} attempts",
+  "@masteryAttemptsLabel": {
+    "placeholders": {
+      "percent": {"type": "String"},
+      "attempts": {"type": "int"}
+    }
+  },
+  "skillNotStartedLabel": "Not started yet",
+
+  "avatarShopTitle": "Avatar Shop",
+  "categoryHairStyle": "Hair Style",
+  "categoryOutfit": "Outfit",
+  "categoryHairColor": "Hair Color",
+  "categoryOutfitColor": "Outfit Color",
+  "categoryAccessory": "Accessory",
+  "categoryFacialHair": "Facial Hair",
+  "categoryBeardColor": "Beard Color",
+  "categoryEyes": "Eyes",
+  "categoryEyebrows": "Eyebrows",
+  "categoryMouth": "Mouth",
+  "categorySkinTone": "Skin Tone",
+  "unlocksAtLevelMessage": "Unlocks at Level {level}",
+  "@unlocksAtLevelMessage": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "notEnoughCoinsMessage": "Not enough coins! Need {amount} more.",
+  "@notEnoughCoinsMessage": {
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "buyItemTitle": "Buy {itemName}?",
+  "@buyItemTitle": {
+    "placeholders": {
+      "itemName": {"type": "String"}
+    }
+  },
+  "itemCostMessage": "This will cost {price} coins.",
+  "@itemCostMessage": {
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "buyButton": "Buy",
+
+  "levelUpTitle": "🎉 Level Up!",
+  "levelUpSubtitleMessage": "You reached Level {level}! Keep studying to\ngrow even stronger! 🌱",
+  "@levelUpSubtitleMessage": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "awesomeButton": "Awesome!",
+  "streakMilestoneOnARoll": "On a Roll!",
+  "streakMilestoneWeekWarrior": "Week Warrior!",
+  "streakMilestoneFortnightFocus": "Fortnight Focus!",
+  "streakMilestoneMonthlyMaster": "Monthly Master!",
+  "streakMilestoneGeneric": "Streak Milestone!",
+  "streakMilestoneDescriptionMessage": "You hit a {days}-day learning streak!\nKeep it up!",
+  "@streakMilestoneDescriptionMessage": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "coinsRewardLabel": "+{coins} Coins",
+  "@coinsRewardLabel": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+
+  "aiSummaryNotAvailableMessage": "AI Summary not available.",
+  "aiDailySummaryTitle": "✨ AI Daily Summary",
+  "smartInsightsLabel": "Smart Insights",
+  "notificationsTitle": "Notifications",
+  "markAllAsReadButton": "Mark all as read",
+  "allCaughtUpTitle": "You're All Caught Up",
+  "allCaughtUpMessage": "You're all caught up! Activity alerts will appear here.",
+  "minutesAgoLabel": "{minutes}m ago",
+  "@minutesAgoLabel": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "hoursAgoLabel": "{hours}h ago",
+  "@hoursAgoLabel": {
+    "placeholders": {
+      "hours": {"type": "int"}
+    }
+  },
+  "daysAgoLabel": "{days}d ago",
+  "@daysAgoLabel": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "xpLabel": "XP",
+  "coinsLabel": "Coins",
+  "thisWeekSublabel": "This week",
+  "unverifiedLabel": "UNVERIFIED",
+  "waitingForVerificationMessage": "Waiting for the student to verify their email and log in for the first time.",
+  "firstLoginCoinsRewardMessage": "+3 coins will be awarded on first login",
+  "weeklyAccuracyLabel": "Weekly Accuracy",
+  "navMyStudentsLabel": "My Students",
+  "navHelpLabel": "Help",
+  "navHomeLabel": "Home",
+  "navShopLabel": "Shop",
+  "noGradeLabel": "No grade",
+  "tapToViewLabel": "Tap to view",
+  "awaitingEmailVerificationLabel": "Awaiting email verification",
+  "xpAmountLabel": "{xp} XP",
+  "@xpAmountLabel": {
+    "placeholders": {
+      "xp": {"type": "int"}
+    }
+  },
+  "questionsAttemptedLabel": "Questions Attempted ({total})",
+  "@questionsAttemptedLabel": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "correctLabel": "Correct",
+  "incorrectLabel": "Incorrect",
+  "questionNumberLabel": "Question {number}",
+  "@questionNumberLabel": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "parentVerificationRequiredTitle": "Parent Verification Required",
+  "logoutParentCredentialsMessage": "To log out, please enter your parent's credentials.",
+  "parentEmailLabel": "Parent's Email",
+  "parentPasswordLabel": "Parent's Password",
+  "verifyAndLogOutButton": "Verify & Log Out",
+  "xpRewardLabel": "+{xp} XP",
+  "@xpRewardLabel": {
+    "placeholders": {
+      "xp": {"type": "int"}
+    }
+  }
+}

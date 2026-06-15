@@ -33,6 +33,7 @@ import 'student_home.dart';
 import 'student_quiz.dart';
 import 'student_profile.dart';
 import 'shop/custom_shop_screen.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
@@ -552,6 +553,7 @@ class _StudentScreenState extends State<StudentScreen>
   // ── Custom top navigation bar ─────────────────────────────────────────────
 
   Widget _buildTopNav(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -616,7 +618,7 @@ class _StudentScreenState extends State<StudentScreen>
                     const Icon(Icons.star_rounded, color: Color(0xFF4A6CF7), size: 14),
                     const SizedBox(width: 4),
                     Text(
-                      'Lv. $_level',
+                      loc.levelShortLabel(_level),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,

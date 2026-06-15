@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../domain/models/gamification_models.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// A celebratory full-screen dialog shown when the student levels up.
 class LevelUpModal extends StatelessWidget {
@@ -19,6 +20,7 @@ class LevelUpModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -86,9 +88,9 @@ class LevelUpModal extends StatelessWidget {
             const SizedBox(height: 20),
 
             // ── Title ──────────────────────────────────────────────────
-            const Text(
-              '🎉 Level Up!',
-              style: TextStyle(
+            Text(
+              loc.levelUpTitle,
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
@@ -120,7 +122,7 @@ class LevelUpModal extends StatelessWidget {
 
             // ── Subtitle ───────────────────────────────────────────────
             Text(
-              'You reached Level ${newLevel.levelNumber}! Keep studying to\ngrow even stronger! 🌱',
+              loc.levelUpSubtitleMessage(newLevel.levelNumber),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -144,9 +146,9 @@ class LevelUpModal extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  'Awesome!',
-                  style: TextStyle(
+                child: Text(
+                  loc.awesomeButton,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),

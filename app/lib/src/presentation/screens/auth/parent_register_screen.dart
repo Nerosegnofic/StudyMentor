@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ParentRegisterScreen extends StatefulWidget {
   const ParentRegisterScreen({super.key});
@@ -25,7 +26,9 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Register as a Parent')),
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context).registerAsParentTitle),
+      ),
       body: BlocConsumer<AuthBloc, AuthState>(
         // Only rebuild the button when loading state changes.
         buildWhen: (prev, curr) => curr is AuthLoading || prev is AuthLoading,
@@ -48,6 +51,7 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
         },
         builder: (context, state) {
           final loading = state is AuthLoading;
+          final loc = AppLocalizations.of(context);
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Form(
@@ -56,20 +60,22 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                 children: [
                   TextFormField(
                     controller: _fullNameCtl,
-                    decoration: const InputDecoration(labelText: 'Full Name'),
-                    validator: (v) => v!.isEmpty ? 'Full name is required.' : null,
+                    decoration: InputDecoration(labelText: loc.fieldFullName),
+                    validator: (v) =>
+                        v!.isEmpty ? loc.validatorFullNameRequired : null,
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _emailCtl,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (v) => v!.contains('@') ? null : 'Please enter a valid email address.',
+                    decoration: InputDecoration(labelText: loc.fieldEmail),
+                    validator: (v) =>
+                        v!.contains('@') ? null : loc.loginEmailValidator,
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _passCtl,
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: loc.fieldPassword,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
@@ -82,13 +88,14 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                       ),
                     ),
                     obscureText: _obscurePassword,
-                    validator: (v) => v!.length >= 6 ? null : 'Password must be at least 6 characters.',
+                    validator: (v) =>
+                        v!.length >= 6 ? null : loc.validatorPasswordMinLength,
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _confirmCtl,
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
+                      labelText: loc.fieldConfirmPassword,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscureConfirm
@@ -100,8 +107,9 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                       ),
                     ),
                     obscureText: _obscureConfirm,
-                    validator: (v) =>
-                        v == _passCtl.text ? null : 'Passwords do not match',
+                    validator: (v) => v == _passCtl.text
+                        ? null
+                        : loc.validatorPasswordsDoNotMatch,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -120,12 +128,12 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                           },
                     child: loading
                         ? const CircularProgressIndicator()
-                        : const Text('Register'),
+                        : Text(loc.registerButton),
                   ),
                   TextButton(
                     onPressed: () =>
                         Navigator.pushReplacementNamed(context, '/login'),
-                    child: const Text('Already registered? Sign In'),
+                    child: Text(loc.alreadyRegisteredButton),
                   ),
                 ],
               ),

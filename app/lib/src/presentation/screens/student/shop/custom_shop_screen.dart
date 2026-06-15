@@ -8,6 +8,7 @@ import '../../../../bloc/shop/shop_state.dart';
 import '../../../../domain/models/avatar_item.dart';
 import '../../../../../core/avatar/fluttermojiController.dart';
 import '../../../widgets/avatar_widget.dart';
+import '../../../../../l10n/app_localizations.dart';
 
 class CustomShopScreen extends StatefulWidget {
   final String studentUid;
@@ -47,24 +48,25 @@ class _CustomShopScreenState extends State<CustomShopScreen>
     super.dispose();
   }
 
-  String _categoryLabel(ItemCategory cat) {
+  String _categoryLabel(AppLocalizations loc, ItemCategory cat) {
     return switch (cat) {
-      ItemCategory.hair => 'Hair Style',
-      ItemCategory.outfit => 'Outfit',
-      ItemCategory.hairColor => 'Hair Color',
-      ItemCategory.outfitColor => 'Outfit Color',
-      ItemCategory.accessory => 'Accessory',
-      ItemCategory.facialHair => 'Facial Hair',
-      ItemCategory.facialHairColor => 'Beard Color',
-      ItemCategory.eyes => 'Eyes',
-      ItemCategory.eyebrow => 'Eyebrows',
-      ItemCategory.mouth => 'Mouth',
-      ItemCategory.skinTone => 'Skin Tone',
+      ItemCategory.hair => loc.categoryHairStyle,
+      ItemCategory.outfit => loc.categoryOutfit,
+      ItemCategory.hairColor => loc.categoryHairColor,
+      ItemCategory.outfitColor => loc.categoryOutfitColor,
+      ItemCategory.accessory => loc.categoryAccessory,
+      ItemCategory.facialHair => loc.categoryFacialHair,
+      ItemCategory.facialHairColor => loc.categoryBeardColor,
+      ItemCategory.eyes => loc.categoryEyes,
+      ItemCategory.eyebrow => loc.categoryEyebrows,
+      ItemCategory.mouth => loc.categoryMouth,
+      ItemCategory.skinTone => loc.categorySkinTone,
     };
   }
 
   void _handleItemTap(
       BuildContext context, ShopLoaded state, AvatarItem item, bool isOwned, bool meetsLevel) {
+    final loc = AppLocalizations.of(context);
     if (isOwned) {
       context.read<ShopBloc>().add(
             EquipItemToggled(
@@ -75,11 +77,11 @@ class _CustomShopScreenState extends State<CustomShopScreen>
           );
     } else if (!meetsLevel) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unlocks at Level ${item.unlockLevel}')),
+        SnackBar(content: Text(loc.unlocksAtLevelMessage(item.unlockLevel))),
       );
     } else if (state.coins < item.price) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Not enough coins! Need ${item.price - state.coins} more.')),
+        SnackBar(content: Text(loc.notEnoughCoinsMessage(item.price - state.coins))),
       );
     } else {
       // Block opening a second purchase dialog while one is already processing.
@@ -87,12 +89,12 @@ class _CustomShopScreenState extends State<CustomShopScreen>
       showDialog(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          title: Text('Buy ${item.name}?'),
-          content: Text('This will cost ${item.price} coins.'),
+          title: Text(loc.buyItemTitle(item.name)),
+          content: Text(loc.itemCostMessage(item.price)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Cancel'),
+              child: Text(loc.commonCancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -105,7 +107,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                       ),
                     );
               },
-              child: const Text('Buy'),
+              child: Text(loc.buyButton),
             ),
           ],
         ),
@@ -196,6 +198,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocConsumer<ShopBloc, ShopState>(
       listenWhen: (prev, curr) =>
           curr is ShopLoaded &&
@@ -234,14 +237,14 @@ class _CustomShopScreenState extends State<CustomShopScreen>
           appBar: AppBar(
             backgroundColor: Colors.white,
             elevation: 0,
-            title: const Text(
-              'Avatar Shop',
-              style: TextStyle(color: Color(0xFF1A1A2E), fontWeight: FontWeight.bold),
+            title: Text(
+              loc.avatarShopTitle,
+              style: const TextStyle(color: Color(0xFF1A1A2E), fontWeight: FontWeight.bold),
             ),
             iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
             actions: [
               Container(
-                margin: const EdgeInsets.only(right: 16),
+                margin: const EdgeInsetsDirectional.only(end: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.amber[100],
@@ -270,7 +273,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
               unselectedLabelColor: Colors.grey,
               indicatorColor: const Color(0xFF4A6CF7),
               tabs: ItemCategory.values.map((cat) {
-                return Tab(text: _categoryLabel(cat));
+                return Tab(text: _categoryLabel(loc, cat));
               }).toList(),
             ),
           ),
@@ -317,7 +320,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             },
             backgroundColor: const Color(0xFF4A6CF7),
             icon: const Icon(Icons.check),
-            label: const Text('Done'),
+            label: Text(loc.doneButton),
           ),
         );
       },

@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
+import 'l10n/app_localizations.dart';
 import 'src/bloc/auth/auth_bloc.dart';
 import 'src/bloc/auth/auth_event.dart';
 import 'src/bloc/auth/auth_state.dart';
 import 'src/bloc/app_config/app_config_bloc.dart';
+import 'src/bloc/locale/locale_cubit.dart';
 import 'src/bloc/subject/subject_bloc.dart';
 import 'src/bloc/reports/reports_bloc.dart';
 import 'src/bloc/students/students_bloc.dart';
@@ -158,6 +161,9 @@ class StudyMentorApp extends StatelessWidget {
           BlocProvider<AppConfigBloc>(
             create: (context) => AppConfigBloc(authRepository: authRepository),
           ),
+          BlocProvider<LocaleCubit>(
+            create: (context) => LocaleCubit()..loadSavedLocale(),
+          ),
           BlocProvider<SubjectBloc>(
             create: (context) => SubjectBloc(authRepository: authRepository),
           ),
@@ -183,9 +189,18 @@ class StudyMentorApp extends StatelessWidget {
             create: (context) => SnapshotBloc(repository: authRepository),
           ),
         ],
-        child: MaterialApp(
+        child: BlocBuilder<LocaleCubit, Locale>(
+          builder: (context, locale) => MaterialApp(
           title: 'StudyMentor',
           debugShowCheckedModeBanner: false,
+          locale: locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           routes: {
             '/login': (_) => const LoginScreen(),
             '/register': (_) => const ParentRegisterScreen(),
@@ -214,6 +229,7 @@ class StudyMentorApp extends StatelessWidget {
             },
           },
           home: const RootPage(),
+          ),
         ),
       ),
     );

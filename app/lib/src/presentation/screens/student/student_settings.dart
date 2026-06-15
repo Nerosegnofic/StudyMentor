@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../services/settings_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
+import '../../widgets/language_picker_dialog.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class StudentSettings extends StatefulWidget {
   final String uid;
@@ -72,10 +74,11 @@ class _StudentSettingsState extends State<StudentSettings> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(loc.studentSettingsTitle),
         backgroundColor: const Color(0xFFF5F7FF),
         elevation: 0,
       ),
@@ -84,14 +87,14 @@ class _StudentSettingsState extends State<StudentSettings> {
           : ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               children: [
-                _sectionLabel('Preferences'),
-                _buildPreferencesCard(),
+                _sectionLabel(loc.preferencesSection),
+                _buildPreferencesCard(loc),
                 const SizedBox(height: 20),
-                _sectionLabel('Account'),
-                _buildAccountCard(),
+                _sectionLabel(loc.accountSection),
+                _buildAccountCard(loc),
                 const SizedBox(height: 20),
-                _sectionLabel('About'),
-                _buildAboutCard(),
+                _sectionLabel(loc.aboutSection),
+                _buildAboutCard(loc),
                 const SizedBox(height: 16),
               ],
             ),
@@ -99,7 +102,7 @@ class _StudentSettingsState extends State<StudentSettings> {
   }
 
   Widget _sectionLabel(String text) => Padding(
-    padding: const EdgeInsets.only(left: 4, bottom: 8),
+    padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
     child: Text(
       text,
       style: TextStyle(
@@ -111,12 +114,12 @@ class _StudentSettingsState extends State<StudentSettings> {
     ),
   );
 
-  Widget _buildPreferencesCard() => _card(
+  Widget _buildPreferencesCard(AppLocalizations loc) => _card(
     children: [
       _toggleRow(
         icon: Icons.notifications_outlined,
-        title: 'Push Notifications',
-        subtitle: 'Receive study reminders and updates',
+        title: loc.pushNotificationsTitle,
+        subtitle: loc.pushNotificationsSubtitle,
         value: _notificationsEnabled,
         onChanged: (v) =>
             _toggle('notifications', v, _settings!.setNotificationsEnabled),
@@ -124,8 +127,8 @@ class _StudentSettingsState extends State<StudentSettings> {
       _divider(),
       _toggleRow(
         icon: Icons.volume_up_outlined,
-        title: 'Sound Effects',
-        subtitle: 'Button clicks and interactions',
+        title: loc.soundEffectsTitle,
+        subtitle: loc.soundEffectsSubtitle,
         value: _soundEffectsEnabled,
         onChanged: (v) =>
             _toggle('sound', v, _settings!.setSoundEffectsEnabled),
@@ -133,8 +136,8 @@ class _StudentSettingsState extends State<StudentSettings> {
       _divider(),
       _toggleRow(
         icon: Icons.music_note_outlined,
-        title: 'Background Music',
-        subtitle: 'Play music while studying',
+        title: loc.backgroundMusicTitle,
+        subtitle: loc.backgroundMusicSubtitle,
         value: _backgroundMusicEnabled,
         onChanged: (v) =>
             _toggle('music', v, _settings!.setBackgroundMusicEnabled),
@@ -142,8 +145,8 @@ class _StudentSettingsState extends State<StudentSettings> {
       _divider(),
       _toggleRow(
         icon: Icons.timer_outlined,
-        title: 'Usage Timer Notification',
-        subtitle: 'Show a notification counting down your remaining app time',
+        title: loc.usageTimerNotificationTitle,
+        subtitle: loc.usageTimerNotificationSubtitle,
         value: _timerNotificationEnabled,
         onChanged: (v) => _toggle(
           'timerNotification',
@@ -154,9 +157,8 @@ class _StudentSettingsState extends State<StudentSettings> {
       _divider(),
       _toggleRow(
         icon: Icons.hourglass_bottom_outlined,
-        title: 'Cooldown Timer Notification',
-        subtitle:
-            'Show a notification counting down your remaining cooldown time',
+        title: loc.cooldownTimerNotificationTitle,
+        subtitle: loc.cooldownTimerNotificationSubtitle,
         value: _cooldownNotificationEnabled,
         onChanged: (v) => _toggle(
           'cooldownNotification',
@@ -167,21 +169,24 @@ class _StudentSettingsState extends State<StudentSettings> {
     ],
   );
 
-  Widget _buildAccountCard() => _card(
+  Widget _buildAccountCard(AppLocalizations loc) => _card(
     children: [
-      _chevronRow(
-        icon: Icons.language_outlined,
-        title: 'Language',
-        subtitle: 'English / Arabic',
+      InkWell(
+        onTap: () => showLanguagePickerDialog(context),
+        child: _chevronRow(
+          icon: Icons.language_outlined,
+          title: loc.languageSettingTitle,
+          subtitle: loc.languageSettingSubtitle,
+        ),
       ),
     ],
   );
 
-  Widget _buildAboutCard() => _card(
+  Widget _buildAboutCard(AppLocalizations loc) => _card(
     children: [
       _infoRow(
         icon: Icons.info_outline,
-        title: 'App Version',
+        title: loc.appVersionLabel,
         trailing: _appVersion,
       ),
     ],

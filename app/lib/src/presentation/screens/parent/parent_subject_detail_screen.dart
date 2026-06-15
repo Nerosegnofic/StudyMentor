@@ -12,6 +12,7 @@ import '../../widgets/quiz_history_card.dart';
 import 'all_skills_screen.dart';
 import 'all_quizzes_screen.dart';
 import '../../../data/catalog/subject_metadata_registry.dart';
+import '../../../../l10n/app_localizations.dart';
 
 const int _kPreviewQuizCount = 10;
 
@@ -36,32 +37,33 @@ class ParentSubjectDetailScreen extends StatefulWidget {
 
 class _ParentSubjectDetailScreenState
     extends State<ParentSubjectDetailScreen> {
-  String _activeSortMethod = 'Score: Lowest to Highest';
+  String _activeSortMethod = 'scoreLowestToHighest';
 
   ({String label, Color bgColor, Color textColor}) _masteryTier(int pct) {
+    final loc = AppLocalizations.of(context);
     if (pct >= 80) {
       return (
-        label: 'Advanced',
+        label: loc.masteryTierAdvanced,
         bgColor: const Color(0xFFE3F2FD),
         textColor: const Color(0xFF1565C0)
       );
     }
     if (pct >= 60) {
       return (
-        label: 'Proficient',
+        label: loc.masteryTierProficient,
         bgColor: const Color(0xFFE0F2F1),
         textColor: const Color(0xFF00897B)
       );
     }
     if (pct >= 40) {
       return (
-        label: 'Developing',
+        label: loc.masteryTierDeveloping,
         bgColor: const Color(0xFFFFF3E0),
         textColor: const Color(0xFFE65100)
       );
     }
     return (
-      label: 'Beginner',
+      label: loc.masteryTierBeginner,
       bgColor: const Color(0xFFFFEBEE),
       textColor: const Color(0xFFE53935)
     );
@@ -69,11 +71,11 @@ class _ParentSubjectDetailScreenState
 
   List<QuizAttemptModel> _sortQuizzes(List<QuizAttemptModel> quizzes) {
     final list = List<QuizAttemptModel>.from(quizzes);
-    if (_activeSortMethod == 'Date: Newest to Oldest') {
+    if (_activeSortMethod == 'dateNewestToOldest') {
       list.sort((a, b) => b.attemptedAt.compareTo(a.attemptedAt));
-    } else if (_activeSortMethod == 'Date: Oldest to Newest') {
+    } else if (_activeSortMethod == 'dateOldestToNewest') {
       list.sort((a, b) => a.attemptedAt.compareTo(b.attemptedAt));
-    } else if (_activeSortMethod == 'Score: Highest to Lowest') {
+    } else if (_activeSortMethod == 'scoreHighestToLowest') {
       list.sort((a, b) {
         final aR =
             a.totalQuestions > 0 ? a.correctAnswers / a.totalQuestions : 0.0;
@@ -82,7 +84,7 @@ class _ParentSubjectDetailScreenState
         return bR.compareTo(aR);
       });
     } else {
-      // Score: Lowest to Highest (default)
+      // scoreLowestToHighest (default)
       list.sort((a, b) {
         final aR =
             a.totalQuestions > 0 ? a.correctAnswers / a.totalQuestions : 0.0;
@@ -95,6 +97,7 @@ class _ParentSubjectDetailScreenState
   }
 
   void _showSortModal(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -117,7 +120,7 @@ class _ParentSubjectDetailScreenState
               ),
               const SizedBox(height: 16),
               Text(
-                'Sort Quizzes',
+                loc.sortQuizzesTitle,
                 style: GoogleFonts.cairo(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -125,10 +128,14 @@ class _ParentSubjectDetailScreenState
                 ),
               ),
               const SizedBox(height: 16),
-              _buildSortOptionRow(ctx, 'Date: Newest to Oldest'),
-              _buildSortOptionRow(ctx, 'Date: Oldest to Newest'),
-              _buildSortOptionRow(ctx, 'Score: Highest to Lowest'),
-              _buildSortOptionRow(ctx, 'Score: Lowest to Highest'),
+              _buildSortOptionRow(
+                  ctx, 'dateNewestToOldest', loc.sortDateNewestToOldest),
+              _buildSortOptionRow(
+                  ctx, 'dateOldestToNewest', loc.sortDateOldestToNewest),
+              _buildSortOptionRow(
+                  ctx, 'scoreHighestToLowest', loc.sortScoreHighestToLowest),
+              _buildSortOptionRow(
+                  ctx, 'scoreLowestToHighest', loc.sortScoreLowestToHighest),
               const SizedBox(height: 8),
             ],
           ),
@@ -137,11 +144,12 @@ class _ParentSubjectDetailScreenState
     );
   }
 
-  Widget _buildSortOptionRow(BuildContext context, String optionText) {
-    final bool isSelected = _activeSortMethod == optionText;
+  Widget _buildSortOptionRow(
+      BuildContext context, String optionValue, String optionLabel) {
+    final bool isSelected = _activeSortMethod == optionValue;
     return InkWell(
       onTap: () {
-        setState(() => _activeSortMethod = optionText);
+        setState(() => _activeSortMethod = optionValue);
         Navigator.of(context).pop();
       },
       child: Container(
@@ -155,8 +163,8 @@ class _ParentSubjectDetailScreenState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              optionText,
-              style: GoogleFonts.roboto(
+              optionLabel,
+              style: GoogleFonts.cairo(
                 fontSize: 16,
                 fontWeight:
                     isSelected ? FontWeight.bold : FontWeight.normal,
@@ -260,6 +268,7 @@ class _ParentSubjectDetailScreenState
   }
 
   Widget _buildOverviewStatsCard(SubjectSummaryModel summary) {
+    final loc = AppLocalizations.of(context);
     final hours = summary.totalTimeSpent.inHours;
     final minutes = summary.totalTimeSpent.inMinutes % 60;
     final timeStr = hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m';
@@ -283,14 +292,14 @@ class _ParentSubjectDetailScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatCol('${summary.accuracyPercent}%', 'Accuracy'),
+              _buildStatCol('${summary.accuracyPercent}%', loc.accuracyLabel),
               Container(
                   width: 1, height: 40, color: const Color(0xFFE2E8F0)),
               _buildStatCol(
-                  '${summary.quizzesCompleted}', 'Quizzes Done'),
+                  '${summary.quizzesCompleted}', loc.quizzesDoneLabel),
               Container(
                   width: 1, height: 40, color: const Color(0xFFE2E8F0)),
-              _buildStatCol(timeStr, 'Time Spent'),
+              _buildStatCol(timeStr, loc.timeSpentLabel),
             ],
           ),
           Padding(
@@ -300,7 +309,7 @@ class _ParentSubjectDetailScreenState
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'Overall Mastery Level',
+                  loc.overallMasteryLevelLabel,
                   style: GoogleFonts.cairo(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -312,7 +321,7 @@ class _ParentSubjectDetailScreenState
                   children: [
                     Text(
                       '${summary.masteryPercent}%',
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF2196F3),
@@ -328,7 +337,7 @@ class _ParentSubjectDetailScreenState
                       ),
                       child: Text(
                         tier.label,
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: tier.textColor,
@@ -350,7 +359,7 @@ class _ParentSubjectDetailScreenState
       children: [
         Text(
           value,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1E293B),
@@ -359,7 +368,7 @@ class _ParentSubjectDetailScreenState
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             fontSize: 12,
             color: const Color(0xFF64748B),
           ),
@@ -370,6 +379,7 @@ class _ParentSubjectDetailScreenState
 
   Widget _buildSkillsProgressCard(
       BuildContext context, List<SkillProgressModel> skills) {
+    final loc = AppLocalizations.of(context);
     // Weakest 3 attempted skills; fall back to first 3 if none attempted yet
     final attempted = skills
         .where((s) => s.totalAttempts > 0)
@@ -398,7 +408,7 @@ class _ParentSubjectDetailScreenState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Skills Progress',
+                loc.skillsProgressTitle,
                 style: GoogleFonts.cairo(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -419,8 +429,8 @@ class _ParentSubjectDetailScreenState
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'See All',
-                      style: GoogleFonts.roboto(
+                      loc.seeAllLabel,
+                      style: GoogleFonts.cairo(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF2196F3),
@@ -458,10 +468,10 @@ class _ParentSubjectDetailScreenState
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
         decoration: BoxDecoration(
-          border: Border(
-              left: BorderSide(width: 3, color: borderColor)),
+          border: BorderDirectional(
+              start: BorderSide(width: 3, color: borderColor)),
         ),
-        padding: const EdgeInsets.only(left: 8),
+        padding: const EdgeInsetsDirectional.only(start: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -485,7 +495,7 @@ class _ParentSubjectDetailScreenState
                 const SizedBox(width: 8),
                 Text(
                   '$score%',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: failed
@@ -532,6 +542,7 @@ class _ParentSubjectDetailScreenState
 
   Widget _buildQuizHistorySection(
       BuildContext context, List<QuizAttemptModel> recentQuizzes) {
+    final loc = AppLocalizations.of(context);
     final sortedList = _sortQuizzes(recentQuizzes);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,7 +551,7 @@ class _ParentSubjectDetailScreenState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Quiz History',
+              loc.quizHistoryTitle,
               style: GoogleFonts.cairo(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -563,8 +574,8 @@ class _ParentSubjectDetailScreenState
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'See All',
-                        style: GoogleFonts.roboto(
+                        loc.seeAllLabel,
+                        style: GoogleFonts.cairo(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF2196F3),

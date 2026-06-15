@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/skill_progress_model.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class AllSkillsScreen extends StatefulWidget {
   final List<SkillProgressModel> skills;
@@ -19,45 +20,46 @@ class AllSkillsScreen extends StatefulWidget {
 }
 
 class _AllSkillsScreenState extends State<AllSkillsScreen> {
-  String _sortMethod = 'Mastery: Lowest First';
+  String _sortMethod = 'masteryLowestFirst';
 
   List<SkillProgressModel> get _sortedSkills {
     final list = List<SkillProgressModel>.from(widget.skills);
-    if (_sortMethod == 'Mastery: Highest First') {
+    if (_sortMethod == 'masteryHighestFirst') {
       list.sort((a, b) => b.masteryPercent.compareTo(a.masteryPercent));
-    } else if (_sortMethod == 'A – Z') {
+    } else if (_sortMethod == 'aToZ') {
       list.sort((a, b) => a.skillKey.compareTo(b.skillKey));
     } else {
-      // Mastery: Lowest First (default)
+      // masteryLowestFirst (default)
       list.sort((a, b) => a.masteryPercent.compareTo(b.masteryPercent));
     }
     return list;
   }
 
   ({String label, Color bgColor, Color textColor}) _masteryTier(int pct) {
+    final loc = AppLocalizations.of(context);
     if (pct >= 80) {
       return (
-        label: 'Advanced',
+        label: loc.masteryTierAdvanced,
         bgColor: const Color(0xFFBBDEFB),
         textColor: const Color(0xFF0D47A1)
       );
     }
     if (pct >= 60) {
       return (
-        label: 'Proficient',
+        label: loc.masteryTierProficient,
         bgColor: const Color(0xFFB2DFDB),
         textColor: const Color(0xFF00695C)
       );
     }
     if (pct >= 40) {
       return (
-        label: 'Developing',
+        label: loc.masteryTierDeveloping,
         bgColor: const Color(0xFFFFE0B2),
         textColor: const Color(0xFFBF360C)
       );
     }
     return (
-      label: 'Beginner',
+      label: loc.masteryTierBeginner,
       bgColor: const Color(0xFFFFCDD2),
       textColor: const Color(0xFFC62828)
     );
@@ -71,23 +73,25 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
   }
 
   String _recommendation(SkillProgressModel skill) {
+    final loc = AppLocalizations.of(context);
     if (skill.totalAttempts == 0) {
-      return 'Not started yet — encourage trying this skill';
+      return loc.recommendationNotStarted;
     }
     final pct = skill.masteryPercent;
     if (pct < 30) {
-      return 'Needs urgent attention — short daily practice sessions recommended';
+      return loc.recommendationUrgent;
     }
     if (pct < 50) {
-      return 'Making progress — reviewing past mistakes will help';
+      return loc.recommendationProgress;
     }
     if (pct < 75) {
-      return 'On track — a few more sessions will build mastery';
+      return loc.recommendationOnTrack;
     }
-    return 'Strong skill — occasional review to maintain';
+    return loc.recommendationStrong;
   }
 
   void _showSortModal() {
+    final loc = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -110,7 +114,7 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Sort Skills',
+                loc.sortSkillsTitle,
                 style: GoogleFonts.cairo(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -118,9 +122,9 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildSortOption(ctx, 'Mastery: Lowest First'),
-              _buildSortOption(ctx, 'Mastery: Highest First'),
-              _buildSortOption(ctx, 'A – Z'),
+              _buildSortOption(ctx, 'masteryLowestFirst', loc.sortMasteryLowestFirst),
+              _buildSortOption(ctx, 'masteryHighestFirst', loc.sortMasteryHighestFirst),
+              _buildSortOption(ctx, 'aToZ', loc.sortAZLabel),
               const SizedBox(height: 8),
             ],
           ),
@@ -129,11 +133,11 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
     );
   }
 
-  Widget _buildSortOption(BuildContext ctx, String option) {
-    final bool isSelected = _sortMethod == option;
+  Widget _buildSortOption(BuildContext ctx, String optionValue, String optionLabel) {
+    final bool isSelected = _sortMethod == optionValue;
     return InkWell(
       onTap: () {
-        setState(() => _sortMethod = option);
+        setState(() => _sortMethod = optionValue);
         Navigator.of(ctx).pop();
       },
       child: Container(
@@ -146,8 +150,8 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              option,
-              style: GoogleFonts.roboto(
+              optionLabel,
+              style: GoogleFonts.cairo(
                 fontSize: 16,
                 fontWeight:
                     isSelected ? FontWeight.bold : FontWeight.normal,
@@ -215,16 +219,17 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
     required int developingCount,
     required int beginnerCount,
   }) {
+    final loc = AppLocalizations.of(context);
     final stats = <({int count, String label, Color color})>[
-      (count: widget.skills.length, label: 'Total', color: const Color(0xFF1565C0)),
+      (count: widget.skills.length, label: loc.statTotalLabel, color: const Color(0xFF1565C0)),
       if (advancedCount > 0)
-        (count: advancedCount, label: 'Advanced', color: const Color(0xFF1565C0)),
+        (count: advancedCount, label: loc.masteryTierAdvanced, color: const Color(0xFF1565C0)),
       if (proficientCount > 0)
-        (count: proficientCount, label: 'Proficient', color: const Color(0xFF00897B)),
+        (count: proficientCount, label: loc.masteryTierProficient, color: const Color(0xFF00897B)),
       if (developingCount > 0)
-        (count: developingCount, label: 'Developing', color: const Color(0xFFE65100)),
+        (count: developingCount, label: loc.masteryTierDeveloping, color: const Color(0xFFE65100)),
       if (beginnerCount > 0)
-        (count: beginnerCount, label: 'Beginner', color: const Color(0xFFE53935)),
+        (count: beginnerCount, label: loc.masteryTierBeginner, color: const Color(0xFFE53935)),
     ];
 
     return Container(
@@ -256,7 +261,7 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
                     children: [
                       Text(
                         '${stats[i].count}',
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: stats[i].color,
@@ -265,7 +270,7 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
                       const SizedBox(height: 2),
                       Text(
                         stats[i].label,
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           fontSize: 11,
                           color: const Color(0xFF94A3B8),
                         ),
@@ -299,7 +304,7 @@ class _AllSkillsScreenState extends State<AllSkillsScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           Text(
-            'All Skills',
+            AppLocalizations.of(context).allSkillsTitle,
             style: GoogleFonts.cairo(
               color: Colors.white,
               fontSize: 20,
@@ -331,19 +336,20 @@ class _SkillDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final accuracy = skill.totalAttempts > 0
         ? ((skill.correctAnswers / skill.totalAttempts) * 100).round()
         : 0;
     final lastPracticed = skill.lastPracticedAt != null
         ? '${skill.lastPracticedAt!.month}/${skill.lastPracticedAt!.day}/${skill.lastPracticedAt!.year}'
-        : 'Never practiced';
+        : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border(left: BorderSide(width: 4, color: borderColor)),
+        border: BorderDirectional(start: BorderSide(width: 4, color: borderColor)),
         boxShadow: const [
           BoxShadow(
             color: Color.fromRGBO(0, 0, 0, 0.05),
@@ -380,7 +386,7 @@ class _SkillDetailCard extends StatelessWidget {
                 ),
                 child: Text(
                   masteryTier.label,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: masteryTier.textColor,
@@ -419,8 +425,8 @@ class _SkillDetailCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${skill.correctAnswers} correct / ${skill.totalAttempts} attempts',
-                style: GoogleFonts.roboto(
+                loc.correctOfAttemptsLabel(skill.correctAnswers, skill.totalAttempts),
+                style: GoogleFonts.cairo(
                     fontSize: 12, color: const Color(0xFF64748B)),
               ),
               Container(
@@ -431,7 +437,7 @@ class _SkillDetailCard extends StatelessWidget {
                 ),
                 child: Text(
                   '$accuracy%',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: masteryTier.textColor,
@@ -442,8 +448,10 @@ class _SkillDetailCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Last: $lastPracticed',
-            style: GoogleFonts.roboto(
+            lastPracticed != null
+                ? loc.lastPracticedLabel(lastPracticed)
+                : loc.neverPracticedLabel,
+            style: GoogleFonts.cairo(
                 fontSize: 11, color: const Color(0xFF94A3B8)),
           ),
           const SizedBox(height: 10),
@@ -459,7 +467,7 @@ class _SkillDetailCard extends StatelessWidget {
             ),
             child: Text(
               recommendation,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
                 color: const Color(0xFF475569),

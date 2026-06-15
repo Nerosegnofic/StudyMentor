@@ -8,6 +8,7 @@ import '../../../bloc/document/document_upload_event.dart';
 import '../../../bloc/document/document_upload_state.dart';
 import '../../../bloc/subject/subject_bloc.dart';
 import '../../../bloc/subject/subject_event.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Document upload screen that lets the student browse for a PDF and upload it
 /// to the AI Engine for curriculum ingestion.
@@ -48,9 +49,10 @@ class _StudentDocumentUploadScreenState
   }
 
   void _upload(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     if (_selectedFilePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a PDF file first.')),
+        SnackBar(content: Text(loc.selectPdfFirstMessage)),
       );
       return;
     }
@@ -58,14 +60,14 @@ class _StudentDocumentUploadScreenState
     final name = _subjectNameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a Subject Name.')),
+        SnackBar(content: Text(loc.enterSubjectNameMessage)),
       );
       return;
     }
 
     if (widget.existingSubjectKeys.contains(name.toLowerCase())) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This subject already exists.')),
+        SnackBar(content: Text(loc.subjectAlreadyExistsMessage)),
       );
       return;
     }
@@ -88,6 +90,7 @@ class _StudentDocumentUploadScreenState
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocConsumer<DocumentUploadBloc, DocumentUploadState>(
       listener: (context, state) {
         if (state is DocumentUploadError) {
@@ -108,15 +111,15 @@ class _StudentDocumentUploadScreenState
       },
       builder: (context, state) {
         if (state is DocumentUploadLoading) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(color: Color(0xFF4A6CF7)),
-                SizedBox(height: 20),
+                const CircularProgressIndicator(color: Color(0xFF4A6CF7)),
+                const SizedBox(height: 20),
                 Text(
-                  'Uploading & processing…',
-                  style: TextStyle(color: Color(0xFF8B93A7), fontSize: 15),
+                  loc.uploadingProcessingMessage,
+                  style: const TextStyle(color: Color(0xFF8B93A7), fontSize: 15),
                 ),
               ],
             ),
@@ -149,7 +152,7 @@ class _StudentDocumentUploadScreenState
               ),
               const SizedBox(height: 20),
               Text(
-                'Upload Curriculum',
+                loc.uploadCurriculumTitle,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.cairo(
                   fontSize: 24,
@@ -159,9 +162,9 @@ class _StudentDocumentUploadScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                'Upload a PDF textbook to build an adaptive quiz from its content.',
+                loc.uploadCurriculumDescription,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   fontSize: 14,
                   color: const Color(0xFF64748B),
                   height: 1.5,
@@ -171,8 +174,8 @@ class _StudentDocumentUploadScreenState
 
               // Subject Name Input
               Text(
-                'Subject Name',
-                style: GoogleFonts.roboto(
+                loc.subjectNameLabel,
+                style: GoogleFonts.cairo(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF1E293B),
@@ -181,9 +184,9 @@ class _StudentDocumentUploadScreenState
               const SizedBox(height: 8),
               TextField(
                 controller: _subjectNameController,
-                style: GoogleFonts.roboto(fontSize: 14),
+                style: GoogleFonts.cairo(fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: 'e.g. Mathematics, Science...',
+                  hintText: loc.subjectNameHint,
                   prefixIcon: const Icon(Icons.subtitles_outlined, color: Color(0xFF2196F3)),
                   filled: true,
                   fillColor: Colors.white,
@@ -240,7 +243,7 @@ class _StudentDocumentUploadScreenState
                         Text(
                           _selectedFileName!,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.cairo(
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF1E293B),
                             fontSize: 14,
@@ -251,8 +254,8 @@ class _StudentDocumentUploadScreenState
                           onPressed: _clearSelection,
                           icon: const Icon(Icons.close, size: 16),
                           label: Text(
-                            'Remove File',
-                            style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
+                            loc.removeFileButton,
+                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
                           ),
                           style: TextButton.styleFrom(
                             foregroundColor: const Color(0xFFEA4335),
@@ -260,8 +263,8 @@ class _StudentDocumentUploadScreenState
                         ),
                       ] else ...[
                         Text(
-                          'Tap to browse PDF',
-                          style: GoogleFonts.roboto(
+                          loc.tapToBrowsePdfMessage,
+                          style: GoogleFonts.cairo(
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF2196F3),
                             fontSize: 15,
@@ -269,8 +272,8 @@ class _StudentDocumentUploadScreenState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Only .pdf files are supported',
-                          style: GoogleFonts.roboto(
+                          loc.onlyPdfSupportedMessage,
+                          style: GoogleFonts.cairo(
                             fontSize: 12,
                             color: const Color(0xFF64748B),
                           ),
@@ -289,7 +292,7 @@ class _StudentDocumentUploadScreenState
                     : null,
                 icon: const Icon(Icons.cloud_upload_rounded, size: 20),
                 label: Text(
-                  'Upload & Ingest',
+                  loc.uploadAndIngestButton,
                   style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -317,7 +320,7 @@ class _StudentDocumentUploadScreenState
                   ),
                   child: Text(
                     state.message,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.cairo(
                       color: const Color(0xFFB71C1C),
                       fontSize: 13,
                     ),
@@ -343,6 +346,7 @@ class _SuccessView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -356,7 +360,7 @@ class _SuccessView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Curriculum Added Successfully!',
+              loc.curriculumAddedSuccessTitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.cairo(
                 fontSize: 22,
@@ -366,9 +370,9 @@ class _SuccessView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              "We've successfully added '$subjectName' to your dashboard. The AI is now processing your textbook in the background to generate quiz questions.",
+              loc.curriculumAddedSuccessMessage(subjectName),
               textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 fontSize: 14,
                 color: const Color(0xFF64748B),
                 height: 1.5,
@@ -387,7 +391,7 @@ class _SuccessView extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'Upload Another',
+                loc.uploadAnotherButton,
                 style: GoogleFonts.cairo(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,

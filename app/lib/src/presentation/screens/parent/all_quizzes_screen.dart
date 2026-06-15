@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/quiz_attempt_model.dart';
 import '../../widgets/quiz_history_card.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class AllQuizzesScreen extends StatefulWidget {
   final List<QuizAttemptModel> quizzes;
@@ -13,15 +14,15 @@ class AllQuizzesScreen extends StatefulWidget {
 }
 
 class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
-  String _sortMethod = 'Score: Lowest to Highest';
+  String _sortMethod = 'scoreLowestToHighest';
 
   List<QuizAttemptModel> get _sortedQuizzes {
     final list = List<QuizAttemptModel>.from(widget.quizzes);
-    if (_sortMethod == 'Date: Newest to Oldest') {
+    if (_sortMethod == 'dateNewestToOldest') {
       list.sort((a, b) => b.attemptedAt.compareTo(a.attemptedAt));
-    } else if (_sortMethod == 'Date: Oldest to Newest') {
+    } else if (_sortMethod == 'dateOldestToNewest') {
       list.sort((a, b) => a.attemptedAt.compareTo(b.attemptedAt));
-    } else if (_sortMethod == 'Score: Highest to Lowest') {
+    } else if (_sortMethod == 'scoreHighestToLowest') {
       list.sort((a, b) {
         final aR =
             a.totalQuestions > 0 ? a.correctAnswers / a.totalQuestions : 0.0;
@@ -30,7 +31,7 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
         return bR.compareTo(aR);
       });
     } else {
-      // Score: Lowest to Highest (default)
+      // scoreLowestToHighest (default)
       list.sort((a, b) {
         final aR =
             a.totalQuestions > 0 ? a.correctAnswers / a.totalQuestions : 0.0;
@@ -43,6 +44,7 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
   }
 
   void _showSortModal() {
+    final loc = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -65,7 +67,7 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Sort Quizzes',
+                loc.sortQuizzesTitle,
                 style: GoogleFonts.cairo(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -73,10 +75,10 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildSortOption(ctx, 'Date: Newest to Oldest'),
-              _buildSortOption(ctx, 'Date: Oldest to Newest'),
-              _buildSortOption(ctx, 'Score: Highest to Lowest'),
-              _buildSortOption(ctx, 'Score: Lowest to Highest'),
+              _buildSortOption(ctx, 'dateNewestToOldest', loc.sortDateNewestToOldest),
+              _buildSortOption(ctx, 'dateOldestToNewest', loc.sortDateOldestToNewest),
+              _buildSortOption(ctx, 'scoreHighestToLowest', loc.sortScoreHighestToLowest),
+              _buildSortOption(ctx, 'scoreLowestToHighest', loc.sortScoreLowestToHighest),
               const SizedBox(height: 8),
             ],
           ),
@@ -85,11 +87,11 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
     );
   }
 
-  Widget _buildSortOption(BuildContext ctx, String option) {
-    final bool isSelected = _sortMethod == option;
+  Widget _buildSortOption(BuildContext ctx, String optionValue, String optionLabel) {
+    final bool isSelected = _sortMethod == optionValue;
     return InkWell(
       onTap: () {
-        setState(() => _sortMethod = option);
+        setState(() => _sortMethod = optionValue);
         Navigator.of(ctx).pop();
       },
       child: Container(
@@ -102,8 +104,8 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              option,
-              style: GoogleFonts.roboto(
+              optionLabel,
+              style: GoogleFonts.cairo(
                 fontSize: 16,
                 fontWeight:
                     isSelected ? FontWeight.bold : FontWeight.normal,
@@ -120,6 +122,7 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final quizzes = _sortedQuizzes;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -130,8 +133,8 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
             child: quizzes.isEmpty
                 ? Center(
                     child: Text(
-                      'No quizzes yet',
-                      style: GoogleFonts.roboto(
+                      loc.noQuizzesYetMessage,
+                      style: GoogleFonts.cairo(
                           color: const Color(0xFF64748B), fontSize: 16),
                     ),
                   )
@@ -185,7 +188,7 @@ class _AllQuizzesScreenState extends State<AllQuizzesScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           Text(
-            'All Quizzes',
+            AppLocalizations.of(context).allQuizzesTitle,
             style: GoogleFonts.cairo(
               color: Colors.white,
               fontSize: 20,

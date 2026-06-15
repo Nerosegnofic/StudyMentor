@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/report_models.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ChildCard extends StatefulWidget {
   final StudentModel student;
@@ -97,12 +98,13 @@ class _ChildCardState extends State<ChildCard> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final verified = widget.student.isEmailVerified;
     final initial = widget.student.fullName.isNotEmpty
         ? widget.student.fullName[0].toUpperCase()
         : '?';
 
-    if (!verified) return _buildUnverifiedCard(initial);
+    if (!verified) return _buildUnverifiedCard(loc, initial);
 
     final quizzesText = _statsLoading ? '…' : _statsError ? '—' : '$_weeklyQuizzes';
     final studyText = _statsLoading ? '…' : _statsError ? '—' : _fmtMinutes(_weeklyStudyMinutes);
@@ -165,19 +167,19 @@ class _ChildCardState extends State<ChildCard> {
                       icon: Icons.bolt_rounded,
                       color: const Color(0xFFF59E0B),
                       value: '$_xp',
-                      label: 'XP'),
+                      label: loc.xpLabel),
                   _divider(),
                   _GamStat(
                       icon: Icons.local_fire_department_rounded,
                       color: const Color(0xFFEF4444),
                       value: '$_streakDays',
-                      label: 'Streak'),
+                      label: loc.streakLabel),
                   _divider(),
                   _GamStat(
                       icon: Icons.monetization_on_rounded,
                       color: const Color(0xFFF59E0B),
                       value: '$_coins',
-                      label: 'Coins'),
+                      label: loc.coinsLabel),
                 ],
               ),
             ),
@@ -192,8 +194,8 @@ class _ChildCardState extends State<ChildCard> {
                     icon: Icons.quiz_rounded,
                     color: const Color(0xFF2196F3),
                     value: quizzesText,
-                    label: 'Quizzes',
-                    sublabel: 'This week',
+                    label: loc.metricQuizzesLabel,
+                    sublabel: loc.thisWeekSublabel,
                     isLoading: _statsLoading,
                   ),
                 ),
@@ -203,8 +205,8 @@ class _ChildCardState extends State<ChildCard> {
                     icon: Icons.schedule_rounded,
                     color: const Color(0xFF8B5CF6),
                     value: studyText,
-                    label: 'Study Time',
-                    sublabel: 'This week',
+                    label: loc.studyTimeLabel,
+                    sublabel: loc.thisWeekSublabel,
                     isLoading: _statsLoading,
                   ),
                 ),
@@ -233,7 +235,7 @@ class _ChildCardState extends State<ChildCard> {
 
   // ── Unverified card ────────────────────────────────────────────────────────
 
-  Widget _buildUnverifiedCard(String initial) {
+  Widget _buildUnverifiedCard(AppLocalizations loc, String initial) {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 15),
       decoration: BoxDecoration(
@@ -279,7 +281,7 @@ class _ChildCardState extends State<ChildCard> {
                     const SizedBox(height: 2),
                     Text(
                       widget.student.email,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                           color: const Color(0xFF4A5568), fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -300,8 +302,8 @@ class _ChildCardState extends State<ChildCard> {
                         size: 12, color: Color(0xFFFBBF24)),
                     const SizedBox(width: 4),
                     Text(
-                      'UNVERIFIED',
-                      style: GoogleFonts.roboto(
+                      loc.unverifiedLabel,
+                      style: GoogleFonts.cairo(
                           color: const Color(0xFFFBBF24),
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
@@ -323,8 +325,8 @@ class _ChildCardState extends State<ChildCard> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Waiting for the student to verify their email and log in for the first time.',
-                  style: GoogleFonts.roboto(
+                  loc.waitingForVerificationMessage,
+                  style: GoogleFonts.cairo(
                       color: const Color(0xFF64748B), fontSize: 13, height: 1.4),
                 ),
               ),
@@ -345,8 +347,8 @@ class _ChildCardState extends State<ChildCard> {
                     size: 16, color: Color(0xFFFBBF24)),
                 const SizedBox(width: 8),
                 Text(
-                  '+3 coins will be awarded on first login',
-                  style: GoogleFonts.roboto(
+                  loc.firstLoginCoinsRewardMessage,
+                  style: GoogleFonts.cairo(
                       color: const Color(0xFFBBF7D0),
                       fontSize: 12,
                       fontWeight: FontWeight.w600),
@@ -366,8 +368,8 @@ class _ChildCardState extends State<ChildCard> {
                   color: Color(0xFFFC8181),
                 ),
                 label: Text(
-                  'Remove Student',
-                  style: GoogleFonts.roboto(
+                  loc.removeStudentTitle,
+                  style: GoogleFonts.cairo(
                     color: const Color(0xFFFC8181),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -412,14 +414,14 @@ class _GamStat extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           value,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
               color: const Color(0xFF1E293B),
               fontWeight: FontWeight.bold,
               fontSize: 15),
         ),
         Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
               color: const Color(0xFF94A3B8), fontSize: 10),
         ),
       ],
@@ -478,21 +480,21 @@ class _StatTile extends StatelessWidget {
                 else
                   Text(
                     value,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.cairo(
                         color: const Color(0xFF1E293B),
                         fontWeight: FontWeight.bold,
                         fontSize: 15),
                   ),
                 Text(
                   label,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                       color: const Color(0xFF475569),
                       fontSize: 11,
                       fontWeight: FontWeight.w600),
                 ),
                 Text(
                   sublabel,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                       color: const Color(0xFF94A3B8), fontSize: 10),
                 ),
               ],
@@ -514,6 +516,7 @@ class _AccuracyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final fraction =
         isLoading || isError ? 0.0 : (percent / 100.0).clamp(0.0, 1.0);
     final Color barColor = percent >= 70
@@ -542,8 +545,8 @@ class _AccuracyRow extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Weekly Accuracy',
-                style: GoogleFonts.roboto(
+                loc.weeklyAccuracyLabel,
+                style: GoogleFonts.cairo(
                     color: const Color(0xFF475569),
                     fontSize: 12,
                     fontWeight: FontWeight.w500),
@@ -551,7 +554,7 @@ class _AccuracyRow extends StatelessWidget {
               const Spacer(),
               Text(
                 isLoading ? '…' : isError ? '—' : '$percent%',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                     color: isLoading || isError
                         ? const Color(0xFF94A3B8)
                         : barColor,
