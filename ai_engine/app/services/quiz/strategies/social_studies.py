@@ -1,14 +1,8 @@
-from typing import List
-from .base import SubjectStrategy
+from .profile import SubjectProfile
 
-class SocialStudiesStrategy(SubjectStrategy):
-
-    @property
-    def subject_key(self) -> str:
-        return "social_studies"
-
-    def difficulty_scale(self) -> str:
-        return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFILE = SubjectProfile(
+    subject_key="social_studies",
+    difficulty_scale="""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIFFICULTY SCALE (CRITICAL — follow strictly)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Each difficulty level has specific cognitive requirements. Questions MUST match these criteria EXACTLY:
@@ -36,36 +30,27 @@ Level 4 — Hard (تحليل / Analysis):
 
 Level 5 — Very Hard (تقييم وإبداع / Evaluation & Synthesis):
   • Evaluate historical decisions, synthesize multiple factors, or justify a position.
-  • ✅ CORRECT: "أي العوامل التالية كان الأكثر تأثيرًا في نهضة مصر الحديثة؟ وضّح إجابتك.\""""
-
-    def difficulty_violations(self) -> str:
-        return """⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
+  • ✅ CORRECT: "أي العوامل التالية كان الأكثر تأثيرًا في نهضة مصر الحديثة؟ وضّح إجابتك.\"""",
+    difficulty_violations="""⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
   • Difficulty 1 with cause-effect reasoning → WRONG (Level 1 is pure recall of a fact/date/name)
   • Difficulty 1 with "ما أثر" or "لماذا" → WRONG (these require reasoning → Level 2+)
   • Difficulty 1 or 2 with comparison of multiple factors → WRONG (comparison is Level 3+)
-  • Difficulty 5 with a simple fact recall → WRONG (Level 5 requires evaluation/synthesis)"""
-
-    def self_check_rules(self) -> str:
-        return """MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
+  • Difficulty 5 with a simple fact recall → WRONG (Level 5 requires evaluation/synthesis)""",
+    self_check_rules="""MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
   1. Does the question require more than recalling a single fact/date/place? Level 1 = ONLY recall.
   2. Does the question ask "لماذا" or "ما أثر"? These require reasoning → Level 2+ minimum.
   3. Does the question require comparing multiple factors? Comparison starts at Level 3.
-  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty."""
-
-    def formatting_rules(self) -> str:
-        return """Social Studies Formatting Rules:
+  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty.""",
+    formatting_rules="""Social Studies Formatting Rules:
 - Write all dates using Western numerals (e.g., 1869 not ١٨٦٩) for clarity.
 - Use proper Arabic punctuation.
-- When mentioning historical figures, use their full commonly-known name."""
-
-    def pedagogical_tone(self) -> str:
-        return """Pedagogical Tone & Style:
+- When mentioning historical figures, use their full commonly-known name.""",
+    pedagogical_tone="""Pedagogical Tone & Style:
 - Write like a professional Egyptian social studies teacher using Modern Standard Arabic.
 - Adjust vocabulary and depth to the student's grade level.
 - Focus on Egyptian geography, history, and civic concepts as appropriate for the curriculum.
-- The tone must be clear, encouraging, and exactly like a school exam paper."""
-
-    _FORMAT_POOLS = {
+- The tone must be clear, encouraging, and exactly like a school exam paper.""",
+    format_pools={
         1: [
             "recall a historical date or event (متى / في أي عام...)",
             "identify a place or location (ما عاصمة / أين تقع...)",
@@ -96,7 +81,5 @@ Level 5 — Very Hard (تقييم وإبداع / Evaluation & Synthesis):
             "compare and evaluate two historical interpretations",
             "propose a solution to a civic/geographic problem",
         ],
-    }
-
-    def get_format_pool(self, difficulty: int) -> List[str]:
-        return self._FORMAT_POOLS.get(difficulty, self._FORMAT_POOLS[3])
+    },
+)

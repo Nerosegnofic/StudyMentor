@@ -1,14 +1,8 @@
-from typing import List
-from .base import SubjectStrategy
+from .profile import SubjectProfile
 
-class MathStrategy(SubjectStrategy):
-
-    @property
-    def subject_key(self) -> str:
-        return "math"
-
-    def difficulty_scale(self) -> str:
-        return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFILE = SubjectProfile(
+    subject_key="math",
+    difficulty_scale="""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIFFICULTY SCALE (CRITICAL — follow strictly)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Each difficulty level has specific cognitive requirements. Questions MUST match these criteria EXACTLY:
@@ -46,26 +40,20 @@ Level 4 — Hard (تحليل / Analysis):
 Level 5 — Very Hard (تقييم وإبداع / Evaluation & Synthesis):
   • Complex word problems combining multiple concepts from the lesson.
   • May require comparing strategies, detecting errors, or constructing a solution plan.
-  • ✅ CORRECT example: "أيهما أكبر: مساحة مربع طول ضلعه 6 سم أم مساحة مستطيل أبعاده 4 سم × 8 سم؟ وضّح إجابتك.\""""
-
-    def difficulty_violations(self) -> str:
-        return """⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
+  • ✅ CORRECT example: "أيهما أكبر: مساحة مربع طول ضلعه 6 سم أم مساحة مستطيل أبعاده 4 سم × 8 سم؟ وضّح إجابتك.\"""",
+    difficulty_violations="""⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
   • Difficulty 1 with ANY calculation → WRONG (Level 1 is recall only, no math)
   • Difficulty 1 with a word problem or scenario → WRONG (Level 1 is direct fact recall)
   • Difficulty 1 or 2 with multi-step reasoning → WRONG (multi-step starts at Level 3)
   • Difficulty 1 or 2 with error detection → WRONG (error detection is Level 4+)
-  • Difficulty 5 with a simple single-step question → WRONG (Level 5 requires synthesis)"""
-
-    def self_check_rules(self) -> str:
-        return """MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
+  • Difficulty 5 with a simple single-step question → WRONG (Level 5 requires synthesis)""",
+    self_check_rules="""MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
   1. Count the number of cognitive steps required to solve it.
      - Level 1 = exactly 0 steps (just recall a fact). Level 2 = exactly 1 step.
   2. Does the question require any calculation? Level 1 = ABSOLUTELY NO calculation.
   3. Does the question have a story/scenario setup? Level 1 and 2 = NO story/scenario.
-  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty."""
-
-    def formatting_rules(self) -> str:
-        return """Numeric Formatting:
+  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty.""",
+    formatting_rules="""Numeric Formatting:
 - Remove unnecessary trailing zeros from decimal numbers (write "3.7" NOT "3.70").
 - Be consistent: if one option says "٣.٧", all numeric options in that question must use the same numeral system (Arabic-Indic or Western).
 
@@ -75,17 +63,14 @@ Math Formatting Rules (CRITICAL):
 - Use ' × ' for multiplication (NOT *, NOT \\times).
 - Use ' ÷ ' for division (NOT /, NOT \\div).
 - Example of WRONG: "ما ناتج $5 \\times 10$؟"
-- Example of RIGHT: "ما ناتج ضرب 5 × 10؟\""""
-
-    def pedagogical_tone(self) -> str:
-        return """Pedagogical Tone & Style:
+- Example of RIGHT: "ما ناتج ضرب 5 × 10؟\"""",
+    pedagogical_tone="""Pedagogical Tone & Style:
 - Write like a professional Egyptian teacher using **Modern Standard Arabic (اللغة العربية الفصحى)**.
 - Adjust vocabulary and sentence complexity to the student's grade level.
 - Use different question formats. Sometimes use a story (e.g., "اشترى أحمد..."), sometimes a direct calculation.
 - Use Egyptian names (أحمد, فاطمة, يوسف, مريم, نور, عمر) and Egyptian contexts (المدرسة, السوق, الحديقة, المكتبة, الملعب) في word problems (Difficulty 3+ only).
-- The tone must be clear, encouraging, and exactly like a school exam paper."""
-
-    _FORMAT_POOLS = {
+- The tone must be clear, encouraging, and exactly like a school exam paper.""",
+    format_pools={
         1: [
             "direct fact recall (e.g., 'ما هو...؟', 'ما اسم...؟')",
             "identify the correct definition from options",
@@ -116,7 +101,5 @@ Math Formatting Rules (CRITICAL):
             "error detection with detailed justification",
             "true/false with justification converted to MCQ",
         ],
-    }
-
-    def get_format_pool(self, difficulty: int) -> List[str]:
-        return self._FORMAT_POOLS.get(difficulty, self._FORMAT_POOLS[3])
+    },
+)

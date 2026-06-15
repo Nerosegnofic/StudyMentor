@@ -12,7 +12,7 @@ Usage:
 """
 
 from langchain_core.prompts import ChatPromptTemplate
-from app.services.quiz.strategies import SubjectStrategy
+from app.services.quiz.strategies import SubjectProfile
 
 
 # ─── Base Template ────────────────────────────────────────────────────
@@ -73,33 +73,33 @@ Guidelines:
 {{variance_block}}"""
 
 
-def build_quiz_prompt(strategy: SubjectStrategy) -> ChatPromptTemplate:
+def build_quiz_prompt(profile: SubjectProfile) -> ChatPromptTemplate:
     """
     Assemble the quiz generation prompt from the base template
-    plus strategy-provided slot content.
+    plus profile-provided slot content.
 
-    The strategy fills subject-specific slots (difficulty scale,
+    The profile fills subject-specific slots (difficulty scale,
     violations, self-check, formatting, tone). Universal rules
     (answer/options rules, guidelines) are in the base template.
 
     Args:
-        strategy: A SubjectStrategy instance providing slot content.
+        profile: A SubjectProfile providing slot content.
 
     Returns:
         A ChatPromptTemplate ready for LangChain invocation.
     """
-    # Escape any literal braces in strategy-provided content so they
-    # survive the .format() call (strategy content should not contain
+    # Escape any literal braces in profile-provided content so they
+    # survive the .format() call (profile content should not contain
     # LangChain-style {variables}, but just in case).
     def _safe(text: str) -> str:
         return text.replace("{", "{{").replace("}", "}}")
 
     system_text = _BASE_SYSTEM_TEMPLATE.format(
-        difficulty_scale=_safe(strategy.difficulty_scale()),
-        difficulty_violations=_safe(strategy.difficulty_violations()),
-        self_check_rules=_safe(strategy.self_check_rules()),
-        formatting_rules=_safe(strategy.formatting_rules()),
-        pedagogical_tone=_safe(strategy.pedagogical_tone()),
+        difficulty_scale=_safe(profile.difficulty_scale),
+        difficulty_violations=_safe(profile.difficulty_violations),
+        self_check_rules=_safe(profile.self_check_rules),
+        formatting_rules=_safe(profile.formatting_rules),
+        pedagogical_tone=_safe(profile.pedagogical_tone),
     )
 
     return ChatPromptTemplate.from_messages([
