@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// A full-screen modal or dialog to show when a streak milestone is hit.
-class StreakMilestoneModal extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Design-system tokens (mirrored from student_quiz / shop screens)
+// ---------------------------------------------------------------------------
+const _kGreen = Color(0xFF4CAF50);
+const _kInk = Color(0xFF1A1F3C);
+const _kMuted = Color(0xFF8B93A7);
+const _kAmberLight = Color(0xFFFFF8E1);
+const _kAmberDark = Color(0xFFF57F17);
+const _kAmberBorder = Color(0xFFFFE082);
+
+/// A celebratory dialog shown when a streak milestone is hit.
+class StreakMilestoneModal extends StatefulWidget {
   final int milestoneDays;
   final int coinReward;
   final int currentStreak;
@@ -23,6 +33,7 @@ class StreakMilestoneModal extends StatelessWidget {
     return showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.60),
       builder: (context) => StreakMilestoneModal(
         milestoneDays: milestoneDays,
         coinReward: coinReward,
@@ -31,18 +42,44 @@ class StreakMilestoneModal extends StatelessWidget {
     );
   }
 
+  @override
+  State<StreakMilestoneModal> createState() => _StreakMilestoneModalState();
+}
+
+class _StreakMilestoneModalState extends State<StreakMilestoneModal>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _scale = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
   String _getMilestoneName(int days) {
     switch (days) {
       case 3:
-        return "On a Roll!";
+        return 'On a Roll!';
       case 7:
-        return "Week Warrior!";
+        return 'Week Warrior!';
       case 14:
-        return "Fortnight Focus!";
+        return 'Fortnight Focus!';
       case 30:
-        return "Monthly Master!";
+        return 'Monthly Master!';
       default:
-        return "Streak Milestone!";
+        return 'Streak Milestone!';
     }
   }
 
@@ -53,14 +90,14 @@ class StreakMilestoneModal extends StatelessWidget {
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 20,
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 24,
               offset: const Offset(0, 10),
             ),
           ],
@@ -68,86 +105,90 @@ class StreakMilestoneModal extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Flame Icon
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E0),
-                shape: BoxShape.circle,
+            // ── Animated flame icon ──────────────────────────────────
+            ScaleTransition(
+              scale: _scale,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: _kAmberLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Text('🔥', style: TextStyle(fontSize: 56)),
               ),
-              child: const Text('🔥', style: TextStyle(fontSize: 64)),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Milestone Name
+            // ── Milestone name ───────────────────────────────────────
             Text(
-              _getMilestoneName(milestoneDays),
-              style: GoogleFonts.outfit(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1F2937),
+              _getMilestoneName(widget.milestoneDays),
+              style: GoogleFonts.cairo(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: _kInk,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            // Description
+            // ── Description ──────────────────────────────────────────
             Text(
-              'You hit a $milestoneDays-day learning streak!\nKeep it up!',
+              'You hit a ${widget.milestoneDays}-day learning streak!\nKeep it up!',
               style: GoogleFonts.roboto(
-                fontSize: 16,
-                color: const Color(0xFF6B7280),
+                fontSize: 15,
+                color: _kMuted,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Reward
+            // ── Coin reward pill ─────────────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFDE68A)),
+                color: _kAmberLight,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _kAmberBorder),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('🪙', style: TextStyle(fontSize: 24)),
-                  const SizedBox(width: 12),
+                  const Text('🪙', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 10),
                   Text(
-                    '+$coinReward Coins',
-                    style: GoogleFonts.outfit(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFD97706),
+                    '+${widget.coinReward} Coins',
+                    style: GoogleFonts.roboto(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: _kAmberDark,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
-            // Dismiss Button
+            // ── Dismiss button ───────────────────────────────────────
             SizedBox(
               width: double.infinity,
-              height: 54,
+              height: 52,
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F46E5),
+                  backgroundColor: _kGreen,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  elevation: 0,
                 ),
                 child: Text(
                   'Awesome!',
                   style: GoogleFonts.roboto(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
