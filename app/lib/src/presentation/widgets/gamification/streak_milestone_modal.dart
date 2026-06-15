@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// A full-screen modal or dialog to show when a streak milestone is hit.
 class StreakMilestoneModal extends StatelessWidget {
@@ -31,23 +32,24 @@ class StreakMilestoneModal extends StatelessWidget {
     );
   }
 
-  String _getMilestoneName(int days) {
+  String _getMilestoneName(AppLocalizations loc, int days) {
     switch (days) {
       case 3:
-        return "On a Roll!";
+        return loc.streakMilestoneOnARoll;
       case 7:
-        return "Week Warrior!";
+        return loc.streakMilestoneWeekWarrior;
       case 14:
-        return "Fortnight Focus!";
+        return loc.streakMilestoneFortnightFocus;
       case 30:
-        return "Monthly Master!";
+        return loc.streakMilestoneMonthlyMaster;
       default:
-        return "Streak Milestone!";
+        return loc.streakMilestoneGeneric;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 0,
@@ -81,8 +83,8 @@ class StreakMilestoneModal extends StatelessWidget {
 
             // Milestone Name
             Text(
-              _getMilestoneName(milestoneDays),
-              style: GoogleFonts.outfit(
+              _getMilestoneName(loc, milestoneDays),
+              style: GoogleFonts.cairo(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1F2937),
@@ -93,8 +95,8 @@ class StreakMilestoneModal extends StatelessWidget {
 
             // Description
             Text(
-              'You hit a $milestoneDays-day learning streak!\nKeep it up!',
-              style: GoogleFonts.roboto(
+              loc.streakMilestoneDescriptionMessage(milestoneDays),
+              style: GoogleFonts.cairo(
                 fontSize: 16,
                 color: const Color(0xFF6B7280),
                 height: 1.5,
@@ -117,8 +119,8 @@ class StreakMilestoneModal extends StatelessWidget {
                   const Text('🪙', style: TextStyle(fontSize: 24)),
                   const SizedBox(width: 12),
                   Text(
-                    '+$coinReward Coins',
-                    style: GoogleFonts.outfit(
+                    loc.coinsRewardLabel(coinReward),
+                    style: GoogleFonts.cairo(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFFD97706),
@@ -143,8 +145,8 @@ class StreakMilestoneModal extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: Text(
-                  'Awesome!',
-                  style: GoogleFonts.roboto(
+                  loc.awesomeButton,
+                  style: GoogleFonts.cairo(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,

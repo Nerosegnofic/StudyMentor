@@ -10,6 +10,7 @@ import '../../../bloc/gamification/gamification_event.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // QuizOverlayPage
@@ -89,14 +90,15 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Study Quiz',
-          style: TextStyle(
+        title: Text(
+          loc.studyQuizTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.w800,
             color: Color(0xFF1A1F3C),
             fontSize: 18,
@@ -164,8 +166,13 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
                 final delta = pre != null ? newMastery - pre : null;
 
                 final message = (delta != null && delta > 0.05)
-                    ? '$_quizzedSubjectName: ${pre!.toStringAsFixed(0)}% → ${newMastery.toStringAsFixed(0)}% (+${delta.toStringAsFixed(1)}%)'
-                    : '$_quizzedSubjectName mastery updated!';
+                    ? loc.masteryUpdateMessage(
+                        _quizzedSubjectName ?? '',
+                        pre!.toStringAsFixed(0),
+                        newMastery.toStringAsFixed(0),
+                        delta.toStringAsFixed(1),
+                      )
+                    : loc.masteryUpdatedSimpleMessage(_quizzedSubjectName ?? '');
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -186,11 +193,11 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
               );
             }
             if (state is QuizLoading) {
-              return const _LoadingView(message: 'Generating your quiz…');
+              return _LoadingView(message: loc.generatingQuizMessage);
             }
             if (state is QuizLoaded) return _QuizActiveView(state: state);
             if (state is QuizSubmitting) {
-              return const _LoadingView(message: 'Submitting answers…');
+              return _LoadingView(message: loc.submittingAnswersMessage);
             }
             if (state is QuizResultsLoaded) return _ResultsView(state: state);
             if (state is QuizError) return _ErrorView(message: state.message);
@@ -220,6 +227,7 @@ class _AutoStartPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -232,10 +240,10 @@ class _AutoStartPanel extends StatelessWidget {
               color: Color(0xFF4A6CF7),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Time to Practice!',
+            Text(
+              loc.timeToPracticeTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
                 color: Color(0xFF1A1F3C),
@@ -243,10 +251,10 @@ class _AutoStartPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Your focus time is up. Let\'s do a quick quiz to keep your brain sharp!',
+            Text(
+              loc.quizPromptMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 15,
                 color: Color(0xFF8B93A7),
                 height: 1.5,
@@ -272,15 +280,15 @@ class _AutoStartPanel extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                'Start Quiz',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              child: Text(
+                loc.startQuizButton,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Tailored to your current level',
-              style: TextStyle(
+            Text(
+              loc.tailoredToLevelMessage,
+              style: const TextStyle(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFFA0A7BA),
@@ -394,7 +402,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   void _goNext(BuildContext context) {
     if (!_hasAnsweredCurrent) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an answer first.')),
+        SnackBar(content: Text(AppLocalizations.of(context).selectAnswerFirstMessage)),
       );
       return;
     }
@@ -416,22 +424,23 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   }
 
   void _showHint(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final hints = _currentQuestion.hints;
     if (_hintsUsed >= hints.length) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No more hints available.')));
+          SnackBar(content: Text(loc.noMoreHintsMessage)));
       return;
     }
     setState(() => _hintsUsed++);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Hint $_hintsUsed'),
+        title: Text(loc.hintNumberTitle(_hintsUsed)),
         content: Text(hints[_hintsUsed - 1]),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(loc.commonOk),
           ),
         ],
       ),
@@ -440,6 +449,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final questions = widget.state.quizResponse.questions;
     final answered = widget.state.currentAnswers;
     final total = questions.length;
@@ -458,7 +468,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Question ${_currentIndex + 1} of $total',
+                loc.questionOfTotalLabel(_currentIndex + 1, total),
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
@@ -466,7 +476,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                 ),
               ),
               Text(
-                '${answered.length} answered',
+                loc.answeredCountLabel(answered.length),
                 style:
                     const TextStyle(fontSize: 13, color: Color(0xFF8B93A7)),
               ),
@@ -495,7 +505,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
               OutlinedButton.icon(
                 onPressed: () => _showHint(context),
                 icon: const Icon(Icons.lightbulb_outline, size: 18),
-                label: Text('Hint ($_hintsUsed)'),
+                label: Text(loc.hintCountLabel(_hintsUsed)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFFF9800),
                   side: const BorderSide(color: Color(0xFFFF9800)),
@@ -521,7 +531,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                   elevation: 0,
                 ),
                 child: Text(
-                  _isLastQuestion ? 'Submit' : 'Next',
+                  _isLastQuestion ? loc.submitButton : loc.nextButton,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -546,6 +556,7 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Column(
@@ -567,7 +578,7 @@ class _QuestionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  _difficultyLabel(question.difficulty),
+                  _difficultyLabel(loc, question.difficulty),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -679,18 +690,18 @@ class _QuestionCard extends StatelessWidget {
     }
   }
 
-  String _difficultyLabel(int d) {
+  String _difficultyLabel(AppLocalizations loc, int d) {
     switch (d) {
       case 1:
-        return 'Very Easy';
+        return loc.veryEasyLabel;
       case 2:
-        return 'Easy';
+        return loc.easyLabel;
       case 3:
-        return 'Medium';
+        return loc.mediumLabel;
       case 4:
-        return 'Hard';
+        return loc.hardLabel;
       default:
-        return 'Very Hard';
+        return loc.veryHardLabel;
     }
   }
 }
@@ -748,6 +759,7 @@ class _ResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final score = state.result.score;
     final pct = score.round();
     final isGood = score >= 50;
@@ -776,7 +788,7 @@ class _ResultsView extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${state.result.totalQuestions} questions',
+            loc.questionsCountLabel(state.result.totalQuestions),
             style:
                 const TextStyle(fontSize: 14, color: Color(0xFF8B93A7)),
           ),
@@ -811,9 +823,9 @@ class _ResultsView extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () => Navigator.of(context).pop(true),
             icon: const Icon(Icons.check_circle_outline),
-            label: const Text(
-              'Done',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            label: Text(
+              loc.doneButton,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4A6CF7),
@@ -830,9 +842,9 @@ class _ResultsView extends StatelessWidget {
             onPressed: () =>
                 context.read<QuizBloc>().add(ResetQuizEvent()),
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text(
-              'Take Another Quiz',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            label: Text(
+              loc.takeAnotherQuizButton,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF4A6CF7),
@@ -884,6 +896,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -893,10 +906,10 @@ class _ErrorView extends StatelessWidget {
             const Icon(Icons.error_outline,
                 size: 56, color: Color(0xFFEA4335)),
             const SizedBox(height: 16),
-            const Text(
-              'Something went wrong',
+            Text(
+              loc.somethingWentWrongTitle,
               style:
-                  TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
@@ -909,7 +922,7 @@ class _ErrorView extends StatelessWidget {
             ElevatedButton(
               onPressed: () =>
                   context.read<QuizBloc>().add(ResetQuizEvent()),
-              child: const Text('Try Again'),
+              child: Text(loc.tryAgainButton),
             ),
           ],
         ),

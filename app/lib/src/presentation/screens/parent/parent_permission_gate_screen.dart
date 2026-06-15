@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../services/permission_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Shown immediately after parent login when one or more required permissions
 /// are missing. Displays permissions one at a time in order:
@@ -156,6 +157,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   }
 
   Widget _buildContent(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     final stepNumber = parentPermissions.indexOf(permission) + 1;
     const totalSteps = 2;
 
@@ -174,7 +176,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                 _buildPermissionIcon(permission),
                 const SizedBox(height: 28),
                 Text(
-                  permission.displayName,
+                  permission.displayName(loc),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 22,
@@ -185,7 +187,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  permission.parentRationale,
+                  permission.parentRationale(loc),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -212,6 +214,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Header with progress indicator ────────────────────────────────────────
 
   Widget _buildHeader(int step, int total) {
+    final loc = AppLocalizations.of(context);
     return Container(
       decoration: const BoxDecoration(color: Color(0xFF1F2937)),
       padding: EdgeInsets.fromLTRB(
@@ -235,7 +238,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Step $step of $total',
+                  loc.stepOfTotalLabel(step, total),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -256,9 +259,9 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 icon: const Icon(Icons.logout_rounded, size: 14),
-                label: const Text(
-                  'Log out',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                label: Text(
+                  loc.logOutButton,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -313,13 +316,14 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Status card ────────────────────────────────────────────────────────────
 
   Widget _buildStatusCard(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     if (_currentGranted) {
       return _statusRow(
         icon: Icons.check_circle_rounded,
         iconColor: const Color(0xFF10B981),
         backgroundColor: const Color(0xFFECFDF5),
         borderColor: const Color(0xFF10B981),
-        text: '${permission.displayName} has been enabled.',
+        text: loc.permissionEnabledMessage(permission.displayName(loc)),
         textColor: const Color(0xFF065F46),
       );
     }
@@ -329,8 +333,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
       iconColor: const Color(0xFFF59E0B),
       backgroundColor: const Color(0xFFFFFBEB),
       borderColor: const Color(0xFFF59E0B),
-      text:
-          'Permission not granted yet. Tap the button below to open Settings.',
+      text: loc.permissionNotGrantedMessage,
       textColor: const Color(0xFF92400E),
     );
   }
@@ -369,7 +372,8 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Action button ──────────────────────────────────────────────────────────
 
   Widget _buildActionButton() {
-    final label = _currentGranted ? 'Continue' : 'Open Settings';
+    final loc = AppLocalizations.of(context);
+    final label = _currentGranted ? loc.continueButton : loc.openSettingsButton;
     final color = _currentGranted
         ? const Color(0xFF10B981)
         : const Color(0xFF1F2937);
@@ -410,12 +414,10 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Hint text ──────────────────────────────────────────────────────────────
 
   Widget _buildSettingsHint(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     final hint = switch (permission) {
-      RequiredPermission.postNotifications =>
-        'Allow StudyMentor to send you notifications.',
-      RequiredPermission.batteryOptimization =>
-        'Find "StudyMentor", select "Don\'t optimize" or "Unrestricted", '
-            'then confirm.',
+      RequiredPermission.postNotifications => loc.postNotificationsHint,
+      RequiredPermission.batteryOptimization => loc.batteryOptimizationHint,
       _ => '',
     };
 

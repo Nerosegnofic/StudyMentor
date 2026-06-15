@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/auth/auth_bloc.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -16,14 +17,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text('Reset Password')),
+      appBar: AppBar(title: Text(loc.resetPasswordTitle)),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is PasswordResetEmailSent) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text('Password reset link sent! Check your inbox.')));
+            ).showSnackBar(SnackBar(content: Text(loc.passwordResetLinkSentMessage)));
             Navigator.pop(context);
           }
           if (state is AuthError) {
@@ -40,8 +42,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               children: [
                 TextFormField(
                   controller: _emailCtl,
-                  decoration: InputDecoration(labelText: 'Email'),
-                  validator: (v) => v!.contains('@') ? null : 'Please enter a valid email address.',
+                  decoration: InputDecoration(labelText: loc.fieldEmail),
+                  validator: (v) => v!.contains('@') ? null : loc.loginEmailValidator,
                 ),
                 SizedBox(height: 16),
                 ElevatedButton(
@@ -52,7 +54,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       );
                     }
                   },
-                  child: Text('Send Reset Link'),
+                  child: Text(loc.sendResetLinkButton),
                 ),
               ],
             ),

@@ -1633,6 +1633,40 @@ ref.execute();
 ```
 
 
+### UpdateStudentLastActiveAt
+#### Required Arguments
+```dart
+// No required arguments
+ExampleConnector.instance.updateStudentLastActiveAt().execute();
+```
+
+
+
+#### Return Type
+`execute()` returns a `OperationResult<UpdateStudentLastActiveAtData, void>`
+```dart
+/// Result of an Operation Request (query/mutation).
+class OperationResult<Data, Variables> {
+  OperationResult(this.dataConnect, this.data, this.ref);
+  Data data;
+  OperationRef<Data, Variables> ref;
+  FirebaseDataConnect dataConnect;
+}
+
+final result = await ExampleConnector.instance.updateStudentLastActiveAt();
+UpdateStudentLastActiveAtData data = result.data;
+final ref = result.ref;
+```
+
+#### Getting the Ref
+Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
+An example of how to use the `Ref` object is shown below:
+```dart
+final ref = ExampleConnector.instance.updateStudentLastActiveAt().ref();
+ref.execute();
+```
+
+
 ### DeleteParentRecord
 #### Required Arguments
 ```dart
@@ -1794,9 +1828,9 @@ ref.execute();
 ### MarkLocalNotificationEventsRead
 #### Required Arguments
 ```dart
-String toParentUid = ...;
+String eventIds = ...;
 ExampleConnector.instance.markLocalNotificationEventsRead(
-  toParentUid: toParentUid,
+  eventIds: eventIds,
 ).execute();
 ```
 
@@ -1814,7 +1848,7 @@ class OperationResult<Data, Variables> {
 }
 
 final result = await ExampleConnector.instance.markLocalNotificationEventsRead(
-  toParentUid: toParentUid,
+  eventIds: eventIds,
 );
 MarkLocalNotificationEventsReadData data = result.data;
 final ref = result.ref;
@@ -1824,10 +1858,10 @@ final ref = result.ref;
 Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
 An example of how to use the `Ref` object is shown below:
 ```dart
-String toParentUid = ...;
+String eventIds = ...;
 
 final ref = ExampleConnector.instance.markLocalNotificationEventsRead(
-  toParentUid: toParentUid,
+  eventIds: eventIds,
 ).ref();
 ref.execute();
 ```

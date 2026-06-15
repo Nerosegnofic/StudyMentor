@@ -40,6 +40,29 @@ const kChannelChildGarden = 'CHILD_GARDEN';
 const kNotifIdStreakReminder = 1001;
 const kNotifIdGardenNudge = 1002;
 
+/// Fixed ID for level-up celebrations.
+///
+/// Using a fixed ID means a second level-up notification (if the student
+/// levels up twice in quick succession) replaces the first rather than
+/// stacking. Acceptable behaviour for a celebration toast.
+const kNotifIdLevelUp = 1003;
+
+/// Fixed ID for streak milestone celebrations (7, 14, 30 days).
+///
+/// Replaces the previous milestone notification rather than stacking.
+const kNotifIdStreakMilestone = 1004;
+
+/// Fixed ID for near-milestone nudges (6, 13, 29 days).
+///
+/// Replaces rather than stacks — only one nudge is relevant at a time.
+const kNotifIdNearMilestone = 1005;
+
+/// Derives a stable 32-bit non-negative notification ID from a
+/// [NotificationEvent] UUID, so each parent-facing event gets its own
+/// notification slot — same-channel events (e.g. two `PARENT_PROGRESS`
+/// events) don't overwrite each other in the tray.
+int stableIntFromUuid(String uuid) => uuid.hashCode & 0x7FFFFFFF;
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 /// Thin wrapper around [FlutterLocalNotificationsPlugin].

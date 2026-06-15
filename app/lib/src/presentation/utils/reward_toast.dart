@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 /// Utility for showing non-blocking reward notifications.
 class RewardToast {
   RewardToast._();
 
   /// Shows a brief SnackBar announcing the XP and Coins just earned.
   static void show(BuildContext context, int xp, int coins) {
+    final loc = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -16,7 +19,7 @@ class RewardToast {
               const Text('⚡', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 4),
               Text(
-                '+$xp XP',
+                loc.xpRewardLabel(xp),
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
@@ -27,7 +30,7 @@ class RewardToast {
               const Text('🪙', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 4),
               Text(
-                '+$coins Coins',
+                loc.coinsRewardLabel(coins),
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,

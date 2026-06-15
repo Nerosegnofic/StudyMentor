@@ -18,8 +18,10 @@ query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
       email
       isActive
       isEmailVerified
+      createdAt
     }
     gradeLevel
+    lastActiveAt
   }
 }
 

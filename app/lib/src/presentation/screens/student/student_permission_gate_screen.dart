@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../services/device_admin_service.dart';
 import '../../../services/permission_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Shown immediately after student login when one or more required permissions
 /// are missing. Displays permissions one at a time in the mandatory order:
@@ -179,6 +180,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   }
 
   Widget _buildContent(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     final stepNumber = RequiredPermission.values.indexOf(permission) + 1;
     final totalSteps = RequiredPermission.values.length;
 
@@ -197,7 +199,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                 _buildPermissionIcon(permission),
                 const SizedBox(height: 28),
                 Text(
-                  permission.displayName,
+                  permission.displayName(loc),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 22,
@@ -208,7 +210,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  permission.rationale,
+                  permission.rationale(loc),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -233,6 +235,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Header with progress indicator ────────────────────────────────────────
 
   Widget _buildHeader(int step, int total) {
+    final loc = AppLocalizations.of(context);
     return Container(
       decoration: const BoxDecoration(color: Color(0xFF1F2937)),
       padding: EdgeInsets.fromLTRB(
@@ -256,7 +259,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Step $step of $total',
+                  loc.stepOfTotalLabel(step, total),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -277,9 +280,9 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 icon: const Icon(Icons.logout_rounded, size: 14),
-                label: const Text(
-                  'Log out',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                label: Text(
+                  loc.logOutButton,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -348,13 +351,14 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Status card ────────────────────────────────────────────────────────────
 
   Widget _buildStatusCard(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     if (_currentGranted) {
       return _statusRow(
         icon: Icons.check_circle_rounded,
         iconColor: const Color(0xFF10B981),
         backgroundColor: const Color(0xFFECFDF5),
         borderColor: const Color(0xFF10B981),
-        text: '${permission.displayName} has been enabled.',
+        text: loc.permissionEnabledMessage(permission.displayName(loc)),
         textColor: const Color(0xFF065F46),
       );
     }
@@ -364,8 +368,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
       iconColor: const Color(0xFFF59E0B),
       backgroundColor: const Color(0xFFFFFBEB),
       borderColor: const Color(0xFFF59E0B),
-      text:
-          'Permission not granted yet. Tap the button below to open Settings.',
+      text: loc.permissionNotGrantedMessage,
       textColor: const Color(0xFF92400E),
     );
   }
@@ -404,7 +407,8 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Action button ──────────────────────────────────────────────────────────
 
   Widget _buildActionButton() {
-    final label = _currentGranted ? 'Continue' : 'Open Settings';
+    final loc = AppLocalizations.of(context);
+    final label = _currentGranted ? loc.continueButton : loc.openSettingsButton;
     final color = _currentGranted
         ? const Color(0xFF10B981)
         : const Color(0xFF1F2937);
@@ -445,20 +449,14 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Hint text below button ─────────────────────────────────────────────────
 
   Widget _buildSettingsHint(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     final hint = switch (permission) {
-      RequiredPermission.systemAlertWindow =>
-        'Find "StudyMentor" and enable "Allow display over other apps".',
-      RequiredPermission.packageUsageStats =>
-        'Find "StudyMentor" and toggle Usage Access on.',
-      RequiredPermission.postNotifications =>
-        'Allow StudyMentor to send you notifications.',
-      RequiredPermission.accessibilityService =>
-        'Under Installed Apps, select "StudyMentor" and enable it.',
-      RequiredPermission.deviceAdmin =>
-        'Tap "Activate this device admin app" to confirm.',
-      RequiredPermission.batteryOptimization =>
-        'Find "StudyMentor", select "Don\'t optimize" or "Unrestricted", '
-            'then confirm.',
+      RequiredPermission.systemAlertWindow => loc.systemAlertWindowHint,
+      RequiredPermission.packageUsageStats => loc.packageUsageStatsHint,
+      RequiredPermission.postNotifications => loc.postNotificationsHint,
+      RequiredPermission.accessibilityService => loc.accessibilityServiceHint,
+      RequiredPermission.deviceAdmin => loc.deviceAdminHint,
+      RequiredPermission.batteryOptimization => loc.batteryOptimizationHint,
     };
 
     return Text(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 /// A dialog that prompts the student to enter their parent's
 /// email and password before allowing logout.
 ///
@@ -64,35 +66,36 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     // PopScope prevents back-gesture and barrier-tap dismissal while a
     // verification request is in flight, so the loading state is never
     // orphaned and the user cannot get stuck on a blank screen.
     return PopScope(
       canPop: !widget.isLoading,
       child: AlertDialog(
-        title: const Text('Parent Verification Required'),
+        title: Text(loc.parentVerificationRequiredTitle),
         content: Form(
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'To log out, please enter your parent\'s credentials.',
-                  style: TextStyle(fontSize: 14),
+                Text(
+                  loc.logoutParentCredentialsMessage,
+                  style: const TextStyle(fontSize: 14),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _emailCtl,
                   enabled: !widget.isLoading,
-                  decoration: const InputDecoration(
-                    labelText: 'Parent\'s Email',
-                    prefixIcon: Icon(Icons.email_outlined),
+                  decoration: InputDecoration(
+                    labelText: loc.parentEmailLabel,
+                    prefixIcon: const Icon(Icons.email_outlined),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   validator: (v) =>
-                      (v != null && v.contains('@')) ? null : 'Please enter a valid email address.',
+                      (v != null && v.contains('@')) ? null : loc.loginEmailValidator,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -107,7 +110,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                     }
                   },
                   decoration: InputDecoration(
-                    labelText: 'Parent\'s Password',
+                    labelText: loc.parentPasswordLabel,
                     prefixIcon: const Icon(Icons.lock_outline),
                     // Inline field-level error shown in red beneath the field.
                     errorText: _serverError,
@@ -130,7 +133,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: widget.isLoading ? null : (_) => _submit(),
                   validator: (v) =>
-                      (v != null && v.isNotEmpty) ? null : 'Password is required.',
+                      (v != null && v.isNotEmpty) ? null : loc.validatorPasswordRequired,
                 ),
               ],
             ),
@@ -142,7 +145,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
             onPressed: widget.isLoading
                 ? null
                 : () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(loc.commonCancel),
           ),
           ElevatedButton(
             onPressed: widget.isLoading ? null : _submit,
@@ -157,7 +160,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text('Verify & Log Out'),
+                : Text(loc.verifyAndLogOutButton),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 // lib/src/services/permission_service.dart
 
 import 'package:flutter/services.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Represents the six permissions required by the student setup flow.
 ///
@@ -29,46 +30,38 @@ const List<RequiredPermission> parentPermissions = [
 ];
 
 extension RequiredPermissionDetails on RequiredPermission {
-  String get displayName {
+  String displayName(AppLocalizations loc) {
     switch (this) {
       case RequiredPermission.systemAlertWindow:
-        return 'Display Over Other Apps';
+        return loc.permissionDisplayNameSystemAlertWindow;
       case RequiredPermission.packageUsageStats:
-        return 'Usage Access';
+        return loc.permissionDisplayNamePackageUsageStats;
       case RequiredPermission.postNotifications:
-        return 'Post Notifications';
+        return loc.permissionDisplayNamePostNotifications;
       case RequiredPermission.accessibilityService:
-        return 'Accessibility Service';
+        return loc.permissionDisplayNameAccessibilityService;
       case RequiredPermission.deviceAdmin:
-        return 'Device Administrator';
+        return loc.permissionDisplayNameDeviceAdmin;
       case RequiredPermission.batteryOptimization:
-        return 'Disable Battery Optimization';
+        return loc.permissionDisplayNameBatteryOptimization;
     }
   }
 
   /// Rationale shown in the **student** permission gate.
-  String get rationale {
+  String rationale(AppLocalizations loc) {
     switch (this) {
       case RequiredPermission.systemAlertWindow:
-        return 'Display Over Other Apps is required to show study reminders '
-            'and enforce app rules while you use other apps.';
+        return loc.permissionRationaleSystemAlertWindow;
       case RequiredPermission.packageUsageStats:
-        return 'Usage Access is required to track screen time and enforce the '
-            'app usage limits set by the parent.';
+        return loc.permissionRationalePackageUsageStats;
       case RequiredPermission.postNotifications:
-        return 'Post Notifications is required to send you study reminders and '
-            'important alerts from the parent.';
+        return loc.permissionRationalePostNotifications;
       case RequiredPermission.accessibilityService:
-        return 'Accessibility Service is required to monitor which apps are '
-            'open and enforce the rules set by the parent.';
+        return loc.permissionRationaleAccessibilityService;
       case RequiredPermission.deviceAdmin:
-        return 'Device Administrator is required to protect the app from being '
-            'uninstalled without the parent\'s permission.';
+        return loc.permissionRationaleDeviceAdmin;
       case RequiredPermission.batteryOptimization:
-        return 'Disabling Battery Optimization keeps background services running '
-            'reliably. Without this, Android may shut down StudyMentor\'s '
-            'background services on some devices, causing timers and app rules '
-            'to stop working.';
+        return loc.permissionRationaleBatteryOptimization;
     }
   }
 
@@ -76,18 +69,14 @@ extension RequiredPermissionDetails on RequiredPermission {
   ///
   /// Only [postNotifications] and [batteryOptimization] are used by the parent
   /// flow; the other cases fall back to [rationale] for safety.
-  String get parentRationale {
+  String parentRationale(AppLocalizations loc) {
     switch (this) {
       case RequiredPermission.postNotifications:
-        return 'StudyMentor notifies you when your child levels up, earns a '
-            'badge, or hasn\'t studied in a few days. You can change this any '
-            'time in Settings.';
+        return loc.permissionParentRationalePostNotifications;
       case RequiredPermission.batteryOptimization:
-        return 'To reliably notify you about your child\'s activity, '
-            'StudyMentor needs to run in the background. Without this, Android '
-            'may delay or drop important alerts on some devices.';
+        return loc.permissionParentRationaleBatteryOptimization;
       default:
-        return rationale;
+        return rationale(loc);
     }
   }
 }

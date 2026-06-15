@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/ai_summary/ai_summary_bloc.dart';
 import '../../../bloc/ai_summary/ai_summary_event.dart';
 import '../../../bloc/ai_summary/ai_summary_state.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class AiSummaryCarousel extends StatefulWidget {
   final String parentUid;
@@ -46,6 +47,7 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocBuilder<AiSummaryBloc, AiSummaryState>(
       builder: (context, state) {
         if (state is AiSummaryLoading || state is AiSummaryInitial) {
@@ -63,7 +65,7 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
         if (state is AiSummaryLoaded) {
           _slides = state.summary.slides;
         } else {
-          _slides = ["AI Summary not available."];
+          _slides = [loc.aiSummaryNotAvailableMessage];
         }
 
         return Container(
@@ -90,15 +92,19 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
           // ── Header ───────────────────────────────────────────────────
           Row(
             children: [
-              Text(
-                '✨ AI Daily Summary',
-                style: GoogleFonts.cairo(
-                  color: const Color(0xFF2196F3),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+              Expanded(
+                child: Text(
+                  loc.aiDailySummaryTitle,
+                  style: GoogleFonts.cairo(
+                    color: const Color(0xFF2196F3),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -107,8 +113,8 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Smart Insights',
-                  style: GoogleFonts.roboto(
+                  loc.smartInsightsLabel,
+                  style: GoogleFonts.cairo(
                     color: const Color(0xFF2196F3),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -128,7 +134,7 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
               itemCount: _slides.length,
               itemBuilder: (_, i) => Text(
                 _slides[i],
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   color: const Color(0xFF475569),
                   fontSize: 14,
                   height: 1.55,

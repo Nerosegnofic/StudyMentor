@@ -485,6 +485,15 @@ extend type Student {
     distinct: Boolean = false
   ): Int! @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_COUNT)
   """
+  ✨ Count the number of rows in the `Student` table where the `lastActiveAt` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
+  """
+  lastActiveAt_count(
+    """
+    Set to true to count the number of distinct values.
+    """
+    distinct: Boolean = false
+  ): Int! @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_COUNT)
+  """
   ✨ Count the number of rows in the `Student` table where the `parentUid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   parentUid_count(
@@ -543,9 +552,17 @@ extend type Student {
   """
   gradeLevel_min: Int @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_MIN)
   """
+  ✨ Minimum of the `lastActiveAt` field in the `Student` table.
+  """
+  lastActiveAt_min: Timestamp @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_MIN)
+  """
   ✨ Maximum of the `gradeLevel` field in the `Student` table.
   """
   gradeLevel_max: Int @fdc_generated(from: "Student.gradeLevel", purpose: QUERY_MAX)
+  """
+  ✨ Maximum of the `lastActiveAt` field in the `Student` table.
+  """
+  lastActiveAt_max: Timestamp @fdc_generated(from: "Student.lastActiveAt", purpose: QUERY_MAX)
   """
   A generated field that is used for caching results in SDKs.
   """

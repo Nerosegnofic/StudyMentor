@@ -11,6 +11,7 @@ import '../../../bloc/subject/subject_event.dart';
 import '../../../bloc/subject/subject_state.dart';
 import '../student/student_documents.dart';
 import '../../../data/catalog/subject_metadata_registry.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // SubjectData removed, using SubjectSummaryModel directly
 
@@ -26,7 +27,7 @@ class SubjectsSkillsScreen extends StatefulWidget {
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
 
-  static const _kAiEngineBaseUrl = 'http://192.168.0.219:8000';
+  static const _kAiEngineBaseUrl = 'http://192.168.100.2:8000';
 
 
   @override
@@ -45,9 +46,9 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FF),
             appBar: AppBar(
-              title: const Text(
-                'Upload Curriculum',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              title: Text(
+                AppLocalizations.of(context).uploadCurriculumTitle,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ),
             body: StudentDocumentUploadScreen(
@@ -106,6 +107,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -127,7 +129,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              "No Subjects Yet",
+              loc.noSubjectsYetTitle,
               style: GoogleFonts.cairo(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -136,9 +138,9 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              "Tap the '+' button in the top right to start tracking subjects or upload a new curriculum for ${widget.student.fullName}.",
+              loc.noSubjectsYetDescription(widget.student.fullName),
               textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 fontSize: 14,
                 color: const Color(0xFF64748B),
                 height: 1.5,
@@ -167,7 +169,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           Text(
-            "Subjects & Skills",
+            AppLocalizations.of(context).subjectsAndSkillsTitle,
             style: GoogleFonts.cairo(
               color: Colors.white,
               fontSize: 20,
@@ -192,6 +194,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
   }
 
   Widget _buildSubjectCard(BuildContext context, SubjectSummaryModel subject) {
+    final loc = AppLocalizations.of(context);
     final title = subject.subjectKey[0].toUpperCase() + subject.subjectKey.substring(1);
     final progress = subject.masteryPercent;
 
@@ -221,7 +224,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border(left: BorderSide(width: 4, color: color)),
+          border: BorderDirectional(start: BorderSide(width: 4, color: color)),
           boxShadow: const [
             BoxShadow(
               color: Color.fromRGBO(0, 0, 0, 0.07),
@@ -292,8 +295,8 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${subject.skillsCount} skills tracked',
-                      style: GoogleFonts.roboto(
+                      loc.skillsTrackedLabel(subject.skillsCount),
+                      style: GoogleFonts.cairo(
                         color: color,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -305,8 +308,8 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Mastery',
-                        style: GoogleFonts.roboto(
+                        loc.masteryLabel,
+                        style: GoogleFonts.cairo(
                           color: const Color(0xFF94A3B8),
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -314,7 +317,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                       ),
                       Text(
                         '$progress%',
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           color: color,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -362,6 +365,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
+        final loc = AppLocalizations.of(context);
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
@@ -373,7 +377,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "Remove ${subject.subjectKey}?",
+                  loc.removeSubjectConfirmTitle(subject.subjectKey),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     color: const Color(0xFF1E293B),
@@ -383,9 +387,9 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Are you sure you want to remove this subject?",
+                  loc.removeSubjectConfirmMessage,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     color: const Color(0xFF64748B),
                     fontSize: 14,
                   ),
@@ -405,8 +409,8 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
-                          "Cancel",
-                          style: GoogleFonts.roboto(
+                          loc.commonCancel,
+                          style: GoogleFonts.cairo(
                             color: const Color(0xFF64748B),
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -427,8 +431,8 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
-                          "Remove",
-                          style: GoogleFonts.roboto(
+                          loc.removeButton,
+                          style: GoogleFonts.cairo(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -462,6 +466,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
+        final loc = AppLocalizations.of(modalContext);
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
@@ -494,7 +499,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                         });
                       },
                       decoration: InputDecoration(
-                        hintText: "Search subjects...",
+                        hintText: loc.searchSubjectsHint,
                         prefixIcon: const Icon(Icons.search),
                         filled: true,
                         fillColor: const Color(0xFFF1F5F9),
@@ -568,7 +573,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                                       const SizedBox(height: 8),
                                       Text(
                                         subject.subjectKey.substring(0, 1).toUpperCase() + subject.subjectKey.substring(1),
-                                        style: GoogleFonts.roboto(
+                                        style: GoogleFonts.cairo(
                                           color: const Color(0xFF1E293B),
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -617,7 +622,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                               elevation: 0,
                             ),
                             child: Text(
-                              "Add Selected (${selectedKeys.length})",
+                              loc.addSelectedCountButton(selectedKeys.length),
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -643,8 +648,8 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                               elevation: 0,
                             ),
                             child: Text(
-                              'Upload Curriculum',
-                              style: GoogleFonts.roboto(
+                              loc.uploadCurriculumTitle,
+                              style: GoogleFonts.cairo(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF2196F3),

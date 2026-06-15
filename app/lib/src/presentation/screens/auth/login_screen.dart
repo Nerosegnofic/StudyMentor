@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../widgets/language_picker_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,7 +29,15 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!didPop && !canGoBack) SystemNavigator.pop();
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Sign In')),
+        appBar: AppBar(
+          title: Text(AppLocalizations.of(context).signInTitle),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.language),
+              onPressed: () => showLanguagePickerDialog(context),
+            ),
+          ],
+        ),
         body: BlocConsumer<AuthBloc, AuthState>(
           // Only rebuild the button when loading state changes.
           buildWhen: (prev, curr) => curr is AuthLoading || prev is AuthLoading,
@@ -54,6 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
           },
           builder: (context, state) {
             final loading = state is AuthLoading;
+            final loc = AppLocalizations.of(context);
             return Padding(
               padding: const EdgeInsets.all(16),
               child: Form(
@@ -62,14 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     TextFormField(
                       controller: _emailCtl,
-                      decoration: const InputDecoration(labelText: 'Email'),
+                      decoration: InputDecoration(labelText: loc.fieldEmail),
                       validator: (v) =>
-                          v!.contains('@') ? null : 'Please enter a valid email address.',
+                          v!.contains('@') ? null : loc.loginEmailValidator,
                     ),
                     TextFormField(
                       controller: _passCtl,
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: loc.fieldPassword,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -82,7 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       obscureText: _obscurePassword,
-                      validator: (v) => v!.isNotEmpty ? null : 'Password is required.',
+                      validator: (v) =>
+                          v!.isNotEmpty ? null : loc.validatorPasswordRequired,
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -100,19 +112,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                       child: loading
                           ? const CircularProgressIndicator()
-                          : const Text('Sign In'),
+                          : Text(loc.signInTitle),
                     ),
                     TextButton(
                       onPressed: () =>
                           Navigator.pushNamed(context, '/register'),
-                      child: const Text(
-                        'Not registered yet? Register as a Parent',
-                      ),
+                      child: Text(loc.registerPromptButton),
                     ),
                     TextButton(
                       onPressed: () =>
                           Navigator.pushNamed(context, '/forgot-password'),
-                      child: const Text('Forgot Password?'),
+                      child: Text(loc.forgotPasswordButton),
                     ),
                   ],
                 ),

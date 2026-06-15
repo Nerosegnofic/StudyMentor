@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ConfirmEmailScreen extends StatelessWidget {
   const ConfirmEmailScreen({super.key});
@@ -43,9 +44,10 @@ class ConfirmEmailScreen extends StatelessWidget {
         },
         builder: (context, state) {
           final isLoading = state is AuthLoading;
+          final loc = AppLocalizations.of(context);
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Confirm Email'),
+              title: Text(loc.confirmEmailTitle),
               automaticallyImplyLeading: false, // hide the back arrow
             ),
             body: Center(
@@ -54,24 +56,30 @@ class ConfirmEmailScreen extends StatelessWidget {
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Please check your inbox and verify your email to continue.'),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            loc.confirmEmailInstructions,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () => context.read<AuthBloc>().add(
                             SendEmailVerificationRequested(),
                           ),
-                          child: const Text('Send Email Verification Link'),
+                          child: Text(loc.sendEmailVerificationButton),
                         ),
                         ElevatedButton(
                           onPressed: () => context.read<AuthBloc>().add(
                             CheckEmailVerificationRequested(),
                           ),
-                          child: const Text("I've Verified My Email"),
+                          child: Text(loc.emailVerifiedButton),
                         ),
                         TextButton(
                           onPressed: () =>
                               context.read<AuthBloc>().add(LogoutRequested()),
-                          child: const Text('Log Out'),
+                          child: Text(loc.logOutButton),
                         ),
                       ],
                     ),
