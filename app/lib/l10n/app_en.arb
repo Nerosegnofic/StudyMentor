@@ -926,5 +926,80 @@
     "placeholders": {
       "xp": {"type": "int"}
     }
-  }
+  },
+
+  "notifLevelUpTitle": "You reached Level {level}! 🎓",
+  "@notifLevelUpTitle": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "notifLevelUpBody": "Keep it up — more rewards are waiting at the next level.",
+  "notifParentLevelUpTitle": "{studentName} reached Level {level}! 🎓",
+  "@notifParentLevelUpTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "notifParentLevelUpBody": "They've been working hard. Check their progress.",
+  "notifStreakMilestoneTitle": "{streak}-day streak! 🔥",
+  "@notifStreakMilestoneTitle": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifStreakMilestoneBody": "You've studied {streak} days in a row. Keep the fire going!",
+  "@notifStreakMilestoneBody": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifNearMilestoneTitle": "One more day! 🔥",
+  "notifNearMilestoneBody": "Keep going — your {nextMilestone}-day reward is tomorrow.",
+  "@notifNearMilestoneBody": {
+    "placeholders": {
+      "nextMilestone": {"type": "int"}
+    }
+  },
+  "notifStreakReminderTitle": "Don't break your streak! 🔥",
+  "notifStreakReminderBody": "One quiz keeps your {streak}-day streak alive.",
+  "@notifStreakReminderBody": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifStartStreakTitle": "Start a new streak today!",
+  "notifStartStreakBody": "Take a quick quiz and begin your learning streak.",
+  "notifParentStreakBrokenTitle": "{studentName}'s streak ended",
+  "@notifParentStreakBrokenTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"}
+    }
+  },
+  "notifParentStreakBrokenBody": "Their {previousStreak}-day streak was broken. A little encouragement might help.",
+  "@notifParentStreakBrokenBody": {
+    "placeholders": {
+      "previousStreak": {"type": "int"}
+    }
+  },
+  "notifGardenNudgeTitle": "Your {subject} plant needs you 🌱",
+  "@notifGardenNudgeTitle": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "notifGardenNudgeBody": "It's been a few days — come water your {subject} garden!",
+  "@notifGardenNudgeBody": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "notifInactivityTitle": "{studentName} hasn't quizzed in 3 days",
+  "@notifInactivityTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"}
+    }
+  },
+  "notifInactivityBody": "A little encouragement might help them get back on track."
 }

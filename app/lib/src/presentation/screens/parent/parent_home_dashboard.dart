@@ -136,9 +136,9 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
                     // Component 2 — "My Children" subheader
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.only(
+                        padding: const EdgeInsetsDirectional.only(
                           top: 0,
-                          left: 20,
+                          start: 20,
                           bottom: 12,
                         ),
                         child: Text(

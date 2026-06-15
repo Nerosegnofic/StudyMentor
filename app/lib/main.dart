@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -193,6 +194,10 @@ class StudyMentorApp extends StatelessWidget {
           builder: (context, locale) => MaterialApp(
           title: 'StudyMentor',
           debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            textTheme: GoogleFonts.cairoTextTheme(),
+            primaryTextTheme: GoogleFonts.cairoTextTheme(),
+          ),
           locale: locale,
           localizationsDelegates: const [
             AppLocalizations.delegate,

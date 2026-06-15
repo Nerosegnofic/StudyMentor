@@ -5,6 +5,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../data/providers/dataconnect_provider.dart';
 import 'local_notification_service.dart';
+import 'notification_localizations.dart';
 
 /// Unique name / task name used to register the parent-inactivity-check
 /// [OneTimeWorkRequest] with WorkManager.
@@ -96,6 +97,7 @@ class ParentInactivityCheckService {
         parentUid,
       );
       await LocalNotificationService.instance.init();
+      final loc = await NotificationLocalizations.current();
 
       final cutoff = DateTime.now().subtract(_kInactivityThreshold);
 
@@ -116,8 +118,8 @@ class ParentInactivityCheckService {
         await LocalNotificationService.instance.show(
           id: stableIntFromUuid(childUid),
           channelId: kChannelParentAlerts,
-          title: "$studentName hasn't quizzed in 3 days",
-          body: 'A little encouragement might help them get back on track.',
+          title: loc.notifInactivityTitle(studentName),
+          body: loc.notifInactivityBody,
         );
 
         await prefs.setString(dedupKey, referenceKey);

@@ -3084,6 +3084,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'+{xp} XP'**
   String xpRewardLabel(int xp);
+
+  /// No description provided for @notifLevelUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You reached Level {level}! 🎓'**
+  String notifLevelUpTitle(int level);
+
+  /// No description provided for @notifLevelUpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it up — more rewards are waiting at the next level.'**
+  String get notifLevelUpBody;
+
+  /// No description provided for @notifParentLevelUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{studentName} reached Level {level}! 🎓'**
+  String notifParentLevelUpTitle(String studentName, int level);
+
+  /// No description provided for @notifParentLevelUpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'ve been working hard. Check their progress.'**
+  String get notifParentLevelUpBody;
+
+  /// No description provided for @notifStreakMilestoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{streak}-day streak! 🔥'**
+  String notifStreakMilestoneTitle(int streak);
+
+  /// No description provided for @notifStreakMilestoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve studied {streak} days in a row. Keep the fire going!'**
+  String notifStreakMilestoneBody(int streak);
+
+  /// No description provided for @notifNearMilestoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One more day! 🔥'**
+  String get notifNearMilestoneTitle;
+
+  /// No description provided for @notifNearMilestoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going — your {nextMilestone}-day reward is tomorrow.'**
+  String notifNearMilestoneBody(int nextMilestone);
+
+  /// No description provided for @notifStreakReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t break your streak! 🔥'**
+  String get notifStreakReminderTitle;
+
+  /// No description provided for @notifStreakReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'One quiz keeps your {streak}-day streak alive.'**
+  String notifStreakReminderBody(int streak);
+
+  /// No description provided for @notifStartStreakTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new streak today!'**
+  String get notifStartStreakTitle;
+
+  /// No description provided for @notifStartStreakBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a quick quiz and begin your learning streak.'**
+  String get notifStartStreakBody;
+
+  /// No description provided for @notifParentStreakBrokenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{studentName}\'s streak ended'**
+  String notifParentStreakBrokenTitle(String studentName);
+
+  /// No description provided for @notifParentStreakBrokenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Their {previousStreak}-day streak was broken. A little encouragement might help.'**
+  String notifParentStreakBrokenBody(int previousStreak);
+
+  /// No description provided for @notifGardenNudgeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {subject} plant needs you 🌱'**
+  String notifGardenNudgeTitle(String subject);
+
+  /// No description provided for @notifGardenNudgeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s been a few days — come water your {subject} garden!'**
+  String notifGardenNudgeBody(String subject);
+
+  /// No description provided for @notifInactivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{studentName} hasn\'t quizzed in 3 days'**
+  String notifInactivityTitle(String studentName);
+
+  /// No description provided for @notifInactivityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A little encouragement might help them get back on track.'**
+  String get notifInactivityBody;
 }
 
 class _AppLocalizationsDelegate

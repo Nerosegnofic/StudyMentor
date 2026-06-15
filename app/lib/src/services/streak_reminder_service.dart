@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'local_notification_service.dart';
+import 'notification_localizations.dart';
 import 'student_local_notification_handler.dart';
 
 /// Unique name / task name used to register the streak-reminder
@@ -116,19 +117,20 @@ class StreakReminderService {
         final streak = prefs.getInt('current_streak_$studentUid') ?? 0;
 
         await LocalNotificationService.instance.init();
+        final loc = await NotificationLocalizations.current();
         if (streak > 0) {
           await LocalNotificationService.instance.show(
             id: kNotifIdStreakReminder,
             channelId: kChannelChildStreak,
-            title: "Don't break your streak! \u{1F525}",
-            body: 'One quiz keeps your $streak-day streak alive.',
+            title: loc.notifStreakReminderTitle,
+            body: loc.notifStreakReminderBody(streak),
           );
         } else {
           await LocalNotificationService.instance.show(
             id: kNotifIdStreakReminder,
             channelId: kChannelChildStreak,
-            title: 'Start a new streak today!',
-            body: 'Take a quick quiz and begin your learning streak.',
+            title: loc.notifStartStreakTitle,
+            body: loc.notifStartStreakBody,
           );
         }
 
@@ -181,11 +183,9 @@ class StreakReminderService {
         toParentUid: parentUid,
         eventType: 'STREAK_BROKEN',
         payload: {
-          'title': "$studentName's streak ended",
-          'body':
-              'Their $lastKnownStreak-day streak was broken. A little encouragement might help.',
           'screen': 'STUDENT_DETAIL',
           'childId': studentUid,
+          'studentName': studentName,
           'previousStreak': '$lastKnownStreak',
         },
       );

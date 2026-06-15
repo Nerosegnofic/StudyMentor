@@ -1764,4 +1764,83 @@ class AppLocalizationsAr extends AppLocalizations {
   String xpRewardLabel(int xp) {
     return '+$xp خبرة';
   }
+
+  @override
+  String notifLevelUpTitle(int level) {
+    return 'لقد وصلت إلى المستوى $level! 🎓';
+  }
+
+  @override
+  String get notifLevelUpBody =>
+      'أحسنت! المزيد من المكافآت في انتظارك بالمستوى التالي.';
+
+  @override
+  String notifParentLevelUpTitle(String studentName, int level) {
+    return '$studentName وصل إلى المستوى $level! 🎓';
+  }
+
+  @override
+  String get notifParentLevelUpBody => 'لقد كان مجتهدًا. تابع تقدمه الآن.';
+
+  @override
+  String notifStreakMilestoneTitle(int streak) {
+    return 'سلسلة $streak يوم متتالية! 🔥';
+  }
+
+  @override
+  String notifStreakMilestoneBody(int streak) {
+    return 'لقد ذاكرت $streak يوم متتالي. حافظ على حماسك!';
+  }
+
+  @override
+  String get notifNearMilestoneTitle => 'يوم واحد فقط! 🔥';
+
+  @override
+  String notifNearMilestoneBody(int nextMilestone) {
+    return 'استمر — مكافأة سلسلة $nextMilestone يوم في انتظارك غدًا.';
+  }
+
+  @override
+  String get notifStreakReminderTitle => 'لا تكسر سلسلتك! 🔥';
+
+  @override
+  String notifStreakReminderBody(int streak) {
+    return 'اختبار واحد فقط يحافظ على سلسلتك من $streak يوم.';
+  }
+
+  @override
+  String get notifStartStreakTitle => 'ابدأ سلسلة جديدة اليوم!';
+
+  @override
+  String get notifStartStreakBody =>
+      'أنجز اختبارًا سريعًا وابدأ سلسلة مذاكرتك.';
+
+  @override
+  String notifParentStreakBrokenTitle(String studentName) {
+    return 'انتهت سلسلة $studentName';
+  }
+
+  @override
+  String notifParentStreakBrokenBody(int previousStreak) {
+    return 'انقطعت سلسلته البالغة $previousStreak يوم. قد يساعده القليل من التشجيع.';
+  }
+
+  @override
+  String notifGardenNudgeTitle(String subject) {
+    return 'نبتة $subject بحاجة إليك 🌱';
+  }
+
+  @override
+  String notifGardenNudgeBody(String subject) {
+    return 'مرت أيام قليلة — تعال واسقِ حديقة $subject!';
+  }
+
+  @override
+  String notifInactivityTitle(String studentName) {
+    return '$studentName لم يحل أي اختبار منذ 3 أيام';
+  }
+
+  @override
+  String get notifInactivityBody =>
+      'قد يساعده القليل من التشجيع على العودة إلى المسار الصحيح.';
 }

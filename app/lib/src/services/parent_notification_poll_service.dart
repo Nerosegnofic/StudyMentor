@@ -5,8 +5,10 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../data/providers/dataconnect_provider.dart';
 import 'local_notification_service.dart';
+import 'notification_localizations.dart';
 import 'notification_preferences_cache.dart';
 
 /// Unique name / task name used to register the parent-notification-poll
@@ -78,6 +80,7 @@ class ParentNotificationPollService {
         await provider.markLocalNotificationEventsRead(fetchedEventIds);
 
         await LocalNotificationService.instance.init();
+        final loc = await NotificationLocalizations.current();
 
         for (final event in events) {
           final eventType = event['event_type'] as String;
@@ -97,11 +100,14 @@ class ParentNotificationPollService {
             continue;
           }
 
+          final text = _localizedTitleAndBody(loc, eventType, payload);
+          if (text == null) continue;
+
           await LocalNotificationService.instance.show(
             id: stableIntFromUuid(event['id'] as String),
             channelId: channelId,
-            title: payload['title'] as String? ?? '',
-            body: payload['body'] as String? ?? '',
+            title: text.$1,
+            body: text.$2,
           );
         }
       }
@@ -119,6 +125,35 @@ class ParentNotificationPollService {
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
+
+  /// Builds the localized (title, body) pair for [eventType] from its
+  /// [payload] params, using [loc] — the parent's current language. Returns
+  /// null if [eventType] has no known rendering (the event is skipped).
+  static (String, String)? _localizedTitleAndBody(
+    AppLocalizations loc,
+    String eventType,
+    Map<String, dynamic> payload,
+  ) {
+    switch (eventType) {
+      case 'LEVEL_UP':
+        final studentName = payload['studentName'] as String? ?? '';
+        final level = int.tryParse(payload['level'] as String? ?? '') ?? 0;
+        return (
+          loc.notifParentLevelUpTitle(studentName, level),
+          loc.notifParentLevelUpBody,
+        );
+      case 'STREAK_BROKEN':
+        final studentName = payload['studentName'] as String? ?? '';
+        final previousStreak =
+            int.tryParse(payload['previousStreak'] as String? ?? '') ?? 0;
+        return (
+          loc.notifParentStreakBrokenTitle(studentName),
+          loc.notifParentStreakBrokenBody(previousStreak),
+        );
+      default:
+        return null;
+    }
+  }
 
   /// Maps an event type to its notification channel and the parent
   /// preference category that gates it. Returns null for event types that

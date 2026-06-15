@@ -1774,4 +1774,84 @@ class AppLocalizationsEn extends AppLocalizations {
   String xpRewardLabel(int xp) {
     return '+$xp XP';
   }
+
+  @override
+  String notifLevelUpTitle(int level) {
+    return 'You reached Level $level! 🎓';
+  }
+
+  @override
+  String get notifLevelUpBody =>
+      'Keep it up — more rewards are waiting at the next level.';
+
+  @override
+  String notifParentLevelUpTitle(String studentName, int level) {
+    return '$studentName reached Level $level! 🎓';
+  }
+
+  @override
+  String get notifParentLevelUpBody =>
+      'They\'ve been working hard. Check their progress.';
+
+  @override
+  String notifStreakMilestoneTitle(int streak) {
+    return '$streak-day streak! 🔥';
+  }
+
+  @override
+  String notifStreakMilestoneBody(int streak) {
+    return 'You\'ve studied $streak days in a row. Keep the fire going!';
+  }
+
+  @override
+  String get notifNearMilestoneTitle => 'One more day! 🔥';
+
+  @override
+  String notifNearMilestoneBody(int nextMilestone) {
+    return 'Keep going — your $nextMilestone-day reward is tomorrow.';
+  }
+
+  @override
+  String get notifStreakReminderTitle => 'Don\'t break your streak! 🔥';
+
+  @override
+  String notifStreakReminderBody(int streak) {
+    return 'One quiz keeps your $streak-day streak alive.';
+  }
+
+  @override
+  String get notifStartStreakTitle => 'Start a new streak today!';
+
+  @override
+  String get notifStartStreakBody =>
+      'Take a quick quiz and begin your learning streak.';
+
+  @override
+  String notifParentStreakBrokenTitle(String studentName) {
+    return '$studentName\'s streak ended';
+  }
+
+  @override
+  String notifParentStreakBrokenBody(int previousStreak) {
+    return 'Their $previousStreak-day streak was broken. A little encouragement might help.';
+  }
+
+  @override
+  String notifGardenNudgeTitle(String subject) {
+    return 'Your $subject plant needs you 🌱';
+  }
+
+  @override
+  String notifGardenNudgeBody(String subject) {
+    return 'It\'s been a few days — come water your $subject garden!';
+  }
+
+  @override
+  String notifInactivityTitle(String studentName) {
+    return '$studentName hasn\'t quizzed in 3 days';
+  }
+
+  @override
+  String get notifInactivityBody =>
+      'A little encouragement might help them get back on track.';
 }

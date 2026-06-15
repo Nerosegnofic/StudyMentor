@@ -6,6 +6,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../data/repositories/ai_engine_repository.dart';
 import 'local_notification_service.dart';
+import 'notification_localizations.dart';
 
 /// Unique name / task name used to register the garden-nudge
 /// [OneTimeWorkRequest] with WorkManager.
@@ -118,12 +119,12 @@ class GardenNudgeService {
       final target = neglected.first;
 
       await LocalNotificationService.instance.init();
+      final loc = await NotificationLocalizations.current();
       await LocalNotificationService.instance.show(
         id: kNotifIdGardenNudge,
         channelId: kChannelChildGarden,
-        title: 'Your ${target.subjectName} plant needs you \u{1F331}',
-        body:
-            "It's been a few days — come water your ${target.subjectName} garden!",
+        title: loc.notifGardenNudgeTitle(target.subjectName),
+        body: loc.notifGardenNudgeBody(target.subjectName),
       );
 
       await prefs.setString('last_garden_nudge_date_$studentUid', today);

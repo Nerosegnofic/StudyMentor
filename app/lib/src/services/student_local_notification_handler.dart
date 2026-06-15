@@ -8,6 +8,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../data/providers/dataconnect_provider.dart';
 import 'local_notification_service.dart';
+import 'notification_localizations.dart';
 
 // Streak values that trigger a milestone celebration.
 const _kStreakMilestones = {7, 14, 30};
@@ -142,11 +143,12 @@ class StudentLocalNotificationHandler {
     if (!_claimEvent('LEVEL_UP_$newLevel')) return;
 
     try {
+      final loc = await NotificationLocalizations.current();
       await LocalNotificationService.instance.show(
         id: kNotifIdLevelUp,
         channelId: kChannelChildMilestones,
-        title: 'You reached Level $newLevel! 🎓',
-        body: 'Keep it up — more rewards are waiting at the next level.',
+        title: loc.notifLevelUpTitle(newLevel),
+        body: loc.notifLevelUpBody,
         // TODO(Phase 4): payload for deep-link to student profile on tap.
         // payload: 'STUDENT_PROFILE:',
       );
@@ -166,10 +168,9 @@ class StudentLocalNotificationHandler {
       toParentUid: parentUid,
       eventType: 'LEVEL_UP',
       payload: {
-        'title': '$studentName reached Level $newLevel! 🎓',
-        'body': "They've been working hard. Check their progress.",
         'screen': 'STUDENT_DETAIL',
         'childId': studentUid,
+        'studentName': studentName,
         'level': '$newLevel',
       },
     );
@@ -195,12 +196,12 @@ class StudentLocalNotificationHandler {
     if (!_claimEvent('STREAK_MILESTONE_$currentStreak')) return;
 
     try {
+      final loc = await NotificationLocalizations.current();
       await LocalNotificationService.instance.show(
         id: kNotifIdStreakMilestone,
         channelId: kChannelChildMilestones,
-        title: '$currentStreak-day streak! 🔥',
-        body:
-            "You've studied $currentStreak days in a row. Keep the fire going!",
+        title: loc.notifStreakMilestoneTitle(currentStreak),
+        body: loc.notifStreakMilestoneBody(currentStreak),
       );
     } catch (_) {
       // Swallow — notification failure must not interrupt the quiz result flow.
@@ -250,11 +251,12 @@ class StudentLocalNotificationHandler {
     final nextMilestone = currentStreak + 1;
 
     try {
+      final loc = await NotificationLocalizations.current();
       await LocalNotificationService.instance.show(
         id: kNotifIdNearMilestone,
         channelId: kChannelChildStreak,
-        title: 'One more day! 🔥',
-        body: "Keep going — your $nextMilestone-day reward is tomorrow.",
+        title: loc.notifNearMilestoneTitle,
+        body: loc.notifNearMilestoneBody(nextMilestone),
       );
     } catch (_) {
       // Swallow — notification failure must not interrupt the quiz result flow.

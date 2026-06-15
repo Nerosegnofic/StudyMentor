@@ -625,5 +625,80 @@
     "placeholders": {
       "xp": {"type": "int"}
     }
-  }
+  },
+
+  "notifLevelUpTitle": "لقد وصلت إلى المستوى {level}! 🎓",
+  "@notifLevelUpTitle": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "notifLevelUpBody": "أحسنت! المزيد من المكافآت في انتظارك بالمستوى التالي.",
+  "notifParentLevelUpTitle": "{studentName} وصل إلى المستوى {level}! 🎓",
+  "@notifParentLevelUpTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "notifParentLevelUpBody": "لقد كان مجتهدًا. تابع تقدمه الآن.",
+  "notifStreakMilestoneTitle": "سلسلة {streak} يوم متتالية! 🔥",
+  "@notifStreakMilestoneTitle": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifStreakMilestoneBody": "لقد ذاكرت {streak} يوم متتالي. حافظ على حماسك!",
+  "@notifStreakMilestoneBody": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifNearMilestoneTitle": "يوم واحد فقط! 🔥",
+  "notifNearMilestoneBody": "استمر — مكافأة سلسلة {nextMilestone} يوم في انتظارك غدًا.",
+  "@notifNearMilestoneBody": {
+    "placeholders": {
+      "nextMilestone": {"type": "int"}
+    }
+  },
+  "notifStreakReminderTitle": "لا تكسر سلسلتك! 🔥",
+  "notifStreakReminderBody": "اختبار واحد فقط يحافظ على سلسلتك من {streak} يوم.",
+  "@notifStreakReminderBody": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifStartStreakTitle": "ابدأ سلسلة جديدة اليوم!",
+  "notifStartStreakBody": "أنجز اختبارًا سريعًا وابدأ سلسلة مذاكرتك.",
+  "notifParentStreakBrokenTitle": "انتهت سلسلة {studentName}",
+  "@notifParentStreakBrokenTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"}
+    }
+  },
+  "notifParentStreakBrokenBody": "انقطعت سلسلته البالغة {previousStreak} يوم. قد يساعده القليل من التشجيع.",
+  "@notifParentStreakBrokenBody": {
+    "placeholders": {
+      "previousStreak": {"type": "int"}
+    }
+  },
+  "notifGardenNudgeTitle": "نبتة {subject} بحاجة إليك 🌱",
+  "@notifGardenNudgeTitle": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "notifGardenNudgeBody": "مرت أيام قليلة — تعال واسقِ حديقة {subject}!",
+  "@notifGardenNudgeBody": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "notifInactivityTitle": "{studentName} لم يحل أي اختبار منذ 3 أيام",
+  "@notifInactivityTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"}
+    }
+  },
+  "notifInactivityBody": "قد يساعده القليل من التشجيع على العودة إلى المسار الصحيح."
 }

@@ -4,15 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// SharedPreferences key under which the user's chosen app language is
+/// persisted. Also read by [NotificationLocalizations] so background
+/// services can localize notification text to match.
+const kLocalePrefsKey = 'app_locale_code';
+
 /// Persists the user's chosen app language (English/Arabic) across sessions.
 class LocaleCubit extends Cubit<Locale> {
-  static const _prefsKey = 'app_locale_code';
-
   LocaleCubit() : super(const Locale('en'));
 
   Future<void> loadSavedLocale() async {
     final prefs = await SharedPreferences.getInstance();
-    final code = prefs.getString(_prefsKey);
+    final code = prefs.getString(kLocalePrefsKey);
     if (code != null) {
       emit(Locale(code));
     }
@@ -22,6 +25,6 @@ class LocaleCubit extends Cubit<Locale> {
     if (state == locale) return;
     emit(locale);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefsKey, locale.languageCode);
+    await prefs.setString(kLocalePrefsKey, locale.languageCode);
   }
 }
