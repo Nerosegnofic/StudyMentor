@@ -161,11 +161,18 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                     }
 
                     "getTimerState" -> {
-                        // Prefer the bound service (always accurate). Fall back
-                        // to SharedPreferences using the active UID prefix so we
-                        // never read another student's values.
-                        val svc = timerService
-                        if (svc != null) {
+                        // The caller passes the UID of the student it's asking
+                        // about. Until startTimerService() runs for that student,
+                        // the bound service / "active UID" pointer may still
+                        // reflect the PREVIOUS student, so a requested UID that
+                        // doesn't match the active one is always served from
+                        // that student's own per-UID prefs — never the bound
+                        // service's (stale) in-memory state.
+                        val requestedUid = call.argument<String>("studentUid")?.takeIf { it.isNotEmpty() }
+                        val activeUid    = UsageTimerService.activeUid(activity)
+                        val svc          = timerService
+
+                        if (svc != null && (requestedUid == null || requestedUid == activeUid)) {
                             result.success(
                                 mapOf(
                                     "totalUsage"        to svc.getTotalUsageSecs(),
@@ -177,7 +184,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                                 ),
                             )
                         } else {
-                            val uid   = UsageTimerService.activeUid(activity)
+                            val uid   = requestedUid ?: activeUid
                             val prefs = UsageTimerService.prefs(activity)
                             result.success(
                                 mapOf(

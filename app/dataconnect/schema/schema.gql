@@ -26,6 +26,8 @@ type Student @table(name: "students", key: ["uid"]) {
   parent: Parent!
   username: String! @col(dataType: "varchar(50)") @unique
   gradeLevel: Int
+  # Last time this student completed a quiz. Null until their first quiz.
+  lastActiveAt: Timestamp
 }
 
 

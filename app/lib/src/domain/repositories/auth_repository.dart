@@ -34,6 +34,7 @@ abstract class AuthRepository {
   });
   Future<List<StudentModel>> getStudentsByParent(String parentUid);
   Future<String> getParentFullName(String studentUid);
+  Future<String> getParentUidForStudent(String studentUid);
   Future<List<StudentModel>> refreshStudentVerificationStatus(
     List<StudentModel> students,
   );

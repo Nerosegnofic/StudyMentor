@@ -19,7 +19,7 @@ class StudentConfigModel {
     this.usageHours = 0,
     this.usageMinutes = 30,
     this.cooldownHours = 0,
-    this.cooldownMinutes = 10,
+    this.cooldownMinutes = 1,
     this.quizCount = const Auto(),
   });
 
@@ -46,7 +46,7 @@ class StudentConfigModel {
         usageHours: json['usage_hours'] as int? ?? 0,
         usageMinutes: json['usage_minutes'] as int? ?? 30,
         cooldownHours: json['cooldown_hours'] as int? ?? 0,
-        cooldownMinutes: json['cooldown_minutes'] as int? ?? 10,
+        cooldownMinutes: json['cooldown_minutes'] as int? ?? 1,
         quizCount: QuizCount.fromJson(json['quiz_count']),
       );
 

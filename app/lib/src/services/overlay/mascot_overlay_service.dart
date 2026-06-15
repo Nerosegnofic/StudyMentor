@@ -141,18 +141,25 @@ class MascotOverlayService {
     await _hideUsageNotification();
     await _hideCooldownNotification();
     await _hideOverlayNative();
-    // NOTE: _resetAccessibilityState() is intentionally NOT called here.
-    //
-    // stop() is invoked when the parent logs in (student session ends), not
-    // when the cooldown genuinely ends. Calling setBlocked(false) here would
-    // write AppPrefs.KEY_IS_BLOCKED=false even while a cooldown is still
-    // active, causing the accessibility service to stop blocking apps the next
-    // time it reconnects (e.g. after an OEM process kill).
-    //
-    // The accessibility blocked state is only cleared by _onUnblocked(), which
-    // fires when UsageTimerService confirms the cooldown has actually expired,
-    // or by _syncStateFromNative() on the NEXT student's login, which now
-    // unconditionally syncs the flag to that student's own cooldown state.
+
+    // App restrictions must be tied to the active logged-in session: once
+    // this student logs out, lift any cooldown blocking and clear the
+    // monitored-app list so neither bleeds into whichever student (if any)
+    // logs in next. The per-student cooldown progress itself is left intact
+    // in native prefs so this student's cooldown resumes correctly if they
+    // log back in.
+    await _resetAccessibilityState();
+    try {
+      await _accessibilityChannel.invokeMethod('setMonitoredApps', {
+        'apps': <String>[],
+        'studentUid': '',
+      });
+    } on PlatformException catch (e) {
+      debugPrint(
+        '[MascotOverlayService] setMonitoredApps (clear on logout) error: ${e.message}',
+      );
+    }
+
     _isBlocked = false;
     _overlayVisible = false;
     _usageNotificationVisible = false;
@@ -325,8 +332,13 @@ class MascotOverlayService {
 
   Future<void> _syncStateFromNative() async {
     try {
+      // Pass our own UID so the native side returns THIS student's saved
+      // cooldown/usage state rather than whatever student was last active —
+      // the native "active student" pointer is only updated once
+      // startTimerService() runs (in start(), after this call).
       final state = await _timerServiceChannel.invokeMapMethod<String, dynamic>(
         'getTimerState',
+        {'studentUid': _studentUid ?? ''},
       );
       if (state == null) return;
 

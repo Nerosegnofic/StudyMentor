@@ -39,6 +39,7 @@ async def get_garden(
             "subject_name": p["subject_name"],
             "mastery_percent": p["mastery_percent"],
             "plant_stage": _mastery_to_stage(p["mastery_percent"]),
+            "updated_at": p["updated_at"].isoformat() if p["updated_at"] else None,
         }
         for p in plants
     ]

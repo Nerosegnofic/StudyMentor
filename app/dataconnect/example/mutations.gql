@@ -209,6 +209,13 @@ mutation UpdateStudentFullName($uid: String!, $fullName: String!) @auth(level: U
   user_update(key: { uid: $uid }, data: { fullName: $fullName })
 }
 
+# Stamps the calling student's lastActiveAt with the server time. Called on
+# quiz completion so the parent's inactivity check (see GetStudentsByParent)
+# can detect students who haven't studied recently.
+mutation UpdateStudentLastActiveAt @auth(level: USER) {
+  student_update(key: { uid_expr: "auth.uid" }, data: { lastActiveAt_expr: "request.time" })
+}
+
 # ── Parent Account Deletion ────────────────────────────────────────────────────
 
 mutation DeleteParentRecord @auth(level: USER) {
@@ -254,10 +261,10 @@ mutation InsertLocalNotificationEvent(
 }
 
 mutation MarkLocalNotificationEventsRead(
-  $toParentUid: String!
-) @auth(level: USER, insecureReason: "Parent marks their own events as read.") {
+  $eventIds: [UUID!]!
+) @auth(level: USER, insecureReason: "Parent marks their own events as read; ownership enforced by prior query scoping.") {
   localNotificationEvent_updateMany(
-    where: { toParentUid: { eq: $toParentUid }, isRead: { eq: false } }
+    where: { id: { in: $eventIds } }
     data: { isRead: true }
   )
 }

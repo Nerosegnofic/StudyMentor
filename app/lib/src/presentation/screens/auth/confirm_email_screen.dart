@@ -54,7 +54,13 @@ class ConfirmEmailScreen extends StatelessWidget {
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Please check your inbox and verify your email to continue.'),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            'Please check your inbox and verify your email to continue.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () => context.read<AuthBloc>().add(

@@ -32,7 +32,6 @@ class StudentConfigScreen extends StatefulWidget {
 class _StudentConfigScreenState extends State<StudentConfigScreen> {
   final List<PendingAppRule> _rules = [];
   StudentConfigModel _config = const StudentConfigModel();
-  String _parentUid = '';
   late StudentModel _student;
 
   List<InstalledAppModel> _installedApps = [];
@@ -53,8 +52,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   void initState() {
     super.initState();
     _student = widget.student;
-    final authState = context.read<AuthBloc>().state;
-    _parentUid = authState is AuthAuthenticated ? authState.user.uid : '';
     context.read<AppConfigBloc>().add(
       LoadAppRulesRequested(studentUid: widget.student.uid),
     );
@@ -412,17 +409,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 _appsLoading = false;
                 _isRefreshing = false;
               });
-            }
-
-            if (state is StudentDeleted && state.studentUid == widget.student.uid) {
-              if (mounted) {
-                // Reload the students list (dialog + dashboard routes are also
-                // removed by popUntil, so no double-pop issues).
-                context.read<StudentsBloc>().add(
-                  LoadStudentsRequested(parentUid: _parentUid),
-                );
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              }
             }
           },
         ),
@@ -947,7 +933,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     final authState = context.read<AuthBloc>().state;
     final parentUid = authState is AuthAuthenticated ? authState.user.uid : '';
 
-    await showDialog<void>(
+    final deleted = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => BlocProvider.value(
@@ -958,6 +944,13 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         ),
       ),
     );
+
+    if (deleted == true && mounted) {
+      context.read<StudentsBloc>().add(
+        LoadStudentsRequested(parentUid: parentUid),
+      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   // ── unsaved changes dialog ─────────────────────────────────────────────────
@@ -1051,11 +1044,11 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
             setState(() => _isLoading = true);
           } else if (state is StudentDeleted &&
               state.studentUid == widget.student.uid) {
-            // Only pop if this dialog route is still active.
-            // When the config screen's popUntil fires first, it removes this
-            // dialog route; calling pop() a second time would pop RootPage.
-            final route = ModalRoute.of(context);
-            if (route?.isActive == true) Navigator.of(context).pop();
+            // Allow the dialog's PopScope to release before popping, then
+            // close the dialog. The config screen awaits this result and
+            // handles reloading the students list + navigating back.
+            setState(() => _isLoading = false);
+            Navigator.of(context).pop(true);
           } else if (state is StudentDeleteError) {
             final isWrongPassword = state.message.contains(
               'Invalid credentials',

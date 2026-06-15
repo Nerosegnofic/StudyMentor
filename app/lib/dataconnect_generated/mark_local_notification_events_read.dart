@@ -1,10 +1,10 @@
 part of 'generated.dart';
 
 class MarkLocalNotificationEventsReadVariablesBuilder {
-  String toParentUid;
+  List<String> eventIds;
 
   final FirebaseDataConnect _dataConnect;
-  MarkLocalNotificationEventsReadVariablesBuilder(this._dataConnect, {required  this.toParentUid,});
+  MarkLocalNotificationEventsReadVariablesBuilder(this._dataConnect, {required  this.eventIds,});
   Deserializer<MarkLocalNotificationEventsReadData> dataDeserializer = (dynamic json)  => MarkLocalNotificationEventsReadData.fromJson(jsonDecode(json));
   Serializer<MarkLocalNotificationEventsReadVariables> varsSerializer = (MarkLocalNotificationEventsReadVariables vars) => jsonEncode(vars.toJson());
   Future<OperationResult<MarkLocalNotificationEventsReadData, MarkLocalNotificationEventsReadVariables>> execute() {
@@ -12,7 +12,7 @@ class MarkLocalNotificationEventsReadVariablesBuilder {
   }
 
   MutationRef<MarkLocalNotificationEventsReadData, MarkLocalNotificationEventsReadVariables> ref() {
-    MarkLocalNotificationEventsReadVariables vars= MarkLocalNotificationEventsReadVariables(toParentUid: toParentUid,);
+    MarkLocalNotificationEventsReadVariables vars= MarkLocalNotificationEventsReadVariables(eventIds: eventIds,);
     return _dataConnect.mutation("MarkLocalNotificationEventsRead", dataDeserializer, varsSerializer, vars);
   }
 }
@@ -53,11 +53,13 @@ class MarkLocalNotificationEventsReadData {
 
 @immutable
 class MarkLocalNotificationEventsReadVariables {
-  final String toParentUid;
+  final List<String> eventIds;
   @Deprecated('fromJson is deprecated for Variable classes as they are no longer required for deserialization.')
   MarkLocalNotificationEventsReadVariables.fromJson(Map<String, dynamic> json):
   
-  toParentUid = nativeFromJson<String>(json['toParentUid']);
+  eventIds = (json['eventIds'] as List<dynamic>)
+        .map((e) => nativeFromJson<String>(e))
+        .toList();
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -68,21 +70,21 @@ class MarkLocalNotificationEventsReadVariables {
     }
 
     final MarkLocalNotificationEventsReadVariables otherTyped = other as MarkLocalNotificationEventsReadVariables;
-    return toParentUid == otherTyped.toParentUid;
+    return eventIds == otherTyped.eventIds;
     
   }
   @override
-  int get hashCode => toParentUid.hashCode;
+  int get hashCode => eventIds.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['toParentUid'] = nativeToJson<String>(toParentUid);
+    json['eventIds'] = eventIds.map((e) => nativeToJson<String>(e)).toList();
     return json;
   }
 
   MarkLocalNotificationEventsReadVariables({
-    required this.toParentUid,
+    required this.eventIds,
   });
 }
 

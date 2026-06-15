@@ -31,6 +31,11 @@ import 'src/presentation/screens/student/student_screen.dart';
 import 'src/services/installed_apps_service.dart';
 import 'src/services/device_admin_service.dart';
 import 'src/services/local_notification_service.dart';
+import 'src/services/garden_nudge_service.dart';
+import 'src/services/streak_reminder_service.dart';
+import 'src/services/student_local_notification_handler.dart';
+import 'src/services/parent_notification_poll_service.dart';
+import 'src/services/parent_inactivity_check_service.dart';
 
 // ── WorkManager task identifiers ─────────────────────────────────────────────
 const _kSyncTaskName = 'installedAppSync';
@@ -40,37 +45,70 @@ const _kSyncTaskTag = 'com.example.studymentor.installedAppSync';
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
-    if (taskName != _kSyncTaskName) return true;
-
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+    } catch (_) {}
 
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return true;
+    if (taskName == _kSyncTaskName) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return true;
 
-      final apps = await InstalledAppsService.instance.getFromDevice();
+        final apps = await InstalledAppsService.instance.getFromDevice();
 
-      final provider = DataConnectProvider();
-      await provider.deleteAllInstalledAppsForStudent(user.uid);
-      await Future.wait(
-        apps.map(
-          (app) => provider.insertInstalledApp(
-            studentUid: user.uid,
-            packageName: app.packageName,
-            appLabel: app.appLabel,
-            isSystemApp: app.isSystemApp,
+        final provider = DataConnectProvider();
+        await provider.deleteAllInstalledAppsForStudent(user.uid);
+        await Future.wait(
+          apps.map(
+            (app) => provider.insertInstalledApp(
+              studentUid: user.uid,
+              packageName: app.packageName,
+              appLabel: app.appLabel,
+              isSystemApp: app.isSystemApp,
+            ),
           ),
-        ),
-      );
+        );
 
-      await InstalledAppsService.instance.markInventoryClean();
+        await InstalledAppsService.instance.markInventoryClean();
 
-      return true;
-    } catch (_) {
-      return false;
+        return true;
+      } catch (_) {
+        return false;
+      }
+    } else if (taskName == kGardenNudgeTaskName) {
+      await GardenNudgeService.runTask();
+    } else if (taskName == kStreakReminderTaskName) {
+      await StreakReminderService.runTask();
+    } else if (taskName == kParentNotificationPollTaskName) {
+      await ParentNotificationPollService.runTask();
+    } else if (taskName == kParentInactivityCheckTaskName) {
+      await ParentInactivityCheckService.runTask();
+    } else if (taskName == kStudentEventWriteTaskName) {
+      final eventType = inputData?['eventType'] as String?;
+      final payload = inputData?['payload'] as String?;
+      final fromStudentUid = inputData?['fromStudentUid'] as String?;
+      final toParentUid = inputData?['toParentUid'] as String?;
+      if (eventType == null ||
+          payload == null ||
+          fromStudentUid == null ||
+          toParentUid == null) {
+        return true;
+      }
+      try {
+        await DataConnectProvider().insertLocalNotificationEvent(
+          fromStudentUid: fromStudentUid,
+          toParentUid: toParentUid,
+          eventType: eventType,
+          payload: payload,
+        );
+      } catch (_) {
+        return false; // let WorkManager retry with backoff
+      }
     }
+
+    return true;
   });
 }
 

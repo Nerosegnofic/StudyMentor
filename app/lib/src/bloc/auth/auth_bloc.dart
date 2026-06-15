@@ -2,10 +2,19 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/models/user_model.dart';
 import '../../services/installed_apps_service.dart';
+import '../../services/student_local_notification_handler.dart';
+import '../../services/garden_nudge_service.dart';
+import '../../services/streak_reminder_service.dart';
+import '../../services/parent_notification_poll_service.dart';
+import '../../services/parent_inactivity_check_service.dart';
+import '../../services/notification_preferences_cache.dart';
 import '../../domain/models/installed_app_model.dart';
 import '../../domain/models/app_config_model.dart';
 
@@ -46,6 +55,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthEmailUnverified(profile.email));
         } else {
           emit(AuthAuthenticated(profile));
+          if (profile.role.toLowerCase() != 'parent') {
+            await GardenNudgeService.scheduleNext(
+              policy: ExistingWorkPolicy.keep,
+            );
+            await StreakReminderService.scheduleNext(
+              policy: ExistingWorkPolicy.keep,
+            );
+            await _cacheStudentContext(profile);
+          } else {
+            await _cacheParentContext(profile);
+            await ParentNotificationPollService.register();
+            await ParentInactivityCheckService.scheduleNext(
+              policy: ExistingWorkPolicy.keep,
+            );
+          }
         }
       } else {
         emit(AuthUnauthenticated());
@@ -104,6 +128,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthEmailUnverified(user.email));
       } else {
         emit(AuthAuthenticated(user));
+        if (user.role.toLowerCase() != 'parent') {
+          await GardenNudgeService.scheduleNext(
+            policy: ExistingWorkPolicy.keep,
+          );
+          await StreakReminderService.scheduleNext(
+            policy: ExistingWorkPolicy.keep,
+          );
+          await _cacheStudentContext(user);
+        } else {
+          await _cacheParentContext(user);
+          await ParentNotificationPollService.register();
+          await ParentInactivityCheckService.scheduleNext(
+            policy: ExistingWorkPolicy.keep,
+          );
+        }
       }
     } catch (e) {
       debugPrint('[AUTH DEBUG] Login error: $e');
@@ -112,7 +151,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogout(LogoutRequested event, Emitter<AuthState> emit) async {
+    final prevState = state;
     await repository.signOut();
+    StudentLocalNotificationHandler.instance.clearFiredEvents();
+    if (prevState is AuthAuthenticated) {
+      if (prevState.user.role.toLowerCase() != 'parent') {
+        await GardenNudgeService.cancel(prevState.user.uid);
+        await StreakReminderService.cancel(prevState.user.uid);
+      } else {
+        await ParentNotificationPollService.cancel();
+        await ParentInactivityCheckService.cancel();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('parentUid');
+      }
+      await NotificationPreferencesCache.clear(prevState.user.uid);
+    }
     emit(AuthUnauthenticated());
   }
 
@@ -206,6 +259,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       if (isValid) {
         await repository.signOut();
+        StudentLocalNotificationHandler.instance.clearFiredEvents();
+        await GardenNudgeService.cancel(event.studentUid);
+        await StreakReminderService.cancel(event.studentUid);
+        await NotificationPreferencesCache.clear(event.studentUid);
         emit(AuthUnauthenticated());
       } else {
         // Emit AuthIdle first to guarantee a state transition even when the
@@ -399,6 +456,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     DeleteStudentRequested event,
     Emitter<AuthState> emit,
   ) async {
+    debugPrint('[DeleteStudent] started for ${event.studentUid}');
     emit(StudentDeleteLoading());
     try {
       await repository.deleteStudent(
@@ -406,12 +464,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         studentEmail: event.studentEmail,
         studentPassword: event.studentPassword,
       );
+      debugPrint('[DeleteStudent] repository.deleteStudent completed');
       emit(StudentDeleted(studentUid: event.studentUid));
+      debugPrint('[DeleteStudent] emitted StudentDeleted');
       // Restore AuthAuthenticated so parent-facing screens (settings, profile)
       // continue to display the parent's data correctly after navigation back.
       final profile = await repository.getUserProfile();
+      debugPrint('[DeleteStudent] getUserProfile returned: $profile');
       if (profile != null) emit(AuthAuthenticated(profile));
-    } catch (e) {
+      debugPrint('[DeleteStudent] done');
+    } catch (e, stack) {
+      debugPrint('[DeleteStudent] error: $e\n$stack');
       emit(StudentDeleteError(_mapDeletionException(e)));
     }
   }
@@ -480,6 +543,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
     } catch (e) {
       emit(LegacyStudentProfileUpdateError(_mapProfileUpdateException(e)));
+    }
+  }
+
+  /// Caches `parent_uid_{uid}` and `student_full_name_{uid}` in
+  /// [SharedPreferences] so that [StudentLocalNotificationHandler] and
+  /// [StreakReminderService] (which runs in a background isolate) can build
+  /// `InsertLocalNotificationEvent` payloads for the parent without an extra
+  /// network round-trip.
+  Future<void> _cacheStudentContext(UserModel profile) async {
+    try {
+      final parentUid = await repository.getParentUidForStudent(profile.uid);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('parent_uid_${profile.uid}', parentUid);
+      await prefs.setString(
+        'student_full_name_${profile.uid}',
+        profile.fullName,
+      );
+    } catch (_) {
+      // Best-effort cache — a failure here must not affect the auth flow.
+    }
+    try {
+      await NotificationPreferencesCache.refresh(profile.uid);
+    } catch (_) {
+      // Best-effort cache — a failure here must not affect the auth flow.
+    }
+  }
+
+  /// Caches `parentUid` in [SharedPreferences] so that
+  /// [ParentNotificationPollService] (which runs in a background isolate)
+  /// can identify this as a parent session without an extra network
+  /// round-trip.
+  Future<void> _cacheParentContext(UserModel profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('parentUid', profile.uid);
+    try {
+      await NotificationPreferencesCache.refresh(profile.uid);
+    } catch (_) {
+      // Best-effort cache — a failure here must not affect the auth flow.
     }
   }
 
