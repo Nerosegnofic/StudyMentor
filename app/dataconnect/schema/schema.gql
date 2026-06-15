@@ -58,7 +58,7 @@ type StudentConfig @table(name: "student_configs", key: ["studentUid"]) {
   usageHours: Int! @default(expr: "0")
   usageMinutes: Int! @default(expr: "30")
   cooldownHours: Int! @default(expr: "0")
-  cooldownMinutes: Int! @default(expr: "10")
+  cooldownMinutes: Int! @default(expr: "30")
   quizCount: String @col(dataType: "varchar(4)") @default(expr: "'auto'")
 }
 
