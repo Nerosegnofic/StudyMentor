@@ -59,10 +59,10 @@ async def upload_document(
     **Requires:** `Authorization: Bearer <Firebase JWT>` header.
 
     - `subject_name`: The subject this document belongs to.
-    - Ownership (subject and chunks) is derived from the authenticated Firebase
-      UID in the JWT — never from request fields. The `student_uid` form field is
-      accepted for backward compatibility but **ignored** for authorization, per
-      the security rule "never trust a client-supplied UID."
+    - `student_uid`: The student this document is FOR. A parent uploads on a child's
+      behalf, so the subject and chunks are owned by `student_uid` when provided.
+      When omitted (a student uploading for themselves), ownership falls back to the
+      authenticated uploader's own Firebase UID from the JWT.
 
     Returns a unique document ID immediately while the background task
     parses, chunks, embeds, and populates the Skill table.
@@ -72,14 +72,32 @@ async def upload_document(
     # Reject an exact re-upload of the same file by this student (file-level dedup).
     # Done up front so we never pay for a redundant parse/embedding pass.
     content_hash = hashlib.sha256(file_content).hexdigest()
-    if document_repo.find_duplicate(db, firebase_uid, content_hash):
-        raise HTTPException(
-            status_code=409,
-            detail="This document has already been uploaded.",
-        )
+    existing_doc = document_repo.find_duplicate(db, firebase_uid, content_hash)
+    if existing_doc:
+        # If the document's subject was deleted (orphaned row from a failed cascade),
+        # auto-clean the stale record and proceed with the fresh upload.
+        from app.models.domain import Subject
+        subject_exists = db.query(Subject).filter(
+            Subject.subject_id == existing_doc.subject_id
+        ).first() if existing_doc.subject_id else None
+        if not subject_exists:
+            print(
+                f"[Upload] Cleaning orphaned document {existing_doc.document_id} "
+                f"(subject_id={existing_doc.subject_id} no longer exists).",
+                flush=True,
+            )
+            document_repo.delete_document_row(db, existing_doc.document_id)
+        else:
+            raise HTTPException(
+                status_code=409,
+                detail="This document has already been uploaded.",
+            )
 
-    # Owner is the authenticated uploader (JWT), NOT the client-supplied student_uid.
-    subject = find_or_create_subject(db, subject_name, firebase_uid)
+    # Owner is the student the document is FOR. A parent uploads on a child's behalf,
+    # so the subject must belong to student_uid when provided; fall back to the
+    # uploader's own UID (a student uploading for themselves).
+    owner_uid = student_uid or firebase_uid
+    subject = find_or_create_subject(db, subject_name, owner_uid)
     resolved_subject_id = subject.subject_id
 
     document_id = uuid4()
@@ -95,13 +113,16 @@ async def upload_document(
         content_hash=content_hash,
     )
 
+    # Chunks must be tagged with the SAME owner the student retrieves with, otherwise
+    # RAG retrieval for this private subject finds nothing (cross-student isolation
+    # makes the owner's firebase_uid mandatory on every retrieval tier).
     background_tasks.add_task(
         process_and_ingest_document,
         document_id=document_id,
         file_content=file_content,
         filename=file.filename,
         subject_id=resolved_subject_id,
-        firebase_uid=firebase_uid,
+        firebase_uid=owner_uid,
         subject_name=subject_name,
     )
 

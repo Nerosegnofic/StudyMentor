@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
@@ -11,12 +12,14 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../bloc/gamification/gamification_bloc.dart';
+import '../../../bloc/gamification/gamification_state.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../domain/models/garden_plant_model.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../widgets/garden_subject_card.dart';
+import '../../../utils/student_rank_utils.dart';
 import 'subject_detail_screen.dart';
 
 class StudentHome extends StatefulWidget {
@@ -30,7 +33,6 @@ class StudentHome extends StatefulWidget {
 }
 
 class StudentHomeState extends State<StudentHome> {
-  String? _parentFullName;
   List<AppRuleModel> _appRules = [];
   StudentConfigModel _config = const StudentConfigModel();
   bool _rulesLoading = true;
@@ -39,6 +41,9 @@ class StudentHomeState extends State<StudentHome> {
   int _streak = 0;
 
   int _quizzesCompletedToday = 0;
+  int _accuracyToday = 0;
+  int _bestStreak = 0;
+  int _quizzesThisWeek = 0;
 
 
   // Last known garden data — persists across BLoC state changes.
@@ -52,9 +57,6 @@ class StudentHomeState extends State<StudentHome> {
   @override
   void initState() {
     super.initState();
-    context.read<AuthBloc>().add(
-      LoadParentNameRequested(studentUid: widget.uid),
-    );
     context.read<AuthBloc>().add(
       LoadStudentAppConfigRequested(studentUid: widget.uid),
     );
@@ -93,21 +95,30 @@ class StudentHomeState extends State<StudentHome> {
       if (mounted) {
         setState(() {
           _quizzesCompletedToday = snapshot.quizzesCompletedToday;
+          _accuracyToday = snapshot.averageAccuracyToday;
         });
       }
     } catch (e, s) {
       debugPrint('[StudentHome] _loadStreak daily snapshot error: $e\n$s');
     }
+
+    try {
+      final weekly = await AiEngineRepository.instance.getWeeklyReport(widget.uid);
+      if (mounted) {
+        setState(() {
+          _bestStreak = weekly.longestStreakDays;
+          _quizzesThisWeek = weekly.totalQuizzes;
+        });
+      }
+    } catch (e, s) {
+      debugPrint('[StudentHome] _loadStreak weekly report error: $e\n$s');
+    }
   }
 
   Future<void> refresh() async {
     setState(() {
-      _parentFullName = null;
       _rulesLoading = true;
     });
-    context.read<AuthBloc>().add(
-      LoadParentNameRequested(studentUid: widget.uid),
-    );
     context.read<AuthBloc>().add(
       LoadStudentAppConfigRequested(studentUid: widget.uid),
     );
@@ -138,9 +149,6 @@ class StudentHomeState extends State<StudentHome> {
       listeners: [
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
-            if (state is ParentNameLoaded) {
-              setState(() => _parentFullName = state.parentFullName);
-            }
             if (state is LegacyAppRulesLoaded && state.studentUid == widget.uid) {
               setState(() {
                 _appRules = state.rules;
@@ -185,10 +193,10 @@ class StudentHomeState extends State<StudentHome> {
                   children: [
                     RichText(
                       text: TextSpan(
-                        style: const TextStyle(
+                        style: GoogleFonts.cairo(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1F2937),
                           letterSpacing: -0.3,
                         ),
                         children: [
@@ -200,13 +208,31 @@ class StudentHomeState extends State<StudentHome> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Your garden is growing beautifully!',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade500,
-                      ),
+                    const SizedBox(height: 4),
+                    BlocBuilder<GamificationBloc, GamificationState>(
+                      builder: (context, state) {
+                        final profile = state is GamificationLoaded
+                            ? state.profile
+                            : state is GamificationRewardProcessed
+                                ? state.profile
+                                : null;
+                        final text = profile == null
+                            ? 'Your garden is growing beautifully!'
+                            : _gardenSubMessage(
+                                profile.currentLevel,
+                                StudentRankUtils.rankFromLevel(
+                                  profile.currentLevel,
+                                ),
+                              );
+                        return Text(
+                          text,
+                          style: GoogleFonts.roboto(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     _buildGardenArea(),
@@ -218,17 +244,10 @@ class StudentHomeState extends State<StudentHome> {
                 ),
               ),
 
-              // ── Parent + App rules ──────────────────────────────────────────
+              // ── App rules ───────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildParentSection(),
-                    const SizedBox(height: 28),
-                    _buildAppRulesSection(),
-                  ],
-                ),
+                child: _buildAppRulesSection(),
               ),
             ],
           ),
@@ -534,100 +553,88 @@ class StudentHomeState extends State<StudentHome> {
   // ── Quick stats ─────────────────────────────────────────────────────────────
 
   Widget _buildQuickStats() {
-    final streakLabel = _streak == 1 ? '1 day' : '$_streak days';
-    return Row(
-      children: [
-        Expanded(child: _statCard(_lessonsIcon(), 'Lessons', '$_quizzesCompletedToday')),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _statCard(
-            const Text('🔥', style: TextStyle(fontSize: 22)),
-            'Streak',
-            streakLabel,
-          ),
-        ),
-      ],
-    );
+    final avgMastery = _gardenCache.isEmpty
+        ? '—'
+        : '${(_gardenCache.map((p) => p.masteryPercent).reduce((a, b) => a + b) / _gardenCache.length).round()}%';
+
+    final cards = <Widget>[
+      _statCard('📚', 'Today', '$_quizzesCompletedToday', const Color(0xFF2196F3)),
+      _statCard('🔥', 'Streak', '$_streak', const Color(0xFFFF9800)),
+      _statCard('🏆', 'Best', '$_bestStreak', const Color(0xFFFFB300)),
+      _statCard('🎯', 'Accuracy', '$_accuracyToday%', const Color(0xFFEC4899)),
+      _statCard('🌱', 'Mastery', avgMastery, const Color(0xFF4CAF50)),
+      _statCard('📅', 'This week', '$_quizzesThisWeek', const Color(0xFF7C3AED)),
+    ];
+
+    // Lay the cards out 3-per-row, padding the final row so every card keeps a
+    // uniform width and stays column-aligned.
+    final rows = <Widget>[];
+    for (var i = 0; i < cards.length; i += 3) {
+      final rowCards = cards.sublist(i, math.min(i + 3, cards.length));
+      final padded = <Widget>[
+        ...rowCards,
+        for (var j = rowCards.length; j < 3; j++) const SizedBox.shrink(),
+      ];
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 10));
+      rows.add(Row(children: _statRow(padded)));
+    }
+    return Column(children: rows);
   }
 
-  Widget _lessonsIcon() {
-    return SizedBox(
-      width: 28,
-      height: 28,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 2,
-            top: 8,
-            child: Container(
-              width: 20,
-              height: 14,
-              decoration: BoxDecoration(
-                color: const Color(0xFF7EC8E3).withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 5,
-            top: 5,
-            child: Container(
-              width: 20,
-              height: 14,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9A8C9).withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 8,
-            top: 2,
-            child: Container(
-              width: 20,
-              height: 14,
-              decoration: const BoxDecoration(
-                color: Color(0xFFA5D6A7),
-                borderRadius: BorderRadius.all(Radius.circular(3)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  // Spaces three stat cards evenly across a row.
+  List<Widget> _statRow(List<Widget> cards) {
+    final children = <Widget>[];
+    for (var i = 0; i < cards.length; i++) {
+      children.add(Expanded(child: cards[i]));
+      if (i < cards.length - 1) children.add(const SizedBox(width: 10));
+    }
+    return children;
   }
 
-  Widget _statCard(Widget icon, String label, String value) {
+  Widget _statCard(String emoji, String label, String value, Color accent) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.20)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+            color: accent.withValues(alpha: 0.10),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          icon,
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Text(emoji, style: const TextStyle(fontSize: 18)),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
+            style: GoogleFonts.cairo(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: GoogleFonts.roboto(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade500,
             ),
           ),
         ],
@@ -636,46 +643,6 @@ class StudentHomeState extends State<StudentHome> {
   }
 
   // ── Parent section ──────────────────────────────────────────────────────────
-
-  Widget _buildParentSection() {
-    return Row(
-      children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: const BoxDecoration(
-            color: Color(0xFFE8EDFF),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.school, color: Color(0xFF4A6CF7), size: 26),
-        ),
-        const SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your parent',
-              style: TextStyle(fontSize: 12, color: Color(0xFF8B93A7)),
-            ),
-            const SizedBox(height: 2),
-            _parentFullName == null
-                ? const SizedBox(
-                    width: 120,
-                    height: 16,
-                    child: LinearProgressIndicator(),
-                  )
-                : Text(
-                    _parentFullName!,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-          ],
-        ),
-      ],
-    );
-  }
 
   // ── App rules section ───────────────────────────────────────────────────────
 
@@ -687,9 +654,13 @@ class StudentHomeState extends State<StudentHome> {
       children: [
         Row(
           children: [
-            const Text(
-              'App Rules',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            Text(
+              'Monitored apps',
+              style: GoogleFonts.cairo(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1F2937),
+              ),
             ),
             const SizedBox(width: 8),
             if (_rulesLoading)
@@ -703,7 +674,7 @@ class StudentHomeState extends State<StudentHome> {
         const SizedBox(height: 4),
         Text(
           'Rules configured by your parent.',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey.shade500),
         ),
         const SizedBox(height: 14),
         if (!_rulesLoading && activeRules.isEmpty)
@@ -711,10 +682,8 @@ class StudentHomeState extends State<StudentHome> {
         else if (!_rulesLoading) ...[
           // ── Screen-time card (always visible when rules exist) ───────────────
           _buildScreenTimeCard(),
-          const SizedBox(height: 12),
-          _buildTimingBanner(),
-          const SizedBox(height: 12),
-          ...activeRules.map(_buildRuleRow),
+          const SizedBox(height: 16),
+          _buildAppsSummaryCard(activeRules),
         ],
       ],
     );
@@ -963,50 +932,6 @@ class StudentHomeState extends State<StudentHome> {
     );
   }
 
-  // ── Timing banner (usage + cooldown pills) ──────────────────────────────────
-
-  Widget _buildTimingBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEEF1FF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF4A6CF7).withValues(alpha: 0.25),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF4A6CF7)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Your parent set these rules for all restricted apps:',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-            ),
-          ),
-          const SizedBox(width: 8),
-          _buildPill(
-            icon: Icons.timer_outlined,
-            label: _formatDuration(_config.usageHours, _config.usageMinutes),
-            color: const Color(0xFF34A853),
-            bg: const Color(0xFFE6F4EA),
-          ),
-          const SizedBox(width: 6),
-          _buildPill(
-            icon: Icons.hourglass_bottom_outlined,
-            label: _formatDuration(
-              _config.cooldownHours,
-              _config.cooldownMinutes,
-            ),
-            color: const Color(0xFFFF9800),
-            bg: const Color(0xFFFFF8E1),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildNoRulesPlaceholder() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -1044,50 +969,263 @@ class StudentHomeState extends State<StudentHome> {
     );
   }
 
-  Widget _buildRuleRow(AppRuleModel rule) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  /// Builds the motivational sub-line shown under the welcome greeting.
+  /// Always names the student's rank; the tail adapts to their streak and
+  /// average garden mastery so it reflects real performance.
+  String _gardenSubMessage(int level, String rankName) {
+    final prefix = 'Level $level · $rankName — ';
+    if (_streak >= 3) {
+      return '$prefix🔥 $_streak-day streak — you\'re on a roll!';
+    }
+    final avgMastery = _gardenCache.isEmpty
+        ? null
+        : _gardenCache.map((p) => p.masteryPercent).reduce((a, b) => a + b) /
+            _gardenCache.length;
+    if (avgMastery != null && avgMastery >= 80) {
+      return '${prefix}your garden is thriving! 🌟';
+    }
+    if (avgMastery != null && avgMastery >= 40) {
+      return '${prefix}great progress — keep growing! 🌱';
+    }
+    return '${prefix}let\'s grow your garden today! 🌱';
+  }
+
+  /// Summary card: a facepile of the real app icons + a count, tappable to
+  /// open the full list in a bottom sheet. Scales to any number of apps.
+  Widget _buildAppsSummaryCard(List<AppRuleModel> rules) {
+    return GestureDetector(
+      onTap: () => _showAllAppsSheet(rules),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _buildFacepile(rules),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${rules.length} ${rules.length == 1 ? 'app' : 'apps'} locked',
+                    style: GoogleFonts.cairo(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'when your screen time runs out',
+                    style: GoogleFonts.roboto(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+          ],
+        ),
       ),
-      child: Row(
+    );
+  }
+
+  /// Overlapping circular app icons; shows up to 4 then a "+N" bubble.
+  Widget _buildFacepile(List<AppRuleModel> rules) {
+    const size = 38.0;
+    const step = 24.0;
+    const maxFaces = 4;
+    final faces = rules.take(maxFaces).toList();
+    final extra = rules.length - faces.length;
+    final slots = faces.length + (extra > 0 ? 1 : 0);
+    final width = slots <= 1 ? size : (slots - 1) * step + size;
+
+    return SizedBox(
+      width: width,
+      height: size,
+      child: Stack(
         children: [
-          _AppIcon(
-            iconBase64: _iconCache[rule.packageName],
-            label: rule.appLabel,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  rule.appLabel,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+          for (int i = 0; i < faces.length; i++)
+            Positioned(left: i * step, child: _faceAvatar(faces[i], size)),
+          if (extra > 0)
+            Positioned(
+              left: faces.length * step,
+              child: Container(
+                width: size,
+                height: size,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFE8F5E9),
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Text(
+                  '+$extra',
+                  style: GoogleFonts.roboto(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2E7D32),
                   ),
                 ),
-                Text(
-                  rule.packageName,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _faceAvatar(AppRuleModel rule, double size) {
+    final b64 = _iconCache[rule.packageName];
+    Widget inner;
+    if (b64 != null && b64.isNotEmpty) {
+      try {
+        inner = Image.memory(
+          base64Decode(b64),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        );
+      } catch (_) {
+        inner = _letterFace(rule.appLabel, size);
+      }
+    } else {
+      inner = _letterFace(rule.appLabel, size);
+    }
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
+      child: ClipOval(child: inner),
+    );
+  }
+
+  Widget _letterFace(String label, double size) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      color: const Color(0xFFE8EDFF),
+      child: Text(
+        label.isNotEmpty ? label[0].toUpperCase() : '?',
+        style: GoogleFonts.roboto(
+          fontSize: size * 0.4,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF4A6CF7),
+        ),
+      ),
+    );
+  }
+
+  /// Bottom sheet listing every monitored app (icon + name).
+  void _showAllAppsSheet(List<AppRuleModel> rules) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Text(
+                      'Monitored apps',
+                      style: GoogleFonts.cairo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '(${rules.length})',
+                      style: GoogleFonts.roboto(
+                        fontSize: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  itemCount: rules.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) {
+                    final r = rules[i];
+                    return Row(
+                      children: [
+                        _AppIcon(
+                          iconBase64: _iconCache[r.packageName],
+                          label: r.appLabel,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            r.appLabel,
+                            style: GoogleFonts.roboto(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1F2937),
+                            ),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.lock_outline_rounded,
+                          size: 16,
+                          color: Color(0xFF8B93A7),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1110,36 +1248,6 @@ class StudentHomeState extends State<StudentHome> {
     if (h > 0) return m > 0 ? '${h}h ${m}m' : '${h}h';
     if (m > 0) return s > 0 ? '${m}m ${s}s' : '${m}m';
     return '${s}s';
-  }
-
-  Widget _buildPill({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required Color bg,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _openSubjectDetail(GardenPlantModel plant) {

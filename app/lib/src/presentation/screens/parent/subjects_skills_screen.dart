@@ -69,6 +69,17 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
           if (state is SubjectRemoved || state is SubjectAdded) {
             context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
           }
+          if (state is SubjectsError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: const Color(0xFFE53935),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            // Reload to restore UI to actual state
+            context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
+          }
         },
         child: BlocBuilder<SubjectBloc, SubjectState>(
           buildWhen: (prev, curr) =>

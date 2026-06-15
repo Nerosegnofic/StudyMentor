@@ -92,7 +92,10 @@ def delete_subject_cascade(db: Session, subject_id: int) -> bool:
     delete_vector_embeddings_by_subject(subject_id)
 
     # 2. Quiz sessions for this subject → cascades their Questions → QuestionResponses.
+    # Must explicitly delete XpTransactions first as they reference the session but don't cascade.
+    from app.models.domain.gamification import XpTransaction
     for session in db.query(QuizSession).filter(QuizSession.subject_id == subject_id).all():
+        db.query(XpTransaction).filter(XpTransaction.quiz_session_id == session.session_id).delete(synchronize_session=False)
         db.delete(session)
 
     # 3. Student subject profiles (no cascade from subjects).
