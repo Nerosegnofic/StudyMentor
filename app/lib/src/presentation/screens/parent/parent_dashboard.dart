@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ParentDashboard extends StatelessWidget {
   final String parentUid;
@@ -7,6 +8,7 @@ class ParentDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -14,7 +16,7 @@ class ParentDashboard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: Text(
-              'Dashboard',
+              loc.dashboardTitle,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -34,7 +36,7 @@ class ParentDashboard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Nothing here yet.',
+                  loc.nothingHereYetTitle,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -43,7 +45,7 @@ class ParentDashboard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Activity and alerts will appear here.',
+                  loc.activityAlertsWillAppearHere,
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                 ),
               ],

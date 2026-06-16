@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/cupertino.dart' show CupertinoTimerPicker, CupertinoTheme, CupertinoThemeData, CupertinoTextThemeData, CupertinoTimerPickerMode;
+import 'package:flutter/cupertino.dart' show CupertinoPicker, FixedExtentScrollController;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
@@ -19,6 +19,7 @@ import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
 import 'parent_student_settings_screen.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class StudentConfigScreen extends StatefulWidget {
   final StudentModel student;
@@ -32,7 +33,6 @@ class StudentConfigScreen extends StatefulWidget {
 class _StudentConfigScreenState extends State<StudentConfigScreen> {
   final List<PendingAppRule> _rules = [];
   StudentConfigModel _config = const StudentConfigModel();
-  String _parentUid = '';
   late StudentModel _student;
 
   List<InstalledAppModel> _installedApps = [];
@@ -53,8 +53,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   void initState() {
     super.initState();
     _student = widget.student;
-    final authState = context.read<AuthBloc>().state;
-    _parentUid = authState is AuthAuthenticated ? authState.user.uid : '';
     context.read<AppConfigBloc>().add(
       LoadAppRulesRequested(studentUid: widget.student.uid),
     );
@@ -107,25 +105,26 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     if (_isDirty) {
       final proceed = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Unsaved Changes'),
-          content: const Text(
-            'Refreshing will discard your unsaved changes. Continue?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
+        builder: (ctx) {
+          final loc = AppLocalizations.of(ctx);
+          return AlertDialog(
+            title: Text(loc.unsavedChangesDialogTitle),
+            content: Text(loc.discardChangesDialogContent),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(loc.commonCancel),
               ),
-              child: const Text('Discard & Refresh'),
-            ),
-          ],
-        ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                ),
+                child: Text(loc.discardAndRefreshButton),
+              ),
+            ],
+          );
+        },
       );
       if (proceed != true) return;
     }
@@ -138,9 +137,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   // ── app picker sheet ───────────────────────────────────────────────────────
 
   Future<void> _showAppPicker() async {
+    final loc = AppLocalizations.of(context);
     if (_appsLoading) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Still loading app list — please wait.')),
+        SnackBar(content: Text(loc.stillLoadingAppListMessage)),
       );
       return;
     }
@@ -158,8 +158,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${_student.fullName.split(' ').first}\'s device hasn\'t synced yet. '
-            'Ask them to open the app once.',
+            loc.deviceNotSyncedMessage(_student.fullName.split(' ').first),
           ),
         ),
       );
@@ -168,8 +167,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
 
     if (available.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('All installed apps have already been configured.'),
+        SnackBar(
+          content: Text(loc.allAppsAlreadyConfiguredMessage),
         ),
       );
       return;
@@ -237,7 +236,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       builder: (context) => _SetRewardTimeSheet(
         initialHours: _config.cooldownHours,
         initialMinutes: _config.cooldownMinutes,
-        title: 'Set Cooldown Time',
+        title: AppLocalizations.of(context).setCooldownTimeTitle,
       ),
     );
     if (result != null && mounted) {
@@ -261,88 +260,91 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   Future<void> _confirmRemoveRule(PendingAppRule rule, int index) async {
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: const Color(0xFFFFFFFF),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Remove ${rule.appLabel}?',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E293B),
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Are you sure you want to stop monitoring this app? Your child will have unrestricted access to it.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.roboto(
-                  color: const Color(0xFF64748B),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(dialogContext).pop(),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          'Cancel',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.roboto(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF64748B),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        _removeRule(index);
-                        Navigator.of(dialogContext).pop();
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE53935),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          'Remove',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.roboto(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+      builder: (dialogContext) {
+        final loc = AppLocalizations.of(dialogContext);
+        return Dialog(
+          backgroundColor: const Color(0xFFFFFFFF),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        ),
-      ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  loc.removeAppConfirmTitle(rule.appLabel),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  loc.removeAppConfirmMessage,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    color: const Color(0xFF64748B),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(dialogContext).pop(),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            loc.commonCancel,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          _removeRule(index);
+                          Navigator.of(dialogContext).pop();
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE53935),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            loc.removeButton,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -380,9 +382,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 _isDirty = false;
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Configuration saved successfully.'),
-                  backgroundColor: Color(0xFF34A853),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context).configSavedSuccessMessage),
+                  backgroundColor: const Color(0xFF34A853),
                 ),
               );
             }
@@ -413,17 +415,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 _isRefreshing = false;
               });
             }
-
-            if (state is StudentDeleted && state.studentUid == widget.student.uid) {
-              if (mounted) {
-                // Reload the students list (dialog + dashboard routes are also
-                // removed by popUntil, so no double-pop issues).
-                context.read<StudentsBloc>().add(
-                  LoadStudentsRequested(parentUid: _parentUid),
-                );
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              }
-            }
           },
         ),
       ],
@@ -451,6 +442,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   Widget _buildStickyHeader() {
+    final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -479,7 +471,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
               ),
               Expanded(
                 child: Text(
-                  'Configurations',
+                  loc.configurationsTitle,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
@@ -535,8 +527,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
               : Text(
-                  'Save Changes',
-                  style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
+                  AppLocalizations.of(context).saveChangesButton,
+                  style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
         ),
       ),
@@ -566,6 +558,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   // ── Card 1: Screen Time Reward ────────────────────────────────────────────
 
   Widget _buildRewardCard() {
+    final loc = AppLocalizations.of(context);
     final hrs = _config.usageHours.toString().padLeft(2, '0');
     final mins = _config.usageMinutes.toString().padLeft(2, '0');
     return Container(
@@ -578,8 +571,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       ),
       child: Column(
         children: [
-          Text('Screen Time Reward per Quiz',
-              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(loc.screenTimeRewardTitle,
+              style: GoogleFonts.cairo(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: _showRewardTimePicker,
@@ -591,8 +584,11 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('$hrs : $mins',
-                      style: GoogleFonts.roboto(color: const Color(0xFF2196F3), fontSize: 32, fontWeight: FontWeight.bold)),
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Text('$hrs : $mins',
+                        style: GoogleFonts.cairo(color: const Color(0xFF2196F3), fontSize: 32, fontWeight: FontWeight.bold)),
+                  ),
                   const SizedBox(width: 8),
                   const Icon(Icons.edit, color: Color(0xFF2196F3), size: 20),
                 ],
@@ -600,9 +596,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Text('Child earns this much unlocked screen time for every quiz they pass.',
+          Text(loc.screenTimeRewardDescription,
               textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 12)),
+              style: GoogleFonts.cairo(color: const Color(0xFF64748B), fontSize: 12)),
         ],
       ),
     );
@@ -611,6 +607,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   // ── Card 1b: Cooldown Period ──────────────────────────────────────────────
 
   Widget _buildCooldownCard() {
+    final loc = AppLocalizations.of(context);
     final hrs = _config.cooldownHours.toString().padLeft(2, '0');
     final mins = _config.cooldownMinutes.toString().padLeft(2, '0');
     return GestureDetector(
@@ -647,8 +644,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Cooldown Period',
-                    style: GoogleFonts.roboto(
+                    loc.cooldownPeriodTitle,
+                    style: GoogleFonts.cairo(
                       color: const Color(0xFF1E293B),
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -656,8 +653,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Lock duration after screen time runs out.',
-                    style: GoogleFonts.roboto(
+                    loc.cooldownPeriodDescription,
+                    style: GoogleFonts.cairo(
                       color: const Color(0xFF92400E),
                       fontSize: 11,
                     ),
@@ -669,12 +666,15 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '$hrs : $mins',
-                  style: GoogleFonts.roboto(
-                    color: const Color(0xFFFF9800),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    '$hrs : $mins',
+                    style: GoogleFonts.cairo(
+                      color: const Color(0xFFFF9800),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -690,6 +690,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   // ── Card 2: App Rules ────────────────────────────────────────────────────
 
   Widget _buildAppRulesCard() {
+    final loc = AppLocalizations.of(context);
     final monitored = _rules.where((r) => !r.isPaused).length;
     final paused = _rules.where((r) => r.isPaused).length;
     final total = _rules.length;
@@ -708,8 +709,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('App Rules',
-                  style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(loc.appRulesTitle,
+                  style: GoogleFonts.cairo(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
               GestureDetector(
                 onTap: _showAppPicker,
                 child: Container(
@@ -723,18 +724,18 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           if (_rules.isEmpty) ...[
             const SizedBox(height: 16),
             Center(
-              child: Text('No apps configured yet. Tap + to add your first app.',
-                  style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 13)),
+              child: Text(loc.noAppsConfiguredHint,
+                  style: GoogleFonts.cairo(color: const Color(0xFF64748B), fontSize: 13)),
             ),
           ] else ...[
             const SizedBox(height: 16),
             Row(
               children: [
-                _buildRuleStatChip(Icons.visibility_rounded, '$monitored monitored',
+                _buildRuleStatChip(Icons.visibility_rounded, loc.monitoredCountLabel(monitored),
                     const Color(0xFF2196F3), const Color(0xFFE3F2FD)),
                 if (paused > 0) ...[
                   const SizedBox(width: 8),
-                  _buildRuleStatChip(Icons.pause_circle_outline_rounded, '$paused paused',
+                  _buildRuleStatChip(Icons.pause_circle_outline_rounded, loc.pausedCountLabel(paused),
                       const Color(0xFF94A3B8), const Color(0xFFF1F5F9)),
                 ],
               ],
@@ -753,8 +754,8 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                   children: [
                     const Icon(Icons.apps_rounded, color: Color(0xFF2196F3), size: 16),
                     const SizedBox(width: 8),
-                    Text('Manage all $total apps',
-                        style: GoogleFonts.roboto(
+                    Text(loc.manageAllAppsLabel(total),
+                        style: GoogleFonts.cairo(
                             color: const Color(0xFF2196F3), fontWeight: FontWeight.w600, fontSize: 13)),
                     const Spacer(),
                     const Icon(Icons.chevron_right_rounded, color: Color(0xFF2196F3), size: 18),
@@ -778,7 +779,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
           Text(label,
-              style: GoogleFonts.roboto(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+              style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
         ],
       ),
     );
@@ -814,6 +815,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   // ── Card 3: Quiz Settings ─────────────────────────────────────────────────
 
   Widget _buildQuizSettingsCard() {
+    final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -825,50 +827,50 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quiz Settings',
-              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(loc.quizSettingsTitle,
+              style: GoogleFonts.cairo(color: const Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          Text('Questions per Quiz',
-              style: GoogleFonts.roboto(color: const Color(0xFF1E293B), fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(loc.questionsPerQuizLabel,
+              style: GoogleFonts.cairo(color: const Color(0xFF1E293B), fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
             child: Row(
               children: [
-                _buildQuizCountSegment('Auto'),
-                _buildQuizCountSegment('3'),
-                _buildQuizCountSegment('5'),
-                _buildQuizCountSegment('10'),
+                _buildQuizCountSegment('Auto', loc.quizCountAutoLabel),
+                _buildQuizCountSegment('3', '3'),
+                _buildQuizCountSegment('5', '5'),
+                _buildQuizCountSegment('10', '10'),
               ],
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            _config.quizCount is Auto 
-                ? 'Smart Tutor will adjust the quiz length dynamically based on the child\'s current performance.'
-                : 'Child must correctly answer ${(_config.quizCount as Fixed).count} questions to unlock their device.',
-            style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 13),
+            _config.quizCount is Auto
+                ? loc.quizCountAutoDescription
+                : loc.quizCountFixedDescription((_config.quizCount as Fixed).count),
+            style: GoogleFonts.cairo(color: const Color(0xFF64748B), fontSize: 13),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuizCountSegment(String label) {
-    final isActive = label == 'Auto' 
-        ? _config.quizCount is Auto 
-        : _config.quizCount is Fixed && (_config.quizCount as Fixed).count == int.parse(label);
+  Widget _buildQuizCountSegment(String value, String displayLabel) {
+    final isActive = value == 'Auto'
+        ? _config.quizCount is Auto
+        : _config.quizCount is Fixed && (_config.quizCount as Fixed).count == int.parse(value);
 
     return Expanded(
       child: GestureDetector(
         onTap: () {
           if (!isActive) {
             setState(() {
-              if (label == 'Auto') {
+              if (value == 'Auto') {
                 _config = _config.copyWith(quizCount: const Auto());
               } else {
-                _config = _config.copyWith(quizCount: Fixed(int.parse(label)));
+                _config = _config.copyWith(quizCount: Fixed(int.parse(value)));
               }
             });
             _markDirty();
@@ -883,9 +885,9 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 ? [const BoxShadow(color: Color(0x1A2196F3), blurRadius: 4, offset: Offset(0, 2))]
                 : null,
           ),
-          child: Text(label,
+          child: Text(displayLabel,
               textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                   color: isActive ? Colors.white : const Color(0xFF64748B),
                   fontWeight: FontWeight.w600, fontSize: 14)),
         ),
@@ -896,6 +898,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   // ── Bottom Action Buttons ─────────────────────────────────────────────────
 
   Widget _buildActionButtons() {
+    final loc = AppLocalizations.of(context);
     return Column(
       children: [
         SizedBox(
@@ -920,7 +923,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)), elevation: 0,
             ),
-            child: Text('Edit Profile', style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Text(loc.editProfileButton, style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ),
         const SizedBox(height: 12),
@@ -934,7 +937,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             ),
-            child: Text('Delete Account', style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Text(loc.deleteAccountTitle, style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ),
       ],
@@ -947,7 +950,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     final authState = context.read<AuthBloc>().state;
     final parentUid = authState is AuthAuthenticated ? authState.user.uid : '';
 
-    await showDialog<void>(
+    final deleted = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => BlocProvider.value(
@@ -958,6 +961,13 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         ),
       ),
     );
+
+    if (deleted == true && mounted) {
+      context.read<StudentsBloc>().add(
+        LoadStudentsRequested(parentUid: parentUid),
+      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   // ── unsaved changes dialog ─────────────────────────────────────────────────
@@ -965,25 +975,26 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   Future<bool> _showUnsavedChangesDialog() async {
     return await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Unsaved Changes'),
-            content: const Text(
-              'You have unsaved changes. Leave without saving?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Stay'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.shade600,
+          builder: (ctx) {
+            final loc = AppLocalizations.of(ctx);
+            return AlertDialog(
+              title: Text(loc.unsavedChangesDialogTitle),
+              content: Text(loc.unsavedChangesDialogContent),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(loc.stayButton),
                 ),
-                child: const Text('Leave'),
-              ),
-            ],
-          ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                  ),
+                  child: Text(loc.leaveButton),
+                ),
+              ],
+            );
+          },
         ) ??
         false;
   }
@@ -1018,7 +1029,7 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
     if (_serverError != null) return _serverError;
     if (!_submitted) return null;
     if (_passwordCtl.text.trim().isEmpty) {
-      return 'Password is required to delete the account.';
+      return AppLocalizations.of(context).passwordRequiredToDeleteAccountMessage;
     }
     return null;
   }
@@ -1043,6 +1054,7 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return PopScope(
       canPop: !_isLoading,
       child: BlocListener<AuthBloc, AuthState>(
@@ -1051,11 +1063,11 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
             setState(() => _isLoading = true);
           } else if (state is StudentDeleted &&
               state.studentUid == widget.student.uid) {
-            // Only pop if this dialog route is still active.
-            // When the config screen's popUntil fires first, it removes this
-            // dialog route; calling pop() a second time would pop RootPage.
-            final route = ModalRoute.of(context);
-            if (route?.isActive == true) Navigator.of(context).pop();
+            // Allow the dialog's PopScope to release before popping, then
+            // close the dialog. The config screen awaits this result and
+            // handles reloading the students list + navigating back.
+            setState(() => _isLoading = false);
+            Navigator.of(context).pop(true);
           } else if (state is StudentDeleteError) {
             final isWrongPassword = state.message.contains(
               'Invalid credentials',
@@ -1063,7 +1075,7 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
             setState(() {
               _isLoading = false;
               _serverError = isWrongPassword
-                  ? 'Incorrect password. Please try again.'
+                  ? loc.incorrectPasswordRetryMessage
                   : state.message;
             });
           }
@@ -1087,9 +1099,9 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Delete Student',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              Text(
+                loc.deleteStudentDialogTitle,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -1106,16 +1118,12 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
                       height: 1.5,
                     ),
                     children: [
-                      const TextSpan(text: 'This will permanently delete '),
+                      TextSpan(text: loc.deleteStudentWarningPrefix),
                       TextSpan(
                         text: widget.student.fullName,
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
-                      const TextSpan(
-                        text:
-                            '\'s account — progress, items, and settings. '
-                            'This cannot be undone.',
-                      ),
+                      TextSpan(text: loc.deleteStudentWarningSuffix),
                     ],
                   ),
                 ),
@@ -1131,10 +1139,10 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
                     if (!_isLoading) _submit();
                   },
                   decoration: InputDecoration(
-                    labelText: 'Student\'s Password',
-                    hintText:
-                        'Password you created for '
-                        '${widget.student.fullName.split(' ').first}',
+                    labelText: loc.fieldStudentPassword,
+                    hintText: loc.passwordYouCreatedForHint(
+                      widget.student.fullName.split(' ').first,
+                    ),
                     hintStyle: const TextStyle(fontSize: 12),
                     errorText: _passwordError,
                     isDense: true,
@@ -1171,9 +1179,9 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
           actions: [
             TextButton(
               onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color(0xFF666666)),
+              child: Text(
+                loc.commonCancel,
+                style: const TextStyle(color: Color(0xFF666666)),
               ),
             ),
             FilledButton(
@@ -1193,7 +1201,7 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Delete Permanently'),
+                  : Text(loc.deletePermanentlyButton),
             ),
           ],
         ),
@@ -1508,67 +1516,70 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
     final rule = _rules[index];
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Remove ${rule.appLabel}?',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.bold, color: const Color(0xFF1E293B), fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Are you sure you want to stop monitoring this app? Your child will have unrestricted access to it.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.roboto(color: const Color(0xFF64748B), fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(dialogContext).pop(false),
-                      child: Container(
-                        decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(24)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Cancel',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.roboto(
-                                fontWeight: FontWeight.bold, color: const Color(0xFF64748B))),
+      builder: (dialogContext) {
+        final loc = AppLocalizations.of(dialogContext);
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  loc.removeAppConfirmTitle(rule.appLabel),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.bold, color: const Color(0xFF1E293B), fontSize: 18),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  loc.removeAppConfirmMessage,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(color: const Color(0xFF64748B), fontSize: 14),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(dialogContext).pop(false),
+                        child: Container(
+                          decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(24)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(loc.commonCancel,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold, color: const Color(0xFF64748B))),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(dialogContext).pop(true),
-                      child: Container(
-                        decoration: BoxDecoration(
-                            color: const Color(0xFFE53935),
-                            borderRadius: BorderRadius.circular(24)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Remove',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.roboto(
-                                fontWeight: FontWeight.bold, color: Colors.white)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(dialogContext).pop(true),
+                        child: Container(
+                          decoration: BoxDecoration(
+                              color: const Color(0xFFE53935),
+                              borderRadius: BorderRadius.circular(24)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(loc.removeButton,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
     if (confirm == true) {
       setState(() => _rules.removeAt(index));
@@ -1578,6 +1589,7 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final monitored = _rules.where((r) => !r.isPaused).length;
     final paused = _rules.where((r) => r.isPaused).length;
 
@@ -1603,13 +1615,13 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('App Rules',
+                    Text(loc.appRulesTitle,
                         style: GoogleFonts.cairo(
                             color: const Color(0xFF1E293B),
                             fontSize: 20,
                             fontWeight: FontWeight.bold)),
-                    Text('$monitored monitored · $paused paused',
-                        style: GoogleFonts.roboto(
+                    Text(loc.monitoredAndPausedLabel(monitored, paused),
+                        style: GoogleFonts.cairo(
                             color: const Color(0xFF64748B), fontSize: 12)),
                   ],
                 ),
@@ -1625,13 +1637,13 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
                       children: [
                         Icon(Icons.apps_outlined, size: 48, color: Colors.grey.shade300),
                         const SizedBox(height: 12),
-                        Text('No apps configured yet.',
+                        Text(loc.noAppsConfiguredTitle,
                             style: TextStyle(
                                 color: Colors.grey.shade500,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600)),
                         const SizedBox(height: 6),
-                        Text('Tap "Add App" below to get started.',
+                        Text(loc.tapAddAppHint,
                             style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
                       ],
                     ),
@@ -1658,7 +1670,7 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
                                   rule.appLabel.isNotEmpty
                                       ? rule.appLabel[0].toUpperCase()
                                       : '?',
-                                  style: GoogleFonts.roboto(
+                                  style: GoogleFonts.cairo(
                                       color: const Color(0xFF2196F3),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16),
@@ -1671,13 +1683,13 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(rule.appLabel,
-                                      style: GoogleFonts.roboto(
+                                      style: GoogleFonts.cairo(
                                           color: const Color(0xFF1E293B),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14)),
                                   Text(
-                                    rule.isPaused ? 'Paused' : 'Monitored',
-                                    style: GoogleFonts.roboto(
+                                    rule.isPaused ? loc.appStatusPaused : loc.appStatusMonitored,
+                                    style: GoogleFonts.cairo(
                                       color: rule.isPaused
                                           ? const Color(0xFF94A3B8)
                                           : const Color(0xFF34A853),
@@ -1720,8 +1732,8 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
             child: ElevatedButton.icon(
               onPressed: widget.onAddApp,
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text('Add App',
-                  style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: Text(loc.addAppButton,
+                  style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2196F3),
                 foregroundColor: Colors.white,
@@ -1795,6 +1807,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   }
 
   Widget _buildFilterButton() {
+    final loc = AppLocalizations.of(context);
     return GestureDetector(
       onTapDown: (details) async {
         final origin = details.globalPosition;
@@ -1813,15 +1826,15 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
             _filterMenuItem(
               value: false,
               icon: Icons.apps_rounded,
-              label: 'Installed Apps',
-              subtitle: 'Apps downloaded by the student',
+              label: loc.installedAppsFilterLabel,
+              subtitle: loc.installedAppsFilterSubtitle,
               isSelected: !_showSystemApps,
             ),
             _filterMenuItem(
               value: true,
               icon: Icons.phone_android_rounded,
-              label: 'All Apps',
-              subtitle: 'Includes system & pre-installed apps',
+              label: loc.allAppsFilterLabel,
+              subtitle: loc.allAppsFilterSubtitle,
               isSelected: _showSystemApps,
             ),
           ],
@@ -1855,7 +1868,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
             ),
             const SizedBox(width: 5),
             Text(
-              _showSystemApps ? 'All Apps' : 'Installed Apps',
+              _showSystemApps ? loc.allAppsFilterLabel : loc.installedAppsFilterLabel,
               overflow: TextOverflow.ellipsis,
               style: _buttonTextStyle.copyWith(
                 color: const Color(0xFF2196F3),
@@ -1931,6 +1944,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.75,
@@ -1955,7 +1969,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Select Apps',
+                  loc.selectAppsTitle,
                   style: GoogleFonts.cairo(
                     color: const Color(0xFF1E293B),
                     fontSize: 20,
@@ -1973,7 +1987,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               controller: _searchCtl,
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'Search apps…',
+                hintText: loc.searchAppsHint,
                 hintStyle: const TextStyle(color: Color(0xFF64748B)),
                 prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF64748B)),
                 isDense: true,
@@ -2101,8 +2115,8 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                   elevation: 0,
                 ),
                 child: Text(
-                  'Add Selected',
-                  style: GoogleFonts.roboto(
+                  loc.addSelectedButton,
+                  style: GoogleFonts.cairo(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2116,6 +2130,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   }
 
   Widget _buildEmptyFilterState() {
+    final loc = AppLocalizations.of(context);
     final isSearchActive = _query.isNotEmpty;
     return Center(
       child: Padding(
@@ -2131,8 +2146,8 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
             const SizedBox(height: 12),
             Text(
               isSearchActive
-                  ? 'No apps match "$_query"'
-                  : 'No user-installed apps found',
+                  ? loc.noAppsMatchQuery(_query)
+                  : loc.noUserInstalledAppsFound,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -2144,10 +2159,10 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
             if (!isSearchActive)
               GestureDetector(
                 onTap: () => setState(() => _showSystemApps = true),
-                child: const Text(
-                  'Switch to All Apps to see system apps',
+                child: Text(
+                  loc.switchToAllAppsHint,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF4A6CF7),
                     decoration: TextDecoration.underline,
@@ -2180,7 +2195,7 @@ class _AppLetterAvatar extends StatelessWidget {
       child: Center(
         child: Text(
           label.isNotEmpty ? label[0].toUpperCase() : '?',
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             color: const Color(0xFF2196F3),
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -2390,12 +2405,12 @@ class _QuickActionButton extends StatelessWidget {
 class _SetRewardTimeSheet extends StatefulWidget {
   final int initialHours;
   final int initialMinutes;
-  final String title;
+  final String? title;
 
   const _SetRewardTimeSheet({
     required this.initialHours,
     required this.initialMinutes,
-    this.title = 'Set Reward Time',
+    this.title,
   });
 
   @override
@@ -2405,21 +2420,36 @@ class _SetRewardTimeSheet extends StatefulWidget {
 class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
   late int _hours;
   late int _minutes;
-  int _pickerKeyIndex = 0;
+  late FixedExtentScrollController _hoursScrollController;
+  late FixedExtentScrollController _minutesScrollController;
 
   @override
   void initState() {
     super.initState();
     _hours = widget.initialHours;
     _minutes = widget.initialMinutes;
+    _hoursScrollController = FixedExtentScrollController(initialItem: _hours);
+    _minutesScrollController = FixedExtentScrollController(initialItem: _minutes);
+  }
+
+  @override
+  void dispose() {
+    _hoursScrollController.dispose();
+    _minutesScrollController.dispose();
+    super.dispose();
   }
 
   void _selectPreset(int h, int m) {
     setState(() {
       _hours = h;
       _minutes = m;
-      _pickerKeyIndex++;
     });
+    if (_hoursScrollController.hasClients) {
+      _hoursScrollController.jumpToItem(h);
+    }
+    if (_minutesScrollController.hasClients) {
+      _minutesScrollController.jumpToItem(m);
+    }
   }
 
   bool _isPresetSelected(int h, int m) {
@@ -2443,7 +2473,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             color: isSelected ? const Color(0xFF2196F3) : const Color(0xFF64748B),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 14,
@@ -2453,8 +2483,61 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
     );
   }
 
+  Widget _buildTimePicker() {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final pickerTextStyle = GoogleFonts.cairo(
+      fontSize: 20,
+      color: const Color(0xFF1E293B),
+    );
+    final labelStyle = GoogleFonts.cairo(
+      fontSize: 16,
+      color: const Color(0xFF64748B),
+    );
+    final hoursLabel = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Text(isArabic ? 'ساعة' : 'hr', style: labelStyle),
+    );
+    final hoursPicker = Expanded(
+      flex: 3,
+      child: CupertinoPicker(
+        scrollController: _hoursScrollController,
+        itemExtent: 40,
+        onSelectedItemChanged: (val) => setState(() => _hours = val),
+        children: List.generate(
+          24,
+          (i) => Center(child: Text('$i', style: pickerTextStyle)),
+        ),
+      ),
+    );
+    final minutesLabel = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Text(isArabic ? 'دقيقة' : 'min', style: labelStyle),
+    );
+    final minutesPicker = Expanded(
+      flex: 3,
+      child: CupertinoPicker(
+        scrollController: _minutesScrollController,
+        itemExtent: 40,
+        onSelectedItemChanged: (val) => setState(() => _minutes = val),
+        children: List.generate(
+          60,
+          (i) => Center(child: Text('$i', style: pickerTextStyle)),
+        ),
+      ),
+    );
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        children: isArabic
+            ? [hoursLabel, hoursPicker, minutesLabel, minutesPicker]
+            : [hoursPicker, hoursLabel, minutesPicker, minutesLabel],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -2479,7 +2562,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Text(
-                widget.title,
+                widget.title ?? loc.setRewardTimeTitle,
                 style: GoogleFonts.cairo(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -2496,36 +2579,16 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
                     runSpacing: 12,
                     alignment: WrapAlignment.center,
                     children: [
-                      _buildPresetChip("10 mins", 0, 10),
-                      _buildPresetChip("15 mins", 0, 15),
-                      _buildPresetChip("30 mins", 0, 30),
-                      _buildPresetChip("1 hour", 1, 0),
+                      _buildPresetChip(loc.presetMinutesLabel(10), 0, 10),
+                      _buildPresetChip(loc.presetMinutesLabel(15), 0, 15),
+                      _buildPresetChip(loc.presetMinutesLabel(30), 0, 30),
+                      _buildPresetChip(loc.preset1HourLabel, 1, 0),
                     ],
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
                     height: 180,
-                    child: CupertinoTheme(
-                      data: CupertinoThemeData(
-                        textTheme: CupertinoTextThemeData(
-                          pickerTextStyle: GoogleFonts.roboto(
-                            fontSize: 20,
-                            color: const Color(0xFF1E293B),
-                          ),
-                        ),
-                      ),
-                      child: CupertinoTimerPicker(
-                        key: ValueKey(_pickerKeyIndex),
-                        mode: CupertinoTimerPickerMode.hm,
-                        initialTimerDuration: Duration(hours: _hours, minutes: _minutes),
-                        onTimerDurationChanged: (duration) {
-                          setState(() {
-                            _hours = duration.inHours;
-                            _minutes = duration.inMinutes % 60;
-                          });
-                        },
-                      ),
-                    ),
+                    child: _buildTimePicker(),
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -2557,8 +2620,8 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
                     elevation: 0,
                   ),
                   child: Text(
-                    "Save Time",
-                    style: GoogleFonts.roboto(
+                    loc.saveTimeButton,
+                    style: GoogleFonts.cairo(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,

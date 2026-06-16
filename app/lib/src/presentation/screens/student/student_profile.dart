@@ -9,6 +9,7 @@ import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../../utils/student_rank_utils.dart';
 import '../../widgets/avatar_widget.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'shop/custom_shop_screen.dart';
 import 'student_settings.dart';
 
@@ -104,6 +105,7 @@ class _StudentProfileState extends State<StudentProfile> {
   // ── Header ────────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
+    final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 28, bottom: 32),
@@ -143,7 +145,7 @@ class _StudentProfileState extends State<StudentProfile> {
                 icon: const Icon(Icons.arrow_back_ios_new, size: 18),
                 color: Colors.white,
                 onPressed: () => Navigator.of(context).pop(),
-                tooltip: 'Back',
+                tooltip: loc.backTooltip,
               ),
             ),
           ),
@@ -153,6 +155,7 @@ class _StudentProfileState extends State<StudentProfile> {
   }
 
   Widget _buildAvatarWithBadge() {
+    final loc = AppLocalizations.of(context);
     // GestureDetector wraps the whole Stack so the edit-icon and level-badge
     // containers (which are rendered on top) don't silently absorb the tap.
     return GestureDetector(
@@ -273,6 +276,7 @@ class _StudentProfileState extends State<StudentProfile> {
   // ── Progress card ─────────────────────────────────────────────────────────
 
   Widget _buildProgressCard() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -318,7 +322,7 @@ class _StudentProfileState extends State<StudentProfile> {
                             iconBg: const Color(0xFFFFF8E1),
                             iconColor: const Color(0xFFFFB300),
                             value: _formatNumber(_totalXp),
-                            label: 'Total XP',
+                            label: loc.totalXpLabel,
                           ),
                         ),
                         Expanded(
@@ -327,7 +331,7 @@ class _StudentProfileState extends State<StudentProfile> {
                             iconBg: const Color(0xFFFFEBEE),
                             iconColor: const Color(0xFFF44336),
                             value: '$_currentStreak',
-                            label: 'Day Streak',
+                            label: loc.dayStreakLabel,
                           ),
                         ),
                         Expanded(
@@ -336,7 +340,7 @@ class _StudentProfileState extends State<StudentProfile> {
                             iconBg: const Color(0xFFE8F5E9),
                             iconColor: const Color(0xFF43A047),
                             value: '$_totalQuestionsAnswered',
-                            label: 'Questions',
+                            label: loc.questionsLabel,
                           ),
                         ),
                       ],
@@ -419,6 +423,7 @@ class _StudentProfileState extends State<StudentProfile> {
   // ── Settings section ──────────────────────────────────────────────────────
 
   Widget _buildSettingsSection() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -521,6 +526,7 @@ class _StudentProfileState extends State<StudentProfile> {
   // ── Log Out button ────────────────────────────────────────────────────────
 
   Widget _buildLogoutButton() {
+    final loc = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(

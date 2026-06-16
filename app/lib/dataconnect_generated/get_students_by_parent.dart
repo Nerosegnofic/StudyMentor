@@ -23,12 +23,14 @@ class GetStudentsByParentStudents {
   final String username;
   final GetStudentsByParentStudentsUser user;
   final int? gradeLevel;
+  final Timestamp? lastActiveAt;
   GetStudentsByParentStudents.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
   username = nativeFromJson<String>(json['username']),
   user = GetStudentsByParentStudentsUser.fromJson(json['user']),
-  gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']);
+  gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']),
+  lastActiveAt = json['lastActiveAt'] == null ? null : Timestamp.fromJson(json['lastActiveAt']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -42,11 +44,12 @@ class GetStudentsByParentStudents {
     return uid == otherTyped.uid && 
     username == otherTyped.username && 
     user == otherTyped.user && 
-    gradeLevel == otherTyped.gradeLevel;
+    gradeLevel == otherTyped.gradeLevel && 
+    lastActiveAt == otherTyped.lastActiveAt;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, user.hashCode, gradeLevel.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, user.hashCode, gradeLevel.hashCode, lastActiveAt.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -57,6 +60,9 @@ class GetStudentsByParentStudents {
     if (gradeLevel != null) {
       json['gradeLevel'] = nativeToJson<int?>(gradeLevel);
     }
+    if (lastActiveAt != null) {
+      json['lastActiveAt'] = lastActiveAt!.toJson();
+    }
     return json;
   }
 
@@ -65,6 +71,7 @@ class GetStudentsByParentStudents {
     required this.username,
     required this.user,
     this.gradeLevel,
+    this.lastActiveAt,
   });
 }
 
@@ -74,12 +81,14 @@ class GetStudentsByParentStudentsUser {
   final String email;
   final bool isActive;
   final bool isEmailVerified;
+  final Timestamp createdAt;
   GetStudentsByParentStudentsUser.fromJson(dynamic json):
   
   fullName = nativeFromJson<String>(json['fullName']),
   email = nativeFromJson<String>(json['email']),
   isActive = nativeFromJson<bool>(json['isActive']),
-  isEmailVerified = nativeFromJson<bool>(json['isEmailVerified']);
+  isEmailVerified = nativeFromJson<bool>(json['isEmailVerified']),
+  createdAt = Timestamp.fromJson(json['createdAt']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -93,11 +102,12 @@ class GetStudentsByParentStudentsUser {
     return fullName == otherTyped.fullName && 
     email == otherTyped.email && 
     isActive == otherTyped.isActive && 
-    isEmailVerified == otherTyped.isEmailVerified;
+    isEmailVerified == otherTyped.isEmailVerified && 
+    createdAt == otherTyped.createdAt;
     
   }
   @override
-  int get hashCode => Object.hashAll([fullName.hashCode, email.hashCode, isActive.hashCode, isEmailVerified.hashCode]);
+  int get hashCode => Object.hashAll([fullName.hashCode, email.hashCode, isActive.hashCode, isEmailVerified.hashCode, createdAt.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -106,6 +116,7 @@ class GetStudentsByParentStudentsUser {
     json['email'] = nativeToJson<String>(email);
     json['isActive'] = nativeToJson<bool>(isActive);
     json['isEmailVerified'] = nativeToJson<bool>(isEmailVerified);
+    json['createdAt'] = createdAt.toJson();
     return json;
   }
 
@@ -114,6 +125,7 @@ class GetStudentsByParentStudentsUser {
     required this.email,
     required this.isActive,
     required this.isEmailVerified,
+    required this.createdAt,
   });
 }
 

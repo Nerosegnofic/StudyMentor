@@ -11,6 +11,7 @@ import '../../../bloc/gamification/gamification_event.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Study Mentor design-system tokens (Student app)
@@ -117,6 +118,7 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: _kBg,
       appBar: AppBar(
@@ -191,8 +193,13 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
                 final delta = pre != null ? newMastery - pre : null;
 
                 final message = (delta != null && delta > 0.05)
-                    ? '$_quizzedSubjectName: ${pre!.toStringAsFixed(0)}% → ${newMastery.toStringAsFixed(0)}% (+${delta.toStringAsFixed(1)}%)'
-                    : '$_quizzedSubjectName mastery updated!';
+                    ? loc.masteryUpdateMessage(
+                        _quizzedSubjectName ?? '',
+                        pre!.toStringAsFixed(0),
+                        newMastery.toStringAsFixed(0),
+                        delta.toStringAsFixed(1),
+                      )
+                    : loc.masteryUpdatedSimpleMessage(_quizzedSubjectName ?? '');
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -213,11 +220,11 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
               );
             }
             if (state is QuizLoading) {
-              return const _LoadingView(message: 'Generating your quiz…');
+              return _LoadingView(message: loc.generatingQuizMessage);
             }
             if (state is QuizLoaded) return _QuizActiveView(state: state);
             if (state is QuizSubmitting) {
-              return const _LoadingView(message: 'Submitting answers…');
+              return _LoadingView(message: loc.submittingAnswersMessage);
             }
             if (state is QuizResultsLoaded) {
               return _ResultsView(state: state, studentId: widget.studentId);
@@ -249,6 +256,7 @@ class _AutoStartPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -456,10 +464,11 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   }
 
   void _showHint(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final hints = _currentQuestion.hints;
     if (_hintsUsed >= hints.length) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No more hints available.')));
+          SnackBar(content: Text(loc.noMoreHintsMessage)));
       return;
     }
     setState(() => _hintsUsed++);
@@ -542,6 +551,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final questions = widget.state.quizResponse.questions;
     final answered = widget.state.currentAnswers;
     final total = questions.length;
@@ -813,18 +823,18 @@ class _QuestionCard extends StatelessWidget {
     }
   }
 
-  String _difficultyLabel(int d) {
+  String _difficultyLabel(AppLocalizations loc, int d) {
     switch (d) {
       case 1:
-        return 'Very Easy';
+        return loc.veryEasyLabel;
       case 2:
-        return 'Easy';
+        return loc.easyLabel;
       case 3:
-        return 'Medium';
+        return loc.mediumLabel;
       case 4:
-        return 'Hard';
+        return loc.hardLabel;
       default:
-        return 'Very Hard';
+        return loc.veryHardLabel;
     }
   }
 }
@@ -1042,6 +1052,7 @@ class _ResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final score = state.result.score;
     final pct = score.round();
     final isGood = score >= 50;
@@ -1185,6 +1196,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),

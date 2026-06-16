@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Design-system tokens (mirrored from student_quiz / shop screens)
@@ -85,6 +86,7 @@ class _StreakMilestoneModalState extends State<StreakMilestoneModal>
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 0,

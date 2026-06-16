@@ -44,6 +44,8 @@ part 'delete_user_record.dart';
 
 part 'update_student_full_name.dart';
 
+part 'update_student_last_active_at.dart';
+
 part 'delete_parent_record.dart';
 
 part 'upsert_student_config.dart';
@@ -266,6 +268,11 @@ class ExampleConnector {
   }
   
   
+  UpdateStudentLastActiveAtVariablesBuilder updateStudentLastActiveAt () {
+    return UpdateStudentLastActiveAtVariablesBuilder(dataConnect, );
+  }
+  
+  
   DeleteParentRecordVariablesBuilder deleteParentRecord () {
     return DeleteParentRecordVariablesBuilder(dataConnect, );
   }
@@ -281,8 +288,8 @@ class ExampleConnector {
   }
   
   
-  MarkLocalNotificationEventsReadVariablesBuilder markLocalNotificationEventsRead ({required String toParentUid, }) {
-    return MarkLocalNotificationEventsReadVariablesBuilder(dataConnect, toParentUid: toParentUid,);
+  MarkLocalNotificationEventsReadVariablesBuilder markLocalNotificationEventsRead ({required List<String> eventIds, }) {
+    return MarkLocalNotificationEventsReadVariablesBuilder(dataConnect, eventIds: eventIds,);
   }
   
   

@@ -45,6 +45,7 @@ class ConfirmEmailScreen extends StatelessWidget {
         },
         builder: (context, state) {
           final isLoading = state is AuthLoading;
+          final loc = AppLocalizations.of(context);
           return Scaffold(
             backgroundColor: kAuthBackground,
             body: Column(

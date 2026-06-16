@@ -33,7 +33,7 @@ def get_garden_for_student(db: Session, student_uid: str) -> list:
     """
     Returns all subjects accessible to the student (global + their own uploads),
     paired with cached mastery from garden_plants.
-    Subjects with no quiz history return mastery_percent = 0.0.
+    Subjects with no quiz history return mastery_percent = 0.0 and updated_at = None.
     """
     subjects = (
         db.query(Subject)
@@ -43,8 +43,8 @@ def get_garden_for_student(db: Session, student_uid: str) -> list:
         .all()
     )
 
-    plant_map: dict[int, float] = {
-        p.subject_id: p.mastery_percent
+    plant_map: dict[int, GardenPlant] = {
+        p.subject_id: p
         for p in db.query(GardenPlant)
         .filter_by(student_uid=student_uid)
         .all()
@@ -54,7 +54,8 @@ def get_garden_for_student(db: Session, student_uid: str) -> list:
         {
             "subject_id": s.subject_id,
             "subject_name": s.name,
-            "mastery_percent": plant_map.get(s.subject_id, 0.0),
+            "mastery_percent": plant_map[s.subject_id].mastery_percent if s.subject_id in plant_map else 0.0,
+            "updated_at": plant_map[s.subject_id].updated_at if s.subject_id in plant_map else None,
         }
         for s in subjects
     ]

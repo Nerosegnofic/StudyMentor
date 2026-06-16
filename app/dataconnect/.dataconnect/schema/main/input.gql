@@ -1426,6 +1426,22 @@ input Student_Data {
   """
   gradeLevel_update: [Int_Update!] @fdc_forbiddenInVariables
   """
+  ✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`
+  """
+  lastActiveAt: Timestamp
+  """
+  ✨ `_expr` server value variant of `lastActiveAt` (✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`)
+  """
+  lastActiveAt_expr: Timestamp_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_time` server value variant of `lastActiveAt` (✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`)
+  """
+  lastActiveAt_time: Timestamp_Relative @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `lastActiveAt` (✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`)
+  """
+  lastActiveAt_update: [Timestamp_Update!] @fdc_forbiddenInVariables
+  """
   ✨ Generated from Field `Student`.`username` of type `String!`
   """
   username: String
@@ -1486,6 +1502,10 @@ input Student_Filter {
   ✨ Generated from Field `Student`.`gradeLevel` of type `Int`
   """
   gradeLevel: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`
+  """
+  lastActiveAt: Timestamp_Filter
   """
   ✨ Generated from Field `Student`.`username` of type `String!`
   """
@@ -1557,6 +1577,10 @@ input Student_Having {
   """
   gradeLevel_count: Int_Filter
   """
+  ✨ Generated from Field `Student`.`lastActiveAt_count` of type `Int!`
+  """
+  lastActiveAt_count: Int_Filter
+  """
   ✨ Generated from Field `Student`.`parentUid_count` of type `Int!`
   """
   parentUid_count: Int_Filter
@@ -1585,9 +1609,17 @@ input Student_Having {
   """
   gradeLevel_min: Int_Filter
   """
+  ✨ Generated from Field `Student`.`lastActiveAt_min` of type `Timestamp`
+  """
+  lastActiveAt_min: Timestamp_Filter
+  """
   ✨ Generated from Field `Student`.`gradeLevel_max` of type `Int`
   """
   gradeLevel_max: Int_Filter
+  """
+  ✨ Generated from Field `Student`.`lastActiveAt_max` of type `Timestamp`
+  """
+  lastActiveAt_max: Timestamp_Filter
 }
 """
 ✨ Generated key input type for table 'Student'. It represents the primary key fields used to uniquely identify a row in the table.
@@ -1644,6 +1676,10 @@ input Student_Order {
   """
   gradeLevel: OrderDirection
   """
+  ✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`
+  """
+  lastActiveAt: OrderDirection
+  """
   ✨ Generated from Field `Student`.`username` of type `String!`
   """
   username: OrderDirection
@@ -1655,6 +1691,10 @@ input Student_Order {
   ✨ Generated from Field `Student`.`gradeLevel_count` of type `Int!`
   """
   gradeLevel_count: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`lastActiveAt_count` of type `Int!`
+  """
+  lastActiveAt_count: OrderDirection
   """
   ✨ Generated from Field `Student`.`parentUid_count` of type `Int!`
   """
@@ -1684,9 +1724,17 @@ input Student_Order {
   """
   gradeLevel_min: OrderDirection
   """
+  ✨ Generated from Field `Student`.`lastActiveAt_min` of type `Timestamp`
+  """
+  lastActiveAt_min: OrderDirection
+  """
   ✨ Generated from Field `Student`.`gradeLevel_max` of type `Int`
   """
   gradeLevel_max: OrderDirection
+  """
+  ✨ Generated from Field `Student`.`lastActiveAt_max` of type `Timestamp`
+  """
+  lastActiveAt_max: OrderDirection
 }
 """
 ✨ Generated data input type for table 'StudentAvatar'. It includes all necessary fields for creating or upserting rows into table.

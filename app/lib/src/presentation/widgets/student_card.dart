@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../domain/models/student_model.dart';
 import '../../data/repositories/ai_engine_repository.dart';
+import '../../../l10n/app_localizations.dart';
 
 class StudentCard extends StatefulWidget {
   final StudentModel student;
@@ -96,13 +97,15 @@ class _StudentCardState extends State<StudentCard> {
         : '?';
   }
 
-  String get _gradeLabel =>
-      widget.student.gradeLevel != null ? 'Grade ${widget.student.gradeLevel}' : 'No grade';
+  String _gradeLabel(AppLocalizations loc) => widget.student.gradeLevel != null
+      ? loc.gradeLabel(widget.student.gradeLevel!)
+      : loc.noGradeLabel;
 
   // ── build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final verified = widget.student.isEmailVerified;
 
     return GestureDetector(
@@ -141,13 +144,13 @@ class _StudentCardState extends State<StudentCard> {
                 children: [
                   _buildAvatar(verified),
                   const SizedBox(width: 14),
-                  Expanded(child: _buildInfo(verified)),
+                  Expanded(child: _buildInfo(verified, loc)),
                   const SizedBox(width: 8),
-                  _buildStats(verified),
+                  _buildStats(verified, loc),
                 ],
               ),
             ),
-            if (!verified) _buildUnverifiedBadge(),
+            if (!verified) _buildUnverifiedBadge(loc),
           ],
         ),
       ),
@@ -181,7 +184,7 @@ class _StudentCardState extends State<StudentCard> {
 
   // ── name / subtitle / grade ─────────────────────────────────────────────────
 
-  Widget _buildInfo(bool verified) {
+  Widget _buildInfo(bool verified, AppLocalizations loc) {
     final nameColor = verified
         ? const Color(0xFF1A1A2E)
         : _unverifiedTextPrimary;
@@ -205,18 +208,18 @@ class _StudentCardState extends State<StudentCard> {
         ),
         const SizedBox(height: 3),
         Text(
-          verified ? 'Tap to view' : 'Awaiting email verification',
+          verified ? loc.tapToViewLabel : loc.awaitingEmailVerificationLabel,
           style: TextStyle(fontSize: 12, color: subtitleColor),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 6),
-        _buildGradeChip(verified),
+        _buildGradeChip(verified, loc),
       ],
     );
   }
 
-  Widget _buildGradeChip(bool verified) {
+  Widget _buildGradeChip(bool verified, AppLocalizations loc) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -234,7 +237,7 @@ class _StudentCardState extends State<StudentCard> {
           ),
           const SizedBox(width: 4),
           Text(
-            _gradeLabel,
+            _gradeLabel(loc),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -248,14 +251,14 @@ class _StudentCardState extends State<StudentCard> {
 
   // ── XP / coins stats ────────────────────────────────────────────────────────
 
-  Widget _buildStats(bool verified) {
+  Widget _buildStats(bool verified, AppLocalizations loc) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         _buildStatPill(
           icon: Icons.bolt,
-          value: '$_xp XP',
+          value: loc.xpAmountLabel(_xp),
           iconColor: verified ? _verifiedXpColor : _unverifiedTextSecondary,
           textColor: verified
               ? const Color(0xFF1A1A2E)
@@ -312,7 +315,7 @@ class _StudentCardState extends State<StudentCard> {
 
   // ── UNVERIFIED badge ────────────────────────────────────────────────────────
 
-  Widget _buildUnverifiedBadge() {
+  Widget _buildUnverifiedBadge(AppLocalizations loc) {
     return Positioned(
       top: 0,
       right: 0,
@@ -327,16 +330,16 @@ class _StudentCardState extends State<StudentCard> {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.mark_email_unread_outlined,
               size: 11,
               color: Color(0xFFFBBF24),
             ),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
             Text(
-              'UNVERIFIED',
-              style: TextStyle(
+              loc.unverifiedLabel,
+              style: const TextStyle(
                 color: Color(0xFFFBBF24),
                 fontSize: 10,
                 fontWeight: FontWeight.w800,

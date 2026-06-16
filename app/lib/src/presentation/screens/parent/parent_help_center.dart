@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../services/support_ticket_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ParentHelpCenter extends StatefulWidget {
   final String uid;
@@ -19,24 +20,31 @@ class ParentHelpCenter extends StatefulWidget {
 class _ParentHelpCenterState extends State<ParentHelpCenter> {
   static const _issueTypes = [
     _IssueType(
-      label: "App isn't working properly",
+      id: 'appNotWorking',
       icon: Icons.bug_report_outlined,
       iconBg: Color(0xFFFFEBEE),
       iconColor: Color(0xFFE53935),
     ),
     _IssueType(
-      label: 'Quiz question has an error',
+      id: 'quizQuestionError',
       icon: Icons.menu_book_outlined,
       iconBg: Color(0xFFE3F2FD),
       iconColor: Color(0xFF1E88E5),
     ),
     _IssueType(
-      label: 'How do I...?',
+      id: 'howDoI',
       icon: Icons.help_outline,
       iconBg: Color(0xFFE3F2FD),
       iconColor: Color(0xFF1E88E5),
     ),
   ];
+
+  String _issueLabel(AppLocalizations loc, String id) => switch (id) {
+        'appNotWorking' => loc.issueAppNotWorking,
+        'quizQuestionError' => loc.issueQuizQuestionError,
+        'howDoI' => loc.issueHowDoI,
+        _ => id,
+      };
 
   String? _selectedIssue;
   final TextEditingController _messageController = TextEditingController();
@@ -62,15 +70,24 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
       _messageController.text.trim().isNotEmpty &&
       !_sending;
 
+  // English text sent to the backend, independent of the UI locale, so
+  // existing support-ticket records stay in a consistent format.
+  static const _issueTypeBackendLabels = {
+    'appNotWorking': "App isn't working properly",
+    'quizQuestionError': 'Quiz question has an error',
+    'howDoI': 'How do I...?',
+  };
+
   Future<void> _send() async {
     if (!_canSend) return;
+    final loc = AppLocalizations.of(context);
     setState(() => _sending = true);
     try {
       final service = SupportTicketService(DataConnectProvider());
       await service.submit(
         userId: widget.uid,
         userName: widget.fullName,
-        issueType: _selectedIssue!,
+        issueType: _issueTypeBackendLabels[_selectedIssue!] ?? _selectedIssue!,
         message: _messageController.text.trim(),
       );
       if (!mounted) return;
@@ -80,17 +97,17 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
         _charCount = 0;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Message sent! Our team will get back to you soon.'),
+        SnackBar(
+          content: Text(loc.messageSentSuccessMessage),
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Couldn't send your message. Please try again."),
+          content: Text(loc.messageSendErrorMessage),
           behavior: SnackBarBehavior.floating,
           backgroundColor: const Color(0xFFE53935),
         ),
@@ -102,11 +119,12 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final firstName = widget.fullName.trim().split(RegExp(r'\s+')).first;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        title: const Text('Help Center'),
+        title: Text(loc.helpCenterTitle),
         backgroundColor: const Color(0xFFF5F7FF),
         elevation: 0,
       ),
@@ -117,9 +135,9 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
           children: [
             _buildMascotCard(firstName),
             const SizedBox(height: 20),
-            const Text(
-              'What can we help with?',
-              style: TextStyle(
+            Text(
+              loc.whatCanWeHelpWithTitle,
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1A1A2E),
@@ -128,9 +146,9 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
             const SizedBox(height: 12),
             ..._issueTypes.map(_buildIssueCard),
             const SizedBox(height: 20),
-            const Text(
-              'Tell us more',
-              style: TextStyle(
+            Text(
+              loc.tellUsMoreTitle,
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1A1A2E),
@@ -150,6 +168,13 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
   // ── Mascot greeting card ─────────────────────────────────────────────────
 
   Widget _buildMascotCard(String firstName) {
+    final loc = AppLocalizations.of(context);
+    final greeting = loc.needHelpGreeting(firstName);
+    final nameIndex = greeting.indexOf(firstName);
+    final before = nameIndex >= 0 ? greeting.substring(0, nameIndex) : greeting;
+    final after = nameIndex >= 0
+        ? greeting.substring(nameIndex + firstName.length)
+        : '';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -182,7 +207,7 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
                   height: 1.4,
                 ),
                 children: [
-                  const TextSpan(text: 'Need help, '),
+                  TextSpan(text: before),
                   TextSpan(
                     text: firstName,
                     style: const TextStyle(
@@ -190,7 +215,7 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const TextSpan(text: "? I'm here for you!"),
+                  TextSpan(text: after),
                 ],
               ),
             ),
@@ -203,9 +228,10 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
   // ── Issue type cards ─────────────────────────────────────────────────────
 
   Widget _buildIssueCard(_IssueType issue) {
-    final selected = _selectedIssue == issue.label;
+    final loc = AppLocalizations.of(context);
+    final selected = _selectedIssue == issue.id;
     return GestureDetector(
-      onTap: () => setState(() => _selectedIssue = issue.label),
+      onTap: () => setState(() => _selectedIssue = issue.id),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         margin: const EdgeInsets.only(bottom: 10),
@@ -244,7 +270,7 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                issue.label,
+                _issueLabel(loc, issue.id),
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -263,6 +289,7 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
   // ── Message field ────────────────────────────────────────────────────────
 
   Widget _buildMessageField() {
+    final loc = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -285,8 +312,7 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
             buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
                 null,
             decoration: InputDecoration(
-              hintText:
-                  'Describe your issue here... Our team will help you out!',
+              hintText: loc.describeIssueHint,
               hintStyle:
                   TextStyle(color: Colors.grey.shade400, fontSize: 13),
               border: InputBorder.none,
@@ -294,10 +320,10 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.only(right: 12, bottom: 8),
-            alignment: Alignment.centerRight,
+            padding: const EdgeInsetsDirectional.only(end: 12, bottom: 8),
+            alignment: AlignmentDirectional.centerEnd,
             child: Text(
-              '$_charCount/500',
+              loc.charCounterLabel(_charCount),
               style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
             ),
           ),
@@ -323,7 +349,7 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
                 ),
               )
             : const Icon(Icons.send_outlined, size: 18),
-        label: const Text('Send to Team'),
+        label: Text(AppLocalizations.of(context).sendToTeamButton),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
           backgroundColor: const Color(0xFF4A6CF7),
@@ -341,12 +367,12 @@ class _ParentHelpCenterState extends State<ParentHelpCenter> {
 }
 
 class _IssueType {
-  final String label;
+  final String id;
   final IconData icon;
   final Color iconBg;
   final Color iconColor;
   const _IssueType({
-    required this.label,
+    required this.id,
     required this.icon,
     required this.iconBg,
     required this.iconColor,

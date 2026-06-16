@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 enum GrowthStage {
   seed,        // mastery  0–20 %
@@ -9,13 +10,13 @@ enum GrowthStage {
 }
 
 extension GrowthStageX on GrowthStage {
-  String get label {
+  String label(AppLocalizations loc) {
     switch (this) {
-      case GrowthStage.seed:        return 'Seed';
-      case GrowthStage.sprout:      return 'Sprout';
-      case GrowthStage.smallPlant:  return 'Sapling';
-      case GrowthStage.mediumPlant: return 'Growing';
-      case GrowthStage.fullBloom:   return 'Flourishing';
+      case GrowthStage.seed:        return loc.growthStageSeed;
+      case GrowthStage.sprout:      return loc.growthStageSprout;
+      case GrowthStage.smallPlant:  return loc.growthStageSapling;
+      case GrowthStage.mediumPlant: return loc.growthStageGrowing;
+      case GrowthStage.fullBloom:   return loc.flourishingLabel;
     }
   }
 }

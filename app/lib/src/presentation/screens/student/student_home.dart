@@ -21,6 +21,7 @@ import '../../../domain/models/app_config_model.dart';
 import '../../widgets/garden_subject_card.dart';
 import '../../../utils/student_rank_utils.dart';
 import 'subject_detail_screen.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class StudentHome extends StatefulWidget {
   final String fullName;
@@ -145,6 +146,7 @@ class StudentHomeState extends State<StudentHome> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return MultiBlocListener(
       listeners: [
         BlocListener<AuthBloc, AuthState>(
@@ -201,8 +203,9 @@ class StudentHomeState extends State<StudentHome> {
                         ),
                         children: [
                           TextSpan(
-                            text:
-                                'Welcome back, ${widget.fullName.split(' ').first}! ',
+                            text: loc.welcomeBackGreeting(
+                              widget.fullName.split(' ').first,
+                            ),
                           ),
                           const TextSpan(text: '☀️'),
                         ],
@@ -259,6 +262,7 @@ class StudentHomeState extends State<StudentHome> {
   // ── Atmospheric garden ──────────────────────────────────────────────────────
 
   Widget _buildGardenArea() {
+    final loc = AppLocalizations.of(context);
     return BlocBuilder<GardenBloc, GardenState>(
       builder: (context, state) {
         if ((state is GardenLoading || state is GardenInitial) &&
@@ -276,7 +280,7 @@ class StudentHomeState extends State<StudentHome> {
               height: 180,
               child: Center(
                 child: Text(
-                  "Couldn't load your garden. Pull down to retry.",
+                  loc.gardenLoadErrorMessage,
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
               ),
@@ -297,7 +301,7 @@ class StudentHomeState extends State<StudentHome> {
                         size: 40, color: Colors.green.shade300),
                     const SizedBox(height: 10),
                     Text(
-                      'Ask a parent to add your subjects',
+                      loc.askParentAddSubjectsMessage,
                       style: TextStyle(
                           fontSize: 13, color: Colors.grey.shade600),
                     ),
@@ -488,6 +492,7 @@ class StudentHomeState extends State<StudentHome> {
   // ── Owl mascot ──────────────────────────────────────────────────────────────
 
   Widget _buildOwlSection() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -529,7 +534,7 @@ class StudentHomeState extends State<StudentHome> {
                     ),
                   ),
                   child: Text(
-                    'Great job today! Keep studying to help your garden bloom! 🌸',
+                    loc.owlEncouragementMessage,
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade700,
@@ -539,7 +544,7 @@ class StudentHomeState extends State<StudentHome> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Hootie, your Study Buddy',
+                  loc.owlNameLabel,
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
                 ),
               ],
@@ -647,6 +652,7 @@ class StudentHomeState extends State<StudentHome> {
   // ── App rules section ───────────────────────────────────────────────────────
 
   Widget _buildAppRulesSection() {
+    final loc = AppLocalizations.of(context);
     final activeRules = _appRules.where((r) => !r.isPaused).toList();
 
     return Column(
@@ -711,6 +717,7 @@ class StudentHomeState extends State<StudentHome> {
   }
 
   Widget _buildUsageBar({required int usedSeconds, required int totalSeconds}) {
+    final loc = AppLocalizations.of(context);
     if (totalSeconds <= 0) return const SizedBox.shrink();
 
     final remaining = (totalSeconds - usedSeconds).clamp(0, totalSeconds);
@@ -758,9 +765,9 @@ class StudentHomeState extends State<StudentHome> {
                 child: Icon(Icons.timer_outlined, size: 16, color: barColor),
               ),
               const SizedBox(width: 10),
-              const Text(
-                'Screen Time',
-                style: TextStyle(
+              Text(
+                loc.screenTimeLabel,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF1F2937),
@@ -777,7 +784,7 @@ class StudentHomeState extends State<StudentHome> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '$remainingLabel left',
+                  loc.timeRemainingLabel(remainingLabel),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -802,11 +809,11 @@ class StudentHomeState extends State<StudentHome> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Used: ${_formatDurationFromSeconds(usedSeconds)}',
+                loc.usedTimeLabel(_formatDurationFromSeconds(usedSeconds)),
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
               Text(
-                'Limit: $totalLabel',
+                loc.limitTimeLabel(totalLabel),
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
             ],
@@ -824,7 +831,7 @@ class StudentHomeState extends State<StudentHome> {
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  'Cooldown after limit: ${_formatDuration(_config.cooldownHours, _config.cooldownMinutes)}',
+                  loc.cooldownAfterLimitLabel(_formatDuration(_config.cooldownHours, _config.cooldownMinutes)),
                   style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFFFF9800),
@@ -840,6 +847,7 @@ class StudentHomeState extends State<StudentHome> {
   }
 
   Widget _buildCooldownBanner(int remainingSeconds) {
+    final loc = AppLocalizations.of(context);
     final cooldownLabel = _formatDurationFromSeconds(remainingSeconds);
 
     return Container(
@@ -884,9 +892,9 @@ class StudentHomeState extends State<StudentHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "You're on cooldown! 😴",
-                  style: TextStyle(
+                Text(
+                  loc.onCooldownTitle,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFFE65100),
@@ -894,7 +902,7 @@ class StudentHomeState extends State<StudentHome> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  "Apps will unlock again soon. Time to study! 📚",
+                  loc.cooldownMessage,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.orange.shade800,
@@ -918,7 +926,7 @@ class StudentHomeState extends State<StudentHome> {
                 ),
               ),
               Text(
-                'remaining',
+                loc.remainingLabel,
                 style: TextStyle(
                   fontSize: 10,
                   color: Colors.orange.shade600,
@@ -933,6 +941,7 @@ class StudentHomeState extends State<StudentHome> {
   }
 
   Widget _buildNoRulesPlaceholder() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
@@ -950,7 +959,7 @@ class StudentHomeState extends State<StudentHome> {
             ),
             const SizedBox(height: 10),
             Text(
-              'No app rules set yet.',
+              loc.noAppRulesSetMessage,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,
@@ -959,7 +968,7 @@ class StudentHomeState extends State<StudentHome> {
             ),
             const SizedBox(height: 4),
             Text(
-              "Your parent hasn't configured any rules for your device yet.",
+              loc.noAppRulesDescriptionMessage,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             ),

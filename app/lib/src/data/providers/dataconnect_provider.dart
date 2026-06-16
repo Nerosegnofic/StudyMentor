@@ -42,7 +42,7 @@ class DataConnectProvider {
       ('PARENT_CHILD_PROGRESS', true),
       ('PARENT_STREAK_ALERTS', true),
       ('PARENT_INACTIVITY', true),
-      ('PARENT_WEAK_SUBJECT', false),
+      ('PARENT_WEAK_SUBJECT', true),
     ];
     for (final (category, enabled) in parentCategories) {
       try {
@@ -130,9 +130,29 @@ class DataConnectProvider {
             'email': s.user.email,
             'grade_level': s.gradeLevel,
             'is_email_verified': s.user.isEmailVerified,
+            'created_at': DateTime.fromMillisecondsSinceEpoch(
+              s.user.createdAt.seconds * 1000,
+              isUtc: true,
+            ).toIso8601String(),
+            'last_active_at': s.lastActiveAt == null
+                ? null
+                : DateTime.fromMillisecondsSinceEpoch(
+                    s.lastActiveAt!.seconds * 1000,
+                    isUtc: true,
+                  ).toIso8601String(),
           },
         )
         .toList();
+  }
+
+  /// Stamps the calling student's `lastActiveAt` with the server time.
+  ///
+  /// Called on quiz completion so the parent's inactivity check (see
+  /// [ParentInactivityCheckService]) can detect students who haven't studied
+  /// recently. Failures are not retried — the next quiz completion will
+  /// stamp it again.
+  Future<void> updateStudentLastActiveAt() async {
+    await _connector.updateStudentLastActiveAt().execute();
   }
 
   Future<String> getParentFullName(String studentUid) async {
@@ -142,6 +162,15 @@ class DataConnectProvider {
     final student = result.data.student;
     if (student == null) throw Exception('Student not found');
     return student.parent.user.fullName;
+  }
+
+  Future<String> getParentUidForStudent(String studentUid) async {
+    final result = await _connector
+        .getStudentWithParent(uid: studentUid)
+        .execute();
+    final student = result.data.student;
+    if (student == null) throw Exception('Student not found');
+    return student.parent.uid;
   }
 
   Future<String> getEmailForUid(String uid) async {
@@ -457,9 +486,9 @@ class DataConnectProvider {
         .execute();
   }
 
-  Future<void> markLocalNotificationEventsRead(String toParentUid) async {
+  Future<void> markLocalNotificationEventsRead(List<String> eventIds) async {
     await _connector
-        .markLocalNotificationEventsRead(toParentUid: toParentUid)
+        .markLocalNotificationEventsRead(eventIds: eventIds)
         .execute();
   }
 

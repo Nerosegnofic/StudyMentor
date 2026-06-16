@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/gamification_models.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Design-system tokens (mirrored from student_quiz / shop screens)

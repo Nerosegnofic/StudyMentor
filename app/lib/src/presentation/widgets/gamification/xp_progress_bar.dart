@@ -79,7 +79,7 @@ class XpProgressBar extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: Text(
               '${(clamped * 100).toInt()}%',
               style: TextStyle(

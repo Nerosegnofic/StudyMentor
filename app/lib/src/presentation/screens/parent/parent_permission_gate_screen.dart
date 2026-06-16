@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../services/permission_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ── Study Mentor design tokens (Parent app: administrative & clean) ───────────
 const Color _kBackground = Color(0xFFF5F7FA); // Soft Cloud
@@ -164,6 +165,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   }
 
   Widget _buildContent(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     final stepNumber = parentPermissions.indexOf(permission) + 1;
     const totalSteps = 2;
 
@@ -236,6 +238,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Header with progress indicator ────────────────────────────────────────
 
   Widget _buildHeader(int step, int total) {
+    final loc = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -339,13 +342,14 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Status card ────────────────────────────────────────────────────────────
 
   Widget _buildStatusCard(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     if (_currentGranted) {
       return _statusRow(
         icon: Icons.check_circle_rounded,
         iconColor: const Color(0xFF10B981),
         backgroundColor: const Color(0xFFECFDF5),
         borderColor: const Color(0xFF10B981),
-        text: '${permission.displayName} has been enabled.',
+        text: loc.permissionEnabledMessage(permission.displayName(loc)),
         textColor: const Color(0xFF065F46),
       );
     }
@@ -355,8 +359,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
       iconColor: const Color(0xFFF59E0B),
       backgroundColor: const Color(0xFFFFFBEB),
       borderColor: const Color(0xFFF59E0B),
-      text:
-          'Permission not granted yet. Tap the button below to open Settings.',
+      text: loc.permissionNotGrantedMessage,
       textColor: const Color(0xFF92400E),
     );
   }
@@ -441,12 +444,10 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Hint text ──────────────────────────────────────────────────────────────
 
   Widget _buildSettingsHint(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     final hint = switch (permission) {
-      RequiredPermission.postNotifications =>
-        'Allow StudyMentor to send you notifications.',
-      RequiredPermission.batteryOptimization =>
-        'Find "StudyMentor", select "Don\'t optimize" or "Unrestricted", '
-            'then confirm.',
+      RequiredPermission.postNotifications => loc.postNotificationsHint,
+      RequiredPermission.batteryOptimization => loc.batteryOptimizationHint,
       _ => '',
     };
 
