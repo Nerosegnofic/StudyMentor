@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
@@ -187,10 +188,10 @@ class StudentHomeState extends State<StudentHome> {
                   children: [
                     RichText(
                       text: TextSpan(
-                        style: const TextStyle(
+                        style: GoogleFonts.cairo(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
+                          color: const Color(0xFF1F2937),
                           letterSpacing: -0.3,
                         ),
                         children: [
@@ -206,7 +207,7 @@ class StudentHomeState extends State<StudentHome> {
                     const SizedBox(height: 2),
                     Text(
                       loc.gardenGrowingMessage,
-                      style: TextStyle(
+                      style: GoogleFonts.cairo(
                         fontSize: 13,
                         color: Colors.grey.shade500,
                       ),

@@ -141,13 +141,16 @@ Future<void> main() async {
     dataConnect: dataConnectProvider,
   );
 
-  runApp(StudyMentorApp(authRepository: authRepository));
+  final initialLocale = await LocaleCubit.readSavedLocale();
+
+  runApp(StudyMentorApp(authRepository: authRepository, initialLocale: initialLocale));
 }
 
 class StudyMentorApp extends StatelessWidget {
   final AuthRepository authRepository;
+  final Locale initialLocale;
 
-  const StudyMentorApp({super.key, required this.authRepository});
+  const StudyMentorApp({super.key, required this.authRepository, required this.initialLocale});
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +166,7 @@ class StudyMentorApp extends StatelessWidget {
             create: (context) => AppConfigBloc(authRepository: authRepository),
           ),
           BlocProvider<LocaleCubit>(
-            create: (context) => LocaleCubit()..loadSavedLocale(),
+            create: (context) => LocaleCubit(initialLocale),
           ),
           BlocProvider<SubjectBloc>(
             create: (context) => SubjectBloc(authRepository: authRepository),
