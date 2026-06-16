@@ -1,14 +1,8 @@
-from typing import List
-from .base import SubjectStrategy
+from .profile import SubjectProfile
 
-class ArabicLangStrategy(SubjectStrategy):
-
-    @property
-    def subject_key(self) -> str:
-        return "arabic_lang"
-
-    def difficulty_scale(self) -> str:
-        return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFILE = SubjectProfile(
+    subject_key="arabic_lang",
+    difficulty_scale="""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIFFICULTY SCALE (CRITICAL — follow strictly)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Each difficulty level has specific cognitive requirements. Questions MUST match these criteria EXACTLY:
@@ -37,37 +31,28 @@ Level 4 — Hard (تحليل / Analysis):
 
 Level 5 — Very Hard (تقييم وإبداع / Evaluation & Synthesis):
   • Combine multiple grammar concepts or evaluate nuanced language use.
-  • ✅ CORRECT: "أي الجمل التالية تحتوي على حال ومفعول به معًا؟\""""
-
-    def difficulty_violations(self) -> str:
-        return """⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
+  • ✅ CORRECT: "أي الجمل التالية تحتوي على حال ومفعول به معًا؟\"""",
+    difficulty_violations="""⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
   • Difficulty 1 with إعراب (parsing) → WRONG (Level 1 is pure recall)
   • Difficulty 1 requiring grammar application → WRONG (grammar application starts at Level 2)
   • Difficulty 1 or 2 with error detection → WRONG (error detection is Level 4+)
-  • Difficulty 5 with a simple vocabulary meaning question → WRONG (Level 5 requires synthesis)"""
-
-    def self_check_rules(self) -> str:
-        return """MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
+  • Difficulty 5 with a simple vocabulary meaning question → WRONG (Level 5 requires synthesis)""",
+    self_check_rules="""MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
   1. Does the question require more than recalling a definition? Level 1 = ONLY recall.
   2. Does the question require applying a grammar rule? Level 1 = NO rule application. Level 2 = ONE rule only.
   3. Does the question require إعراب or error analysis? These start at Level 4.
-  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty."""
-
-    def formatting_rules(self) -> str:
-        return """Language Formatting Rules:
+  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty.""",
+    formatting_rules="""Language Formatting Rules:
 - ALL questions must be written in Modern Standard Arabic (اللغة العربية الفصحى).
 - Use proper Arabic punctuation (، ؛ ؟ !) and diacritical marks (تشكيل) where needed for clarity.
 - When showing a word to analyze, put it in quotation marks or bold.
-- Ensure grammatical examples are fully vowelized (مُشَكَّلة) when the question tests diacritics."""
-
-    def pedagogical_tone(self) -> str:
-        return """Pedagogical Tone & Style:
+- Ensure grammatical examples are fully vowelized (مُشَكَّلة) when the question tests diacritics.""",
+    pedagogical_tone="""Pedagogical Tone & Style:
 - Write like a professional Egyptian Arabic language teacher using Modern Standard Arabic.
 - Adjust vocabulary and sentence complexity to the student's grade level.
 - Use clear, encouraging language exactly like a school exam paper.
-- Use diverse question formats: vocabulary, grammar, spelling, sentence structure."""
-
-    _FORMAT_POOLS = {
+- Use diverse question formats: vocabulary, grammar, spelling, sentence structure.""",
+    format_pools={
         1: [
             "recall vocabulary meaning (ما معنى كلمة '...'؟)",
             "identify word type (اسم / فعل / حرف)",
@@ -98,7 +83,5 @@ Level 5 — Very Hard (تقييم وإبداع / Evaluation & Synthesis):
             "combine multiple grammar rules in analysis",
             "choose the most rhetorically effective sentence",
         ],
-    }
-
-    def get_format_pool(self, difficulty: int) -> List[str]:
-        return self._FORMAT_POOLS.get(difficulty, self._FORMAT_POOLS[3])
+    },
+)

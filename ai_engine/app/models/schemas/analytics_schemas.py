@@ -1,7 +1,19 @@
 import uuid
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Literal, Optional
 from uuid import UUID
+
+# The fixed set of subject categories the engine has quiz strategies for. Constraining
+# the classifier to these (via Literal/enum) guarantees the value is one the strategy
+# resolver can map — it can never return an unmatchable name like "Algebra".
+DetectedSubject = Literal[
+    "Mathematics",
+    "Science",
+    "Arabic Language",
+    "English Language",
+    "Social Studies",
+    "General",
+]
 
 class RefinedSkill(BaseModel):
     """A single refined mastery skill — the atomic unit for BKT tracking."""
@@ -21,6 +33,17 @@ class RefinedUnit(BaseModel):
 class RefinedMasteryResponse(BaseModel):
     """Complete structured output from the Gemini mastery refinement call."""
     units: List[RefinedUnit] = Field(..., description="All units with their lessons and refined skills")
+    detected_subject: Optional[DetectedSubject] = Field(
+        default=None,
+        description=(
+            "The academic subject this textbook teaches, classified from its content and "
+            "INDEPENDENT of the language it is written in. Use 'Arabic Language'/'English "
+            "Language' ONLY for language-arts textbooks that teach the Arabic/English "
+            "language itself — a Math or Science book written in English is still "
+            "'Mathematics'/'Science', NOT 'English Language'. Use 'General' only when no "
+            "other category fits."
+        ),
+    )
 
 class MasteryPointSchema(BaseModel):
     id: UUID = Field(default_factory=uuid.uuid4)

@@ -9,5 +9,5 @@ class ParserContext:
     def set_strategy(self, strategy: DocumentParserStrategy):
         self._strategy = strategy
 
-    def execute_parse(self, document_id: UUID, temp_file_path: str, subject_name: str = "") -> str:
-        return self._strategy.parse(document_id, temp_file_path, subject_name=subject_name)
+    def execute_parse(self, document_id: UUID, temp_file_path: str, language: str = "ar") -> str:
+        return self._strategy.parse(document_id, temp_file_path, language=language)

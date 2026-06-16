@@ -1,20 +1,11 @@
-from typing import List
-from .base import SubjectStrategy
+from .profile import SubjectProfile
 
-class GeneralStrategy(SubjectStrategy):
-    """
-    Fallback strategy using generic cognitive taxonomy.
-    Works for any subject by focusing on universal thinking skills
-    (recall, comprehension, application, analysis, evaluation)
-    without subject-specific assumptions.
-    """
-
-    @property
-    def subject_key(self) -> str:
-        return "general"
-
-    def difficulty_scale(self) -> str:
-        return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Fallback profile using a generic cognitive taxonomy. Works for any subject by
+# focusing on universal thinking skills (recall, comprehension, application,
+# analysis, evaluation) without subject-specific assumptions.
+PROFILE = SubjectProfile(
+    subject_key="general",
+    difficulty_scale="""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIFFICULTY SCALE (CRITICAL — follow strictly)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Each difficulty level has specific cognitive requirements. Questions MUST match these criteria EXACTLY:
@@ -38,35 +29,26 @@ Level 4 — Hard (Analysis):
 
 Level 5 — Very Hard (Evaluation & Synthesis):
   • Combine multiple concepts, evaluate options, or justify a position.
-  • Requires significant thought and integration of knowledge."""
-
-    def difficulty_violations(self) -> str:
-        return """⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
+  • Requires significant thought and integration of knowledge.""",
+    difficulty_violations="""⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
   • Difficulty 1 with any reasoning or application → WRONG (Level 1 is pure recall)
   • Difficulty 1 or 2 with multi-step reasoning → WRONG (multi-step starts at Level 3)
   • Difficulty 1 or 2 with error detection or analysis → WRONG (analysis is Level 4+)
-  • Difficulty 5 with a simple single-step question → WRONG (Level 5 requires synthesis)"""
-
-    def self_check_rules(self) -> str:
-        return """MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
+  • Difficulty 5 with a simple single-step question → WRONG (Level 5 requires synthesis)""",
+    self_check_rules="""MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
   1. Count the number of cognitive steps required. Level 1 = exactly 0 steps (just recall).
   2. Does the question require applying a rule or concept? Level 1 = NO application.
   3. Does the question require analysis or comparison? Analysis starts at Level 4.
-  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty."""
-
-    def formatting_rules(self) -> str:
-        return """Formatting Rules:
+  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty.""",
+    formatting_rules="""Formatting Rules:
 - Write in the same language and script as the curriculum context provided.
 - Use proper punctuation for that language.
-- Ensure all options are clearly distinct and unambiguous."""
-
-    def pedagogical_tone(self) -> str:
-        return """Pedagogical Tone & Style:
+- Ensure all options are clearly distinct and unambiguous.""",
+    pedagogical_tone="""Pedagogical Tone & Style:
 - Write in the same language as the curriculum context provided below.
 - Adjust vocabulary and complexity to the student's grade level.
-- The tone must be clear, encouraging, and exactly like a school exam paper."""
-
-    _FORMAT_POOLS = {
+- The tone must be clear, encouraging, and exactly like a school exam paper.""",
+    format_pools={
         1: [
             "direct fact recall (what is / what does ... mean?)",
             "identify the correct definition from options",
@@ -97,7 +79,5 @@ Level 5 — Very Hard (Evaluation & Synthesis):
             "compare and evaluate two approaches",
             "justify a position based on lesson content",
         ],
-    }
-
-    def get_format_pool(self, difficulty: int) -> List[str]:
-        return self._FORMAT_POOLS.get(difficulty, self._FORMAT_POOLS[3])
+    },
+)

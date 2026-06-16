@@ -1,5 +1,4 @@
 import os
-import re
 from uuid import UUID
 from llama_parse import LlamaParse
 from app.core.config import settings
@@ -7,41 +6,22 @@ from app.services.rag.parsers.base import DocumentParserStrategy
 
 
 # ---------------------------------------------------------------------------
-# Subject-to-Language Mapping
-# ---------------------------------------------------------------------------
-# Egyptian primary school subjects fall into two categories:
-#   1. Arabic-medium: Math, Science, Social Studies, Arabic Language, etc.
-#      These textbooks are written primarily in Arabic (with occasional
-#      English technical terms). They REQUIRE language="ar" for proper OCR.
-#
-#   2. English-medium: English (Connect / المعاصر)
-#      These textbooks are written primarily in English (with occasional
-#      Arabic instructions/glossary). They need auto-detect (no language param)
-#      to avoid LlamaParse translating the English into Arabic.
-#
-# The mapping is intentionally conservative: if we're unsure, default to
-# Arabic mode because the majority of Egyptian primary textbooks are Arabic.
-
-_ENGLISH_SUBJECT_PATTERNS = re.compile(
-    r'(?:english|connect|انجليز|إنجليز)',
-    re.IGNORECASE
-)
-
-
-def _is_english_subject(subject_name: str) -> bool:
-    """Determine if a subject is English-medium based on its name."""
-    if not subject_name:
-        return False
-    return bool(_ENGLISH_SUBJECT_PATTERNS.search(subject_name))
-
-
-# ---------------------------------------------------------------------------
 # System Prompts
 # ---------------------------------------------------------------------------
+# Both prompts carry an explicit NO-TRANSLATE rule so the parser transcribes the
+# original language faithfully regardless of the OCR language hint. That guarantee
+# is what lets the ingestion pipeline trust content-based language detection and
+# safely re-parse when its first-pass guess was wrong.
+
+_NO_TRANSLATE_RULE = (
+    "CRITICAL: Preserve the original language of every piece of text EXACTLY as it "
+    "appears. Do NOT translate any text — English stays English, Arabic stays Arabic. "
+)
 
 _ARABIC_SYSTEM_PROMPT = (
     "This is a bilingual educational textbook. "
     "IMPORTANT: The primary language is Arabic (RTL). "
+    + _NO_TRANSLATE_RULE +
     "Please preserve the RTL reading order for Arabic sections. "
     "Keep technical English terms in-line. "
     "Output headers as # and sub-headers as ##."
@@ -62,45 +42,48 @@ _ENGLISH_SYSTEM_PROMPT = (
 )
 
 
+def _build_parse_kwargs(language: str) -> dict:
+    """LlamaParse kwargs for an OCR language. "ar" forces Arabic OCR; "en" auto-detects."""
+    kwargs = {
+        "result_type": "markdown",
+        "premium_mode": True,
+        "verbose": True,
+    }
+    if language == "en":
+        # English-medium: auto-detect language (do NOT set language="ar"), so LlamaParse
+        # never transliterates English into Arabic.
+        kwargs["system_prompt"] = _ENGLISH_SYSTEM_PROMPT
+    else:
+        # Arabic-medium (default): force Arabic OCR for best quality.
+        kwargs["language"] = "ar"
+        kwargs["system_prompt"] = _ARABIC_SYSTEM_PROMPT
+    return kwargs
+
+
 class LlamaParseStrategy(DocumentParserStrategy):
     """
-    Implementation of Document Parsing using LlamaParse API.
+    Single-pass document parsing via the LlamaParse API.
 
-    Adapts OCR settings based on the subject:
-    - Arabic-medium subjects (Math, Science, etc.) → language="ar" for best Arabic OCR
-    - English-medium subjects (English) → auto-detect to avoid translating English to Arabic
+    The strategy is a primitive: given an OCR ``language`` it returns markdown for one
+    pass. Choosing the initial language, verifying it against the parsed content, and
+    deciding whether to re-parse are orchestration concerns owned by the ingestion
+    pipeline — not this parser.
+
+    - language="ar": force Arabic OCR (best for Arabic-medium Math/Science/etc.)
+    - language="en": auto-detect (avoids translating English-medium books to Arabic)
     """
-    def parse(self, document_id: UUID, temp_file_path: str, subject_name: str = "") -> str:
+    def parse(self, document_id: UUID, temp_file_path: str, language: str = "ar") -> str:
         if settings.LLAMA_CLOUD_API_KEY:
             os.environ["LLAMA_CLOUD_API_KEY"] = settings.LLAMA_CLOUD_API_KEY
 
-        is_english = _is_english_subject(subject_name)
+        parser = LlamaParse(**_build_parse_kwargs(language))
 
-        # Build LlamaParse kwargs based on subject language
-        parse_kwargs = {
-            "result_type": "markdown",
-            "premium_mode": True,
-            "verbose": True,
-        }
-
-        if is_english:
-            # English subject: auto-detect language (do NOT set language="ar")
-            parse_kwargs["system_prompt"] = _ENGLISH_SYSTEM_PROMPT
-            print(f"[{document_id}] Parser mode: ENGLISH (subject='{subject_name}')", flush=True)
-        else:
-            # Arabic-medium subject (default): force Arabic OCR for best quality
-            parse_kwargs["language"] = "ar"
-            parse_kwargs["system_prompt"] = _ARABIC_SYSTEM_PROMPT
-            print(f"[{document_id}] Parser mode: ARABIC (subject='{subject_name}')", flush=True)
-
-        parser = LlamaParse(**parse_kwargs)
-
-        print(f"[{document_id}] Starting LlamaParse extraction...", flush=True)
+        print(f"[{document_id}] Starting LlamaParse extraction (language={language})...", flush=True)
         try:
             documents = parser.load_data(temp_file_path)
         except Exception as e:
-            print(f"CRITICAL: LlamaParse failed: {str(e)}", flush=True)
-            return "" # Return empty so the pipeline handles it gracefully
+            print(f"CRITICAL: LlamaParse failed (language={language}): {str(e)}", flush=True)
+            return ""  # Return empty so the pipeline handles it gracefully
 
-        print(f"[{document_id}] Extraction complete! Found {len(documents)} pages.", flush=True)
+        print(f"[{document_id}] Extraction complete (language={language})! Found {len(documents)} pages.", flush=True)
         return "\n\n".join([doc.text for doc in documents])

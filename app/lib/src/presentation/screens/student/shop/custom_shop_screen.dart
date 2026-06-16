@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../bloc/shop/shop_bloc.dart';
 import '../../../../bloc/shop/shop_event.dart';
 import '../../../../bloc/shop/shop_state.dart';
@@ -9,6 +10,22 @@ import '../../../../domain/models/avatar_item.dart';
 import '../../../../../core/avatar/fluttermojiController.dart';
 import '../../../widgets/avatar_widget.dart';
 import '../../../../../l10n/app_localizations.dart';
+
+// ---------------------------------------------------------------------------
+// Study Mentor design-system tokens (Student app)
+// ---------------------------------------------------------------------------
+// File-local, mirroring the convention used in student_quiz.dart.
+const _kBg = Color(0xFFF5F7FA); // Soft Cloud scaffold
+const _kGreen = Color(0xFF4CAF50); // primary actions / active / equipped
+const _kAmberLight = Color(0xFFFFF8E1); // coin / price pill background
+const _kAmberDark = Color(0xFFF57F17); // coin / price text on light amber
+const _kBlue = Color(0xFF2196F3); // informational — level-lock badge
+const _kBlueLight = Color(0xFFE3F2FD); // level-lock badge background
+const _kInk = Color(0xFF1A1F3C); // heading text
+const _kMuted = Color(0xFF8B93A7); // secondary text
+const _kHairline = Color(0xFFE3E8EF); // neutral card border
+const _kDisabled = Color(0xFFCFD6E0); // locked / disabled fill
+const _kRed = Color(0xFFEA4335); // error
 
 class CustomShopScreen extends StatefulWidget {
   final String studentUid;
@@ -76,12 +93,19 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             ),
           );
     } else if (!meetsLevel) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.unlocksAtLevelMessage(item.unlockLevel))),
+      _showInfoSnack(
+        context,
+        icon: Icons.lock_rounded,
+        color: _kBlue,
+        message: 'Reach Level ${item.unlockLevel} to unlock this item.',
       );
     } else if (state.coins < item.price) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.notEnoughCoinsMessage(item.price - state.coins))),
+      _showInfoSnack(
+        context,
+        icon: Icons.monetization_on_rounded,
+        color: _kAmberDark,
+        message:
+            'Not enough coins — you need ${item.price - state.coins} more.',
       );
     } else {
       // Block opening a second purchase dialog while one is already processing.
@@ -89,12 +113,59 @@ class _CustomShopScreenState extends State<CustomShopScreen>
       showDialog(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          title: Text(loc.buyItemTitle(item.name)),
-          content: Text(loc.itemCostMessage(item.price)),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Buy ${item.name}?',
+            style: GoogleFonts.cairo(
+              fontWeight: FontWeight.w700,
+              color: _kInk,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _kAmberLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🪙', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${item.price} coins',
+                      style: GoogleFonts.roboto(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _kAmberDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Balance after: ${state.coins - item.price} 🪙',
+                style: GoogleFonts.roboto(fontSize: 13, color: _kMuted),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx),
-              child: Text(loc.commonCancel),
+              style: TextButton.styleFrom(foregroundColor: _kMuted),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -107,7 +178,18 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                       ),
                     );
               },
-              child: Text(loc.buyButton),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kGreen,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                'Buy',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),
@@ -115,21 +197,56 @@ class _CustomShopScreenState extends State<CustomShopScreen>
     }
   }
 
+  // A single branded, floating snackbar used for every shop message.
+  void _showInfoSnack(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String message,
+  }) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: color,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          content: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: GoogleFonts.roboto(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+  }
+
   Widget _buildItemCard(BuildContext context, ShopLoaded state, AvatarItem item) {
     final isOwned = state.isOwned(item.id);
     final isEquipped = state.isEquipped(item);
     final meetsLevel = state.level >= item.unlockLevel;
     final canAfford = state.coins >= item.price;
-    final isLocked = !isOwned && (!canAfford || !meetsLevel);
+    // Two distinct lock reasons so the student understands why an item is gated.
+    final isLevelLocked = !isOwned && !meetsLevel; // needs a higher level
+    final isCoinLocked = !isOwned && meetsLevel && !canAfford; // needs coins
+    final isLocked = isLevelLocked || isCoinLocked;
 
     String svgString = _fluttermojiController.getComponentSVG(
         item.fluttermojiKey, item.fluttermojiIndex);
 
-    Widget itemVisual = SvgPicture.string(
-      svgString,
-      height: 60,
-      width: 60,
-    );
+    Widget itemVisual = SvgPicture.string(svgString, height: 60, width: 60);
 
     if (isLocked) {
       itemVisual = ColorFiltered(
@@ -143,20 +260,25 @@ class _CustomShopScreenState extends State<CustomShopScreen>
       );
     }
 
+    // Price pill stays amber when affordable or coin-locked (the amber lock
+    // glyph differentiates); muted grey when level-locked (level is the gate).
+    final priceBg = isLevelLocked ? _kDisabled : _kAmberLight;
+    final priceFg = isLevelLocked ? _kMuted : _kAmberDark;
+
     return GestureDetector(
       onTap: () => _handleItemTap(context, state, item, isOwned, meetsLevel),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(
-            color: isEquipped ? const Color(0xFF4A6CF7) : Colors.grey[300]!,
+            color: isEquipped ? _kGreen : _kHairline,
             width: isEquipped ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             if (isEquipped)
               BoxShadow(
-                color: const Color(0xFF4A6CF7).withOpacity(0.2),
+                color: _kGreen.withValues(alpha: 0.2),
                 blurRadius: 8,
               )
           ],
@@ -166,29 +288,66 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             Center(child: itemVisual),
             if (!isOwned)
               Positioned(
-                bottom: 4,
-                right: 4,
+                bottom: 6,
+                right: 6,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: meetsLevel ? Colors.amber[100] : Colors.grey[200],
+                    color: priceBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '🪙 ${item.price}',
-                    style: TextStyle(
+                    style: GoogleFonts.roboto(
                       fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: meetsLevel ? Colors.amber[900] : Colors.grey[600],
+                      fontWeight: FontWeight.w700,
+                      color: priceFg,
                     ),
                   ),
                 ),
               ),
-            if (!meetsLevel)
+            // Level lock → blue badge that shows the required level.
+            if (isLevelLocked)
               Positioned(
-                top: 4,
-                left: 4,
-                child: Icon(Icons.lock, size: 16, color: Colors.grey[500]),
+                top: 6,
+                left: 6,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _kBlueLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.lock, size: 11, color: _kBlue),
+                      const SizedBox(width: 2),
+                      Text(
+                        'Lv ${item.unlockLevel}',
+                        style: GoogleFonts.roboto(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: _kBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            // Coin lock → amber lock glyph (the amber price shows the cost).
+            if (isCoinLocked)
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: _kAmberLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.lock, size: 12, color: _kAmberDark),
+                ),
               ),
           ],
         ),
@@ -209,45 +368,57 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             Navigator.pop(context);
             return;
           }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.feedbackMessage!),
-              backgroundColor: state.feedbackIsError ? Colors.red : Colors.green,
-            ),
+          _showInfoSnack(
+            context,
+            icon: state.feedbackIsError
+                ? Icons.error_outline_rounded
+                : Icons.check_circle_rounded,
+            color: state.feedbackIsError ? _kRed : _kGreen,
+            message: state.feedbackMessage!,
           );
         }
       },
       builder: (context, state) {
         if (state is ShopLoading || state is ShopInitial) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            backgroundColor: _kBg,
+            body: Center(child: CircularProgressIndicator(color: _kGreen)),
           );
         }
 
         if (state is ShopError) {
           return Scaffold(
-            body: Center(child: Text(state.message)),
+            backgroundColor: _kBg,
+            body: Center(
+              child: Text(
+                state.message,
+                style: GoogleFonts.roboto(color: _kMuted),
+              ),
+            ),
           );
         }
 
         final loadedState = state as ShopLoaded;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF5F7FF),
+          backgroundColor: _kBg,
           appBar: AppBar(
             backgroundColor: Colors.white,
             elevation: 0,
             title: Text(
-              loc.avatarShopTitle,
-              style: const TextStyle(color: Color(0xFF1A1A2E), fontWeight: FontWeight.bold),
+              'Avatar Shop',
+              style: GoogleFonts.cairo(
+                color: _kInk,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-            iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
+            iconTheme: const IconThemeData(color: _kInk),
             actions: [
               Container(
                 margin: const EdgeInsetsDirectional.only(end: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.amber[100],
+                  color: _kAmberLight,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -256,9 +427,9 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                     const SizedBox(width: 4),
                     Text(
                       '${loadedState.coins}',
-                      style: TextStyle(
-                        color: Colors.amber[900],
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.roboto(
+                        color: _kAmberDark,
+                        fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
                     ),
@@ -269,9 +440,12 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             bottom: TabBar(
               controller: _tabController,
               isScrollable: true,
-              labelColor: const Color(0xFF4A6CF7),
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFF4A6CF7),
+              labelColor: _kGreen,
+              unselectedLabelColor: _kMuted,
+              indicatorColor: _kGreen,
+              labelStyle: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+              unselectedLabelStyle:
+                  GoogleFonts.roboto(fontWeight: FontWeight.w500),
               tabs: ItemCategory.values.map((cat) {
                 return Tab(text: _categoryLabel(loc, cat));
               }).toList(),
@@ -318,9 +492,13 @@ class _CustomShopScreenState extends State<CustomShopScreen>
               );
               // Navigator.pop is handled by the listener once the DB write completes.
             },
-            backgroundColor: const Color(0xFF4A6CF7),
+            backgroundColor: _kGreen,
+            foregroundColor: Colors.white,
             icon: const Icon(Icons.check),
-            label: Text(loc.doneButton),
+            label: Text(
+              'Done',
+              style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+            ),
           ),
         );
       },

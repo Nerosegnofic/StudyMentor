@@ -27,7 +27,7 @@ def get_vector_store() -> PGVector:
     
     vector_store = PGVector(
         embeddings=embeddings,
-        collection_name="math_curriculum",
+        collection_name=settings.PGVECTOR_COLLECTION_NAME,
         connection=settings.POSTGRES_CONNECTION,
         use_jsonb=True,
     )
