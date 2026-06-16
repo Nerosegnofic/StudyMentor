@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
+const Color _kGreen = Color(0xFF4CAF50); // Primary Green
+const Color _kInk = Color(0xFF1F2937); // Title ink
+const Color _kRed = Color(0xFFEF5350); // Destructive (log out)
 
 /// A dialog that prompts the student to enter their parent's
 /// email and password before allowing logout.
@@ -70,34 +76,74 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
     return PopScope(
       canPop: !widget.isLoading,
       child: AlertDialog(
-        title: const Text('Parent Verification Required'),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        titlePadding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        title: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: _kGreen.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.shield_outlined,
+                color: _kGreen,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Parent Verification Required',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cairo(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: _kInk,
+              ),
+            ),
+          ],
+        ),
         content: Form(
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'To log out, please enter your parent\'s credentials.',
-                  style: TextStyle(fontSize: 14),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.roboto(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _emailCtl,
                   enabled: !widget.isLoading,
-                  decoration: const InputDecoration(
-                    labelText: 'Parent\'s Email',
-                    prefixIcon: Icon(Icons.email_outlined),
+                  style: GoogleFonts.roboto(fontSize: 14, color: _kInk),
+                  decoration: _fieldDecoration(
+                    label: 'Parent\'s Email',
+                    icon: Icons.email_outlined,
                   ),
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   validator: (v) =>
                       (v != null && v.contains('@')) ? null : 'Please enter a valid email address.',
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _passwordCtl,
                   enabled: !widget.isLoading,
+                  style: GoogleFonts.roboto(fontSize: 14, color: _kInk),
                   // Clear the server error as soon as the user starts
                   // correcting their password, matching the behaviour of
                   // _ParentDeletePasswordDialog and the other dialogs.
@@ -106,9 +152,9 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                       setState(() => _serverError = null);
                     }
                   },
-                  decoration: InputDecoration(
-                    labelText: 'Parent\'s Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                  decoration: _fieldDecoration(
+                    label: 'Parent\'s Password',
+                    icon: Icons.lock_outline,
                     // Inline field-level error shown in red beneath the field.
                     errorText: _serverError,
                     suffixIcon: IconButton(
@@ -116,6 +162,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
+                        color: Colors.grey.shade500,
                       ),
                       // Keep the toggle reachable for usability, but only
                       // when not loading.
@@ -136,16 +183,35 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
             ),
           ),
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         actions: [
           TextButton(
             // Disabled during loading — the user must wait for the result.
             onPressed: widget.isLoading
                 ? null
                 : () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey.shade600,
+            ),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+            ),
           ),
           ElevatedButton(
             onPressed: widget.isLoading ? null : _submit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kRed,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
             child: widget.isLoading
                 ? const SizedBox(
                     width: 18,
@@ -157,9 +223,47 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text('Verify & Log Out'),
+                : Text(
+                    'Verify & Log Out',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Shared field styling — heavily rounded with a green focus accent (Student).
+  InputDecoration _fieldDecoration({
+    required String label,
+    required IconData icon,
+    String? errorText,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.roboto(color: Colors.grey.shade600),
+      prefixIcon: Icon(icon, color: Colors.grey.shade500),
+      suffixIcon: suffixIcon,
+      errorText: errorText,
+      errorStyle: GoogleFonts.roboto(),
+      filled: true,
+      fillColor: const Color(0xFFF5F7FA),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _kGreen, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _kRed),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _kRed, width: 2),
       ),
     );
   }

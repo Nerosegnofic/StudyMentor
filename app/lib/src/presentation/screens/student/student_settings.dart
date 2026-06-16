@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../services/settings_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
+
+// ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
+const Color _kBackground = Color(0xFFF5F7FA); // Soft Cloud
+const Color _kGreen = Color(0xFF4CAF50); // Primary Green
+const Color _kInk = Color(0xFF1F2937); // Title ink
 
 class StudentSettings extends StatefulWidget {
   final String uid;
@@ -73,38 +79,83 @@ class _StudentSettingsState extends State<StudentSettings> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FF),
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: const Color(0xFFF5F7FF),
-        elevation: 0,
+      backgroundColor: _kBackground,
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: _kGreen),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    children: [
+                      _sectionLabel('Preferences'),
+                      _buildPreferencesCard(),
+                      const SizedBox(height: 20),
+                      _sectionLabel('Account'),
+                      _buildAccountCard(),
+                      const SizedBox(height: 20),
+                      _sectionLabel('About'),
+                      _buildAboutCard(),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+          ),
+        ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              children: [
-                _sectionLabel('Preferences'),
-                _buildPreferencesCard(),
-                const SizedBox(height: 20),
-                _sectionLabel('Account'),
-                _buildAccountCard(),
-                const SizedBox(height: 20),
-                _sectionLabel('About'),
-                _buildAboutCard(),
-                const SizedBox(height: 16),
-              ],
-            ),
     );
   }
+
+  // ── Immersive green header band ─────────────────────────────────────────────
+
+  Widget _buildHeader() => Container(
+    width: double.infinity,
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF43A047), _kGreen],
+      ),
+      borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+    ),
+    padding: EdgeInsets.fromLTRB(
+      8,
+      MediaQuery.of(context).padding.top + 8,
+      16,
+      20,
+    ),
+    child: Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          color: Colors.white,
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
+        ),
+        Text(
+          'Settings',
+          style: GoogleFonts.cairo(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _sectionLabel(String text) => Padding(
     padding: const EdgeInsets.only(left: 4, bottom: 8),
     child: Text(
       text,
-      style: TextStyle(
+      style: GoogleFonts.cairo(
         fontSize: 13,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: Colors.grey.shade600,
         letterSpacing: 0.3,
       ),
@@ -190,10 +241,10 @@ class _StudentSettingsState extends State<StudentSettings> {
   Widget _card({required List<Widget> children}) => Container(
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(18),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.black.withValues(alpha: 0.04),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
@@ -223,16 +274,19 @@ class _StudentSettingsState extends State<StudentSettings> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: GoogleFonts.roboto(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
-                  color: Color(0xFF1A1A2E),
+                  color: _kInk,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                style: GoogleFonts.roboto(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                ),
               ),
             ],
           ),
@@ -240,7 +294,7 @@ class _StudentSettingsState extends State<StudentSettings> {
         Switch.adaptive(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFF4A6CF7),
+          activeThumbColor: _kGreen,
         ),
       ],
     ),
@@ -262,16 +316,19 @@ class _StudentSettingsState extends State<StudentSettings> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: GoogleFonts.roboto(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
-                  color: Color(0xFF1A1A2E),
+                  color: _kInk,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                style: GoogleFonts.roboto(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                ),
               ),
             ],
           ),
@@ -294,16 +351,16 @@ class _StudentSettingsState extends State<StudentSettings> {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: GoogleFonts.roboto(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: Color(0xFF1A1A2E),
+              color: _kInk,
             ),
           ),
         ),
         Text(
           trailing,
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+          style: GoogleFonts.roboto(fontSize: 13, color: Colors.grey.shade500),
         ),
       ],
     ),
@@ -313,9 +370,9 @@ class _StudentSettingsState extends State<StudentSettings> {
     width: 36,
     height: 36,
     decoration: BoxDecoration(
-      color: const Color(0xFFE3F2FD),
+      color: _kGreen.withValues(alpha: 0.10),
       borderRadius: BorderRadius.circular(10),
     ),
-    child: Icon(icon, color: const Color(0xFF1E88E5), size: 18),
+    child: Icon(icon, color: _kGreen, size: 18),
   );
 }

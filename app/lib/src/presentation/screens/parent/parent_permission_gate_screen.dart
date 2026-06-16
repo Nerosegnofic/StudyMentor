@@ -2,7 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../services/permission_service.dart';
+
+// ── Study Mentor design tokens (Parent app: administrative & clean) ───────────
+const Color _kBackground = Color(0xFFF5F7FA); // Soft Cloud
+const Color _kBlue = Color(0xFF2196F3); // Secondary Blue
+const Color _kInk = Color(0xFF1F2937); // Title ink
 
 /// Shown immediately after parent login when one or more required permissions
 /// are missing. Displays permissions one at a time in order:
@@ -147,9 +153,11 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: _kBackground,
         body: _checking || _current == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: _kBlue),
+              )
             : _buildContent(_current!),
       ),
     );
@@ -171,31 +179,47 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildPermissionIcon(permission),
-                const SizedBox(height: 28),
-                Text(
-                  permission.displayName,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2937),
-                    letterSpacing: -0.4,
+                Card(
+                  elevation: 2,
+                  color: Colors.white,
+                  shadowColor: Colors.black.withValues(alpha: 0.15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildPermissionIcon(permission),
+                        const SizedBox(height: 28),
+                        Text(
+                          permission.displayName,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.cairo(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: _kInk,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          permission.parentRationale,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.roboto(
+                            fontSize: 15,
+                            color: Colors.grey.shade600,
+                            height: 1.55,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        _buildStatusCard(permission),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  permission.parentRationale,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey.shade600,
-                    height: 1.55,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                _buildStatusCard(permission),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 _buildActionButton(),
                 if (!_currentGranted) ...[
                   const SizedBox(height: 16),
@@ -213,12 +237,17 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
 
   Widget _buildHeader(int step, int total) {
     return Container(
-      decoration: const BoxDecoration(color: Color(0xFF1F2937)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+        ),
+      ),
       padding: EdgeInsets.fromLTRB(
         24,
         MediaQuery.of(context).padding.top + 20,
         24,
-        24,
+        20,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,15 +260,15 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
+                  color: _kBlue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   'Step $step of $total',
-                  style: const TextStyle(
+                  style: GoogleFonts.cairo(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF4CAF50),
+                    fontWeight: FontWeight.w700,
+                    color: _kBlue,
                   ),
                 ),
               ),
@@ -247,7 +276,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
               TextButton.icon(
                 onPressed: widget.onSignOut,
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.white.withValues(alpha: 0.55),
+                  foregroundColor: Colors.grey.shade600,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
@@ -256,9 +285,12 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 icon: const Icon(Icons.logout_rounded, size: 14),
-                label: const Text(
+                label: Text(
                   'Log out',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.roboto(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -269,10 +301,8 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
             child: LinearProgressIndicator(
               value: step / total,
               minHeight: 5,
-              backgroundColor: Colors.white.withValues(alpha: 0.12),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF4CAF50),
-              ),
+              backgroundColor: Colors.grey.shade200,
+              valueColor: const AlwaysStoppedAnimation<Color>(_kBlue),
             ),
           ),
         ],
@@ -283,29 +313,25 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Permission icon ────────────────────────────────────────────────────────
 
   Widget _buildPermissionIcon(RequiredPermission permission) {
-    final (IconData icon, Color color) = switch (permission) {
-      RequiredPermission.postNotifications => (
+    final IconData icon = switch (permission) {
+      RequiredPermission.postNotifications =>
         Icons.notifications_active_outlined,
-        const Color(0xFFF59E0B),
-      ),
-      RequiredPermission.batteryOptimization => (
-        Icons.battery_saver_outlined,
-        const Color(0xFF16A34A),
-      ),
+      RequiredPermission.batteryOptimization => Icons.battery_saver_outlined,
       // Not reachable in the parent flow — safe fallback.
-      _ => (Icons.lock_outline_rounded, const Color(0xFF6B7280)),
+      _ => Icons.lock_outline_rounded,
     };
 
+    // Uniform Secondary Blue treatment for a clean, administrative feel.
     return Center(
       child: Container(
         width: 96,
         height: 96,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: _kBlue.withValues(alpha: 0.08),
           shape: BoxShape.circle,
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+          border: Border.all(color: _kBlue.withValues(alpha: 0.25), width: 2),
         ),
-        child: Icon(icon, size: 44, color: color),
+        child: Icon(icon, size: 44, color: _kBlue),
       ),
     );
   }
@@ -347,7 +373,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor.withValues(alpha: 0.5)),
       ),
       child: Row(
@@ -358,7 +384,11 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 13, color: textColor, height: 1.5),
+              style: GoogleFonts.roboto(
+                fontSize: 13,
+                color: textColor,
+                height: 1.5,
+              ),
             ),
           ),
         ],
@@ -370,9 +400,6 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
 
   Widget _buildActionButton() {
     final label = _currentGranted ? 'Continue' : 'Open Settings';
-    final color = _currentGranted
-        ? const Color(0xFF10B981)
-        : const Color(0xFF1F2937);
 
     return SizedBox(
       width: double.infinity,
@@ -380,11 +407,12 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
       child: ElevatedButton(
         onPressed: _onActionTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: color,
+          backgroundColor: _kBlue,
           foregroundColor: Colors.white,
-          elevation: 0,
+          elevation: 2,
+          shadowColor: _kBlue.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: Row(
@@ -392,7 +420,10 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(width: 8),
             Icon(
@@ -424,7 +455,11 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     return Text(
       hint,
       textAlign: TextAlign.center,
-      style: TextStyle(fontSize: 12, color: Colors.grey.shade500, height: 1.5),
+      style: GoogleFonts.roboto(
+        fontSize: 12,
+        color: Colors.grey.shade500,
+        height: 1.5,
+      ),
     );
   }
 }
