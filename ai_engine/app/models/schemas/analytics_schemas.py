@@ -53,6 +53,18 @@ class MasteryPointSchema(BaseModel):
     skill_id: Optional[str] = None
     point_text: str
     source: str = Field(default="regex", description="Origin: 'regex' or 'llm_refined'")
-    
+
     class Config:
         from_attributes = True
+
+
+class DailySummaryChild(BaseModel):
+    """One child reference for the parent-home daily summary request."""
+    uid: str
+    name: str
+
+
+class DailySummaryRequest(BaseModel):
+    """Parent-home daily summary request body."""
+    children: List[DailySummaryChild]
+    client_local_date: Optional[str] = None

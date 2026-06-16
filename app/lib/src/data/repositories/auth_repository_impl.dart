@@ -523,13 +523,18 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, String subjectKey) {
-    return dataConnect.getSubjectMasteryReport(studentUid, subjectKey);
+  Future<List<SubjectChipModel>> getReportSubjects(String studentUid) {
+    return AiEngineRepository.instance.getReportSubjects(studentUid);
+  }
+
+  @override
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId) {
+    return AiEngineRepository.instance.getSubjectMasteryReport(studentUid, subjectId);
   }
 
   @override
   Future<StudyHabitsReport> getStudyHabitsReport(String studentUid) {
-    return dataConnect.getStudyHabitsReport(studentUid);
+    return AiEngineRepository.instance.getStudyHabitsReport(studentUid);
   }
 
   @override
@@ -538,8 +543,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<AiSummaryModel> getAiSummary(String parentUid) {
-    return dataConnect.getAiSummary(parentUid);
+  Future<AiSummaryModel> getAiSummary(List<StudentModel> children) {
+    return AiEngineRepository.instance.getAiSummary(children);
   }
 
   @override

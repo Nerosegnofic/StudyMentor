@@ -75,7 +75,8 @@ class Settings(BaseSettings):
     QUIZ_GENERATE_RATE_LIMIT: str = "3/minute"
 
     # BKT Evaluation / Spam Detection
-    # Minimum time in ms required for an answer to be considered genuine comprehension
+    # Minimum time in ms required for an answer to be considered genuine comprehension.
+    # Also used as the "guessing" threshold in the parent error-breakdown analytics.
     MINIMUM_GENUINE_TIME_MS: int = 2000
 
     # --- Subject Selection (auto-quiz subject prioritization) ---
@@ -110,6 +111,24 @@ class Settings(BaseSettings):
     SKILL_ADAPTIVE_LOW_ACCURACY: float = 0.50
     SKILL_ADAPTIVE_HIGH_ACCURACY: float = 0.85
     SKILL_ADAPTIVE_RECENT_SESSIONS: int = 3
+    # Error-breakdown analytics (parent Reports → Mastery tab). Quizzes are not timed,
+    # so there is no "time pressure" category — only careless / concept-gap / guessing.
+    # A wrong answer faster than this (but slower than MINIMUM_GENUINE_TIME_MS) on
+    # material the student should know is treated as a careless mistake.
+    CARELESS_MAX_TIME_MS: int = 10000
+    # Skill mastery at/above which a wrong answer looks careless rather than a gap.
+    CARELESS_KNOWN_MASTERY: float = 0.6
+
+    # A quiz session is flagged as "rapid guessing" in the parent Effort & Focus
+    # card when its spam clicks reach this fraction of the quiz's question count
+    # (e.g. 0.5 = half or more of the answers were rapid guesses).
+    GUESSING_SESSION_SPAM_FRACTION: float = 0.5
+
+    # Parent insight & alert thresholds (Reports → Overview).
+    INSIGHT_LOW_ACCURACY_PERCENT: float = 55.0    # below this → low-accuracy alert
+    INSIGHT_ACCURACY_DROP_PERCENT: float = 5.0    # week-over-week drop that triggers an alert
+    INSIGHT_INACTIVITY_DAYS: int = 2              # days with no quiz before flagging inactivity
+    WEAK_SUBJECT_MASTERY_PERCENT: float = 50.0    # subject mastery below this → needs attention
 
     model_config = SettingsConfigDict(env_file=ENV_FILE_PATH, extra="ignore")
 

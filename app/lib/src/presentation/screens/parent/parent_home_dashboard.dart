@@ -32,6 +32,7 @@ class ParentHomeDashboard extends StatefulWidget {
 
 class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
   List<StudentModel> _realStudents = [];
+  int _refreshKey = 0;
 
   @override
   void initState() {
@@ -48,6 +49,7 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
   // ── Data loading ──────────────────────────────────────────────────────────
 
   Future<void> _refreshAll() async {
+    setState(() => _refreshKey++);
     context.read<StudentsBloc>().add(
           LoadStudentsRequested(parentUid: widget.parentUid),
         );
@@ -84,6 +86,7 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
         ),
       ),
     );
+    if (mounted) _refreshAll();
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -128,7 +131,11 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.only(top: 10, bottom: 5),
-                        child: AiSummaryCarousel(parentUid: widget.parentUid),
+                        child: AiSummaryCarousel(
+                          students: _realStudents,
+                          onChildTap: _openConfig,
+                          refreshKey: _refreshKey,
+                        ),
                       ),
                     ),
 
@@ -158,6 +165,7 @@ class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
                           final student = _realStudents[index];
                           return ChildCard(
                             student: student,
+                            refreshKey: _refreshKey,
                             onTap: student.isEmailVerified
                                 ? () => _openConfig(student)
                                 : null,

@@ -18,7 +18,7 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/avatar_config.dart';
-import '../../widgets/avatar_widget.dart';
+import '../../widgets/student_home/student_top_bar.dart';
 import '../../widgets/gamification/level_up_modal.dart';
 // LevelUpCelebrationScreen is exported from level_up_modal.dart
 import '../../widgets/gamification/streak_milestone_modal.dart';
@@ -37,7 +37,7 @@ import 'shop/custom_shop_screen.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
-const _kAiEngineBaseUrl = 'http://192.168.1.6:8000';
+const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -620,6 +620,7 @@ class _StudentScreenState extends State<StudentScreen>
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FA),
             body: SafeArea(
+              top: false,
               child: Column(
                 children: [
                   Builder(builder: (ctx) => _buildTopNav(ctx)),
@@ -643,170 +644,52 @@ class _StudentScreenState extends State<StudentScreen>
   // ── Custom top navigation bar ─────────────────────────────────────────────
 
   Widget _buildTopNav(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              final shopBloc = context.read<ShopBloc>();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: shopBloc,
-                    child: Scaffold(
-                      body: SafeArea(
-                        child: StudentProfile(
-                          fullName: widget.fullName,
-                          uid: widget.uid,
-                        ),
-                      ),
-                    ),
+    return StudentTopBar(
+      avatarConfig: _avatarConfig,
+      level: _level,
+      coins: _coins,
+      onAvatarTap: () {
+        final shopBloc = context.read<ShopBloc>();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: shopBloc,
+              child: Scaffold(
+                body: SafeArea(
+                  child: StudentProfile(
+                    fullName: widget.fullName,
+                    uid: widget.uid,
                   ),
                 ),
-              ).then((_) {
-                if (mounted) _loadCoinsAndLevel();
-              });
-            },
-            child: Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF4CAF50), width: 2.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: AvatarWidget(config: _avatarConfig, size: 43.0),
               ),
             ),
           ),
-          const Spacer(),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FF),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE0E6FF)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star_rounded, color: Color(0xFF4A6CF7), size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Lv. $_level',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1F3C),
-                      ),
-                    ),
-                  ],
-                ),
+        ).then((_) {
+          if (mounted) _loadCoinsAndLevel();
+        });
+      },
+      onCoinsTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<ShopBloc>(),
+              child: CustomShopScreen(
+                studentUid: widget.uid,
+                currentCoins: _coins,
+                currentLevel: _level,
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: context.read<ShopBloc>(),
-                        child: CustomShopScreen(
-                          studentUid: widget.uid,
-                          currentCoins: _coins,
-                          currentLevel: _level,
-                        ),
-                      ),
-                    ),
-                  ).then((_) {
-                    if (mounted) {
-                      _loadCoinsAndLevel();
-                      _loadAvatar();
-                    }
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFFFE082)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('🪙', style: TextStyle(fontSize: 12)),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatNum(_coins),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFF57F17),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(width: 6),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Color(0xFF757575),
-                  size: 24,
-                ),
-                onPressed: () {},
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ).then((_) {
+          if (mounted) {
+            _loadCoinsAndLevel();
+            _loadAvatar();
+          }
+        });
+      },
+      onNotificationsTap: () {},
     );
-  }
-
-
-  String _formatNum(int n) {
-    if (n >= 1000) {
-      final s = n.toString();
-      final thousands = s.substring(0, s.length - 3);
-      final remainder = s.substring(s.length - 3);
-      return '$thousands,$remainder';
-    }
-    return '$n';
   }
 }

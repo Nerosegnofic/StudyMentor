@@ -1,0 +1,365 @@
+==================================================
+QUIZ GENERATION DEBUG REPORT
+==================================================
+
+1. SKILLS PICKED FOR QUIZ
+--------------------------------------------------
+  1. Asking and answering questions about the Nile River and the hot desert
+  2. Using vocabulary related to life in the Nile River and the hot desert
+  3. Recognizing and repeating consonant clusters in common words
+  4. Asking and answering questions about healthy habits
+
+2. PAYLOAD DETAILS & MASTERY LEVELS
+--------------------------------------------------
+  • Skill: Asking and answering questions about the Nile River and the hot desert
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 2
+    - Current Mastery Level: 0.01
+
+  • Skill: Using vocabulary related to life in the Nile River and the hot desert
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.01
+
+  • Skill: Recognizing and repeating consonant clusters in common words
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.01
+
+  • Skill: Asking and answering questions about healthy habits
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.01
+
+3. FETCHED CHUNKS (RAG Context)
+--------------------------------------------------
+[Unit 3 > Lesson 1]
+4. What can Mazen and Dina do to help the planet?
+..............................................................................................................................................................................................................................................  
+Think How do weather changes affect people, animals, and places we know?
+
+---
+
+[Unit 3 > Lesson 4]
+## Beginning: (Introducing Ziad and the setting)  
+One day, a boy named Ziad found something strange near his house.………………........................................  
+……………….......................................................................................................................................................................................………………  
+……………….......................................................................................................................................................................................………………
+
+---
+
+## Commitment to Excellence:  
+The Ministry of Education and Technical Education is dedicated to providing high-quality educational resources that meet the evolving needs of our students. This textbook embodies our commitment to excellence in English language education, ensuring that every child has the opportunity to succeed academically and personally.
+
+---
+
+[Unit 1: Food, Nature, and Culture]
+# Unit 1  Food, Nature, and Culture  
+## Learning Outcomes  
+### Speaking
+- Ask and answer questions about the Nile River and the hot desert
+- Use new vocabulary related to life in the Nile River and the hot desert
+- Recognize and repeat consonant clusters in common words
+
+### Listening
+- Identify new vocabulary related to life in the Nile River
+- Answer comprehension questions based on a listening text about life in the Nile River
+
+---
+
+[Unit 3 > Lesson 3]
+# Unit 3  
+## Lesson 3  
+### Choose the correct answer from a, b, c or d.  
+1. The floods brought water and ……………………….....………… to the land.
+a. sand     b. rich soil     c. rocks                           d. heat  
+2. Droughts made the Nile’s water ……………………….....………… .
+a. soil     b. spread        c. high                            d. low  
+3. The ……………………….....………… protected the Ancient Egyptians from sandstorms.
+a. mud bricks   b. wood      c. pyramids                        d. metal  
+4. The Ancient Egyptians found smart ways to ……………………….....………….
+a. damage       b. breathe   c. grow                            d. survive
+
+---
+
+vessels, fist                               medical professionals.       awareness     others
+, oxygen,                                ï One syllable words
+nutrients                         Speaking:
+ï Talk about daily
+routines and healthy
+habits.
+ï Express personal
+health goals and
+challenges.
+
+# Unit Vocabulary in Use  
+## Skills  
+### Life Skill(s)
+- Core Values
+- Integrated Learning Activities
+
+---
+
+[Unit 1]
+# Unit 1  
+## Self - Assessment  
+Now I can ...  
+Identify vocabulary about life in the Nile River.  
+- I got it
+- I’m not sure
+- I need help  
+Say these sounds:  
+- pl  plant
+- tr     truck - tree
+- dr  drink  
+- bl  black
+- cr     crops  
+- I got it
+- I’m not sure
+- I need help  
+Use adverbs of frequency to talk about how often something happens.  
+– Examples:  
+● Snakes never eat plants.  
+● Lizards are sometimes dangerous.  
+- I got it
+- I’m not sure
+- I need help
+
+---
+
+[Unit 3 > Review]
+# Review 1  
+1. Read and sort the words below into their categories.  
+storm – crocodile - lungs – heat wave – muscles - water weeds  
+My Body    Extreme Weather                                      The Nile River  
+……………………….....………………………………….....………………………………….....…………  
+……………………….....………………………………….....………………………………….....…………  
+2. Choose the correct answer from a, b, c or d.  
+1. The ……………………….....………… systems brought water to crops in Ancient Egypt.
+a. mud brick   b. sandstorm  c. irrigation                      d. wind
+2. Exercising and sleeping enough are good for our ……………………….....………… .
+a. mental health  b. snack   c. medicine                        d. knowledge
+3. Some animals, like crocodiles, ……………………….....………… to get food.
+a. play           b. keep    c. sail                            d. hunt
+4. I saw a deep ……………………….....………… that was full of water last week.
+a. tool           b. well    c. frog                            d. sun  
+3. Listen and fill in the missing letters.  
+1    2  
+– – uck    – –ag  
+3          4  
+br – – d    – – ant  
+# Review 1  
+## Review  
+4   Read and write the correct form of the word(s) between brackets.  
+1. Adel eats ………………………………… (a) apple every day.  
+2. I don’t go to the club. I ………………………………… (always) go there.  
+3. My sister didn’t ………………………………… (went) to the bakery shop yesterday.  
+4. Hala ………………………………… (never) plays tennis. She likes playing it.  
+5. I didn’t buy ………………………………… (some) toys today.  
+6. ………………………………… (Was) you at school last week?  
+5   Re-write the sentences using the instructions between brackets.  
+1. He doesn’t watch TV at night.                                 (use “never”)  
+.......................................................................................................................................................................................................................................................
+
+---
+
+[Unit 1 > Lesson 1: Life Along The Nile]
+## 2  Listen, look, and repeat.  
+- water weeds
+- insects  
+The Nile River  
+- hunt
+- crocodile
+
+## 3  Read and complete the text with the words in the box.  
+Crocodiles – Nile – hunt - insects – water weeds  
+There are many rivers around the world. The (1)............................................................ is one of the longest rivers in the world. It is home to many different animals. (2).................................................. are strong and dangerous. They (3)........................................................... large animals in or near the water. Small fish in the river eat (4)................................................................... . Birds eat (5)............................................... , small fish, and plants near the river.
+
+---
+
+### Listening:
+- Conversations and stories about natural disasters and global warming.
+- Vowel digraph
+
+### Speaking:
+- Share personal experiences with weather events.
+- Ask and answer questions using past simple tense.  
+----
+
+### Reading:
+- Informational texts on community places, old vs. new cities, and Egyptian neighborhoods.
+
+### Writing:
+- restaurant, coffee shop, bakery, supermarket, club, theme park, field, cottage, community center, barn, main square
+- Correct use of prepositions of time (in, on, at) to indicate specific time frames.
+- A narrative text in the first person.
+
+---
+
+## Key Features of the Textbook  
+- Culturally Relevant Stories: Each unit features engaging fables inspired by Middle Eastern folklore, designed to resonate with students' cultural backgrounds while imparting valuable moral lessons.  
+- Structured Learning Activities: The textbook is organized into weekly sessions, each focusing on different aspects of language acquisition:  
+- Listening and Speaking: Interactive storytelling, discussions, and role-playing activities enhance listening comprehension and oral communication skills.  
+- Reading and Phonics: Phonics exercises and reading activities develop students' ability to decode and comprehend written English.  
+- Writing and Vocabulary: Targeted writing exercises and vocabulary-building activities encourage students to express themselves clearly and expand their word knowledge.  
+- Cultural Integration: Lessons are intertwined with cultural insights, promoting an appreciation for both the English language and Egyptian traditions.  
+- Assessment and Feedback: Regular assessments, including quizzes, retelling exercises, and vocabulary matching, provide educators with tools to monitor student progress and tailor instruction to meet individual needs.
+
+---
+
+[Unit 2 > Lesson 4]
+## Conclusion: Write a closing statement about how we can thank them.  
+………………................................................................................................................................................................................................………  
+……………….......................................................................................................................................................................................………………  
+……………….......................................................................................................................................................................................………………  
+……………….......................................................................................................................................................................................………………  
+……………….......................................................................................................................................................................................………………
+
+---
+
+[Unit 3 > Lesson 4]
+## Middle: (Write what Ziad tried to do)  
+Ziad tried different ways to fix it, but nothing seemed to work at first.………………...................................  
+……………….......................................................................................................................................................................................………………  
+……………….......................................................................................................................................................................................………………
+
+---
+
+[Unit 1]
+# Unit 1  
+## Lesson    Pronunciation  
+1    Read and learn.  
+A consonant cluster is a sequence of two or more consonant sounds without vowels, such as str- in strong or bl- in black. They can appear at the beginning, middle, or end of words.  
+Examples: tree, branches, crocodiles, spring  
+2  Listen, look, and circle the correct word.  
+1    2    3  
+4    5    6  
+3 Choose a cluster from the box below and fill in the blanks.  
+bl - cr - pl - tr - dr  
+__ink   __ack   __uck   __ant   __ops  
+4 Read the text and circle the consonant clusters.  
+Ahmed climbed the trunk and rested near the branches. He saw a small crocodile beside the stream, and big fish swam past swiftly. Laila smiled and drank from the spring, then watched birds perch near the bank.
+
+---
+
+[Unit 2 > Lesson 3]
+## Work in groups. Explain.  
+### How do good habits protect our hearts?
+Share your ideas with the class.
+
+# Pronunciation                             Lesson              3  
+1  Read and learn.  
+● A syllable is a word part with one vowel sound. It can have one or more  
+vowel letters but only one vowel sound.  
+● Words like bread(5 letters) and pot(3 letters) look different but both have  
+one syllable because they only have one vowel sound.
+Examples: arm, jump, feed, bread  
+Tip!
+Clap It Out!
+One clap for each vowel sound.
+BA - NA - NA
+Clap Clap Clap
+Three claps!  
+2  Circle the word that has one syllable.  
+1.  basket     pencil                 apple        run  
+2.  tree       finger                 banana       rabbit  
+3.  fish       mother                 elephant     lesson  
+4. jump        eraser                 happy        jacket  
+5.  hungry     hat                    yellow       sofa  
+3  Listen and put the sounds in order. Then, write the word.  
+f – l – ea    d – ee – f                   t – o – p         f – l – g – a
+leaf
+………………………...…………    ………………………...…………    ………………………...…………    ………………………...…………
+
+---
+
+[Unit 3 > Lesson 4]
+## Problem: (Describe the problem or challenge)  
+But then, something unexpected happened that changed everything.………………....................................  
+……………….......................................................................................................................................................................................………………  
+……………….......................................................................................................................................................................................………………
+
+---
+
+[Unit 2: My Healthy Body]
+# Unit 2  My Healthy Body  
+## Learning Outcomes  
+### Speaking
+- Ask and answer questions about healthy habits
+- Talk about personal healthy habits
+- Recognize and repeat one-syllable words
+
+### Listening
+- Identify and understand vocabulary related to the health
+- Listen to a dialog and answer comprehension questions
+
+### Reading
+- Answer questions related to a text on healthy habits
+- Discuss healthy habits based on the reading text
+
+---
+
+[Unit 2 > Lesson 2]
+# Lesson 2  
+## My Habits: Then and Now  
+### Unit 2  
+1. Read and check (✔).
+What is the best way to stay healthy?
+- a. Eating chips and burgers.
+- b. Watching TV all day.
+- c. Doing some sports.  
+2. Read the text.
+**Adam's Journey to a Healthier Life**  
+Hello! I’m Adam, and I’d like to share how my habits have changed. In the past, I woke up late on weekends and didn’t exercise much. Now, I wake up early and exercise every morning—it makes me feel strong and happy.
+I used to watch TV all day, but now I play football with friends every Saturday. Before, I loved chips, burgers, and sweets. Now, I eat more fruits and vegetables, which give me important vitamins.
+My favorite snacks are apples, bananas, and carrots. And I drink water instead of soda.
+My family’s habits changed too—we grill or bake food instead of frying like we used to do in the past, and we eat dinner early, followed by a walk. These changes give me more energy and help me feel better. Have you changed your habits too?  
+Think What happens when we replace our unhealthy habits with healthy ones?
+
+---
+
+[Unit 2 > Lesson 5: Think and Create]
+# Lesson 5    Think and Create  
+## Unit 2  
+### A Poster  
+1. Create a poster about six healthy habits  
+- Wash your hands before and after eating
+- Eat fruits and vegetables regularly
+- Drink enough water daily
+- Exercise regularly
+- Sleep early and get enough rest
+- Brush your teeth daily with toothpaste  
+**Tip!**
+The Elements of a Good Poster are...
+1. A clear Title (to grab the attention)
+2. Organized Steps (to explain)
+3. Photos or drawings (to illustrate)  
+2. Now, work in groups to make your own poster about: Healthy Habits
+
+---
+
+[Unit 2: My Healthy Body > Lesson 1]
+# Lesson 1  
+3  Listen again and answer.  
+1. How does football make you stronger?
+..............................................................................................................................................................................................................................................
+2. What should you do if you feel tired while playing sports?
+..............................................................................................................................................................................................................................................
+3. Why is exercising regularly important?
+..............................................................................................................................................................................................................................................
+4. How does swimming help the body?
+..............................................................................................................................................................................................................................................  
+4 Match the words to their definitions.  
+- q fit              a.  how you feel and think
+- w mental health    b.  the parts of your body that help you move
+- c.  the organs in your chest that help you breathe
+- e stressed             d.  feeling unhappy or tired
+- t muscles              e.  being healthy and strong because you exercise  
+5 Read and discuss with your partner.  
+1. What sport do you want to play to make yourself stronger?  
+2. Why is it important for you to stay healthy?
+

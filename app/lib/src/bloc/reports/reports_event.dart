@@ -16,14 +16,24 @@ class LoadWeeklyReportRequested extends ReportsEvent {
   List<Object?> get props => [studentUid];
 }
 
-class LoadSubjectMasteryRequested extends ReportsEvent {
+/// Loads the subject chip list, then auto-loads the first subject's mastery.
+class LoadReportSubjectsRequested extends ReportsEvent {
   final String studentUid;
-  final String subjectKey;
 
-  const LoadSubjectMasteryRequested({required this.studentUid, required this.subjectKey});
+  const LoadReportSubjectsRequested({required this.studentUid});
 
   @override
-  List<Object?> get props => [studentUid, subjectKey];
+  List<Object?> get props => [studentUid];
+}
+
+class LoadSubjectMasteryRequested extends ReportsEvent {
+  final String studentUid;
+  final int subjectId;
+
+  const LoadSubjectMasteryRequested({required this.studentUid, required this.subjectId});
+
+  @override
+  List<Object?> get props => [studentUid, subjectId];
 }
 
 class LoadStudyHabitsRequested extends ReportsEvent {

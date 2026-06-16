@@ -113,7 +113,6 @@ class _StudentProfileState extends State<StudentProfile> {
           end: Alignment.bottomCenter,
           colors: [Color(0xFF43A047), _kGreen],
         ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: Stack(
         children: [

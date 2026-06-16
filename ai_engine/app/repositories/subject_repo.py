@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.models.domain import Subject, QuizSession, StudentSubjectProfile
+from app.models.domain import Subject, QuizSession, StudentSubjectProfile, Question, QuestionResponse
 
 def get_subject_by_id(db: Session, subject_id: int) -> Subject:
     return db.query(Subject).filter(Subject.subject_id == subject_id).first()
@@ -63,10 +63,12 @@ def delete_subject_cascade(db: Session, subject_id: int) -> bool:
     """
     Hard-delete a subject and ALL of its stored data, in FK-safe order.
 
-    `QuizSession.subject_id` and `StudentSubjectProfile.subject_id` are plain FKs with
-    NO cascade, so those rows must be removed BEFORE the subject (otherwise the subject
-    delete raises an FK violation). Deleting the subject then ORM-cascades:
-        Skill → {StudentSkillState, Question → QuestionResponse}  and  Document rows.
+    Tables with plain FKs (no ORM cascade) must be cleared before the subject row:
+        XpTransaction → QuizSession → StudentSubjectProfile
+        GardenPlant, MasterySnapshot
+
+    Deleting the subject then ORM-cascades:
+        Skill → {StudentSkillState, Question → QuestionResponse} + Document rows.
 
     pgvector chunks and on-disk debug artifacts live outside the ORM and are removed
     explicitly. Returns False if the subject doesn't exist.
@@ -79,6 +81,9 @@ def delete_subject_cascade(db: Session, subject_id: int) -> bool:
         delete_vector_embeddings_by_subject,
     )
     from app.services.rag.ingestion import delete_debug_artifacts
+    from app.models.domain.gamification import XpTransaction
+    from app.models.domain.garden import GardenPlant
+    from app.models.domain.mastery_snapshot import MasterySnapshot
 
     subject = db.query(Subject).filter(Subject.subject_id == subject_id).first()
     if not subject:
@@ -91,19 +96,52 @@ def delete_subject_cascade(db: Session, subject_id: int) -> bool:
         delete_debug_artifacts(doc.document_id)
     delete_vector_embeddings_by_subject(subject_id)
 
-    # 2. Quiz sessions for this subject → cascades their Questions → QuestionResponses.
-    # Must explicitly delete XpTransactions first as they reference the session but don't cascade.
-    from app.models.domain.gamification import XpTransaction
-    for session in db.query(QuizSession).filter(QuizSession.subject_id == subject_id).all():
-        db.query(XpTransaction).filter(XpTransaction.quiz_session_id == session.session_id).delete(synchronize_session=False)
-        db.delete(session)
+    # 2. Delete quiz sessions and their children in FK-safe order.
+    #    Bulk DELETE bypasses ORM cascade, so we must walk the tree manually:
+    #    XpTransaction → QuestionResponse → Question → QuizSession
+    session_ids = [
+        row.session_id
+        for row in db.query(QuizSession.session_id)
+        .filter(QuizSession.subject_id == subject_id)
+        .all()
+    ]
+    if session_ids:
+        question_ids = [
+            row.question_id
+            for row in db.query(Question.question_id)
+            .filter(Question.session_id.in_(session_ids))
+            .all()
+        ]
+        if question_ids:
+            db.query(QuestionResponse).filter(
+                QuestionResponse.question_id.in_(question_ids)
+            ).delete(synchronize_session=False)
+            db.query(Question).filter(
+                Question.question_id.in_(question_ids)
+            ).delete(synchronize_session=False)
+        db.query(XpTransaction).filter(
+            XpTransaction.quiz_session_id.in_(session_ids)
+        ).delete(synchronize_session=False)
+        db.flush()
+        db.query(QuizSession).filter(
+            QuizSession.subject_id == subject_id
+        ).delete(synchronize_session=False)
+        db.flush()
 
-    # 3. Student subject profiles (no cascade from subjects).
+    # 3. Garden plants and mastery snapshots reference subject_id with no ORM cascade.
+    db.query(GardenPlant).filter(
+        GardenPlant.subject_id == subject_id
+    ).delete(synchronize_session=False)
+    db.query(MasterySnapshot).filter(
+        MasterySnapshot.subject_id == subject_id
+    ).delete(synchronize_session=False)
+
+    # 4. Student subject profiles (no cascade from subjects).
     db.query(StudentSubjectProfile).filter(
         StudentSubjectProfile.subject_id == subject_id
     ).delete(synchronize_session=False)
 
-    # 4. The subject itself → ORM-cascades Skill (→ states, questions→responses) + Documents.
+    # 5. The subject itself → ORM-cascades Skill (→ states, questions→responses) + Documents.
     db.delete(subject)
     db.commit()
     return True

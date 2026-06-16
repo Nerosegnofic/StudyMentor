@@ -5,6 +5,8 @@ from .analytics_repo import (
     get_subject_mastery_hierarchy,
     get_subject_stats,
     get_recent_subject_accuracy,
+    get_error_and_difficulty_breakdown,
+    get_mastery_history,
 )
 from .subject_repo import (
     get_subject_by_id,
@@ -36,6 +38,9 @@ __all__ = [
     "get_subject_mastery_hierarchy",
     "get_subject_stats",
     "get_recent_subject_accuracy",
+    "get_priority_subject",
+    "get_error_and_difficulty_breakdown",
+    "get_mastery_history",
     "get_subject_by_id",
     "get_quizzable_subject",
     "find_or_create_subject",

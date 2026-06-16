@@ -3,11 +3,12 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.domain import GardenPlant, Subject
-from app.repositories.analytics_repo import get_subject_stats
+from app.repositories.analytics_repo import get_subject_stats, upsert_mastery_snapshot
 
 
 def upsert_garden_plant(db: Session, student_uid: str, subject_id: int) -> None:
-    """Recompute mastery for one subject and cache it in garden_plants."""
+    """Recompute mastery for one subject, cache it in garden_plants, and record a
+    daily mastery snapshot for the mastery-over-time history."""
     stats = get_subject_stats(db, student_uid, subject_id)
     mastery_percent = round(stats["average_mastery"] * 100, 2)
 
@@ -26,6 +27,9 @@ def upsert_garden_plant(db: Session, student_uid: str, subject_id: int) -> None:
             mastery_percent=mastery_percent,
         )
         db.add(plant)
+
+    # Daily history snapshot (one row per student/subject/day, upserted).
+    upsert_mastery_snapshot(db, student_uid, subject_id, mastery_percent)
     db.flush()
 
 

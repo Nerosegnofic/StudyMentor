@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../domain/models/student_model.dart';
 
 abstract class AiSummaryEvent extends Equatable {
   const AiSummaryEvent();
@@ -8,10 +9,10 @@ abstract class AiSummaryEvent extends Equatable {
 }
 
 class LoadAiSummaryRequested extends AiSummaryEvent {
-  final String parentUid;
+  final List<StudentModel> children;
 
-  const LoadAiSummaryRequested({required this.parentUid});
+  const LoadAiSummaryRequested({required this.children});
 
   @override
-  List<Object?> get props => [parentUid];
+  List<Object?> get props => [children];
 }

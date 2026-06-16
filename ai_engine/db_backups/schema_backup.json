@@ -1,0 +1,468 @@
+{
+  "subjects": [
+    {
+      "name": "subject_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "nextval('subjects_subject_id_seq'::regclass)"
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "weight",
+      "type": "DOUBLE PRECISION",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "color_hex",
+      "type": "VARCHAR",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "is_global",
+      "type": "BOOLEAN",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "student_uid",
+      "type": "VARCHAR",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "skills": [
+    {
+      "name": "skill_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "nextval('skills_skill_id_seq'::regclass)"
+    },
+    {
+      "name": "subject_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "unit_name",
+      "type": "VARCHAR",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "lesson_name",
+      "type": "VARCHAR",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "lesson_index",
+      "type": "INTEGER",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "weight",
+      "type": "DOUBLE PRECISION",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "default_difficulty",
+      "type": "DOUBLE PRECISION",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "default_learn_rate",
+      "type": "DOUBLE PRECISION",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "student_subject_profiles": [
+    {
+      "name": "profile_id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "student_uid",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "subject_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "exam_date",
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "last_quizzed_at",
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "quiz_sessions": [
+    {
+      "name": "session_id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "student_uid",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "subject_id",
+      "type": "INTEGER",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "start_time",
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "end_time",
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "total_questions",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "score",
+      "type": "DOUBLE PRECISION",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "consecutive_spam_clicks",
+      "type": "INTEGER",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "quiz_context",
+      "type": "VARCHAR",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "garden_plants": [
+    {
+      "name": "student_uid",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "subject_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "mastery_percent",
+      "type": "DOUBLE PRECISION",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "updated_at",
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "nextval('garden_plants_id_seq'::regclass)"
+    }
+  ],
+  "curriculum_chunks": [
+    {
+      "name": "chunk_id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "document_id",
+      "type": "UUID",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "skill_id",
+      "type": "INTEGER",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "content",
+      "type": "TEXT",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "embedding",
+      "type": "VECTOR(1024)",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "metadata",
+      "type": "JSON",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "student_skill_states": [
+    {
+      "name": "state_id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "student_uid",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "skill_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "mastery_probability",
+      "type": "DOUBLE PRECISION",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "is_mastered",
+      "type": "BOOLEAN",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "last_practiced",
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "attempts",
+      "type": "INTEGER",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "questions": [
+    {
+      "name": "question_id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "skill_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "session_id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "text_content",
+      "type": "TEXT",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "options",
+      "type": "JSON",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "correct_answer",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "difficulty",
+      "type": "DOUBLE PRECISION",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "source_enum",
+      "type": "VARCHAR",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "explanation",
+      "type": "TEXT",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "hints",
+      "type": "JSON",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "created_at",
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "submitted_at",
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "question_responses": [
+    {
+      "name": "response_id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "question_id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "student_uid",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "selected_option",
+      "type": "VARCHAR",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "is_correct",
+      "type": "BOOLEAN",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "time_taken_ms",
+      "type": "INTEGER",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "hints_used",
+      "type": "INTEGER",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "langchain_pg_collection": [
+    {
+      "name": "uuid",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "cmetadata",
+      "type": "JSON",
+      "nullable": true,
+      "default": "None"
+    }
+  ],
+  "langchain_pg_embedding": [
+    {
+      "name": "id",
+      "type": "VARCHAR",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "collection_id",
+      "type": "UUID",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "embedding",
+      "type": "VECTOR",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "document",
+      "type": "VARCHAR",
+      "nullable": true,
+      "default": "None"
+    },
+    {
+      "name": "cmetadata",
+      "type": "JSONB",
+      "nullable": true,
+      "default": "None"
+    }
+  ]
+}

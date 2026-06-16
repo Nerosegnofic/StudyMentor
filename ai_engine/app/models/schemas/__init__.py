@@ -13,6 +13,8 @@ from .analytics_schemas import (
     RefinedUnit,
     RefinedMasteryResponse,
     MasteryPointSchema,
+    DailySummaryChild,
+    DailySummaryRequest,
 )
 from .gamification_schemas import (
     GamificationProfileResponse,
@@ -38,6 +40,8 @@ __all__ = [
     "RefinedUnit",
     "RefinedMasteryResponse",
     "MasteryPointSchema",
+    "DailySummaryChild",
+    "DailySummaryRequest",
     "GamificationProfileResponse",
     "LevelSchema",
     "LevelsResponse",

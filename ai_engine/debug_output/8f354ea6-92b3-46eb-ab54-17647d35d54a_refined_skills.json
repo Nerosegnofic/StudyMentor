@@ -1,0 +1,196 @@
+[
+    {
+        "unit": "Unit 1  Food, Nature, and Culture",
+        "lesson": "Speaking",
+        "objectives": [
+            "Asking and answering questions about the Nile River and the hot desert",
+            "Using vocabulary related to life in the Nile River and the hot desert",
+            "Recognizing and repeating consonant clusters in common words"
+        ],
+        "skill_ids": [
+            "u1_l1_s1",
+            "u1_l1_s2",
+            "u1_l1_s3"
+        ]
+    },
+    {
+        "unit": "Unit 1  Food, Nature, and Culture",
+        "lesson": "Listening",
+        "objectives": [
+            "Identifying vocabulary related to life in the Nile River",
+            "Answering comprehension questions based on listening texts about life in the Nile River"
+        ],
+        "skill_ids": [
+            "u1_l2_s1",
+            "u1_l2_s2"
+        ]
+    },
+    {
+        "unit": "Unit 1  Food, Nature, and Culture",
+        "lesson": "Reading",
+        "objectives": [
+            "Discussing the moral of a short story",
+            "Identifying the sequence of events and the ending in a story",
+            "Reordering the steps of an Egyptian food recipe"
+        ],
+        "skill_ids": [
+            "u1_l3_s1",
+            "u1_l3_s2",
+            "u1_l3_s3"
+        ]
+    },
+    {
+        "unit": "Unit 1  Food, Nature, and Culture",
+        "lesson": "Writing",
+        "objectives": [
+            "Completing sentences using adverbs of frequency",
+            "Writing a recipe using sequence words",
+            "Creating a flyer about a favorite restaurant"
+        ],
+        "skill_ids": [
+            "u1_l4_s1",
+            "u1_l4_s2",
+            "u1_l4_s3"
+        ]
+    },
+    {
+        "unit": "Unit 2  My Healthy Body",
+        "lesson": "Speaking",
+        "objectives": [
+            "Asking and answering questions about healthy habits",
+            "Discussing personal healthy habits",
+            "Recognizing and repeating one-syllable words"
+        ],
+        "skill_ids": [
+            "u2_l1_s1",
+            "u2_l1_s2",
+            "u2_l1_s3"
+        ]
+    },
+    {
+        "unit": "Unit 2  My Healthy Body",
+        "lesson": "Listening",
+        "objectives": [
+            "Identifying and understanding health-related vocabulary",
+            "Answering comprehension questions based on listening to dialogues"
+        ],
+        "skill_ids": [
+            "u2_l2_s1",
+            "u2_l2_s2"
+        ]
+    },
+    {
+        "unit": "Unit 2  My Healthy Body",
+        "lesson": "Reading",
+        "objectives": [
+            "Answering questions and discussing healthy habits based on reading texts"
+        ],
+        "skill_ids": [
+            "u2_l3_s1"
+        ]
+    },
+    {
+        "unit": "Unit 2  My Healthy Body",
+        "lesson": "Writing",
+        "objectives": [
+            "Distinguishing between countable and uncountable nouns and applying correct determiners",
+            "Writing sentences about staying healthy",
+            "Writing a paragraph about a healthcare giver"
+        ],
+        "skill_ids": [
+            "u2_l4_s1",
+            "u2_l4_s2",
+            "u2_l4_s3"
+        ]
+    },
+    {
+        "unit": "Unit 3  When Nature Changes",
+        "lesson": "Speaking",
+        "objectives": [
+            "Describing different weather conditions",
+            "Discussing past events using the past simple tense",
+            "Recognizing and repeating vowel digraphs in common words"
+        ],
+        "skill_ids": [
+            "u3_l1_s1",
+            "u3_l1_s2",
+            "u3_l1_s3"
+        ]
+    },
+    {
+        "unit": "Unit 3  When Nature Changes",
+        "lesson": "Listening",
+        "objectives": [
+            "Answering questions based on conversations about environmental changes",
+            "Identifying weather-related vocabulary in listening texts"
+        ],
+        "skill_ids": [
+            "u3_l2_s1",
+            "u3_l2_s2"
+        ]
+    },
+    {
+        "unit": "Unit 3  When Nature Changes",
+        "lesson": "Reading",
+        "objectives": [
+            "Answering comprehension questions on extreme weather conditions",
+            "Identifying story elements (characters and moral) in fictional stories"
+        ],
+        "skill_ids": [
+            "u3_l3_s1",
+            "u3_l3_s2"
+        ]
+    },
+    {
+        "unit": "Unit 3  When Nature Changes",
+        "lesson": "Writing",
+        "objectives": [
+            "Completing sentences using the past simple tense",
+            "Writing a fiction story"
+        ],
+        "skill_ids": [
+            "u3_l4_s1",
+            "u3_l4_s2"
+        ]
+    },
+    {
+        "unit": "Unit 1",
+        "lesson": "Self-Assessment",
+        "objectives": [
+            "Identifying vocabulary about life in the Nile River",
+            "Using adverbs of frequency"
+        ],
+        "skill_ids": [
+            "u4_l1_s1",
+            "u4_l1_s2"
+        ]
+    },
+    {
+        "unit": "Unit 2",
+        "lesson": "Self-Assessment",
+        "objectives": [
+            "Identifying health-related vocabulary",
+            "Recognizing and repeating one-syllable words",
+            "Using a/an, some, and any"
+        ],
+        "skill_ids": [
+            "u5_l1_s1",
+            "u5_l1_s2",
+            "u5_l1_s3"
+        ]
+    },
+    {
+        "unit": "Unit 3",
+        "lesson": "Self-Assessment",
+        "objectives": [
+            "Identifying vocabulary about extreme weather",
+            "Identifying vocabulary about life in the Nile River",
+            "Identifying health-related vocabulary"
+        ],
+        "skill_ids": [
+            "u6_l1_s1",
+            "u6_l1_s2",
+            "u6_l1_s3"
+        ]
+    }
+]

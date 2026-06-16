@@ -88,12 +88,13 @@ abstract class AuthRepository {
 
   // ── Reports & Analytics ──────────────────────────────────────────────────
   Future<WeeklyReportModel> getWeeklyReport(String studentUid);
-  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, String subjectKey);
+  Future<List<SubjectChipModel>> getReportSubjects(String studentUid);
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId);
   Future<StudyHabitsReport> getStudyHabitsReport(String studentUid);
   Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid);
   
   // Dashboard additions
-  Future<AiSummaryModel> getAiSummary(String parentUid);
+  Future<AiSummaryModel> getAiSummary(List<StudentModel> children);
   Future<List<NotificationModel>> getNotificationsForParent(String parentUid);
   Future<void> markAllNotificationsRead(String parentUid);
 

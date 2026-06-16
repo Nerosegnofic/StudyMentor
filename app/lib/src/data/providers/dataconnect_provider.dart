@@ -12,7 +12,6 @@ import '../../domain/models/report_models.dart';
 import '../../domain/models/subject_summary_model.dart';
 import '../../domain/models/quiz_attempt_model.dart';
 import '../../domain/models/question_detail_model.dart';
-import '../../domain/models/ai_summary_model.dart';
 import '../../domain/models/notification_model.dart';
 import '../catalog/subject_metadata_registry.dart';
 import '../repositories/ai_engine_repository.dart';
@@ -887,84 +886,6 @@ class DataConnectProvider {
     );
   }
 
-  Future<SubjectMasteryReport> getSubjectMasteryReport(
-    String studentUid,
-    String subjectKey,
-  ) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    return SubjectMasteryReport(
-      subjectKey: subjectKey,
-      totalMasteryPercent: 88.0,
-      masteryLabel: 'Proficient',
-      strongSkills: const [],
-      weakSkills: const [],
-      errorAnalytics: const ErrorAnalyticModel(
-        carelessPercent: 45.0,
-        conceptGapPercent: 38.0,
-        timePressurePercent: 17.0,
-      ),
-    );
-  }
-
-  Future<StudyHabitsReport> getStudyHabitsReport(String studentUid) async {
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    final List<HeatmapDay> heatmap = [];
-    final now = DateTime.now();
-    for (int i = 27; i >= 0; i--) {
-      heatmap.add(
-        HeatmapDay(
-          date: now.subtract(Duration(days: i)),
-          studyMinutes: (i % 7 == 0) ? 0 : 20 + (i % 40),
-        ),
-      );
-    }
-
-    return StudyHabitsReport(
-      studentUid: studentUid,
-      currentStreakDays: 3,
-      longestStreakDays: 7,
-      consistencyHeatmap: heatmap,
-      correlation: const [
-        StudyVsAppCorrelationPoint(
-          dayLabel: 'Mon',
-          studyMinutes: 45,
-          appUsageMinutes: 60,
-        ),
-        StudyVsAppCorrelationPoint(
-          dayLabel: 'Tue',
-          studyMinutes: 50,
-          appUsageMinutes: 55,
-        ),
-        StudyVsAppCorrelationPoint(
-          dayLabel: 'Wed',
-          studyMinutes: 40,
-          appUsageMinutes: 70,
-        ),
-        StudyVsAppCorrelationPoint(
-          dayLabel: 'Thu',
-          studyMinutes: 60,
-          appUsageMinutes: 40,
-        ),
-        StudyVsAppCorrelationPoint(
-          dayLabel: 'Fri',
-          studyMinutes: 30,
-          appUsageMinutes: 90,
-        ),
-        StudyVsAppCorrelationPoint(
-          dayLabel: 'Sat',
-          studyMinutes: 20,
-          appUsageMinutes: 120,
-        ),
-        StudyVsAppCorrelationPoint(
-          dayLabel: 'Sun',
-          studyMinutes: 25,
-          appUsageMinutes: 100,
-        ),
-      ],
-    );
-  }
-
   Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid) async {
     await Future.delayed(const Duration(milliseconds: 400));
     return DailyStudentSnapshotModel(
@@ -983,20 +904,6 @@ class DataConnectProvider {
     required int wrongAnswers,
     required int totalAttempts,
   }) async {}
-
-  Future<AiSummaryModel> getAiSummary(String parentUid) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    return AiSummaryModel(
-      id: 'mock-ai-summary-1',
-      parentUid: parentUid,
-      slides: [
-        "Ahmed is on a 7-day streak! He passed 14 quizzes today, earning 245 XP.",
-        "He's excelling in Fractions but needs more practice with Decimals.",
-        "Ahmed earned 15 minutes of playtime today by completing his Science goals.",
-      ],
-      generatedAt: DateTime.now(),
-    );
-  }
 
   Future<List<NotificationModel>> getNotificationsForParent(
     String parentUid,

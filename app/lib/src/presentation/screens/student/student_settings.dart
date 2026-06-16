@@ -121,7 +121,6 @@ class _StudentSettingsState extends State<StudentSettings> {
         end: Alignment.bottomCenter,
         colors: [Color(0xFF43A047), _kGreen],
       ),
-      borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
     ),
     padding: EdgeInsets.fromLTRB(
       8,
