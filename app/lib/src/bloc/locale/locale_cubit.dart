@@ -11,14 +11,15 @@ const kLocalePrefsKey = 'app_locale_code';
 
 /// Persists the user's chosen app language (English/Arabic) across sessions.
 class LocaleCubit extends Cubit<Locale> {
-  LocaleCubit() : super(const Locale('en'));
+  LocaleCubit(Locale initialLocale) : super(initialLocale);
 
-  Future<void> loadSavedLocale() async {
+  /// Reads the saved locale from SharedPreferences synchronously before
+  /// the widget tree is built. Call this in main() before runApp() and pass
+  /// the result to [LocaleCubit] so there is no flash of the wrong language.
+  static Future<Locale> readSavedLocale() async {
     final prefs = await SharedPreferences.getInstance();
     final code = prefs.getString(kLocalePrefsKey);
-    if (code != null) {
-      emit(Locale(code));
-    }
+    return code != null ? Locale(code) : const Locale('en');
   }
 
   Future<void> setLocale(Locale locale) async {
