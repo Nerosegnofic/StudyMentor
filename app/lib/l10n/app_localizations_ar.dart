@@ -1648,7 +1648,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aiSummaryNotAvailableMessage => 'ملخص الذكاء الاصطناعي غير متوفر.';
 
   @override
-  String get aiDailySummaryTitle => '✨ الملخص اليومي بالذكاء الاصطناعي';
+  String get aiDailySummaryTitle => '✨ الملخص اليومي';
 
   @override
   String get smartInsightsLabel => 'رؤى ذكية';
