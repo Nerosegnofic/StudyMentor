@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.schemas import GenerateQuizRequest, GenerateQuizResponse, QuestionSchema
 from app.models.domain import Question
 from app.repositories import (
-    get_priority_subject,
-    get_subject_by_id,
+    get_quizzable_subject,
     get_active_quiz_session,
     get_questions_for_session,
     get_skills_by_names,
@@ -14,6 +13,7 @@ from app.repositories import (
     save_questions,
     get_recent_question_fingerprints,
 )
+from app.services.quiz.subject_selector import get_priority_subject
 from app.services.quiz.builder import build_quiz_payload
 from app.services.rag.retrieval import retrieve_context_for_quiz
 from app.services.rag.generation.context import GeneratorContext
@@ -27,6 +27,7 @@ from app.services.quiz.utils import (
     filter_mismatched_questions,
 )
 from app.services.quiz.strategy_resolver import resolve_subject_strategy
+from app.repositories import document_repo
 from app.core.prompts import build_quiz_prompt
 
 DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
@@ -37,6 +38,53 @@ GRADE_LABELS = {
 }
 
 generator_context = GeneratorContext(strategy=GeminiStrategy())
+
+
+def _question_schema(q: Question, topic: str) -> QuestionSchema:
+    """Map a persisted Question row to the API QuestionSchema."""
+    return QuestionSchema(
+        question_id=str(q.question_id),
+        topic=topic,
+        question_text=q.text_content,
+        options=q.options,
+        correct_answer=q.correct_answer,
+        explanation=q.explanation or "",
+        difficulty=int(q.difficulty),
+        hints=q.hints or [],
+    )
+
+
+def _write_quiz_debug_report(session_id, all_topics, payload, context) -> None:
+    """Best-effort dump of the skills/payload/context used for a generation."""
+    try:
+        import os
+        os.makedirs("debug_output", exist_ok=True)
+        debug_path = f"debug_output/quiz_generation_{session_id}.txt"
+        with open(debug_path, "w", encoding="utf-8") as f:
+            f.write("==================================================\n")
+            f.write("QUIZ GENERATION DEBUG REPORT\n")
+            f.write("==================================================\n\n")
+
+            f.write("1. SKILLS PICKED FOR QUIZ\n")
+            f.write("-" * 50 + "\n")
+            for idx, skill in enumerate(all_topics, 1):
+                f.write(f"  {idx}. {skill}\n")
+            f.write("\n")
+
+            f.write("2. PAYLOAD DETAILS & MASTERY LEVELS\n")
+            f.write("-" * 50 + "\n")
+            for cfg in payload:
+                f.write(f"  • Skill: {cfg['skill']}\n")
+                f.write(f"    - Zone: {cfg.get('zone', 'unknown')}\n")
+                f.write(f"    - Requested Difficulty: {cfg['difficulty']}\n")
+                f.write(f"    - Question Count: {cfg['count']}\n")
+                f.write(f"    - Current Mastery Level: {cfg.get('mastery', 'N/A')}\n\n")
+
+            f.write("3. FETCHED CHUNKS (RAG Context)\n")
+            f.write("-" * 50 + "\n")
+            f.write(f"{context}\n\n" if context else "  [No chunks fetched]\n")
+    except Exception as e:
+        print(f"[Debug] Failed to write quiz debug report: {e}", flush=True)
 
 
 def generate_quiz_for_student(
@@ -55,7 +103,10 @@ def generate_quiz_for_student(
                 detail="No subjects with skills found. Please upload curriculum documents first."
             )
     else:
-        subject = get_subject_by_id(db, request_body.subject_id)
+        # Ownership guard: only the subject's owner (or a global subject) is quizzable.
+        # Returning 404 for someone else's private subject prevents both enumeration
+        # and the cross-student context leak via the retrieval fallback.
+        subject = get_quizzable_subject(db, request_body.subject_id, student_uid)
         if not subject:
             raise HTTPException(
                 status_code=404,
@@ -64,9 +115,17 @@ def generate_quiz_for_student(
 
     target_subject_id = subject.subject_id
     target_subject_name = subject.name
+    target_is_global = bool(subject.is_global)
+
+    # Content-detected subject/language (majority vote across the subject's ready docs).
+    # The engine uses these internally so a mislabeled subject (e.g. an English-medium
+    # Math book named "Arabic") still gets the right strategy and retrieval threshold;
+    # the parent's `target_subject_name` is kept only as the display label.
+    _detected_language, detected_subject = document_repo.get_detected_for_subject(db, target_subject_id)
+    effective_subject_name = detected_subject or target_subject_name
 
     # ── Resolve Subject Strategy (once) ──────────────────────────────
-    strategy = resolve_subject_strategy(target_subject_name)
+    strategy = resolve_subject_strategy(target_subject_name, detected_subject=detected_subject)
     quiz_prompt = build_quiz_prompt(strategy)
 
     # Resolve grade label for prompt (e.g., 5 → "5th")
@@ -85,16 +144,7 @@ def generate_quiz_for_student(
                 flush=True,
             )
             question_schemas = [
-                QuestionSchema(
-                    question_id=str(q.question_id),
-                    topic=q.skill.name if q.skill else "General",
-                    question_text=q.text_content,
-                    options=q.options,
-                    correct_answer=q.correct_answer,
-                    explanation=q.explanation or "",
-                    difficulty=int(q.difficulty),
-                    hints=q.hints or [],
-                )
+                _question_schema(q, q.skill.name if q.skill else "General")
                 for q in cached_questions
             ]
             return GenerateQuizResponse(
@@ -154,6 +204,8 @@ def generate_quiz_for_student(
             k=15,
             firebase_uid=student_uid,
             subject_id=target_subject_id,
+            subject_name=effective_subject_name,
+            is_global=target_is_global,
         )
 
         variance_block = generate_variance_block(
@@ -170,42 +222,7 @@ def generate_quiz_for_student(
             )
             context = context + avoidance_instructions
 
-        try:
-            import os
-            os.makedirs("debug_output", exist_ok=True)
-            debug_path = f"debug_output/quiz_generation_{quiz_session.session_id}.txt"
-            with open(debug_path, "w", encoding="utf-8") as f:
-                f.write("==================================================\n")
-                f.write("QUIZ GENERATION DEBUG REPORT\n")
-                f.write("==================================================\n\n")
-
-                f.write("1. SKILLS PICKED FOR QUIZ\n")
-                f.write("-" * 50 + "\n")
-                for idx, skill in enumerate(all_topics, 1):
-                    f.write(f"  {idx}. {skill}\n")
-                f.write("\n")
-
-                f.write("2. PAYLOAD DETAILS & MASTERY LEVELS\n")
-                f.write("-" * 50 + "\n")
-                for cfg in payload:
-                    skill_name = cfg['skill']
-                    mastery = cfg.get('mastery', 'N/A')
-                    zone = cfg.get('zone', 'unknown')
-                    f.write(f"  • Skill: {skill_name}\n")
-                    f.write(f"    - Zone: {zone}\n")
-                    f.write(f"    - Requested Difficulty: {cfg['difficulty']}\n")
-                    f.write(f"    - Question Count: {cfg['count']}\n")
-                    f.write(f"    - Current Mastery Level: {mastery}\n\n")
-
-                f.write("3. FETCHED CHUNKS (RAG Context)\n")
-                f.write("-" * 50 + "\n")
-                if not context:
-                    f.write("  [No chunks fetched]\n")
-                else:
-                    f.write(f"{context}\n\n")
-
-        except Exception as e:
-            print(f"[Debug] Failed to write to {debug_path}: {e}")
+        _write_quiz_debug_report(quiz_session.session_id, all_topics, payload, context)
 
         response = generator_context.execute_generation(
             quiz_prompt=quiz_prompt,
@@ -299,16 +316,7 @@ def generate_quiz_for_student(
             (name for name, sid in skill_name_to_id.items() if sid == q.skill_id),
             "General"
         )
-        return_questions.append(QuestionSchema(
-            question_id=str(q.question_id),
-            topic=skill_name,
-            question_text=q.text_content,
-            options=q.options,
-            correct_answer=q.correct_answer,
-            explanation=q.explanation or "",
-            difficulty=int(q.difficulty),
-            hints=q.hints or [],
-        ))
+        return_questions.append(_question_schema(q, skill_name))
 
     # In Python, if we hit the bank fallback we won't have `response.quiz_title`
     # So we should conditionally assign it

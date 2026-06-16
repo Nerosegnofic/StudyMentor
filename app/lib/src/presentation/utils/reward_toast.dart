@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// Design-system tokens (mirrored from student_quiz.dart).
+const _kGreen = Color(0xFF2E7D32);
 
 import '../../../l10n/app_localizations.dart';
 
@@ -6,7 +10,7 @@ import '../../../l10n/app_localizations.dart';
 class RewardToast {
   RewardToast._();
 
-  /// Shows a brief SnackBar announcing the XP and Coins just earned.
+  /// Shows a brief floating SnackBar announcing the XP and Coins just earned.
   static void show(BuildContext context, int xp, int coins) {
     final loc = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
@@ -14,24 +18,23 @@ class RewardToast {
       ..showSnackBar(
         SnackBar(
           content: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('⚡', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 4),
+              const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
               Text(
-                loc.xpRewardLabel(xp),
-                style: const TextStyle(
+                '+$xp XP',
+                style: GoogleFonts.roboto(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               const Text('🪙', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 4),
               Text(
-                loc.coinsRewardLabel(coins),
-                style: const TextStyle(
+                '+$coins Coins',
+                style: GoogleFonts.roboto(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                   color: Colors.white,
@@ -40,13 +43,13 @@ class RewardToast {
             ],
           ),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: const Color(0xFF2E7D32),
+          backgroundColor: _kGreen,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           duration: const Duration(seconds: 3),
-          elevation: 8,
+          elevation: 6,
         ),
       );
   }

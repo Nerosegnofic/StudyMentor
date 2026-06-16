@@ -6,6 +6,7 @@ from sqlalchemy import func, or_
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.repositories.vector_repo import delete_vector_embeddings_by_subject
+from app.repositories.subject_repo import delete_subject_cascade
 from app.repositories import (
     get_subject_mastery_hierarchy,
     get_subject_stats,
@@ -268,7 +269,10 @@ async def delete_subject(
     _: str = Depends(get_current_user),
 ):
     """
-    Deletes a custom subject and all its associated skills for a specific student.
+    Deletes a custom subject and all its associated data for a specific student.
+    Uses delete_subject_cascade() which handles FK ordering:
+    QuizSessions → StudentSubjectProfile → Subject (ORM cascades Skills/Documents)
+    + vector embeddings + debug artifacts cleanup.
     Only deletes subjects owned by the student (not global subjects).
     """
     subject = db.query(Subject).filter(
@@ -281,25 +285,18 @@ async def delete_subject(
 
     subject_id = subject.subject_id
 
-    # Delete rows that have no SQLAlchemy cascade from Subject
+    # Also delete GardenPlant rows scoped to this student (no FK cascade from Subject)
     db.query(GardenPlant).filter(
         GardenPlant.subject_id == subject_id,
         GardenPlant.student_uid == student_uid,
     ).delete()
-    db.query(StudentSubjectProfile).filter(
-        StudentSubjectProfile.subject_id == subject_id,
-        StudentSubjectProfile.student_uid == student_uid,
-    ).delete()
 
-    # Delete the subject (cascades: skills → skill_states, curriculum_chunks, questions)
-    db.delete(subject)
-    db.commit()
-
-    # Delete vector embeddings from LangChain's pgvector table (outside SQLAlchemy ORM)
-    try:
-        delete_vector_embeddings_by_subject(subject_id)
-    except Exception as e:
-        print(f"[DeleteSubject] Vector cleanup failed for subject_id={subject_id}: {e}", flush=True)
+    # Full cascade: QuizSessions → Questions → Responses,
+    # StudentSubjectProfile, Skills → SkillStates, Documents,
+    # vector embeddings, debug artifacts.
+    deleted = delete_subject_cascade(db, subject_id)
+    if not deleted:
+        raise HTTPException(status_code=500, detail="Failed to delete subject data.")
 
     return {"deleted": subject_name}
 

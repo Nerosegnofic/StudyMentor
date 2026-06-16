@@ -1,13 +1,13 @@
 from app.models.schemas import GenerateQuizResponse
 from app.services.rag.generation.base import QuizGeneratorStrategy
-from app.services.rag.generation.cohere_strategy import CohereStrategy
+from app.services.rag.generation.gemini_strategy import GeminiStrategy
 from app.core.exceptions import LLMGenerationError
 from langchain_core.prompts import ChatPromptTemplate
 
 
 class GeneratorContext:
     """
-    Routes quiz generation requests to the active strategy (Gemini, Cohere, etc.).
+    Routes quiz generation requests to the active strategy.
     Performs a post-generation sanity check on the result.
 
     Raises:
@@ -17,7 +17,7 @@ class GeneratorContext:
     """
 
     def __init__(self, strategy: QuizGeneratorStrategy = None):
-        self._strategy = strategy if strategy else CohereStrategy()
+        self._strategy = strategy if strategy else GeminiStrategy()
 
     def set_strategy(self, strategy: QuizGeneratorStrategy):
         """Allows dynamically switching the strategy at runtime."""

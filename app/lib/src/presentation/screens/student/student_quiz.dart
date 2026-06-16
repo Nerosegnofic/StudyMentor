@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/quiz/quiz_bloc.dart';
 import '../../../bloc/quiz/quiz_event.dart';
 import '../../../bloc/quiz/quiz_state.dart';
@@ -11,6 +12,33 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../../l10n/app_localizations.dart';
+
+// ---------------------------------------------------------------------------
+// Study Mentor design-system tokens (Student app)
+// ---------------------------------------------------------------------------
+// Kept file-local to mirror the existing convention in subject_detail_screen.dart
+// (which defines `_kGreen` / `_kGreenLight`). Reference these instead of inline hex.
+const _kBg = Color(0xFFF5F7FA); // Soft Cloud scaffold
+const _kGreen = Color(0xFF4CAF50); // primary actions / growth
+const _kGreenLight = Color(0xFFE8F5E9); // progress track, good-result bg
+const _kAmber = Color(0xFFFFC107); // hint / gamification highlight
+const _kAmberLight = Color(0xFFFFF8E1); // needs-improvement bg
+const _kBlue = Color(0xFF2196F3); // informational (skill chip, explanation)
+const _kBlueLight = Color(0xFFE3F2FD);
+const _kBlueBorder = Color(0xFF90CAF9);
+const _kRed = Color(0xFFEA4335); // wrong-answer reveal
+const _kInk = Color(0xFF1A1F3C); // heading text
+const _kMuted = Color(0xFF8B93A7); // secondary text
+const _kHairline = Color(0xFFE3E8EF); // neutral card border
+const _kDisabled = Color(0xFFCFD6E0); // disabled button fill
+
+// Content-aware text direction: quiz content can arrive in Arabic OR English,
+// so direction is detected per-field (Arabic Unicode block → RTL, else LTR).
+// Inline Latin numbers are handled by the Unicode bidi algorithm.
+TextDirection _dirOf(String s) =>
+    RegExp(r'[؀-ۿ]').hasMatch(s)
+        ? TextDirection.rtl
+        : TextDirection.ltr;
 
 // ---------------------------------------------------------------------------
 // QuizOverlayPage
@@ -92,15 +120,15 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FF),
+      backgroundColor: _kBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          loc.studyQuizTitle,
-          style: const TextStyle(
+          'Study Quiz',
+          style: GoogleFonts.cairo(
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1A1F3C),
+            color: _kInk,
             fontSize: 18,
           ),
         ),
@@ -110,7 +138,7 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
             builder: (context, state) {
               if (state is QuizResultsLoaded || state is QuizError) {
                 return IconButton(
-                  icon: const Icon(Icons.close, color: Color(0xFF4A6CF7)),
+                  icon: const Icon(Icons.close, color: _kMuted),
                   onPressed: () => Navigator.of(context)
                       .pop(state is QuizResultsLoaded ? true : false),
                 );
@@ -138,12 +166,11 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
                 }
                 _waitingForGardenUpdate = true;
 
-                context.read<GamificationBloc>().add(
-                      ProcessQuizRewardsRequested(
-                        studentId: widget.studentId,
-                        rewards: state.result.rewards,
-                      ),
-                    );
+                // NOTE: quiz reward processing (which drives the level-up
+                // celebration) is intentionally NOT dispatched here. It now
+                // fires when the student leaves the results screen (taps Done /
+                // Take Another) so the level-up appears AFTER they've seen the
+                // result — see _ResultsView.
 
                 context.read<GardenBloc>().add(
                       LoadGardenRequested(studentUid: widget.studentId),
@@ -178,7 +205,7 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
                   SnackBar(
                     content: Text(message),
                     duration: const Duration(seconds: 3),
-                    backgroundColor: const Color(0xFF4CAF50),
+                    backgroundColor: _kGreen,
                   ),
                 );
               }
@@ -199,7 +226,9 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
             if (state is QuizSubmitting) {
               return _LoadingView(message: loc.submittingAnswersMessage);
             }
-            if (state is QuizResultsLoaded) return _ResultsView(state: state);
+            if (state is QuizResultsLoaded) {
+              return _ResultsView(state: state, studentId: widget.studentId);
+            }
             if (state is QuizError) return _ErrorView(message: state.message);
             return const SizedBox.shrink();
           },
@@ -237,26 +266,26 @@ class _AutoStartPanel extends StatelessWidget {
             const Icon(
               Icons.auto_awesome_rounded,
               size: 80,
-              color: Color(0xFF4A6CF7),
+              color: _kGreen,
             ),
             const SizedBox(height: 24),
             Text(
-              loc.timeToPracticeTitle,
+              'Time to Practice!',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: GoogleFonts.cairo(
                 fontSize: 26,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF1A1F3C),
+                fontWeight: FontWeight.w800,
+                color: _kInk,
                 letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              loc.quizPromptMessage,
+              'Your focus time is up. Let\'s do a quick quiz to keep your brain sharp!',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: GoogleFonts.roboto(
                 fontSize: 15,
-                color: Color(0xFF8B93A7),
+                color: _kMuted,
                 height: 1.5,
               ),
             ),
@@ -272,26 +301,29 @@ class _AutoStartPanel extends StatelessWidget {
 
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A6CF7),
+                backgroundColor: _kGreen,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(60),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 elevation: 0,
               ),
               child: Text(
-                loc.startQuizButton,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                'Start Quiz',
+                style: GoogleFonts.roboto(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              loc.tailoredToLevelMessage,
-              style: const TextStyle(
+              'Tailored to your current level',
+              style: GoogleFonts.roboto(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
-                color: Color(0xFFA0A7BA),
+                color: _kMuted,
               ),
             ),
 
@@ -302,12 +334,12 @@ class _AutoStartPanel extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () => Navigator.of(context).pop(false),
               icon: const Icon(Icons.home_outlined, color: Color(0xFFE53935)),
-              label: const Text(
+              label: Text(
                 'Redirect to student home\n(FOR TESTING PURPOSES ONLY. DO NOT SHIP TO PRODUCTION!)',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.roboto(
                   fontSize: 11,
-                  color: Color(0xFFE53935),
+                  color: const Color(0xFFE53935),
                   fontWeight: FontWeight.w600,
                   height: 1.4,
                 ),
@@ -315,7 +347,7 @@ class _AutoStartPanel extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFFE53935)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -357,6 +389,12 @@ class _QuizActiveView extends StatefulWidget {
 class _QuizActiveViewState extends State<_QuizActiveView> {
   int _currentIndex = 0;
   int _hintsUsed = 0;
+
+  // Tentative selection for the current question — re-changeable until the
+  // student taps Submit. `_revealed` flips once the answer is committed.
+  String? _selectedOption;
+  bool _revealed = false;
+
   DateTime? _questionStartedAt;
   final PageController _pageController = PageController();
 
@@ -378,11 +416,16 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   bool get _isLastQuestion =>
       _currentIndex == widget.state.quizResponse.questions.length - 1;
 
-  bool get _hasAnsweredCurrent =>
-      widget.state.currentAnswers.containsKey(_currentQuestion.questionId);
+  // Local-only: lets the student re-pick before committing.
+  void _selectOption(String option) {
+    if (_revealed) return;
+    setState(() => _selectedOption = option);
+  }
 
-  void _selectAnswer(BuildContext context, String option) {
-    if (_hasAnsweredCurrent) return;
+  // Commits the answer to the BLoC (for progress + final submission) and
+  // reveals the correct/wrong colouring + the solution card.
+  void _submitAnswer(BuildContext context) {
+    if (_selectedOption == null) return;
     final timeTaken = DateTime.now()
         .difference(_questionStartedAt ?? DateTime.now())
         .inMilliseconds;
@@ -391,36 +434,33 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
           AnswerQuestionEvent(
             StudentAnswer(
               questionId: _currentQuestion.questionId,
-              selectedOption: option,
+              selectedOption: _selectedOption!,
               timeTakenMs: timeTaken,
               hintsUsed: _hintsUsed,
             ),
           ),
         );
+    setState(() => _revealed = true);
   }
 
-  void _goNext(BuildContext context) {
-    if (!_hasAnsweredCurrent) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).selectAnswerFirstMessage)),
-      );
-      return;
-    }
+  void _advance(BuildContext context) {
     if (_isLastQuestion) {
       context.read<QuizBloc>().add(
             SubmitQuizEvent(widget.state.quizResponse.quizSessionId),
           );
-    } else {
-      setState(() {
-        _currentIndex++;
-        _hintsUsed = 0;
-        _questionStartedAt = DateTime.now();
-      });
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      return;
     }
+    setState(() {
+      _currentIndex++;
+      _hintsUsed = 0;
+      _selectedOption = null;
+      _revealed = false;
+      _questionStartedAt = DateTime.now();
+    });
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _showHint(BuildContext context) {
@@ -432,17 +472,79 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
       return;
     }
     setState(() => _hintsUsed++);
+    final hintText = hints[_hintsUsed - 1];
+    final hintNumber = _hintsUsed;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(loc.hintNumberTitle(_hintsUsed)),
-        content: Text(hints[_hintsUsed - 1]),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(loc.commonOk),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: _kAmberLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lightbulb_rounded,
+                  color: _kAmber,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Hint $hintNumber',
+                style: GoogleFonts.cairo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _kInk,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Directionality(
+                textDirection: _dirOf(hintText),
+                child: Text(
+                  hintText,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: _kInk,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _kAmber,
+                    foregroundColor: _kInk,
+                    elevation: 0,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'Got it',
+                    style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -456,11 +558,14 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
 
     return Column(
       children: [
-        LinearProgressIndicator(
-          value: answered.length / total,
-          backgroundColor: const Color(0xFFE8EDFF),
-          valueColor: const AlwaysStoppedAnimation(Color(0xFF4A6CF7)),
-          minHeight: 4,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: answered.length / total,
+            backgroundColor: _kGreenLight,
+            valueColor: const AlwaysStoppedAnimation(_kGreen),
+            minHeight: 4,
+          ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -468,17 +573,16 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                loc.questionOfTotalLabel(_currentIndex + 1, total),
-                style: const TextStyle(
+                'Question ${_currentIndex + 1} of $total',
+                style: GoogleFonts.roboto(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
-                  color: Color(0xFF8B93A7),
+                  color: _kMuted,
                 ),
               ),
               Text(
-                loc.answeredCountLabel(answered.length),
-                style:
-                    const TextStyle(fontSize: 13, color: Color(0xFF8B93A7)),
+                '${answered.length} answered',
+                style: GoogleFonts.roboto(fontSize: 13, color: _kMuted),
               ),
             ],
           ),
@@ -489,56 +593,84 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: questions.length,
             itemBuilder: (context, index) {
+              final isCurrent = index == _currentIndex;
               return _QuestionCard(
                 question: questions[index],
-                selectedOption:
-                    answered[questions[index].questionId]?.selectedOption,
-                onSelect: (opt) => _selectAnswer(context, opt),
+                selectedOption: isCurrent
+                    ? _selectedOption
+                    : answered[questions[index].questionId]?.selectedOption,
+                revealed: isCurrent ? _revealed : true,
+                onSelect: _selectOption,
               );
             },
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => _showHint(context),
-                icon: const Icon(Icons.lightbulb_outline, size: 18),
-                label: Text(loc.hintCountLabel(_hintsUsed)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFFF9800),
-                  side: const BorderSide(color: Color(0xFFFF9800)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const Spacer(),
-              ElevatedButton(
-                onPressed:
-                    _hasAnsweredCurrent ? () => _goNext(context) : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A6CF7),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  _isLastQuestion ? loc.submitButton : loc.nextButton,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildBottomBar(context),
       ],
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    final hintsExhausted = _hintsUsed >= _currentQuestion.hints.length;
+
+    final String label;
+    final VoidCallback? onPrimary;
+    if (!_revealed) {
+      label = 'Submit';
+      onPrimary = _selectedOption != null ? () => _submitAnswer(context) : null;
+    } else if (_isLastQuestion) {
+      label = 'Finish';
+      onPrimary = () => _advance(context);
+    } else {
+      label = 'Next';
+      onPrimary = () => _advance(context);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Row(
+        children: [
+          OutlinedButton.icon(
+            onPressed: (_revealed || hintsExhausted)
+                ? null
+                : () => _showHint(context),
+            icon: const Icon(Icons.lightbulb_outline, size: 18),
+            label: Text(
+              'Hint ($_hintsUsed)',
+              style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _kAmber,
+              side: const BorderSide(color: _kAmber),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          const Spacer(),
+          ElevatedButton(
+            onPressed: onPrimary,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kGreen,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: _kDisabled,
+              disabledForegroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 14,
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              label,
+              style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -546,130 +678,131 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
 class _QuestionCard extends StatelessWidget {
   final QuestionModel question;
   final String? selectedOption;
+  final bool revealed;
   final ValueChanged<String> onSelect;
 
   const _QuestionCard({
     required this.question,
     required this.selectedOption,
+    required this.revealed,
     required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final isCorrectSelection = selectedOption == question.correctAnswer;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+          // ── White question card ────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-                decoration: BoxDecoration(
-                  color: _difficultyColor(question.difficulty)
-                      .withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _difficultyLabel(loc, question.difficulty),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: _difficultyColor(question.difficulty),
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8EDFF),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFD1DBFE)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.menu_book_rounded,
-                      size: 13,
-                      color: Color(0xFF4A6CF7),
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        question.topic,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF4A6CF7),
-                        ),
-                      ),
-                    ),
+                    _difficultyPill(),
+                    _skillChip(),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            question.questionText,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              height: 1.4,
+                const SizedBox(height: 16),
+                Directionality(
+                  textDirection: _dirOf(question.questionText),
+                  child: Text(
+                    question.questionText,
+                    textAlign: TextAlign.start,
+                    style: GoogleFonts.cairo(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      height: 1.5,
+                      color: _kInk,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          // ── Answer options (uniform full-width) ─────────────────────────
           ...question.options.map(
             (opt) => _OptionTile(
               label: opt,
               isSelected: selectedOption == opt,
-              isAnswered: selectedOption != null,
+              isCorrect: opt == question.correctAnswer,
+              revealed: revealed,
               onTap: () => onSelect(opt),
             ),
           ),
-          if (selectedOption != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F7FF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBBD6F4)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: Color(0xFF4A6CF7),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      question.explanation,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF1A1F3C),
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
+          // ── Solution / explanation (after submit) ───────────────────────
+          if (revealed) _SolutionCard(question: question, isCorrect: isCorrectSelection),
+        ],
+      ),
+    );
+  }
+
+  Widget _difficultyPill() {
+    final color = _difficultyColor(question.difficulty);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        _difficultyLabel(question.difficulty),
+        style: GoogleFonts.roboto(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _skillChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: _kBlueLight,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _kBlueBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.menu_book_rounded, size: 13, color: _kBlue),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Directionality(
+              textDirection: _dirOf(question.topic),
+              child: Text(
+                question.topic,
+                style: GoogleFonts.cairo(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _kBlue,
+                ),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -678,13 +811,13 @@ class _QuestionCard extends StatelessWidget {
   Color _difficultyColor(int d) {
     switch (d) {
       case 1:
-        return const Color(0xFF34A853);
+        return _kGreen;
       case 2:
-        return const Color(0xFF4A6CF7);
+        return _kBlue;
       case 3:
-        return const Color(0xFFFF9800);
+        return _kAmber;
       case 4:
-        return const Color(0xFFEA4335);
+        return _kRed;
       default:
         return const Color(0xFF9C27B0);
     }
@@ -709,40 +842,187 @@ class _QuestionCard extends StatelessWidget {
 class _OptionTile extends StatelessWidget {
   final String label;
   final bool isSelected;
-  final bool isAnswered;
+  final bool isCorrect;
+  final bool revealed;
   final VoidCallback onTap;
 
   const _OptionTile({
     required this.label,
     required this.isSelected,
-    required this.isAnswered,
+    required this.isCorrect,
+    required this.revealed,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isSelected ? const Color(0xFF4A6CF7) : const Color(0xFFE8EDFF);
+    // Resolve the visual treatment for the four reachable states.
+    late final Color bg;
+    late final Color border;
+    late final Color fg;
+    late final IconData icon;
+    late final Color iconColor;
+    var emphasize = false;
+
+    if (!revealed) {
+      if (isSelected) {
+        bg = _kGreenLight;
+        border = _kGreen;
+        fg = _kInk;
+        icon = Icons.radio_button_checked;
+        iconColor = _kGreen;
+        emphasize = true;
+      } else {
+        bg = Colors.white;
+        border = _kHairline;
+        fg = _kInk;
+        icon = Icons.radio_button_unchecked;
+        iconColor = _kMuted;
+      }
+    } else if (isCorrect) {
+      // The correct option is always highlighted green, even if not chosen.
+      bg = _kGreen;
+      border = _kGreen;
+      fg = Colors.white;
+      icon = Icons.check_circle;
+      iconColor = Colors.white;
+      emphasize = true;
+    } else if (isSelected) {
+      // The student's wrong pick.
+      bg = _kRed;
+      border = _kRed;
+      fg = Colors.white;
+      icon = Icons.cancel;
+      iconColor = Colors.white;
+      emphasize = true;
+    } else {
+      bg = Colors.white;
+      border = _kHairline;
+      fg = _kMuted;
+      icon = Icons.radio_button_unchecked;
+      iconColor = _kDisabled;
+    }
+
     return GestureDetector(
-      onTap: isAnswered ? null : onTap,
+      onTap: revealed ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(16),
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF4A6CF7) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color, width: 1.5),
+          color: bg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: border, width: 1.5),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 15,
-            color: isSelected ? Colors.white : const Color(0xFF1A1F3C),
-            fontWeight:
-                isSelected ? FontWeight.w700 : FontWeight.normal,
+        child: Directionality(
+          textDirection: _dirOf(label),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: iconColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.start,
+                  style: GoogleFonts.cairo(
+                    fontSize: 15,
+                    color: fg,
+                    fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Solution / explanation card (shown after the answer is submitted)
+// ---------------------------------------------------------------------------
+
+class _SolutionCard extends StatelessWidget {
+  final QuestionModel question;
+  final bool isCorrect;
+
+  const _SolutionCard({required this.question, required this.isCorrect});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isCorrect ? _kGreen : _kAmber;
+    final bg = isCorrect ? _kGreenLight : _kAmberLight;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isCorrect ? Icons.check_circle : Icons.lightbulb_rounded,
+                size: 18,
+                color: accent,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isCorrect ? 'Correct!' : 'Solution',
+                style: GoogleFonts.roboto(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: accent,
+                ),
+              ),
+            ],
+          ),
+          if (!isCorrect) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Correct answer',
+              style: GoogleFonts.roboto(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _kMuted,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Directionality(
+              textDirection: _dirOf(question.correctAnswer),
+              child: Text(
+                question.correctAnswer,
+                textAlign: TextAlign.start,
+                style: GoogleFonts.cairo(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: _kInk,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Directionality(
+            textDirection: _dirOf(question.explanation),
+            child: Text(
+              question.explanation,
+              textAlign: TextAlign.start,
+              style: GoogleFonts.cairo(
+                fontSize: 13,
+                height: 1.5,
+                color: _kInk,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -754,8 +1034,21 @@ class _OptionTile extends StatelessWidget {
 
 class _ResultsView extends StatelessWidget {
   final QuizResultsLoaded state;
+  final String studentId;
 
-  const _ResultsView({required this.state});
+  const _ResultsView({required this.state, required this.studentId});
+
+  // Processes the quiz rewards (XP / coins / level-up). Dispatched only when the
+  // student leaves the results screen, so the level-up celebration appears
+  // after they've seen the result rather than on top of it.
+  void _processRewards(BuildContext context) {
+    context.read<GamificationBloc>().add(
+          ProcessQuizRewardsRequested(
+            studentId: studentId,
+            rewards: state.result.rewards,
+          ),
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -780,78 +1073,86 @@ class _ResultsView extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             '$pct%',
-            style: const TextStyle(
+            style: GoogleFonts.cairo(
               fontSize: 56,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF4A6CF7),
+              fontWeight: FontWeight.w800,
+              color: _kGreen,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            loc.questionsCountLabel(state.result.totalQuestions),
-            style:
-                const TextStyle(fontSize: 14, color: Color(0xFF8B93A7)),
+            '${state.result.totalQuestions} questions',
+            style: GoogleFonts.roboto(fontSize: 14, color: _kMuted),
           ),
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: isGood
-                  ? const Color(0xFFE6F4EA)
-                  : const Color(0xFFFFF3E0),
-              borderRadius: BorderRadius.circular(16),
+              color: isGood ? _kGreenLight : _kAmberLight,
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isGood
-                    ? const Color(0xFF34A853)
-                    : const Color(0xFFFF9800),
+                color: isGood ? _kGreen : _kAmber,
               ),
             ),
-            child: Text(
-              state.result.feedback,
-              textAlign: TextAlign.center,
-              textDirection: TextDirection.rtl,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: isGood
-                    ? const Color(0xFF1B5E20)
-                    : const Color(0xFFE65100),
+            child: Directionality(
+              textDirection: _dirOf(state.result.feedback),
+              child: Text(
+                state.result.feedback,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: isGood
+                      ? const Color(0xFF1B5E20)
+                      : const Color(0xFFE65100),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () {
+              _processRewards(context);
+              Navigator.of(context).pop(true);
+            },
             icon: const Icon(Icons.check_circle_outline),
             label: Text(
-              loc.doneButton,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              'Done',
+              style: GoogleFonts.roboto(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A6CF7),
+              backgroundColor: _kGreen,
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(54),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
               ),
               elevation: 0,
             ),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: () =>
-                context.read<QuizBloc>().add(ResetQuizEvent()),
+            onPressed: () {
+              _processRewards(context);
+              context.read<QuizBloc>().add(ResetQuizEvent());
+            },
             icon: const Icon(Icons.refresh_rounded),
             label: Text(
-              loc.takeAnotherQuizButton,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              'Take Another Quiz',
+              style: GoogleFonts.roboto(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF4A6CF7),
-              side: const BorderSide(color: Color(0xFF4A6CF7)),
+              foregroundColor: _kGreen,
+              side: const BorderSide(color: _kGreen),
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
@@ -876,12 +1177,11 @@ class _LoadingView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: Color(0xFF4A6CF7)),
+          const CircularProgressIndicator(color: _kGreen),
           const SizedBox(height: 20),
           Text(
             message,
-            style:
-                const TextStyle(color: Color(0xFF8B93A7), fontSize: 15),
+            style: GoogleFonts.roboto(color: _kMuted, fontSize: 15),
           ),
         ],
       ),
@@ -903,26 +1203,38 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                size: 56, color: Color(0xFFEA4335)),
+            const Icon(Icons.error_outline, size: 56, color: _kRed),
             const SizedBox(height: 16),
             Text(
-              loc.somethingWentWrongTitle,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              'Something went wrong',
+              style: GoogleFonts.cairo(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _kInk,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                  color: Color(0xFF8B93A7), fontSize: 13),
+              style: GoogleFonts.roboto(color: _kMuted, fontSize: 13),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () =>
                   context.read<QuizBloc>().add(ResetQuizEvent()),
-              child: Text(loc.tryAgainButton),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kGreen,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Try Again',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),

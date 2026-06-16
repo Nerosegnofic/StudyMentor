@@ -677,7 +677,8 @@ class DataConnectProvider {
     try {
       await AiEngineRepository.instance.deleteSubject(subjectKey, studentUid);
     } catch (e) {
-      print('AI engine subject delete skipped or failed: $e');
+      print('AI engine subject delete failed: $e');
+      rethrow;
     }
   }
 

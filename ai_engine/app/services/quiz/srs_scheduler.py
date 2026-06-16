@@ -21,6 +21,12 @@ _INTERVAL_TIERS = [
 ]
 
 
+# How strongly a fragile (low-mastery) skill jumps the review queue, in "days" of
+# priority. Kept small relative to the interval tiers so overdue-ness still dominates;
+# this only gives shakier skills a modest head start and breaks near-ties.
+_MASTERY_BIAS_DAYS = 2.0
+
+
 def _compute_review_interval(attempts: int) -> timedelta:
     """Get the SRS interval for a skill based on how many times it's been practiced."""
     for max_attempts, interval in _INTERVAL_TIERS:
@@ -62,6 +68,16 @@ def select_srs_review_skills(
         due_date = last + interval
         return (due_date - now).total_seconds() / 86400.0
 
-    # Sort: most overdue first (most negative overdue_days)
-    scored = sorted(mastered_skills, key=overdue_days)
+    def review_priority(entry: dict) -> float:
+        """
+        Lower sorts first. Starts from overdue-ness, then nudges more-fragile
+        (lower-mastery) skills earlier. BKT mastery already integrates the student's
+        accuracy, response time, and hint usage, so it serves as the quality signal —
+        no extra queries needed.
+        """
+        mastery = entry.get("mastery", 1.0)
+        return overdue_days(entry) + mastery * _MASTERY_BIAS_DAYS
+
+    # Sort: most-overdue and most-fragile first.
+    scored = sorted(mastered_skills, key=review_priority)
     return scored[:max_review]

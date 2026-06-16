@@ -1,161 +1,236 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/gamification_models.dart';
 import '../../../../l10n/app_localizations.dart';
 
-/// A celebratory full-screen dialog shown when the student levels up.
-class LevelUpModal extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Design-system tokens (mirrored from student_quiz / shop screens)
+// ---------------------------------------------------------------------------
+const _kBg = Color(0xFFF5F7FA);
+const _kGreen = Color(0xFF4CAF50);
+const _kInk = Color(0xFF1A1F3C);
+const _kBlue = Color(0xFF2196F3);
+const _kBlueLight = Color(0xFFE3F2FD);
+const _kGold = Color(0xFFFFD54F);
+const _kGoldShadow = Color(0xFFFFC107);
+const _kDarkGreen = Color(0xFF1B5E20);
+const _kMidGreen = Color(0xFF2E7D32);
+
+/// A fullscreen celebration shown when the student levels up.
+///
+/// Pushed via [Navigator.push] (not showDialog) so it fills the entire screen
+/// and gives the level-up moment the weight it deserves.
+class LevelUpCelebrationScreen extends StatefulWidget {
   final LevelModel newLevel;
 
-  const LevelUpModal({super.key, required this.newLevel});
+  const LevelUpCelebrationScreen({super.key, required this.newLevel});
 
-  /// Convenience method to show this modal from anywhere.
+  /// Convenience method to push this screen from anywhere.
   static Future<void> show(BuildContext context, LevelModel newLevel) {
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.70),
-      builder: (_) => LevelUpModal(newLevel: newLevel),
+    return Navigator.of(context).push<void>(
+      PageRouteBuilder<void>(
+        opaque: false,
+        barrierDismissible: false,
+        pageBuilder: (_, __, ___) =>
+            LevelUpCelebrationScreen(newLevel: newLevel),
+        transitionsBuilder: (_, anim, __, child) {
+          return FadeTransition(opacity: anim, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 350),
+      ),
     );
   }
 
   @override
+  State<LevelUpCelebrationScreen> createState() =>
+      _LevelUpCelebrationScreenState();
+}
+
+class _LevelUpCelebrationScreenState extends State<LevelUpCelebrationScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _scale = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_kDarkGreen, _kMidGreen, Color(0xFF388E3C)],
           ),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF4CAF50).withValues(alpha: 0.40),
-              blurRadius: 30,
-              spreadRadius: 4,
-            ),
-          ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Glow ring ──────────────────────────────────────────────
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFFFD54F).withValues(alpha: 0.60),
-                    const Color(0xFFFFD54F).withValues(alpha: 0.0),
-                  ],
+        child: SafeArea(
+          child: Column(
+            children: [
+              const Spacer(flex: 2),
+
+              // ── Animated glow ring + level number ────────────────────
+              AnimatedBuilder(
+                animation: _ctrl,
+                builder: (_, __) => Transform.scale(
+                  scale: 0.5 + 0.5 * _scale.value, // 0.5 → 1.0
+                  child: Opacity(
+                    opacity: _fade.value,
+                    child: _buildGlowRing(),
+                  ),
                 ),
               ),
-              child: Center(
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFFFD54F),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFC107).withValues(alpha: 0.50),
-                        blurRadius: 18,
-                        spreadRadius: 2,
-                      ),
-                    ],
+              const SizedBox(height: 28),
+
+              // ── Title ────────────────────────────────────────────────
+              FadeTransition(
+                opacity: _fade,
+                child: Text(
+                  '🎉 Level Up!',
+                  style: GoogleFonts.cairo(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
                   ),
-                  child: Center(
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // ── Level name pill ──────────────────────────────────────
+              FadeTransition(
+                opacity: _fade,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _kBlueLight.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: _kBlue.withValues(alpha: 0.40),
+                    ),
+                  ),
+                  child: Text(
+                    widget.newLevel.levelName,
+                    style: GoogleFonts.cairo(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: _kBlue,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // ── Subtitle ─────────────────────────────────────────────
+              FadeTransition(
+                opacity: _fade,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    'You reached Level ${widget.newLevel.levelNumber}!\nKeep studying to grow even stronger! 🌱',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.roboto(
+                      fontSize: 15,
+                      color: Colors.white.withValues(alpha: 0.80),
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+              ),
+
+              const Spacer(flex: 3),
+
+              // ── Dismiss button ───────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 40),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kGold,
+                      foregroundColor: _kDarkGreen,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
                     child: Text(
-                      '${newLevel.levelNumber}',
-                      style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF1B5E20),
+                      'Awesome!',
+                      style: GoogleFonts.roboto(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-            // ── Title ──────────────────────────────────────────────────
-            Text(
-              loc.levelUpTitle,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // ── Level name ─────────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.25),
-                ),
-              ),
-              child: Text(
-                newLevel.levelName,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFFFD54F),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // ── Subtitle ───────────────────────────────────────────────
-            Text(
-              loc.levelUpSubtitleMessage(newLevel.levelNumber),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.80),
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // ── Dismiss button ─────────────────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD54F),
-                  foregroundColor: const Color(0xFF1B5E20),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  loc.awesomeButton,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
+  Widget _buildGlowRing() {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            _kGold.withValues(alpha: 0.55),
+            _kGold.withValues(alpha: 0.0),
           ],
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 88,
+          height: 88,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _kGold,
+            boxShadow: [
+              BoxShadow(
+                color: _kGoldShadow.withValues(alpha: 0.50),
+                blurRadius: 24,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              '${widget.newLevel.levelNumber}',
+              style: GoogleFonts.cairo(
+                fontSize: 36,
+                fontWeight: FontWeight.w900,
+                color: _kDarkGreen,
+              ),
+            ),
+          ),
         ),
       ),
     );

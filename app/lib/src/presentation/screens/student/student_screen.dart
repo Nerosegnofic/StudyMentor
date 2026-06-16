@@ -20,6 +20,7 @@ import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../../widgets/avatar_widget.dart';
 import '../../widgets/gamification/level_up_modal.dart';
+// LevelUpCelebrationScreen is exported from level_up_modal.dart
 import '../../widgets/gamification/streak_milestone_modal.dart';
 import '../../utils/reward_toast.dart';
 import '../../widgets/parent_verification_dialog.dart';
@@ -37,7 +38,7 @@ import '../../../../l10n/app_localizations.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
-const _kAiEngineBaseUrl = 'http://192.168.100.2:8000';
+const _kAiEngineBaseUrl = 'http://192.168.1.6:8000';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -55,6 +56,13 @@ class _StudentScreenState extends State<StudentScreen>
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
+
+  // ── Pending celebrations (buffered while a quiz overlay is open) ──────────
+  int? _pendingLevelUp;
+  int? _pendingMilestone;
+  int _pendingXp = 0;
+  int _pendingCoins = 0;
+  int _pendingMilestoneStreak = 0;
 
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
 
@@ -370,7 +378,89 @@ class _StudentScreenState extends State<StudentScreen>
           } else {
             MascotOverlayService.instance.markQuizDismissed();
           }
+
+          // Flush any buffered celebrations now that the quiz is gone.
+          _flushPendingCelebrations();
         });
+  }
+
+  // ── Celebration helpers ────────────────────────────────────────────────────
+
+  /// Shows reward toast, then level-up fullscreen, then streak milestone.
+  /// Called either immediately (for non-quiz rewards) or after quiz pops.
+  void _showCelebrations(
+    BuildContext context, {
+    required int xp,
+    required int coins,
+    int? leveledUpTo,
+    int? milestoneHit,
+    int currentStreak = 0,
+  }) {
+    if (xp > 0 || coins > 0) {
+      RewardToast.show(context, xp, coins);
+    }
+    if (leveledUpTo != null) {
+      // Schedule after the current frame so the toast is visible first.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        LevelUpCelebrationScreen.show(
+          context,
+          kGamificationLevels.firstWhere(
+            (l) => l.levelNumber == leveledUpTo,
+            orElse: () => kGamificationLevels.first,
+          ),
+        ).then((_) {
+          // After level-up dismisses, show streak milestone if any.
+          if (milestoneHit != null && mounted) {
+            StreakMilestoneModal.show(
+              context,
+              milestoneDays: milestoneHit,
+              coinReward: 20,
+              currentStreak: currentStreak,
+            );
+          }
+        });
+      });
+    } else if (milestoneHit != null) {
+      StreakMilestoneModal.show(
+        context,
+        milestoneDays: milestoneHit,
+        coinReward: 20,
+        currentStreak: currentStreak,
+      );
+    }
+  }
+
+  /// Drains any buffered celebration data and shows them now.
+  void _flushPendingCelebrations() {
+    if (!mounted) return;
+    final xp = _pendingXp;
+    final coins = _pendingCoins;
+    final levelUp = _pendingLevelUp;
+    final milestone = _pendingMilestone;
+    final streak = _pendingMilestoneStreak;
+
+    // Clear immediately to prevent double-flush.
+    _pendingXp = 0;
+    _pendingCoins = 0;
+    _pendingLevelUp = null;
+    _pendingMilestone = null;
+    _pendingMilestoneStreak = 0;
+
+    if (xp == 0 && coins == 0 && levelUp == null && milestone == null) return;
+
+    // Wait one frame so the home screen is fully visible.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showCelebrations(
+        context,
+        xp: xp,
+        coins: coins,
+        leveledUpTo: levelUp,
+        milestoneHit: milestone,
+        currentStreak: streak,
+      );
+    });
   }
 
   // ── Verification dialog ───────────────────────────────────────────────────
@@ -491,21 +581,22 @@ class _StudentScreenState extends State<StudentScreen>
                     _xp = state.profile.xpTotal;
                     _level = state.profile.currentLevel;
                   });
-                  RewardToast.show(context, state.xpEarned, state.coinsEarned);
-                  if (state.leveledUpTo != null) {
-                    LevelUpModal.show(
+
+                  if (_quizIsOpen) {
+                    // Buffer celebrations — they'll be flushed after "Done".
+                    _pendingXp = state.xpEarned;
+                    _pendingCoins = state.coinsEarned;
+                    _pendingLevelUp = state.leveledUpTo;
+                    _pendingMilestone = state.milestoneHit;
+                    _pendingMilestoneStreak = state.profile.currentStreak;
+                  } else {
+                    // Show immediately (e.g. daily login reward).
+                    _showCelebrations(
                       context,
-                      kGamificationLevels.firstWhere(
-                        (l) => l.levelNumber == state.leveledUpTo,
-                        orElse: () => kGamificationLevels.first,
-                      ),
-                    );
-                  }
-                  if (state.milestoneHit != null) {
-                    StreakMilestoneModal.show(
-                      context,
-                      milestoneDays: state.milestoneHit!,
-                      coinReward: 20, // Milestone coin reward amount
+                      xp: state.xpEarned,
+                      coins: state.coinsEarned,
+                      leveledUpTo: state.leveledUpTo,
+                      milestoneHit: state.milestoneHit,
                       currentStreak: state.profile.currentStreak,
                     );
                   }
