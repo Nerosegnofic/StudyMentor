@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/cupertino.dart' show CupertinoTimerPicker, CupertinoTheme, CupertinoThemeData, CupertinoTextThemeData, CupertinoTimerPickerMode;
+import 'package:flutter/cupertino.dart' show CupertinoPicker, FixedExtentScrollController;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
@@ -584,8 +584,11 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('$hrs : $mins',
-                      style: GoogleFonts.cairo(color: const Color(0xFF2196F3), fontSize: 32, fontWeight: FontWeight.bold)),
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Text('$hrs : $mins',
+                        style: GoogleFonts.cairo(color: const Color(0xFF2196F3), fontSize: 32, fontWeight: FontWeight.bold)),
+                  ),
                   const SizedBox(width: 8),
                   const Icon(Icons.edit, color: Color(0xFF2196F3), size: 20),
                 ],
@@ -663,12 +666,15 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '$hrs : $mins',
-                  style: GoogleFonts.cairo(
-                    color: const Color(0xFFFF9800),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    '$hrs : $mins',
+                    style: GoogleFonts.cairo(
+                      color: const Color(0xFFFF9800),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -2414,21 +2420,36 @@ class _SetRewardTimeSheet extends StatefulWidget {
 class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
   late int _hours;
   late int _minutes;
-  int _pickerKeyIndex = 0;
+  late FixedExtentScrollController _hoursScrollController;
+  late FixedExtentScrollController _minutesScrollController;
 
   @override
   void initState() {
     super.initState();
     _hours = widget.initialHours;
     _minutes = widget.initialMinutes;
+    _hoursScrollController = FixedExtentScrollController(initialItem: _hours);
+    _minutesScrollController = FixedExtentScrollController(initialItem: _minutes);
+  }
+
+  @override
+  void dispose() {
+    _hoursScrollController.dispose();
+    _minutesScrollController.dispose();
+    super.dispose();
   }
 
   void _selectPreset(int h, int m) {
     setState(() {
       _hours = h;
       _minutes = m;
-      _pickerKeyIndex++;
     });
+    if (_hoursScrollController.hasClients) {
+      _hoursScrollController.jumpToItem(h);
+    }
+    if (_minutesScrollController.hasClients) {
+      _minutesScrollController.jumpToItem(m);
+    }
   }
 
   bool _isPresetSelected(int h, int m) {
@@ -2458,6 +2479,58 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
             fontSize: 14,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTimePicker() {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final pickerTextStyle = GoogleFonts.cairo(
+      fontSize: 20,
+      color: const Color(0xFF1E293B),
+    );
+    final labelStyle = GoogleFonts.cairo(
+      fontSize: 16,
+      color: const Color(0xFF64748B),
+    );
+    final hoursLabel = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Text(isArabic ? 'ساعة' : 'hr', style: labelStyle),
+    );
+    final hoursPicker = Expanded(
+      flex: 3,
+      child: CupertinoPicker(
+        scrollController: _hoursScrollController,
+        itemExtent: 40,
+        onSelectedItemChanged: (val) => setState(() => _hours = val),
+        children: List.generate(
+          24,
+          (i) => Center(child: Text('$i', style: pickerTextStyle)),
+        ),
+      ),
+    );
+    final minutesLabel = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Text(isArabic ? 'دقيقة' : 'min', style: labelStyle),
+    );
+    final minutesPicker = Expanded(
+      flex: 3,
+      child: CupertinoPicker(
+        scrollController: _minutesScrollController,
+        itemExtent: 40,
+        onSelectedItemChanged: (val) => setState(() => _minutes = val),
+        children: List.generate(
+          60,
+          (i) => Center(child: Text('$i', style: pickerTextStyle)),
+        ),
+      ),
+    );
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        children: isArabic
+            ? [hoursLabel, hoursPicker, minutesLabel, minutesPicker]
+            : [hoursPicker, hoursLabel, minutesPicker, minutesLabel],
       ),
     );
   }
@@ -2515,27 +2588,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
                   const SizedBox(height: 24),
                   SizedBox(
                     height: 180,
-                    child: CupertinoTheme(
-                      data: CupertinoThemeData(
-                        textTheme: CupertinoTextThemeData(
-                          pickerTextStyle: GoogleFonts.cairo(
-                            fontSize: 20,
-                            color: const Color(0xFF1E293B),
-                          ),
-                        ),
-                      ),
-                      child: CupertinoTimerPicker(
-                        key: ValueKey(_pickerKeyIndex),
-                        mode: CupertinoTimerPickerMode.hm,
-                        initialTimerDuration: Duration(hours: _hours, minutes: _minutes),
-                        onTimerDurationChanged: (duration) {
-                          setState(() {
-                            _hours = duration.inHours;
-                            _minutes = duration.inMinutes % 60;
-                          });
-                        },
-                      ),
-                    ),
+                    child: _buildTimePicker(),
                   ),
                   const SizedBox(height: 24),
                 ],
