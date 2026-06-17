@@ -770,42 +770,6 @@ abstract class AppLocalizations {
   /// **'Student Information'**
   String get studentInformationSection;
 
-  /// No description provided for @fieldUsername.
-  ///
-  /// In en, this message translates to:
-  /// **'Username'**
-  String get fieldUsername;
-
-  /// No description provided for @usernameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Shown on the leaderboard (e.g. coolkid42)'**
-  String get usernameHint;
-
-  /// No description provided for @validatorUsernameRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Username is required.'**
-  String get validatorUsernameRequired;
-
-  /// No description provided for @validatorUsernameMinLength.
-  ///
-  /// In en, this message translates to:
-  /// **'At least 3 characters.'**
-  String get validatorUsernameMinLength;
-
-  /// No description provided for @validatorUsernameMaxLength.
-  ///
-  /// In en, this message translates to:
-  /// **'Max 50 characters.'**
-  String get validatorUsernameMaxLength;
-
-  /// No description provided for @validatorUsernameFormat.
-  ///
-  /// In en, this message translates to:
-  /// **'Only letters, numbers and underscores.'**
-  String get validatorUsernameFormat;
-
   /// No description provided for @fieldGrade.
   ///
   /// In en, this message translates to:
@@ -907,12 +871,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Changing the email will send a verification link to the new address.'**
   String get studentSettingsEmailHelper;
-
-  /// No description provided for @usernameCannotBeChangedNotice.
-  ///
-  /// In en, this message translates to:
-  /// **'Usernames cannot be changed after registration.'**
-  String get usernameCannotBeChangedNotice;
 
   /// No description provided for @fieldStudentCurrentPassword.
   ///
@@ -3276,6 +3234,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Alerts when a child hasn\'t studied in 3+ days'**
   String get parentNotifInactivitySubtitle;
+
+  /// No description provided for @errInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid email or password. Please try again.'**
+  String get errInvalidCredentials;
+
+  /// No description provided for @errNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Check your connection.'**
+  String get errNetworkError;
+
+  /// No description provided for @errNetworkErrorRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Check your connection and try again.'**
+  String get errNetworkErrorRetry;
+
+  /// No description provided for @errWeakPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is too weak.'**
+  String get errWeakPassword;
+
+  /// No description provided for @errWeakPasswordDetailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is too weak. Please use at least 6 characters.'**
+  String get errWeakPasswordDetailed;
+
+  /// No description provided for @errEmailAlreadyInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'That email address is already registered. Please use a different one.'**
+  String get errEmailAlreadyInUse;
+
+  /// No description provided for @errInvalidEmailFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'That email address doesn\'t look right. Please check it.'**
+  String get errInvalidEmailFormat;
+
+  /// No description provided for @errSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Session expired. Please log out and log in again.'**
+  String get errSessionExpired;
+
+  /// No description provided for @errTooManyAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Please wait a moment and try again.'**
+  String get errTooManyAttempts;
+
+  /// No description provided for @errRegistrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration failed. Please try again.'**
+  String get errRegistrationFailed;
+
+  /// No description provided for @errNoSignedInAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'No signed-in account found. Please log in again.'**
+  String get errNoSignedInAccount;
+
+  /// No description provided for @errVerificationEmailFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send verification email. Please try again.'**
+  String get errVerificationEmailFailed;
+
+  /// No description provided for @errWrongCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password is incorrect.'**
+  String get errWrongCurrentPassword;
+
+  /// No description provided for @errNewPasswordTooWeak.
+  ///
+  /// In en, this message translates to:
+  /// **'New password is too weak. Use at least 6 characters.'**
+  String get errNewPasswordTooWeak;
+
+  /// No description provided for @errEmailAlreadyInUseOther.
+  ///
+  /// In en, this message translates to:
+  /// **'That email address is already in use by another account.'**
+  String get errEmailAlreadyInUseOther;
+
+  /// No description provided for @errUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Update failed. Please try again.'**
+  String get errUpdateFailed;
+
+  /// No description provided for @errUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed. Please try again.'**
+  String get errUploadFailed;
+
+  /// No description provided for @errDeleteAccountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to delete account. Please try again.'**
+  String get errDeleteAccountFailed;
+
+  /// No description provided for @errStudentSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Session expired. Please log out and log in again before adding a student.'**
+  String get errStudentSessionExpired;
+
+  /// No description provided for @errStudentEmailAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'This email is already registered. Try logging in or resetting the password.'**
+  String get errStudentEmailAlreadyRegistered;
+
+  /// No description provided for @errStudentWeakPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'The password provided is too weak. Please use at least 6 characters.'**
+  String get errStudentWeakPassword;
+
+  /// No description provided for @errStudentInvalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'The email address is badly formatted.'**
+  String get errStudentInvalidEmail;
+
+  /// No description provided for @errUnexpected.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred. Please try again.'**
+  String get errUnexpected;
+
+  /// No description provided for @shopItemPurchasedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase successful! 🎉'**
+  String get shopItemPurchasedMessage;
+
+  /// No description provided for @errPurchaseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase failed. Please try again.'**
+  String get errPurchaseFailed;
 }
 
 class _AppLocalizationsDelegate

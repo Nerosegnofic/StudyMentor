@@ -47,7 +47,6 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
   int _xp = 0;
   int _coins = 0;
   int _streak = 0;
-  bool _loadingGamification = true;
 
   @override
   void initState() {
@@ -68,11 +67,10 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
           _xp = (profile['xp_total'] as int?) ?? 0;
           _coins = (profile['coins_total'] as int?) ?? 0;
           _streak = (profile['current_streak'] as int?) ?? 0;
-          _loadingGamification = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loadingGamification = false);
+      // gamification load failed; xp/coins/streak stay at defaults
     }
   }
 

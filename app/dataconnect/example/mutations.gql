@@ -41,7 +41,6 @@ mutation InsertParent($pinCode: String, $phoneNumber: String) @auth(level: USER)
 
 mutation InsertStudent(
   $parentUid: String!
-  $username: String!
   $gradeLevel: Int
 ) @auth(level: USER) {
   student_insert(
@@ -49,7 +48,6 @@ mutation InsertStudent(
       uid_expr: "auth.uid"
       userUid_expr: "auth.uid"
       parentUid: $parentUid
-      username: $username
       gradeLevel: $gradeLevel
     }
   )

@@ -255,7 +255,7 @@ class _ParentSubjectDetailScreenState
             ),
           ),
           CircleAvatar(
-            backgroundColor: widget.color.withOpacity(0.2),
+            backgroundColor: widget.color.withValues(alpha: 0.2),
             child: Icon(
               SubjectMetadataRegistry.getSubjectIcon(widget.subjectKey) ??
                   Icons.book,

@@ -44,13 +44,12 @@ class _StudentProfileState extends State<StudentProfile> {
       final aiEngine = AiEngineRepository.instance;
       
       final results = await Future.wait([
-        dataconnect.getStudentProfile(widget.uid),
         aiEngine.getGamificationProfile(widget.uid),
         dataconnect.getStudentAvatar(widget.uid),
       ]);
 
-      final gamification = results[1] as Map<String, dynamic>;
-      final avatarMap = results[2];
+      final gamification = results[0] as Map<String, dynamic>;
+      final avatarMap = results[1];
 
       if (mounted) {
         setState(() {
@@ -175,7 +174,7 @@ class _StudentProfileState extends State<StudentProfile> {
               border: Border.all(color: Colors.white, width: 4),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 14,
                   offset: const Offset(0, 6),
                 ),
@@ -271,7 +270,7 @@ class _StudentProfileState extends State<StudentProfile> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -431,7 +430,7 @@ class _StudentProfileState extends State<StudentProfile> {
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),

@@ -7,6 +7,7 @@ import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../widgets/language_picker_dialog.dart';
+import '../../utils/error_localizer.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -59,9 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
             if (state is AuthError) {
               if (ModalRoute.of(context)?.isCurrent ?? false) {
                 _passCtl.clear();
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(state.message)));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(localizeError(state.message, AppLocalizations.of(context)))),
+                );
               }
             }
           },

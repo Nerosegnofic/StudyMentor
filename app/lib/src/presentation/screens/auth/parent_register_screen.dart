@@ -6,6 +6,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class ParentRegisterScreen extends StatefulWidget {
   const ParentRegisterScreen({super.key});
@@ -43,9 +44,9 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
             if (ModalRoute.of(context)?.isCurrent ?? false) {
               _passCtl.clear();
               _confirmCtl.clear();
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(localizeError(state.message, AppLocalizations.of(context)))),
+              );
             }
           }
         },

@@ -20,14 +20,12 @@ class GetStudentsByParentVariablesBuilder {
 @immutable
 class GetStudentsByParentStudents {
   final String uid;
-  final String username;
   final GetStudentsByParentStudentsUser user;
   final int? gradeLevel;
   final Timestamp? lastActiveAt;
   GetStudentsByParentStudents.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
-  username = nativeFromJson<String>(json['username']),
   user = GetStudentsByParentStudentsUser.fromJson(json['user']),
   gradeLevel = json['gradeLevel'] == null ? null : nativeFromJson<int>(json['gradeLevel']),
   lastActiveAt = json['lastActiveAt'] == null ? null : Timestamp.fromJson(json['lastActiveAt']);
@@ -42,20 +40,18 @@ class GetStudentsByParentStudents {
 
     final GetStudentsByParentStudents otherTyped = other as GetStudentsByParentStudents;
     return uid == otherTyped.uid && 
-    username == otherTyped.username && 
     user == otherTyped.user && 
     gradeLevel == otherTyped.gradeLevel && 
     lastActiveAt == otherTyped.lastActiveAt;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, username.hashCode, user.hashCode, gradeLevel.hashCode, lastActiveAt.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, user.hashCode, gradeLevel.hashCode, lastActiveAt.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['uid'] = nativeToJson<String>(uid);
-    json['username'] = nativeToJson<String>(username);
     json['user'] = user.toJson();
     if (gradeLevel != null) {
       json['gradeLevel'] = nativeToJson<int?>(gradeLevel);
@@ -68,7 +64,6 @@ class GetStudentsByParentStudents {
 
   GetStudentsByParentStudents({
     required this.uid,
-    required this.username,
     required this.user,
     this.gradeLevel,
     this.lastActiveAt,

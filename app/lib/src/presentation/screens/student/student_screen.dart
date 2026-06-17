@@ -51,7 +51,7 @@ class StudentScreen extends StatefulWidget {
 
 class _StudentScreenState extends State<StudentScreen>
     with WidgetsBindingObserver {
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
@@ -416,6 +416,22 @@ class _StudentScreenState extends State<StudentScreen>
 
   @override
   Widget build(BuildContext context) {
+    // MultiBlocProvider is always at the root so the widget type never changes
+    // across the loading → permission-gate → main transitions. Changing the
+    // root type forces Flutter to destroy and recreate the entire element tree,
+    // which can miss a frame and briefly reveal the black Android window
+    // background behind the Flutter surface.
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ShopBloc>.value(value: _shopBloc),
+        BlocProvider<GardenBloc>.value(value: _gardenBloc),
+        BlocProvider<GamificationBloc>.value(value: _gamificationBloc),
+      ],
+      child: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     if (_initializing || _checkingPermissions) {
       return const Scaffold(
         backgroundColor: Color(0xFFF5F7FA),
@@ -437,13 +453,7 @@ class _StudentScreenState extends State<StudentScreen>
       );
     }
 
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<ShopBloc>.value(value: _shopBloc),
-        BlocProvider<GardenBloc>.value(value: _gardenBloc),
-        BlocProvider<GamificationBloc>.value(value: _gamificationBloc),
-      ],
-      child: PopScope(
+    return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop) {
@@ -546,7 +556,6 @@ class _StudentScreenState extends State<StudentScreen>
             ),
           ),
         ),
-      ),
     );
   }
 

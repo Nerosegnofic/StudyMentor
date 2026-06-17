@@ -30,7 +30,6 @@ abstract class AuthRepository {
     required String password,
     required String parentUid,
     required int gradeLevel,
-    required String username,
   });
   Future<List<StudentModel>> getStudentsByParent(String parentUid);
   Future<String> getParentFullName(String studentUid);

@@ -9,6 +9,7 @@ import '../../../../domain/models/avatar_item.dart';
 import '../../../../../core/avatar/fluttermojiController.dart';
 import '../../../widgets/avatar_widget.dart';
 import '../../../../../l10n/app_localizations.dart';
+import '../../../utils/error_localizer.dart';
 
 class CustomShopScreen extends StatefulWidget {
   final String studentUid;
@@ -156,7 +157,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
           boxShadow: [
             if (isEquipped)
               BoxShadow(
-                color: const Color(0xFF4A6CF7).withOpacity(0.2),
+                color: const Color(0xFF4A6CF7).withValues(alpha: 0.2),
                 blurRadius: 8,
               )
           ],
@@ -209,9 +210,16 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             Navigator.pop(context);
             return;
           }
+          final loc = AppLocalizations.of(context);
+          final rawMsg = state.feedbackMessage!;
+          final displayMsg = switch (rawMsg) {
+            'SHOP_PURCHASED' => loc.shopItemPurchasedMessage,
+            'SHOP_FAILED' => loc.errPurchaseFailed,
+            _ => localizeError(rawMsg, loc),
+          };
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.feedbackMessage!),
+              content: Text(displayMsg),
               backgroundColor: state.feedbackIsError ? Colors.red : Colors.green,
             ),
           );

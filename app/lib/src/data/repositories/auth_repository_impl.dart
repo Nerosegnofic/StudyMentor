@@ -1,6 +1,5 @@
 // lib/src/data/repositories/auth_repository_impl.dart
 
-import 'package:flutter/foundation.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/models/student_model.dart';
 import '../../domain/models/app_config_model.dart';
@@ -87,7 +86,6 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String parentUid,
     required int gradeLevel,
-    required String username,
   }) async {
     final parentEmail = firebase.currentUser?.email;
     final parentPassword = firebase.cachedPassword;
@@ -98,9 +96,6 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    // Username check FIRST — before touching Firebase Auth or the database.
-    await dataConnect.checkUsernameAvailable(username);
-
     try {
       await firebase.signUp(email, password);
       await dataConnect.createUserProfile(
@@ -110,7 +105,6 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       await dataConnect.createStudentProfile(
         parentUid: parentUid,
-        username: username,
         gradeLevel: gradeLevel,
       );
 
@@ -442,7 +436,6 @@ class AuthRepositoryImpl implements AuthRepository {
       uid: studentUid,
       fullName: newFullName ?? 'Updated',
       email: studentEmail ?? 'student@example.com',
-      username: 'student123',
       gradeLevel: int.tryParse(newGradeLevel ?? '8') ?? 8,
       totalXp: 0,
       totalCoins: 0,

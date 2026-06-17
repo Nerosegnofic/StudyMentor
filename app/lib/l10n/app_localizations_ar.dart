@@ -391,24 +391,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get studentInformationSection => 'معلومات الطالب';
 
   @override
-  String get fieldUsername => 'اسم المستخدم';
-
-  @override
-  String get usernameHint => 'يظهر في لوحة المتصدرين (مثال: coolkid42)';
-
-  @override
-  String get validatorUsernameRequired => 'اسم المستخدم مطلوب.';
-
-  @override
-  String get validatorUsernameMinLength => '3 أحرف على الأقل.';
-
-  @override
-  String get validatorUsernameMaxLength => '50 حرفًا كحد أقصى.';
-
-  @override
-  String get validatorUsernameFormat => 'أحرف وأرقام وشرطات سفلية فقط.';
-
-  @override
   String get fieldGrade => 'الصف';
 
   @override
@@ -466,10 +448,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get studentSettingsEmailHelper =>
       'سيؤدي تغيير البريد الإلكتروني إلى إرسال رابط تأكيد إلى العنوان الجديد.';
-
-  @override
-  String get usernameCannotBeChangedNotice =>
-      'لا يمكن تغيير اسم المستخدم بعد التسجيل.';
 
   @override
   String get fieldStudentCurrentPassword => 'كلمة مرور الطالب الحالية';
@@ -1889,4 +1867,94 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get parentNotifInactivitySubtitle =>
       'تنبيهات عندما لا يدرس الطفل لمدة 3 أيام أو أكثر';
+
+  @override
+  String get errInvalidCredentials =>
+      'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get errNetworkError => 'خطأ في الشبكة. تحقق من اتصالك.';
+
+  @override
+  String get errNetworkErrorRetry =>
+      'خطأ في الشبكة. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get errWeakPassword => 'كلمة المرور ضعيفة جدًا.';
+
+  @override
+  String get errWeakPasswordDetailed =>
+      'كلمة المرور ضعيفة جدًا. يرجى استخدام 6 أحرف على الأقل.';
+
+  @override
+  String get errEmailAlreadyInUse =>
+      'هذا البريد الإلكتروني مسجل بالفعل. يرجى استخدام عنوان آخر.';
+
+  @override
+  String get errInvalidEmailFormat =>
+      'هذا البريد الإلكتروني لا يبدو صحيحًا. يرجى التحقق منه.';
+
+  @override
+  String get errSessionExpired =>
+      'انتهت جلستك. يرجى تسجيل الخروج وإعادة تسجيل الدخول.';
+
+  @override
+  String get errTooManyAttempts =>
+      'محاولات كثيرة جدًا. يرجى الانتظار قليلاً والمحاولة مرة أخرى.';
+
+  @override
+  String get errRegistrationFailed => 'فشل التسجيل. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get errNoSignedInAccount =>
+      'لم يتم العثور على حساب مسجل. يرجى تسجيل الدخول مرة أخرى.';
+
+  @override
+  String get errVerificationEmailFailed =>
+      'تعذر إرسال بريد التحقق. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get errWrongCurrentPassword => 'كلمة المرور الحالية غير صحيحة.';
+
+  @override
+  String get errNewPasswordTooWeak =>
+      'كلمة المرور الجديدة ضعيفة. استخدم 6 أحرف على الأقل.';
+
+  @override
+  String get errEmailAlreadyInUseOther =>
+      'هذا البريد الإلكتروني مستخدم من قِبل حساب آخر.';
+
+  @override
+  String get errUpdateFailed => 'فشل التحديث. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get errUploadFailed => 'فشل الرفع. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get errDeleteAccountFailed =>
+      'تعذر حذف الحساب. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get errStudentSessionExpired =>
+      'انتهت جلستك. يرجى تسجيل الخروج وإعادة تسجيل الدخول قبل إضافة طالب.';
+
+  @override
+  String get errStudentEmailAlreadyRegistered =>
+      'هذا البريد الإلكتروني مسجل بالفعل. جرّب تسجيل الدخول أو إعادة تعيين كلمة المرور.';
+
+  @override
+  String get errStudentWeakPassword =>
+      'كلمة المرور المُدخلة ضعيفة جدًا. يرجى استخدام 6 أحرف على الأقل.';
+
+  @override
+  String get errStudentInvalidEmail => 'صيغة البريد الإلكتروني غير صحيحة.';
+
+  @override
+  String get errUnexpected => 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get shopItemPurchasedMessage => 'تمت عملية الشراء بنجاح! 🎉';
+
+  @override
+  String get errPurchaseFailed => 'فشلت عملية الشراء. يرجى المحاولة مرة أخرى.';
 }

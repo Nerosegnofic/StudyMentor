@@ -1,5 +1,6 @@
 // lib/src/services/local_notification_service.dart
 
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -99,6 +100,10 @@ class LocalNotificationService {
   LocalNotificationService._();
 
   static final instance = LocalNotificationService._();
+
+  /// A [GlobalKey] wired into [MaterialApp.navigatorKey] so the tap handler
+  /// can push routes without a [BuildContext].
+  final navigatorKey = GlobalKey<NavigatorState>();
 
   final _plugin = FlutterLocalNotificationsPlugin();
 
@@ -332,8 +337,13 @@ class LocalNotificationService {
   /// [response.payload] will contain whatever string was passed to [show] or
   /// [schedule]. Deep-link routing will be wired up in Phase 4 once the
   /// navigation targets are known.
+  // Payload convention: "<screen>:<uid>", e.g. "STUDENT_PROFILE:uid123".
   void _onNotificationTapped(NotificationResponse response) {
-    // TODO(Phase 4): parse response.payload and navigate to the correct screen.
-    // Payload convention: "<screen>:<id>", e.g. "STUDENT_DETAIL:uid123".
+    final payload = response.payload;
+    if (payload == null) return;
+
+    if (payload.startsWith('STUDENT_PROFILE:')) {
+      navigatorKey.currentState?.pushNamed('/student-profile');
+    }
   }
 }

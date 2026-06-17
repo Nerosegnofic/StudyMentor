@@ -2,35 +2,6 @@ library dataconnect_generated;
 import 'package:firebase_data_connect/firebase_data_connect.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-
-part 'get_user_by_uid.dart';
-
-part 'get_students_by_parent.dart';
-
-part 'get_student_with_parent.dart';
-
-part 'get_installed_apps_for_student.dart';
-
-part 'insert_installed_app.dart';
-
-part 'delete_all_installed_apps_for_student.dart';
-
-part 'get_student_profile.dart';
-
-part 'get_student_by_username.dart';
-
-part 'get_student_settings.dart';
-
-part 'get_student_owned_items.dart';
-
-part 'get_student_avatar.dart';
-
-part 'get_app_config_for_student.dart';
-
-part 'get_unread_local_notification_events.dart';
-
-part 'get_local_notification_preferences.dart';
 
 part 'insert_user.dart';
 
@@ -83,6 +54,30 @@ part 'mark_local_notification_events_read.dart';
 part 'upsert_local_notification_preference.dart';
 
 part 'delete_local_notification_preferences_for_user.dart';
+
+part 'get_user_by_uid.dart';
+
+part 'get_students_by_parent.dart';
+
+part 'get_student_with_parent.dart';
+
+part 'get_installed_apps_for_student.dart';
+
+part 'insert_installed_app.dart';
+
+part 'delete_all_installed_apps_for_student.dart';
+
+part 'get_student_settings.dart';
+
+part 'get_student_owned_items.dart';
+
+part 'get_student_avatar.dart';
+
+part 'get_app_config_for_student.dart';
+
+part 'get_unread_local_notification_events.dart';
+
+part 'get_local_notification_preferences.dart';
 
 
 
@@ -166,76 +161,6 @@ class Unknown extends EnumValue<Never> {
 class ExampleConnector {
   
   
-  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
-    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetStudentsByParentVariablesBuilder getStudentsByParent ({required String parentUid, }) {
-    return GetStudentsByParentVariablesBuilder(dataConnect, parentUid: parentUid,);
-  }
-  
-  
-  GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
-    return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetInstalledAppsForStudentVariablesBuilder getInstalledAppsForStudent ({required String studentUid, }) {
-    return GetInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  InsertInstalledAppVariablesBuilder insertInstalledApp ({required String studentUid, required String packageName, required String appLabel, required bool isSystemApp, }) {
-    return InsertInstalledAppVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,isSystemApp: isSystemApp,);
-  }
-  
-  
-  DeleteAllInstalledAppsForStudentVariablesBuilder deleteAllInstalledAppsForStudent ({required String studentUid, }) {
-    return DeleteAllInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetStudentProfileVariablesBuilder getStudentProfile ({required String uid, }) {
-    return GetStudentProfileVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetStudentByUsernameVariablesBuilder getStudentByUsername ({required String username, }) {
-    return GetStudentByUsernameVariablesBuilder(dataConnect, username: username,);
-  }
-  
-  
-  GetStudentSettingsVariablesBuilder getStudentSettings ({required String studentUid, }) {
-    return GetStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetStudentOwnedItemsVariablesBuilder getStudentOwnedItems ({required String studentUid, }) {
-    return GetStudentOwnedItemsVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetStudentAvatarVariablesBuilder getStudentAvatar ({required String studentUid, }) {
-    return GetStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
-    return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetUnreadLocalNotificationEventsVariablesBuilder getUnreadLocalNotificationEvents ({required String toParentUid, }) {
-    return GetUnreadLocalNotificationEventsVariablesBuilder(dataConnect, toParentUid: toParentUid,);
-  }
-  
-  
-  GetLocalNotificationPreferencesVariablesBuilder getLocalNotificationPreferences ({required String userUid, }) {
-    return GetLocalNotificationPreferencesVariablesBuilder(dataConnect, userUid: userUid,);
-  }
-  
-  
   InsertUserVariablesBuilder insertUser ({required String email, required String fullName, required Role role, }) {
     return InsertUserVariablesBuilder(dataConnect, email: email,fullName: fullName,role: role,);
   }
@@ -256,8 +181,8 @@ class ExampleConnector {
   }
   
   
-  InsertStudentVariablesBuilder insertStudent ({required String parentUid, required String username, }) {
-    return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,username: username,);
+  InsertStudentVariablesBuilder insertStudent ({required String parentUid, }) {
+    return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,);
   }
   
   
@@ -363,6 +288,66 @@ class ExampleConnector {
   
   DeleteLocalNotificationPreferencesForUserVariablesBuilder deleteLocalNotificationPreferencesForUser ({required String userUid, }) {
     return DeleteLocalNotificationPreferencesForUserVariablesBuilder(dataConnect, userUid: userUid,);
+  }
+  
+  
+  GetUserByUidVariablesBuilder getUserByUid ({required String uid, }) {
+    return GetUserByUidVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetStudentsByParentVariablesBuilder getStudentsByParent ({required String parentUid, }) {
+    return GetStudentsByParentVariablesBuilder(dataConnect, parentUid: parentUid,);
+  }
+  
+  
+  GetStudentWithParentVariablesBuilder getStudentWithParent ({required String uid, }) {
+    return GetStudentWithParentVariablesBuilder(dataConnect, uid: uid,);
+  }
+  
+  
+  GetInstalledAppsForStudentVariablesBuilder getInstalledAppsForStudent ({required String studentUid, }) {
+    return GetInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  InsertInstalledAppVariablesBuilder insertInstalledApp ({required String studentUid, required String packageName, required String appLabel, required bool isSystemApp, }) {
+    return InsertInstalledAppVariablesBuilder(dataConnect, studentUid: studentUid,packageName: packageName,appLabel: appLabel,isSystemApp: isSystemApp,);
+  }
+  
+  
+  DeleteAllInstalledAppsForStudentVariablesBuilder deleteAllInstalledAppsForStudent ({required String studentUid, }) {
+    return DeleteAllInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetStudentSettingsVariablesBuilder getStudentSettings ({required String studentUid, }) {
+    return GetStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetStudentOwnedItemsVariablesBuilder getStudentOwnedItems ({required String studentUid, }) {
+    return GetStudentOwnedItemsVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetStudentAvatarVariablesBuilder getStudentAvatar ({required String studentUid, }) {
+    return GetStudentAvatarVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
+    return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
+  GetUnreadLocalNotificationEventsVariablesBuilder getUnreadLocalNotificationEvents ({required String toParentUid, }) {
+    return GetUnreadLocalNotificationEventsVariablesBuilder(dataConnect, toParentUid: toParentUid,);
+  }
+  
+  
+  GetLocalNotificationPreferencesVariablesBuilder getLocalNotificationPreferences ({required String userUid, }) {
+    return GetLocalNotificationPreferencesVariablesBuilder(dataConnect, userUid: userUid,);
   }
   
 

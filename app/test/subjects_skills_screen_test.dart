@@ -63,7 +63,6 @@ void main() {
       uid: 'test_uid',
       fullName: 'John Doe',
       email: 'john@example.com',
-      username: 'johndoe',
     );
 
     final fakeRepo = FakeAuthRepository();
