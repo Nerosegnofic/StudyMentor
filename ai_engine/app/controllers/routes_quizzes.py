@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app.models.schemas import (
     GenerateQuizRequest,
@@ -27,8 +28,18 @@ async def generate_quiz(
 ):
     """
     Generates a new quiz or retrieves an active cached quiz session.
+
+    Quiz generation is fully synchronous and I/O-heavy (Gemini LLM call with retries,
+    pgvector + Cohere retrieval, DB writes). Run it in the threadpool so it doesn't
+    block the event loop — otherwise a single in-flight generation (including the
+    client's fire-and-forget pre-warm) freezes the server for every other request.
     """
-    return generate_quiz_for_student(db=db, request_body=request_body, student_uid=student_uid)
+    return await run_in_threadpool(
+        generate_quiz_for_student,
+        db=db,
+        request_body=request_body,
+        student_uid=student_uid,
+    )
 
 
 @router.post("/submit", response_model=QuizSubmissionResponse)
@@ -39,5 +50,14 @@ async def submit_quiz(
 ):
     """
     Submits quiz answers, scores them, and updates BKT mastery parameters.
+
+    Like generation, submission is synchronous and I/O-heavy (BKT updates + DB writes),
+    and the client fires a pre-warm right after it — so run it in the threadpool to keep
+    the event loop free.
     """
-    return process_quiz_submission(db=db, request=request, student_uid=student_uid)
+    return await run_in_threadpool(
+        process_quiz_submission,
+        db=db,
+        request=request,
+        student_uid=student_uid,
+    )
