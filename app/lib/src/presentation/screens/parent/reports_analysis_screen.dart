@@ -1170,19 +1170,19 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_kPrimary.withOpacity(0.08), _kTeal.withOpacity(0.04)],
+          colors: [_kPrimary.withValues(alpha: 0.08), _kTeal.withValues(alpha: 0.04)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kPrimary.withOpacity(0.12)),
+        border: Border.all(color: _kPrimary.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: _kPrimary.withOpacity(0.1),
+              color: _kPrimary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.school_rounded, color: _kPrimary, size: 24),
@@ -1796,11 +1796,11 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     if (minutes == 0) {
       color = const Color(0xFFE2E8F0);
     } else if (minutes < 30) {
-      color = _kPrimary.withOpacity(0.25);
+      color = _kPrimary.withValues(alpha: 0.25);
     } else if (minutes < 60) {
-      color = _kPrimary.withOpacity(0.5);
+      color = _kPrimary.withValues(alpha: 0.5);
     } else if (minutes < 90) {
-      color = _kPrimary.withOpacity(0.75);
+      color = _kPrimary.withValues(alpha: 0.75);
     } else {
       color = _kPrimary;
     }
@@ -1856,7 +1856,7 @@ class _AccuracyTrendPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [_kPrimary.withOpacity(0.3), _kPrimary.withOpacity(0.0)],
+        colors: [_kPrimary.withValues(alpha: 0.3), _kPrimary.withValues(alpha: 0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 
@@ -1967,7 +1967,7 @@ class _ErrorAnalyticsPainter extends CustomPainter {
       bgPaint,
     );
 
-    final paint1 = Paint()..color = _kRed.withOpacity(0.8);
+    final paint1 = Paint()..color = _kRed.withValues(alpha: 0.8);
     final paint2 = Paint()..color = _kAmber;
     final paint3 = Paint()..color = _kPrimary;
 
@@ -2014,11 +2014,11 @@ class _ActivityHeatmapPainter extends CustomPainter {
         if (minutes == 0) {
           paint.color = const Color(0xFFE2E8F0);
         } else if (minutes < 30) {
-          paint.color = _kPrimary.withOpacity(0.25);
+          paint.color = _kPrimary.withValues(alpha: 0.25);
         } else if (minutes < 60) {
-          paint.color = _kPrimary.withOpacity(0.5);
+          paint.color = _kPrimary.withValues(alpha: 0.5);
         } else if (minutes < 90) {
-          paint.color = _kPrimary.withOpacity(0.75);
+          paint.color = _kPrimary.withValues(alpha: 0.75);
         } else {
           paint.color = _kPrimary;
         }

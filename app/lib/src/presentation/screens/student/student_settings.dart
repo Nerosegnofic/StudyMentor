@@ -21,12 +21,8 @@ class StudentSettings extends StatefulWidget {
 
 class _StudentSettingsState extends State<StudentSettings> {
   SettingsService? _settings;
-  bool _notificationsEnabled = true;
-  bool _soundEffectsEnabled = true;
-  bool _backgroundMusicEnabled = false;
   bool _timerNotificationEnabled = true;
   bool _cooldownNotificationEnabled = true;
-  String _appVersion = 'v1.0';
   bool _loading = true;
 
   @override
@@ -37,19 +33,11 @@ class _StudentSettingsState extends State<StudentSettings> {
 
   Future<void> _init() async {
     final settings = await SettingsService.create();
-    PackageInfo? info;
-    try {
-      info = await PackageInfo.fromPlatform();
-    } catch (_) {}
     if (!mounted) return;
     setState(() {
       _settings = settings;
-      _notificationsEnabled = settings.notificationsEnabled;
-      _soundEffectsEnabled = settings.soundEffectsEnabled;
-      _backgroundMusicEnabled = settings.backgroundMusicEnabled;
       _timerNotificationEnabled = settings.timerNotificationEnabled;
       _cooldownNotificationEnabled = settings.cooldownNotificationEnabled;
-      _appVersion = info != null ? 'v${info.version}' : 'v1.0';
       _loading = false;
     });
   }
@@ -61,12 +49,6 @@ class _StudentSettingsState extends State<StudentSettings> {
   ) async {
     setState(() {
       switch (key) {
-        case 'notifications':
-          _notificationsEnabled = value;
-        case 'sound':
-          _soundEffectsEnabled = value;
-        case 'music':
-          _backgroundMusicEnabled = value;
         case 'timerNotification':
           _timerNotificationEnabled = value;
           MascotOverlayService.instance.setTimerNotificationEnabled(value);
@@ -102,9 +84,6 @@ class _StudentSettingsState extends State<StudentSettings> {
                       const SizedBox(height: 20),
                       _sectionLabel('Account'),
                       _buildAccountCard(loc),
-                      const SizedBox(height: 20),
-                      _sectionLabel('About'),
-                      _buildAboutCard(loc),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -167,33 +146,6 @@ class _StudentSettingsState extends State<StudentSettings> {
   Widget _buildPreferencesCard(AppLocalizations loc) => _card(
     children: [
       _toggleRow(
-        icon: Icons.notifications_outlined,
-        title: loc.pushNotificationsTitle,
-        subtitle: loc.pushNotificationsSubtitle,
-        value: _notificationsEnabled,
-        onChanged: (v) =>
-            _toggle('notifications', v, _settings!.setNotificationsEnabled),
-      ),
-      _divider(),
-      _toggleRow(
-        icon: Icons.volume_up_outlined,
-        title: loc.soundEffectsTitle,
-        subtitle: loc.soundEffectsSubtitle,
-        value: _soundEffectsEnabled,
-        onChanged: (v) =>
-            _toggle('sound', v, _settings!.setSoundEffectsEnabled),
-      ),
-      _divider(),
-      _toggleRow(
-        icon: Icons.music_note_outlined,
-        title: loc.backgroundMusicTitle,
-        subtitle: loc.backgroundMusicSubtitle,
-        value: _backgroundMusicEnabled,
-        onChanged: (v) =>
-            _toggle('music', v, _settings!.setBackgroundMusicEnabled),
-      ),
-      _divider(),
-      _toggleRow(
         icon: Icons.timer_outlined,
         title: loc.usageTimerNotificationTitle,
         subtitle: loc.usageTimerNotificationSubtitle,
@@ -228,16 +180,6 @@ class _StudentSettingsState extends State<StudentSettings> {
           title: loc.languageSettingTitle,
           subtitle: loc.languageSettingSubtitle,
         ),
-      ),
-    ],
-  );
-
-  Widget _buildAboutCard(AppLocalizations loc) => _card(
-    children: [
-      _infoRow(
-        icon: Icons.info_outline,
-        title: loc.appVersionLabel,
-        trailing: _appVersion,
       ),
     ],
   );

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/students/students_bloc.dart';
 import '../../../bloc/students/students_event.dart';
 import '../../../bloc/students/students_state.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class AddStudentScreen extends StatefulWidget {
   final String parentUid;
@@ -17,7 +19,6 @@ class AddStudentScreen extends StatefulWidget {
 class _AddStudentScreenState extends State<AddStudentScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameCtl = TextEditingController();
-  final _usernameCtl = TextEditingController();
   final _emailCtl = TextEditingController();
   final _passCtl = TextEditingController();
   final _confirmCtl = TextEditingController();
@@ -30,7 +31,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   @override
   void dispose() {
     _fullNameCtl.dispose();
-    _usernameCtl.dispose();
     _emailCtl.dispose();
     _passCtl.dispose();
     _confirmCtl.dispose();
@@ -42,7 +42,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     context.read<StudentsBloc>().add(
       CreateStudentRequested(
         fullName: _fullNameCtl.text.trim(),
-        username: _usernameCtl.text.trim(),
         email: _emailCtl.text.trim(),
         password: _passCtl.text.trim(),
         parentUid: widget.parentUid,
@@ -87,7 +86,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         if (state is StudentCreateError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
+              content: Text(localizeError(state.message, AppLocalizations.of(context))),
               backgroundColor: Colors.red.shade700,
             ),
           );
@@ -159,41 +158,11 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                           ),
                           const SizedBox(height: 16),
                           _buildField(
-                            label: loc.fieldUsername,
-                            hint: loc.usernameHint,
-                            child: TextFormField(
-                              controller: _usernameCtl,
-                              autocorrect: false,
-                              enableSuggestions: false,
-                              style: const TextStyle(
-                                  color: Color(0xFF1E293B), fontSize: 15),
-                              decoration: _inputDecoration(
-                                  label: loc.fieldUsername,
-                                  icon: Icons.alternate_email_rounded),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) {
-                                  return loc.validatorUsernameRequired;
-                                }
-                                if (v.trim().length < 3) {
-                                  return loc.validatorUsernameMinLength;
-                                }
-                                if (v.trim().length > 50) {
-                                  return loc.validatorUsernameMaxLength;
-                                }
-                                if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v.trim())) {
-                                  return loc.validatorUsernameFormat;
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildField(
                             label: loc.fieldGrade,
                             child: DropdownButtonFormField<int>(
-                              value: _selectedGrade,
-                              style: const TextStyle(
-                                  color: Color(0xFF1E293B), fontSize: 15),
+                              initialValue: _selectedGrade,
+                              style: GoogleFonts.cairo(
+                                  color: const Color(0xFF1E293B), fontSize: 15),
                               decoration: _inputDecoration(
                                   label: loc.fieldGrade, icon: Icons.school_outlined),
                               items: _gradeOptions

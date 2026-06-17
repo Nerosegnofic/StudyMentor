@@ -120,8 +120,8 @@ class Settings(BaseSettings):
     # material is currently active (frontier skills + due reviews) instead of a fixed
     # count, then eases it down for struggling students / up for thriving ones (reusing
     # the SKILL_ADAPTIVE_*_ACCURACY thresholds above). The result clamps to [min, max].
-    QUIZ_AUTO_MIN_QUESTIONS: int = 4
-    QUIZ_AUTO_MAX_QUESTIONS: int = 12
+    QUIZ_AUTO_MIN_QUESTIONS: int = 3
+    QUIZ_AUTO_MAX_QUESTIONS: int = 10
     # Cap on how many due SRS reviews feed the auto length (keeps a long review backlog
     # from ballooning a single quiz).
     QUIZ_AUTO_REVIEW_CAP: int = 4

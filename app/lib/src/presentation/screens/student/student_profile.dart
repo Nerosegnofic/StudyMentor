@@ -50,13 +50,12 @@ class _StudentProfileState extends State<StudentProfile> {
       final aiEngine = AiEngineRepository.instance;
       
       final results = await Future.wait([
-        dataconnect.getStudentProfile(widget.uid),
         aiEngine.getGamificationProfile(widget.uid),
         dataconnect.getStudentAvatar(widget.uid),
       ]);
 
-      final gamification = results[1] as Map<String, dynamic>;
-      final avatarMap = results[2];
+      final gamification = results[0] as Map<String, dynamic>;
+      final avatarMap = results[1];
 
       if (mounted) {
         setState(() {

@@ -93,7 +93,7 @@ class _BrandedHeaderState extends State<BrandedHeader> {
                 height: 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.25),
+                  color: Colors.white.withValues(alpha: 0.25),
                   border: Border.all(color: Colors.white, width: 2),
                 ),
                 child: Center(

@@ -91,8 +91,6 @@ class GamificationBloc extends Bloc<GamificationEvent, GamificationState> {
             await StudentLocalNotificationHandler.instance
                 .handleStreakMilestone(streak);
           } else if (_kNearMilestones.contains(streak)) {
-            // TODO(Phase 5): check CHILD_NEAR_MILESTONE preference from
-            // SharedPreferences cache before firing. For now always fires.
             await StudentLocalNotificationHandler.instance.handleNearMilestone(
               streak,
             );

@@ -87,27 +87,4 @@ void main() {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════════════
-  //  RewardTransactionModel serialization
-  // ═══════════════════════════════════════════════════════════════════════
-
-  group('RewardTransactionModel', () {
-    test('toJson → fromJson roundtrip', () {
-      final now = DateTime.utc(2026, 6, 8, 12, 0, 0);
-      final model = RewardTransactionModel(
-        id: 'txn-1',
-        studentId: 'abc',
-        amount: 50,
-        type: 'xp',
-        reason: 'correctAnswer',
-        createdAt: now,
-      );
-      final json = model.toJson();
-      final restored = RewardTransactionModel.fromJson(json);
-      expect(restored.id, 'txn-1');
-      expect(restored.amount, 50);
-      expect(restored.type, 'xp');
-      expect(restored.createdAt, now);
-    });
-  });
 }

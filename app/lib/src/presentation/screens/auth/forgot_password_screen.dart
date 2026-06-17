@@ -5,6 +5,7 @@ import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import 'auth_style.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});

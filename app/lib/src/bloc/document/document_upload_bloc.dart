@@ -26,7 +26,7 @@ class DocumentUploadBloc
       );
       emit(DocumentUploadAccepted(response));
     } catch (e) {
-      emit(DocumentUploadError(e.toString()));
+      emit(DocumentUploadError('Upload failed. Please try again.'));
     }
   }
 

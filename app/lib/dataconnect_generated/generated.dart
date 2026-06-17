@@ -2,7 +2,6 @@ library dataconnect_generated;
 import 'package:firebase_data_connect/firebase_data_connect.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 
 part 'insert_user.dart';
 
@@ -23,8 +22,6 @@ part 'insert_app_rule.dart';
 part 'delete_all_app_rules_for_student.dart';
 
 part 'upsert_student_settings.dart';
-
-part 'insert_support_ticket.dart';
 
 part 'insert_student_owned_item.dart';
 
@@ -69,10 +66,6 @@ part 'get_installed_apps_for_student.dart';
 part 'insert_installed_app.dart';
 
 part 'delete_all_installed_apps_for_student.dart';
-
-part 'get_student_profile.dart';
-
-part 'get_student_by_username.dart';
 
 part 'get_student_settings.dart';
 
@@ -188,8 +181,8 @@ class ExampleConnector {
   }
   
   
-  InsertStudentVariablesBuilder insertStudent ({required String parentUid, required String username, }) {
-    return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,username: username,);
+  InsertStudentVariablesBuilder insertStudent ({required String parentUid, }) {
+    return InsertStudentVariablesBuilder(dataConnect, parentUid: parentUid,);
   }
   
   
@@ -215,11 +208,6 @@ class ExampleConnector {
   
   UpsertStudentSettingsVariablesBuilder upsertStudentSettings ({required String studentUid, required bool notificationsEnabled, required bool soundEffectsEnabled, required bool backgroundMusicEnabled, }) {
     return UpsertStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,notificationsEnabled: notificationsEnabled,soundEffectsEnabled: soundEffectsEnabled,backgroundMusicEnabled: backgroundMusicEnabled,);
-  }
-  
-  
-  InsertSupportTicketVariablesBuilder insertSupportTicket ({required String userId, required String userName, required String issueType, required String message, }) {
-    return InsertSupportTicketVariablesBuilder(dataConnect, userId: userId,userName: userName,issueType: issueType,message: message,);
   }
   
   
@@ -330,16 +318,6 @@ class ExampleConnector {
   
   DeleteAllInstalledAppsForStudentVariablesBuilder deleteAllInstalledAppsForStudent ({required String studentUid, }) {
     return DeleteAllInstalledAppsForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetStudentProfileVariablesBuilder getStudentProfile ({required String uid, }) {
-    return GetStudentProfileVariablesBuilder(dataConnect, uid: uid,);
-  }
-  
-  
-  GetStudentByUsernameVariablesBuilder getStudentByUsername ({required String username, }) {
-    return GetStudentByUsernameVariablesBuilder(dataConnect, username: username,);
   }
   
   

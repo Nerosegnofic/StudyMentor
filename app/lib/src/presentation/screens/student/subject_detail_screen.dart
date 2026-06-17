@@ -177,7 +177,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
 
                     color: GrowthStageUtils.healthColor(_masteryPercent)
-                        .withOpacity(0.15),
+                        .withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -337,8 +337,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   color: Color(0xFF1A1A2E),
                 ),
               ),
-              RichText(
-                text: TextSpan(
+              Text.rich(
+                TextSpan(
                   children: [
                     TextSpan(
                       text: '${loc.levelNumberLabel(currentLevel)}  ',
@@ -462,11 +462,11 @@ class _PlantHeroSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: GrowthStageUtils.healthColor(masteryPercent)
-                    .withOpacity(0.15),
+                    .withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: GrowthStageUtils.healthColor(masteryPercent)
-                      .withOpacity(0.4),
+                      .withValues(alpha: 0.4),
                 ),
               ),
               child: Text(
@@ -499,7 +499,7 @@ class _Card extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -553,12 +553,12 @@ class _SkillRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: attempted
-              ? healthColor.withOpacity(0.3)
+              ? healthColor.withValues(alpha: 0.3)
               : Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 4,
               offset: const Offset(0, 1)),
         ],
@@ -570,7 +570,7 @@ class _SkillRow extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               color: attempted
-                  ? healthColor.withOpacity(0.12)
+                  ? healthColor.withValues(alpha: 0.12)
                   : Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
@@ -647,9 +647,9 @@ class _SkillChipRow extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withOpacity(0.3)),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   s.name,

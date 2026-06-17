@@ -116,13 +116,13 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
         ownedItemIds: newOwned,
         coins: newCoins,
         isPurchasing: false,
-        feedbackMessage: '${event.item.name} purchased! 🎉',
+        feedbackMessage: 'SHOP_PURCHASED',
         feedbackIsError: false,
       ));
     } catch (e) {
       emit(current.copyWith(
         isPurchasing: false,
-        feedbackMessage: 'Purchase failed. Please try again.',
+        feedbackMessage: 'SHOP_FAILED',
         feedbackIsError: true,
       ));
     }

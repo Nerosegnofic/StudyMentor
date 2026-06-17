@@ -32,6 +32,7 @@ import 'src/presentation/screens/auth/login_screen.dart';
 import 'src/presentation/screens/parent/parent_screen.dart';
 import 'src/presentation/screens/auth/parent_register_screen.dart';
 import 'src/presentation/screens/student/student_screen.dart';
+import 'src/presentation/screens/student/student_profile.dart';
 import 'src/services/installed_apps_service.dart';
 import 'src/services/device_admin_service.dart';
 import 'src/services/local_notification_service.dart';
@@ -40,6 +41,8 @@ import 'src/services/streak_reminder_service.dart';
 import 'src/services/student_local_notification_handler.dart';
 import 'src/services/parent_notification_poll_service.dart';
 import 'src/services/parent_inactivity_check_service.dart';
+import 'src/utils/app_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 // ── WorkManager task identifiers ─────────────────────────────────────────────
 const _kSyncTaskName = 'installedAppSync';
@@ -123,7 +126,7 @@ Future<void> main() async {
 
   await LocalNotificationService.instance.init();
 
-  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
+  await Workmanager().initialize(callbackDispatcher);
 
   await Workmanager().registerPeriodicTask(
     _kSyncTaskName,
@@ -142,6 +145,11 @@ Future<void> main() async {
   );
 
   final initialLocale = await LocaleCubit.readSavedLocale();
+
+  try {
+    final info = await PackageInfo.fromPlatform();
+    kAppVersion = 'v${info.version}';
+  } catch (_) {}
 
   runApp(StudyMentorApp(authRepository: authRepository, initialLocale: initialLocale));
 }
@@ -195,11 +203,17 @@ class StudyMentorApp extends StatelessWidget {
         ],
         child: BlocBuilder<LocaleCubit, Locale>(
           builder: (context, locale) => MaterialApp(
+          navigatorKey: LocalNotificationService.instance.navigatorKey,
           title: 'StudyMentor',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             textTheme: GoogleFonts.cairoTextTheme(),
             primaryTextTheme: GoogleFonts.cairoTextTheme(),
+            scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+            snackBarTheme: SnackBarThemeData(
+              contentTextStyle: GoogleFonts.cairo(),
+              actionTextColor: Colors.white,
+            ),
           ),
           locale: locale,
           localizationsDelegates: const [
@@ -229,6 +243,16 @@ class StudyMentorApp extends StatelessWidget {
               final state = context.read<AuthBloc>().state;
               if (state is AuthAuthenticated) {
                 return StudentScreen(
+                  fullName: state.user.fullName,
+                  uid: state.user.uid,
+                );
+              }
+              return const LoginScreen();
+            },
+            '/student-profile': (context) {
+              final state = context.read<AuthBloc>().state;
+              if (state is AuthAuthenticated) {
+                return StudentProfile(
                   fullName: state.user.fullName,
                   uid: state.user.uid,
                 );

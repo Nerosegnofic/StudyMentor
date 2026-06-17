@@ -9,6 +9,7 @@ import '../../../bloc/document/document_upload_state.dart';
 import '../../../bloc/subject/subject_bloc.dart';
 import '../../../bloc/subject/subject_event.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 /// Document upload screen that lets the student browse for a PDF and upload it
 /// to the AI Engine for curriculum ingestion.
@@ -96,7 +97,7 @@ class _StudentDocumentUploadScreenState
         if (state is DocumentUploadError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
+              content: Text(localizeError(state.message, AppLocalizations.of(context))),
               backgroundColor: const Color(0xFFEA4335),
             ),
           );

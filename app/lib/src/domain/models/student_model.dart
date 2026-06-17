@@ -4,7 +4,6 @@ class StudentModel {
   final String uid;
   final String fullName;
   final String email;
-  final String username;
   final int? gradeLevel;
   final int? totalXp;
   final int? totalCoins;
@@ -16,7 +15,6 @@ class StudentModel {
     required this.uid,
     required this.fullName,
     required this.email,
-    required this.username,
     this.gradeLevel,
     this.totalXp,
     this.totalCoins,
@@ -29,7 +27,6 @@ class StudentModel {
     uid: json['uid'] as String,
     fullName: json['full_name'] as String,
     email: json['email'] as String,
-    username: json['username'] as String,
     gradeLevel: json['grade_level'] as int?,
     totalXp: json['total_xp'] as int?,
     totalCoins: json['total_coins'] as int?,
@@ -44,14 +41,12 @@ class StudentModel {
 
   StudentModel copyWith({
     bool? isEmailVerified,
-    String? username,
     String? fullName,
     String? email,
   }) => StudentModel(
         uid: uid,
         fullName: fullName ?? this.fullName,
         email: email ?? this.email,
-        username: username ?? this.username,
         gradeLevel: gradeLevel,
         totalXp: totalXp,
         totalCoins: totalCoins,

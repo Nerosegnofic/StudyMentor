@@ -217,104 +217,6 @@ ref.subscribe(...);
 ```
 
 
-### GetStudentProfile
-#### Required Arguments
-```dart
-String uid = ...;
-ExampleConnector.instance.getStudentProfile(
-  uid: uid,
-).execute();
-```
-
-
-
-#### Return Type
-`execute()` returns a `QueryResult<GetStudentProfileData, GetStudentProfileVariables>`
-```dart
-/// Result of an Operation Request (query/mutation).
-class OperationResult<Data, Variables> {
-  OperationResult(this.dataConnect, this.data, this.ref);
-  Data data;
-  OperationRef<Data, Variables> ref;
-  FirebaseDataConnect dataConnect;
-}
-
-/// Result of a query request. Created to hold extra variables in the future.
-class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
-  QueryResult(super.dataConnect, super.data, super.ref);
-}
-
-final result = await ExampleConnector.instance.getStudentProfile(
-  uid: uid,
-);
-GetStudentProfileData data = result.data;
-final ref = result.ref;
-```
-
-#### Getting the Ref
-Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
-An example of how to use the `Ref` object is shown below:
-```dart
-String uid = ...;
-
-final ref = ExampleConnector.instance.getStudentProfile(
-  uid: uid,
-).ref();
-ref.execute();
-
-ref.subscribe(...);
-```
-
-
-### GetStudentByUsername
-#### Required Arguments
-```dart
-String username = ...;
-ExampleConnector.instance.getStudentByUsername(
-  username: username,
-).execute();
-```
-
-
-
-#### Return Type
-`execute()` returns a `QueryResult<GetStudentByUsernameData, GetStudentByUsernameVariables>`
-```dart
-/// Result of an Operation Request (query/mutation).
-class OperationResult<Data, Variables> {
-  OperationResult(this.dataConnect, this.data, this.ref);
-  Data data;
-  OperationRef<Data, Variables> ref;
-  FirebaseDataConnect dataConnect;
-}
-
-/// Result of a query request. Created to hold extra variables in the future.
-class QueryResult<Data, Variables> extends OperationResult<Data, Variables> {
-  QueryResult(super.dataConnect, super.data, super.ref);
-}
-
-final result = await ExampleConnector.instance.getStudentByUsername(
-  username: username,
-);
-GetStudentByUsernameData data = result.data;
-final ref = result.ref;
-```
-
-#### Getting the Ref
-Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
-An example of how to use the `Ref` object is shown below:
-```dart
-String username = ...;
-
-final ref = ExampleConnector.instance.getStudentByUsername(
-  username: username,
-).ref();
-ref.execute();
-
-ref.subscribe(...);
-```
-
-
 ### GetStudentSettings
 #### Required Arguments
 ```dart
@@ -822,10 +724,8 @@ ref.execute();
 #### Required Arguments
 ```dart
 String parentUid = ...;
-String username = ...;
 ExampleConnector.instance.insertStudent(
   parentUid: parentUid,
-  username: username,
 ).execute();
 ```
 
@@ -844,7 +744,6 @@ class InsertStudentVariablesBuilder {
 }
 ExampleConnector.instance.insertStudent(
   parentUid: parentUid,
-  username: username,
 )
 .gradeLevel(gradeLevel)
 .execute();
@@ -863,7 +762,6 @@ class OperationResult<Data, Variables> {
 
 final result = await ExampleConnector.instance.insertStudent(
   parentUid: parentUid,
-  username: username,
 );
 InsertStudentData data = result.data;
 final ref = result.ref;
@@ -874,11 +772,9 @@ Each builder returns an `execute` function, which is a helper function that crea
 An example of how to use the `Ref` object is shown below:
 ```dart
 String parentUid = ...;
-String username = ...;
 
 final ref = ExampleConnector.instance.insertStudent(
   parentUid: parentUid,
-  username: username,
 ).ref();
 ref.execute();
 ```
@@ -1118,63 +1014,6 @@ final ref = ExampleConnector.instance.upsertStudentSettings(
   notificationsEnabled: notificationsEnabled,
   soundEffectsEnabled: soundEffectsEnabled,
   backgroundMusicEnabled: backgroundMusicEnabled,
-).ref();
-ref.execute();
-```
-
-
-### InsertSupportTicket
-#### Required Arguments
-```dart
-String userId = ...;
-String userName = ...;
-String issueType = ...;
-String message = ...;
-ExampleConnector.instance.insertSupportTicket(
-  userId: userId,
-  userName: userName,
-  issueType: issueType,
-  message: message,
-).execute();
-```
-
-
-
-#### Return Type
-`execute()` returns a `OperationResult<InsertSupportTicketData, InsertSupportTicketVariables>`
-```dart
-/// Result of an Operation Request (query/mutation).
-class OperationResult<Data, Variables> {
-  OperationResult(this.dataConnect, this.data, this.ref);
-  Data data;
-  OperationRef<Data, Variables> ref;
-  FirebaseDataConnect dataConnect;
-}
-
-final result = await ExampleConnector.instance.insertSupportTicket(
-  userId: userId,
-  userName: userName,
-  issueType: issueType,
-  message: message,
-);
-InsertSupportTicketData data = result.data;
-final ref = result.ref;
-```
-
-#### Getting the Ref
-Each builder returns an `execute` function, which is a helper function that creates a `Ref` object, and executes the underlying operation.
-An example of how to use the `Ref` object is shown below:
-```dart
-String userId = ...;
-String userName = ...;
-String issueType = ...;
-String message = ...;
-
-final ref = ExampleConnector.instance.insertSupportTicket(
-  userId: userId,
-  userName: userName,
-  issueType: issueType,
-  message: message,
 ).ref();
 ref.execute();
 ```

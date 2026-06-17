@@ -65,12 +65,6 @@ It has the same format as `StudentSettings_Key`, but is only used as mutation re
 """
 scalar StudentSettings_KeyOutput
 """
-✨ `SupportTicket_KeyOutput` returns the primary key fields of table type `SupportTicket`.
-
-It has the same format as `SupportTicket_Key`, but is only used as mutation return value.
-"""
-scalar SupportTicket_KeyOutput
-"""
 ✨ `User_KeyOutput` returns the primary key fields of table type `User`.
 
 It has the same format as `User_Key`, but is only used as mutation return value.
@@ -1442,14 +1436,6 @@ input Student_Data {
   """
   lastActiveAt_update: [Timestamp_Update!] @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `Student`.`username` of type `String!`
-  """
-  username: String
-  """
-  ✨ `_expr` server value variant of `username` (✨ Generated from Field `Student`.`username` of type `String!`)
-  """
-  username_expr: String_Expr @fdc_forbiddenInVariables
-  """
   ✨ Generated from Field `Student`.`appRules_on_student` of type `[AppRule!]!`
   """
   appRules_on_student: [AppRule_Data!]
@@ -1506,10 +1492,6 @@ input Student_Filter {
   ✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`
   """
   lastActiveAt: Timestamp_Filter
-  """
-  ✨ Generated from Field `Student`.`username` of type `String!`
-  """
-  username: String_Filter
   """
   ✨ Generated from Field `Student`.`appRules_on_student` of type `[AppRule!]!`
   """
@@ -1592,10 +1574,6 @@ input Student_Having {
   ✨ Generated from Field `Student`.`userUid_count` of type `Int!`
   """
   userUid_count: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`username_count` of type `Int!`
-  """
-  username_count: Int_Filter
   """
   ✨ Generated from Field `Student`.`gradeLevel_sum` of type `Int`
   """
@@ -1680,10 +1658,6 @@ input Student_Order {
   """
   lastActiveAt: OrderDirection
   """
-  ✨ Generated from Field `Student`.`username` of type `String!`
-  """
-  username: OrderDirection
-  """
   ✨ Generated from Field `Student`.`_count` of type `Int!`
   """
   _count: OrderDirection
@@ -1707,10 +1681,6 @@ input Student_Order {
   ✨ Generated from Field `Student`.`userUid_count` of type `Int!`
   """
   userUid_count: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`username_count` of type `Int!`
-  """
-  username_count: OrderDirection
   """
   ✨ Generated from Field `Student`.`gradeLevel_sum` of type `Int`
   """
@@ -2931,293 +2901,6 @@ input StudentSettings_Order {
   ✨ Generated from Field `StudentSettings`.`studentUid_count` of type `Int!`
   """
   studentUid_count: OrderDirection
-}
-"""
-✨ Generated data input type for table 'SupportTicket'. It includes all necessary fields for creating or upserting rows into table.
-"""
-input SupportTicket_Data {
-  """
-  ✨ Generated from Field `SupportTicket`.`id` of type `UUID!`
-  """
-  id: UUID
-  """
-  ✨ `_expr` server value variant of `id` (✨ Generated from Field `SupportTicket`.`id` of type `UUID!`)
-  """
-  id_expr: UUID_Expr @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt` of type `Timestamp!`
-  """
-  createdAt: Timestamp
-  """
-  ✨ `_expr` server value variant of `createdAt` (✨ Generated from Field `SupportTicket`.`createdAt` of type `Timestamp!`)
-  """
-  createdAt_expr: Timestamp_Expr @fdc_forbiddenInVariables
-  """
-  ✨ `_time` server value variant of `createdAt` (✨ Generated from Field `SupportTicket`.`createdAt` of type `Timestamp!`)
-  """
-  createdAt_time: Timestamp_Relative @fdc_forbiddenInVariables
-  """
-  ✨ `_update` server value variant of `createdAt` (✨ Generated from Field `SupportTicket`.`createdAt` of type `Timestamp!`)
-  """
-  createdAt_update: [Timestamp_Update!] @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `SupportTicket`.`issueType` of type `String!`
-  """
-  issueType: String
-  """
-  ✨ `_expr` server value variant of `issueType` (✨ Generated from Field `SupportTicket`.`issueType` of type `String!`)
-  """
-  issueType_expr: String_Expr @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `SupportTicket`.`message` of type `String!`
-  """
-  message: String
-  """
-  ✨ `_expr` server value variant of `message` (✨ Generated from Field `SupportTicket`.`message` of type `String!`)
-  """
-  message_expr: String_Expr @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `SupportTicket`.`status` of type `String!`
-  """
-  status: String
-  """
-  ✨ `_expr` server value variant of `status` (✨ Generated from Field `SupportTicket`.`status` of type `String!`)
-  """
-  status_expr: String_Expr @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `SupportTicket`.`userId` of type `String!`
-  """
-  userId: String
-  """
-  ✨ `_expr` server value variant of `userId` (✨ Generated from Field `SupportTicket`.`userId` of type `String!`)
-  """
-  userId_expr: String_Expr @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `SupportTicket`.`userName` of type `String!`
-  """
-  userName: String
-  """
-  ✨ `_expr` server value variant of `userName` (✨ Generated from Field `SupportTicket`.`userName` of type `String!`)
-  """
-  userName_expr: String_Expr @fdc_forbiddenInVariables
-}
-"""
-✨ Generated filter input type for table 'SupportTicket'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
-"""
-input SupportTicket_Filter {
-  """
-  Apply multiple filter conditions using `AND` logic.
-  """
-  _and: [SupportTicket_Filter!]
-  """
-  Negate the result of the provided filter condition.
-  """
-  _not: SupportTicket_Filter
-  """
-  Apply multiple filter conditions using `OR` logic.
-  """
-  _or: [SupportTicket_Filter!]
-  """
-  ✨ Generated from Field `SupportTicket`.`id` of type `UUID!`
-  """
-  id: UUID_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt` of type `Timestamp!`
-  """
-  createdAt: Timestamp_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`issueType` of type `String!`
-  """
-  issueType: String_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`message` of type `String!`
-  """
-  message: String_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`status` of type `String!`
-  """
-  status: String_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`userId` of type `String!`
-  """
-  userId: String_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`userName` of type `String!`
-  """
-  userName: String_Filter
-}
-"""
-✨ Generated first-row input type for table 'SupportTicket'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
-"""
-input SupportTicket_FirstRow {
-  """
-  Order the result by the specified fields.
-  """
-  orderBy: [SupportTicket_Order!]
-  """
-  Filters rows based on the specified conditions.
-  """
-  where: SupportTicket_Filter
-}
-"""
-✨ Generated having input type for table 'SupportTicket'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
-"""
-input SupportTicket_Having {
-  """
-  Apply multiple Having conditions using `AND` logic.
-  """
-  _and: [SupportTicket_Having!]
-  """
-  Whether to apply DISTINCT to the aggregate function.
-  """
-  _distinct: Boolean
-  """
-  Negate the result of the provided Having condition.
-  """
-  _not: SupportTicket_Having
-  """
-  Apply multiple Having conditions using `OR` logic.
-  """
-  _or: [SupportTicket_Having!]
-  """
-  ✨ Generated from Field `SupportTicket`.`_count` of type `Int!`
-  """
-  _count: Int_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt_count` of type `Int!`
-  """
-  createdAt_count: Int_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`id_count` of type `Int!`
-  """
-  id_count: Int_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`issueType_count` of type `Int!`
-  """
-  issueType_count: Int_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`message_count` of type `Int!`
-  """
-  message_count: Int_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`status_count` of type `Int!`
-  """
-  status_count: Int_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`userId_count` of type `Int!`
-  """
-  userId_count: Int_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`userName_count` of type `Int!`
-  """
-  userName_count: Int_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt_min` of type `Timestamp`
-  """
-  createdAt_min: Timestamp_Filter
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt_max` of type `Timestamp`
-  """
-  createdAt_max: Timestamp_Filter
-}
-"""
-✨ Generated key input type for table 'SupportTicket'. It represents the primary key fields used to uniquely identify a row in the table.
-"""
-input SupportTicket_Key {
-  """
-  ✨ Generated from Field `SupportTicket`.`id` of type `UUID!`
-  """
-  id: UUID
-  """
-  ✨ `_expr` server value variant of `id` (✨ Generated from Field `SupportTicket`.`id` of type `UUID!`)
-  """
-  id_expr: UUID_Expr @fdc_forbiddenInVariables
-}
-"""
-✨ Generated list filter input type for table 'SupportTicket'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
-"""
-input SupportTicket_ListFilter {
-  """
-  The desired number of objects that match the condition (defaults to at least one).
-  """
-  count: Int_Filter = {gt:0}
-  """
-  Condition of the related objects to filter for.
-  """
-  exist: SupportTicket_Filter
-}
-"""
-✨ Generated order input type for table 'SupportTicket'. This input defines the sorting order of rows in query results based on one or more fields.
-"""
-input SupportTicket_Order {
-  """
-  ✨ Generated from Field `SupportTicket`.`id` of type `UUID!`
-  """
-  id: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt` of type `Timestamp!`
-  """
-  createdAt: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`issueType` of type `String!`
-  """
-  issueType: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`message` of type `String!`
-  """
-  message: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`status` of type `String!`
-  """
-  status: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`userId` of type `String!`
-  """
-  userId: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`userName` of type `String!`
-  """
-  userName: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`_count` of type `Int!`
-  """
-  _count: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt_count` of type `Int!`
-  """
-  createdAt_count: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`id_count` of type `Int!`
-  """
-  id_count: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`issueType_count` of type `Int!`
-  """
-  issueType_count: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`message_count` of type `Int!`
-  """
-  message_count: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`status_count` of type `Int!`
-  """
-  status_count: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`userId_count` of type `Int!`
-  """
-  userId_count: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`userName_count` of type `Int!`
-  """
-  userName_count: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt_min` of type `Timestamp`
-  """
-  createdAt_min: OrderDirection
-  """
-  ✨ Generated from Field `SupportTicket`.`createdAt_max` of type `Timestamp`
-  """
-  createdAt_max: OrderDirection
 }
 """
 ✨ Generated data input type for table 'User'. It includes all necessary fields for creating or upserting rows into table.
