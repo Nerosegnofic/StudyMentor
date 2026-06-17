@@ -111,6 +111,20 @@ class Settings(BaseSettings):
     SKILL_ADAPTIVE_LOW_ACCURACY: float = 0.50
     SKILL_ADAPTIVE_HIGH_ACCURACY: float = 0.85
     SKILL_ADAPTIVE_RECENT_SESSIONS: int = 3
+
+    # --- Adaptive Auto Quiz-Length ---
+    # When the parent picks "Auto" quiz length, the backend sizes the quiz from how much
+    # material is currently active (frontier skills + due reviews) instead of a fixed
+    # count, then eases it down for struggling students / up for thriving ones (reusing
+    # the SKILL_ADAPTIVE_*_ACCURACY thresholds above). The result clamps to [min, max].
+    QUIZ_AUTO_MIN_QUESTIONS: int = 4
+    QUIZ_AUTO_MAX_QUESTIONS: int = 12
+    # Cap on how many due SRS reviews feed the auto length (keeps a long review backlog
+    # from ballooning a single quiz).
+    QUIZ_AUTO_REVIEW_CAP: int = 4
+    # Length multipliers at the accuracy extremes (struggling shrinks, thriving grows).
+    QUIZ_AUTO_STRUGGLING_FACTOR: float = 0.7
+    QUIZ_AUTO_THRIVING_FACTOR: float = 1.2
     # Error-breakdown analytics (parent Reports → Mastery tab). Quizzes are not timed,
     # so there is no "time pressure" category — only careless / concept-gap / guessing.
     # A wrong answer faster than this (but slower than MINIMUM_GENUINE_TIME_MS) on

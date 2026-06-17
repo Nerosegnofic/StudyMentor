@@ -27,6 +27,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
         GenerateQuizRequest(
           subjectId: event.subjectId,
           totalQuestions: event.totalQuestions,
+          autoLength: event.autoLength,
           studentGrade: event.studentGrade,
         ),
       );

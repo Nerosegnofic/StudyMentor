@@ -18,7 +18,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.domain import Subject, QuizSession, StudentSubjectProfile
-from app.repositories import get_subject_stats
+from app.repositories import get_subject_stats, get_active_subject_ids
 from app.core.config import settings
 
 
@@ -59,12 +59,19 @@ def get_priority_subject(db: Session, student_uid: str) -> Optional[Subject]:
     The most-recently-quizzed subject is multiplied by SUBJECT_ROTATION_PENALTY to
     encourage variety. Returns None if the student has no subjects with skills.
     """
-    subjects = db.query(Subject).filter(
-        or_(
-            Subject.is_global == True,
-            Subject.student_uid == student_uid,
+    active_ids = get_active_subject_ids(db, student_uid)
+    subjects = [
+        s
+        for s in db.query(Subject)
+        .filter(
+            or_(
+                Subject.is_global == True,
+                Subject.student_uid == student_uid,
+            )
         )
-    ).all()
+        .all()
+        if s.subject_id in active_ids
+    ]
 
     if not subjects:
         return None

@@ -59,6 +59,10 @@ class QuizOverlayPage extends StatelessWidget {
   final String studentId;
   final QuizContext contextType;
   final int totalQuestions;
+
+  /// When true (parent's "Auto" length), the backend sizes the quiz; [totalQuestions]
+  /// is only a fallback.
+  final bool autoLength;
   final int? subjectId;
 
 
@@ -68,6 +72,7 @@ class QuizOverlayPage extends StatelessWidget {
     required this.studentId,
     required this.contextType,
     this.totalQuestions = 5,
+    this.autoLength = false,
     this.subjectId,
   });
 
@@ -80,6 +85,7 @@ class QuizOverlayPage extends StatelessWidget {
         studentId: studentId,
         contextType: contextType,
         totalQuestions: totalQuestions,
+        autoLength: autoLength,
         subjectId: subjectId,
       ),
 
@@ -94,12 +100,14 @@ class _QuizOverlayScaffold extends StatefulWidget {
   final String studentId;
   final QuizContext contextType;
   final int totalQuestions;
+  final bool autoLength;
   final int? subjectId;
 
   const _QuizOverlayScaffold({
     required this.studentId,
     required this.contextType,
     required this.totalQuestions,
+    this.autoLength = false,
     this.subjectId,
   });
 
@@ -209,6 +217,7 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
             if (state is QuizInitial) {
               return _AutoStartPanel(
                 totalQuestions: widget.totalQuestions,
+                autoLength: widget.autoLength,
                 subjectId: widget.subjectId,
               );
             }
@@ -239,10 +248,12 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
 class _AutoStartPanel extends StatelessWidget {
 
   final int totalQuestions;
+  final bool autoLength;
   final int? subjectId;
 
   const _AutoStartPanel({
     required this.totalQuestions,
+    this.autoLength = false,
     this.subjectId,
   });
 
@@ -287,6 +298,7 @@ class _AutoStartPanel extends StatelessWidget {
                 context.read<QuizBloc>().add(
                   GenerateQuizEvent(
                     totalQuestions: totalQuestions,
+                    autoLength: autoLength,
                     subjectId: subjectId,
                   ),
                 );

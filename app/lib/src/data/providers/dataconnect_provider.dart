@@ -593,38 +593,43 @@ class DataConnectProvider {
 
       return SubjectSummaryModel(
         subjectKey: def.key,
+        subjectId: a['subject_id'] as int? ?? 0,
         colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: skillsCount,
         masteryPercent: masteryPercent,
         quizzesCompleted: 0,
         totalTimeSpent: Duration.zero,
         accuracyPercent: 0,
+        isGlobal: a['is_global'] as bool? ?? false,
+        isSelected: a['is_selected'] as bool? ?? true,
       );
     }).toList();
   }
 
-  Future<List<SubjectSummaryModel>> getAvailableSubjects() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final globalKeys = [
-      'math',
-      'science',
-      'history',
-      'english',
-      'geography',
-      'art',
-      'music',
-    ];
-    return globalKeys.map((key) {
-      final def = SubjectMetadataRegistry.getDefinition(key);
+  /// The Add-Subjects catalog: real GLOBAL subjects the parent hasn't added for this
+  /// student yet, fetched from the AI engine.
+  Future<List<SubjectSummaryModel>> getAvailableSubjects(String studentUid) async {
+    List<Map<String, dynamic>> available = [];
+    try {
+      available = await AiEngineRepository.instance.getAvailableGlobalSubjects(studentUid);
+    } catch (e) {
+      print('Failed to fetch available global subjects from AI engine: $e');
+    }
+
+    return available.map((a) {
+      final name = (a['name'] as String).toLowerCase().trim();
+      final def = SubjectMetadataRegistry.getDefinition(name);
       return SubjectSummaryModel(
         subjectKey: def.key,
-        colorHex:
-            '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
-        skillsCount: 3,
+        subjectId: a['subject_id'] as int? ?? 0,
+        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        skillsCount: 0,
         masteryPercent: 0,
         quizzesCompleted: 0,
         totalTimeSpent: Duration.zero,
         accuracyPercent: 0,
+        isGlobal: true,
+        isSelected: false,
       );
     }).toList();
   }
@@ -648,6 +653,37 @@ class DataConnectProvider {
       await AiEngineRepository.instance.deleteSubject(subjectKey, studentUid);
     } catch (e) {
       print('AI engine subject delete failed: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> setSubjectSelection({
+    required String studentUid,
+    required int subjectId,
+    required bool isSelected,
+  }) async {
+    try {
+      await AiEngineRepository.instance.setSubjectSelection(
+        subjectId: subjectId,
+        studentUid: studentUid,
+        isSelected: isSelected,
+      );
+    } catch (e) {
+      print('AI engine subject selection update failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Remove a GLOBAL subject from a child: wipes the child's progress and returns it to
+  /// the Add-Subjects catalog (the shared subject is preserved).
+  Future<void> removeStudentSubjectData({
+    required String studentUid,
+    required int subjectId,
+  }) async {
+    try {
+      await AiEngineRepository.instance.removeStudentSubjectData(subjectId, studentUid);
+    } catch (e) {
+      print('AI engine remove student subject data failed: $e');
       rethrow;
     }
   }

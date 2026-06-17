@@ -243,6 +243,7 @@ class StudentHomeState extends State<StudentHome> {
                   FreeTimeBanner(
                     earnedSeconds:
                         MascotOverlayService.instance.dailyFreeTimeSeconds,
+                    isLocked: isResting,
                   ),
                   const SizedBox(height: 16),
                 ],

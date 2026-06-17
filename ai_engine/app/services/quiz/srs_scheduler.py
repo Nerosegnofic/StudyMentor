@@ -35,6 +35,30 @@ def _compute_review_interval(attempts: int) -> timedelta:
     return timedelta(days=14)
 
 
+def count_due_reviews(mastered_skills: List[dict], now: Optional[datetime] = None) -> int:
+    """
+    Count mastered skills whose SRS review is currently due (overdue, due today, or
+    never practiced). Used by the adaptive auto quiz-length to size a quiz from how much
+    review work is actually pending — distinct from ``select_srs_review_skills``, which
+    returns the most-overdue skills up to a cap regardless of whether they are due yet.
+    """
+    if not mastered_skills:
+        return 0
+    if now is None:
+        now = datetime.utcnow()
+
+    due = 0
+    for entry in mastered_skills:
+        last = entry.get("last_practiced")
+        if last is None:
+            due += 1  # never practiced → due
+            continue
+        interval = _compute_review_interval(entry.get("attempts", 0))
+        if last + interval <= now:
+            due += 1
+    return due
+
+
 def select_srs_review_skills(
     mastered_skills: List[dict],
     max_review: int,

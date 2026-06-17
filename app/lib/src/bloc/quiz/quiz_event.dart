@@ -8,11 +8,15 @@ abstract class QuizEvent {}
 class GenerateQuizEvent extends QuizEvent {
   final int? subjectId;
   final int totalQuestions;
+
+  /// When true, the backend computes the quiz length adaptively (parent's "Auto" choice).
+  final bool autoLength;
   final int studentGrade;
 
   GenerateQuizEvent({
     this.subjectId,
     required this.totalQuestions,
+    this.autoLength = false,
     this.studentGrade = 5,
   });
 }

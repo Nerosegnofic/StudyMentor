@@ -469,8 +469,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<List<SubjectSummaryModel>> getAvailableSubjects() {
-    return dataConnect.getAvailableSubjects();
+  Future<List<SubjectSummaryModel>> getAvailableSubjects(String studentUid) {
+    return dataConnect.getAvailableSubjects(studentUid);
   }
 
   @override
@@ -481,6 +481,16 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> removeSubject({required String studentUid, required String subjectKey}) {
     return dataConnect.removeSubject(studentUid: studentUid, subjectKey: subjectKey);
+  }
+
+  @override
+  Future<void> setSubjectSelection({required String studentUid, required int subjectId, required bool isSelected}) {
+    return dataConnect.setSubjectSelection(studentUid: studentUid, subjectId: subjectId, isSelected: isSelected);
+  }
+
+  @override
+  Future<void> removeStudentSubjectData({required String studentUid, required int subjectId}) {
+    return dataConnect.removeStudentSubjectData(studentUid: studentUid, subjectId: subjectId);
   }
 
   @override

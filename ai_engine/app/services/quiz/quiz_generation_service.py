@@ -15,6 +15,7 @@ from app.repositories import (
 )
 from app.services.quiz.subject_selector import get_priority_subject
 from app.services.quiz.builder import build_quiz_payload
+from app.services.quiz.length_selector import compute_adaptive_quiz_length
 from app.services.rag.retrieval import retrieve_context_for_quiz
 from app.services.rag.generation.context import GeneratorContext
 from app.services.rag.generation.gemini_strategy import GeminiStrategy
@@ -159,9 +160,17 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 1+2: Build quiz payload via Ordered Frontier + SRS
     # ------------------------------------------------------------------ #
+    # When the parent chose "Auto", size the quiz adaptively from the student's active
+    # material and recent accuracy; otherwise honor the fixed count they picked.
+    effective_total = (
+        compute_adaptive_quiz_length(db, student_uid, target_subject_id, request_body.student_grade)
+        if request_body.auto_length
+        else request_body.total_questions
+    )
+
     payload = build_quiz_payload(
         db, student_uid, target_subject_id,
-        request_body.total_questions, request_body.student_grade
+        effective_total, request_body.student_grade
     )
     if not payload:
         raise HTTPException(
@@ -186,7 +195,7 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 3: Create Quiz Session
     # ------------------------------------------------------------------ #
-    quiz_session = create_quiz_session(db, student_uid, target_subject_id, request_body.total_questions)
+    quiz_session = create_quiz_session(db, student_uid, target_subject_id, effective_total)
     upsert_student_subject_profile_last_quizzed(db, student_uid, target_subject_id)
 
     skills_used = get_skills_by_names(db, all_topics)

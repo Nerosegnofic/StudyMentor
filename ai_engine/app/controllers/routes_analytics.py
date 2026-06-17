@@ -14,6 +14,8 @@ from app.repositories import (
     get_error_and_difficulty_breakdown,
     get_mastery_history,
     get_subject_by_id,
+    get_added_global_subject_ids,
+    get_active_subject_ids,
 )
 from app.repositories.analytics_repo import get_daily_snapshot_stats, get_weakest_subject
 from app.repositories.gamification_repo import get_or_create_student_gamification
@@ -70,10 +72,19 @@ def list_subjects_analytics(
         for p in db.query(GardenPlant).filter_by(student_uid=target_uid).all()
     }
 
+    # Parent management list = owned subjects (all) + ADDED globals. Un-added globals live
+    # in the Add-Subjects catalog, not here. `is_selected` reflects the active set so a
+    # toggled-off (but still added) subject renders dimmed with its switch off.
+    added_global_ids = get_added_global_subject_ids(db, target_uid)
+    active_ids = get_active_subject_ids(db, target_uid)
+
     results = []
     for subj in subjects:
+        if subj.is_global and subj.subject_id not in added_global_ids:
+            continue  # available global → belongs in the catalog, not the parent's list
+
         stats = get_subject_stats(db, target_uid, subj.subject_id)
-        
+
         cached_mastery = plant_map.get(subj.subject_id)
         average_mastery = (cached_mastery / 100.0) if cached_mastery is not None else stats["average_mastery"]
 
@@ -85,6 +96,8 @@ def list_subjects_analytics(
             "learning_velocity": stats["learning_velocity"],
             "total_skills": stats["total_skills"],
             "mastered_skills": stats["mastered_skills"],
+            "is_global": subj.is_global,
+            "is_selected": subj.subject_id in active_ids,
         })
     return results
 

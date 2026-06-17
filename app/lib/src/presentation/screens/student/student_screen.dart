@@ -365,6 +365,7 @@ class _StudentScreenState extends State<StudentScreen>
                   Auto() => 5,
                   Fixed(:final count) => count,
                 },
+                autoLength: _quizCount is Auto,
               ),
 
             ),

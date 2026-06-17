@@ -8,7 +8,12 @@ class GenerateQuizRequest(BaseModel):
     )
     total_questions: int = Field(
         default=10, ge=1, le=50,
-        description="Total number of questions to generate"
+        description="Total number of questions to generate. Ignored when auto_length is true."
+    )
+    auto_length: bool = Field(
+        default=False,
+        description="When true (parent picked 'Auto'), the server sizes the quiz adaptively "
+                    "from the student's active material and recent accuracy, ignoring total_questions."
     )
     student_grade: int = Field(
         default=5, ge=1, le=12,

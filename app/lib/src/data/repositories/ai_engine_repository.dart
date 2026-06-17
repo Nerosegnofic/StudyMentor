@@ -16,17 +16,23 @@ import '../../domain/models/student_model.dart';
 class GenerateQuizRequest {
   final int? subjectId;
   final int totalQuestions;
+
+  /// When true (parent picked "Auto"), the backend sizes the quiz adaptively and
+  /// [totalQuestions] is ignored — it's only a fallback for the fixed case.
+  final bool autoLength;
   final int studentGrade;
 
   const GenerateQuizRequest({
     this.subjectId,
     required this.totalQuestions,
+    this.autoLength = false,
     this.studentGrade = 5,
   });
 
   Map<String, dynamic> toJson() => {
         'subject_id': subjectId,
         'total_questions': totalQuestions,
+        'auto_length': autoLength,
         'student_grade': studentGrade,
       };
 }
@@ -469,6 +475,45 @@ class AiEngineRepository {
         .replace(queryParameters: {'student_uid': studentUid});
     final response = await http.delete(uri, headers: headers);
     _assertSuccess(response, 'deleteSubject');
+  }
+
+  /// `PATCH /subjects/{id}/selection` — select/deselect a subject for a student
+  /// (parent focus control). Deselected subjects are hidden from the student and
+  /// excluded from quizzes; the subject and its data are preserved either way.
+  Future<void> setSubjectSelection({
+    required int subjectId,
+    required String studentUid,
+    required bool isSelected,
+  }) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.patch(
+      Uri.parse('$baseUrl/api/v1/subjects/$subjectId/selection'),
+      headers: headers,
+      body: jsonEncode({'student_uid': studentUid, 'is_selected': isSelected}),
+    );
+    _assertSuccess(response, 'setSubjectSelection');
+  }
+
+  /// `GET /subjects/available` — global subjects the parent hasn't yet added for this
+  /// student (the Add-Subjects catalog). Returns `[{subject_id, name, color_hex}]`.
+  Future<List<Map<String, dynamic>>> getAvailableGlobalSubjects(String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/subjects/available')
+        .replace(queryParameters: {'student_uid': studentUid});
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getAvailableGlobalSubjects');
+    final list = jsonDecode(response.body) as List;
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  /// `DELETE /subjects/{id}/student-data` — remove a GLOBAL subject from a child: wipes the
+  /// child's progress in it and returns it to the catalog, without deleting the shared subject.
+  Future<void> removeStudentSubjectData(int subjectId, String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/subjects/$subjectId/student-data')
+        .replace(queryParameters: {'student_uid': studentUid});
+    final response = await http.delete(uri, headers: headers);
+    _assertSuccess(response, 'removeStudentSubjectData');
   }
 
   // -------------------------------------------------------------------------

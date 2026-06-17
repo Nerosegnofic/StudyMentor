@@ -5,12 +5,24 @@ import 'package:google_fonts/google_fonts.dart';
 /// today — the cumulative monitored-app usage across all cooldown windows
 /// (see MascotOverlayService.dailyFreeTimeSeconds). Always in minutes.
 ///
+/// The wording adapts to the student's current state:
+///   • free   — apps are unlocked; just enjoy the time (studying now earns
+///              nothing extra, so we don't prompt for it).
+///   • locked — apps are resting (cooldown); finishing the quiz unlocks more.
+///
 /// No progress bar: the current usage window is already shown by the
-/// screen-time ring above; this banner is purely the day's running reward total.
+/// screen-time ring above; this banner is the day's running reward total.
 class FreeTimeBanner extends StatelessWidget {
   final int earnedSeconds;
 
-  const FreeTimeBanner({super.key, required this.earnedSeconds});
+  /// True while apps are in cooldown (MascotOverlayService.isBlocked).
+  final bool isLocked;
+
+  const FreeTimeBanner({
+    super.key,
+    required this.earnedSeconds,
+    required this.isLocked,
+  });
 
   static const Color _amber = Color(0xFFFFC107);
   static const Color _amberInk = Color(0xFF8D6E00);
@@ -19,12 +31,22 @@ class FreeTimeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final earned = earnedSeconds < 0 ? 0 : earnedSeconds;
     final hasEarned = earned >= 60;
-    final phrase = hasEarned
-        ? 'You have earned ${_formatMinutes(earned)} free time today!'
-        : 'Study to earn free play time today!';
-    final subtitle = hasEarned
-        ? 'That\'s your total play time so far today — keep studying to earn more!'
-        : 'Finish a study quiz to unlock play time on your apps.';
+    final formatted = _formatMinutes(earned);
+
+    final String headline;
+    final String subtitle;
+    if (isLocked) {
+      headline = 'Apps are resting right now';
+      subtitle = hasEarned
+          ? "You've earned $formatted of free time today. Finish your quiz to unlock more."
+          : 'Finish your quiz to unlock your apps.';
+    } else if (hasEarned) {
+      headline = "You've earned $formatted of free time today";
+      subtitle = 'Your apps are unlocked — enjoy your free time.';
+    } else {
+      headline = 'Your apps are unlocked';
+      subtitle = 'Enjoy your free time.';
+    }
 
     return Container(
       width: double.infinity,
@@ -45,8 +67,13 @@ class FreeTimeBanner extends StatelessWidget {
               color: _amber.withValues(alpha: 0.20),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.card_giftcard_rounded,
-                color: Color(0xFFF57F17), size: 20),
+            child: Icon(
+              isLocked
+                  ? Icons.bedtime_rounded
+                  : Icons.card_giftcard_rounded,
+              color: const Color(0xFFF57F17),
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -54,7 +81,7 @@ class FreeTimeBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  phrase,
+                  headline,
                   style: GoogleFonts.cairo(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,

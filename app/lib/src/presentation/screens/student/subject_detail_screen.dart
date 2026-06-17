@@ -265,6 +265,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                           Auto() => 5,
                           Fixed(:final count) => count,
                         },
+                        autoLength: _config.quizCount is Auto,
                       ),
 
                     ),
