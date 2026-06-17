@@ -27,8 +27,32 @@ class ParentScreen extends StatefulWidget {
   State<ParentScreen> createState() => _ParentScreenState();
 }
 
-class _ParentScreenState extends State<ParentScreen> {
+class _ParentScreenState extends State<ParentScreen>
+    with WidgetsBindingObserver {
   bool _permissionsCleared = false;
+  final _dashboardKey = GlobalKey<ParentHomeDashboardState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh child cards + AI summary when returning from background so the
+    // dashboard isn't showing stale data. refresh() bumps the dashboard's
+    // refreshKey, which drives ChildCard + AiSummaryCarousel reloads.
+    if (state == AppLifecycleState.resumed && _permissionsCleared) {
+      _dashboardKey.currentState?.refresh();
+    }
+  }
 
   Future<void> _openAddStudentScreen() async {
     await Navigator.push(
@@ -61,6 +85,7 @@ class _ParentScreenState extends State<ParentScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
         body: ParentHomeDashboard(
+          key: _dashboardKey,
           parentUid: widget.uid,
           fullName: widget.fullName,
           onAddStudentPressed: _openAddStudentScreen,

@@ -108,6 +108,10 @@ class _StudentScreenState extends State<StudentScreen>
   late final GardenBloc _gardenBloc;
   late final GamificationBloc _gamificationBloc;
 
+  /// Lets the resume handler refresh the home screen's data (XP/streak/garden/
+  /// daily snapshot) by reusing StudentHome.refresh().
+  final _homeKey = GlobalKey<StudentHomeState>();
+
   @override
   void initState() {
     super.initState();
@@ -260,6 +264,16 @@ class _StudentScreenState extends State<StudentScreen>
 
     // Pick up parent config changes (e.g. quiz count) made while backgrounded.
     _refreshQuizCount();
+
+    // Reload home data (XP/streak/garden/daily snapshot) so the dashboard isn't
+    // stale after returning from background or from a quiz. Skipped while a quiz
+    // overlay is open to avoid churning state mid-quiz.
+    if (_permissionsGranted &&
+        !_initializing &&
+        !_checkingPermissions &&
+        !_quizIsOpen) {
+      _homeKey.currentState?.refresh();
+    }
 
     // Sync on resume only when the native side flags a package change.
     InstalledAppsService.instance.isInventoryDirty().then((dirty) {
@@ -673,7 +687,11 @@ class _StudentScreenState extends State<StudentScreen>
                     child: IndexedStack(
                       index: _selectedIndex,
                       children: [
-                        StudentHome(fullName: widget.fullName, uid: widget.uid),
+                        StudentHome(
+                          key: _homeKey,
+                          fullName: widget.fullName,
+                          uid: widget.uid,
+                        ),
                       ],
                     ),
                   ),
@@ -700,7 +718,10 @@ class _StudentScreenState extends State<StudentScreen>
             builder: (_) => BlocProvider.value(
               value: shopBloc,
               child: Scaffold(
+                // top: false lets the profile's green header paint into the
+                // status/notification bar (the header owns the top inset).
                 body: SafeArea(
+                  top: false,
                   child: StudentProfile(
                     fullName: widget.fullName,
                     uid: widget.uid,

@@ -28,12 +28,16 @@ class ParentHomeDashboard extends StatefulWidget {
   });
 
   @override
-  State<ParentHomeDashboard> createState() => _ParentHomeDashboardState();
+  State<ParentHomeDashboard> createState() => ParentHomeDashboardState();
 }
 
-class _ParentHomeDashboardState extends State<ParentHomeDashboard> {
+class ParentHomeDashboardState extends State<ParentHomeDashboard> {
   List<StudentModel> _realStudents = [];
   int _refreshKey = 0;
+
+  /// Re-fetches students and bumps the refresh key so child cards + the AI
+  /// summary reload. Public so the host screen can trigger it on app resume.
+  Future<void> refresh() => _refreshAll();
 
   @override
   void initState() {

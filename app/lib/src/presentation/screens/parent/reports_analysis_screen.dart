@@ -180,9 +180,12 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 const SizedBox(height: 16),
               ],
 
-              // Metrics Row
-              Row(
-                children: [
+              // Metrics Row — IntrinsicHeight keeps all three cards the same
+              // height even when a metric has no delta (shorter content).
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Expanded(
                     child: _buildMetricCard(
                       loc.accuracyLabel,
@@ -219,7 +222,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       deltaUp: report.studyMinutesDelta >= 0,
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -679,6 +683,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: _cardDecoration(),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             value,

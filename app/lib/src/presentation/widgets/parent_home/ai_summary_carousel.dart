@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../l10n/app_localizations.dart';
 import '../../../bloc/ai_summary/ai_summary_bloc.dart';
 import '../../../bloc/ai_summary/ai_summary_event.dart';
 import '../../../bloc/ai_summary/ai_summary_state.dart';
@@ -37,7 +36,7 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
     super.initState();
     _dispatchLoad();
     _timer = Timer.periodic(const Duration(seconds: 6), (_) {
-      if (!mounted || _slides.length < 2) return;
+      if (!mounted || !_controller.hasClients || _slides.length < 2) return;
       final next = (_currentPage + 1) % _slides.length;
       _controller.animateToPage(
         next,
@@ -45,6 +44,32 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
         curve: Curves.easeInOut,
       );
     });
+  }
+
+  /// Resync the PageController + active dot whenever the slide set changes.
+  /// Without this, a reload that changes the slide count leaves the controller
+  /// pointing at a stale/out-of-range page, so the dots stop tracking the
+  /// visible slide ("points get stuck").
+  void _syncToSlides(List<AiSummarySlide> slides) {
+    final changed = slides.length != _slides.length ||
+        !_sameTexts(slides, _slides);
+    _slides = slides;
+    if (changed) {
+      _currentPage = 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _controller.hasClients) _controller.jumpToPage(0);
+      });
+    } else if (_currentPage >= _slides.length) {
+      _currentPage = 0;
+    }
+  }
+
+  bool _sameTexts(List<AiSummarySlide> a, List<AiSummarySlide> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].text != b[i].text) return false;
+    }
+    return true;
   }
 
   @override
@@ -93,7 +118,6 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
     return BlocBuilder<AiSummaryBloc, AiSummaryState>(
       builder: (context, state) {
         if (state is AiSummaryLoading || state is AiSummaryInitial) {
@@ -108,19 +132,20 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
           );
         }
 
+        List<AiSummarySlide> slides;
         if (state is AiSummaryLoaded) {
-          _slides = state.summary.slides;
+          slides = state.summary.slides;
         } else {
-          _slides = const [
+          slides = const [
             AiSummarySlide(text: "AI Summary not available.", severity: 'info'),
           ];
         }
-        if (_slides.isEmpty) {
-          _slides = const [
+        if (slides.isEmpty) {
+          slides = const [
             AiSummarySlide(text: "No activity to summarize yet.", severity: 'info'),
           ];
         }
-        if (_currentPage >= _slides.length) _currentPage = 0;
+        _syncToSlides(slides);
 
         return Container(
           margin: const EdgeInsets.fromLTRB(20, 0, 20, 15),

@@ -554,6 +554,10 @@ class StudentHomeState extends State<StudentHome> {
           ),
         ),
       ),
-    );
+    ).then((_) {
+      // A quiz taken from the subject screen can change XP/mastery/garden, so
+      // reload home data on return.
+      if (mounted) refresh();
+    });
   }
 }
