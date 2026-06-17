@@ -1436,14 +1436,6 @@ input Student_Data {
   """
   lastActiveAt_update: [Timestamp_Update!] @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `Student`.`username` of type `String!`
-  """
-  username: String
-  """
-  ✨ `_expr` server value variant of `username` (✨ Generated from Field `Student`.`username` of type `String!`)
-  """
-  username_expr: String_Expr @fdc_forbiddenInVariables
-  """
   ✨ Generated from Field `Student`.`appRules_on_student` of type `[AppRule!]!`
   """
   appRules_on_student: [AppRule_Data!]
@@ -1500,10 +1492,6 @@ input Student_Filter {
   ✨ Generated from Field `Student`.`lastActiveAt` of type `Timestamp`
   """
   lastActiveAt: Timestamp_Filter
-  """
-  ✨ Generated from Field `Student`.`username` of type `String!`
-  """
-  username: String_Filter
   """
   ✨ Generated from Field `Student`.`appRules_on_student` of type `[AppRule!]!`
   """
@@ -1586,10 +1574,6 @@ input Student_Having {
   ✨ Generated from Field `Student`.`userUid_count` of type `Int!`
   """
   userUid_count: Int_Filter
-  """
-  ✨ Generated from Field `Student`.`username_count` of type `Int!`
-  """
-  username_count: Int_Filter
   """
   ✨ Generated from Field `Student`.`gradeLevel_sum` of type `Int`
   """
@@ -1674,10 +1658,6 @@ input Student_Order {
   """
   lastActiveAt: OrderDirection
   """
-  ✨ Generated from Field `Student`.`username` of type `String!`
-  """
-  username: OrderDirection
-  """
   ✨ Generated from Field `Student`.`_count` of type `Int!`
   """
   _count: OrderDirection
@@ -1701,10 +1681,6 @@ input Student_Order {
   ✨ Generated from Field `Student`.`userUid_count` of type `Int!`
   """
   userUid_count: OrderDirection
-  """
-  ✨ Generated from Field `Student`.`username_count` of type `Int!`
-  """
-  username_count: OrderDirection
   """
   ✨ Generated from Field `Student`.`gradeLevel_sum` of type `Int`
   """

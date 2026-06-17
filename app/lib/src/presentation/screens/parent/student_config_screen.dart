@@ -41,7 +41,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isDirty = false;
-  bool _hasTimingErrors = false;
+  final bool _hasTimingErrors = false;
 
   /// True while a parent-triggered refresh is in flight.
   bool _isRefreshing = false;
@@ -129,6 +129,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
       if (proceed != true) return;
     }
 
+    if (!mounted) return;
     context.read<AppConfigBloc>().add(
       RefreshStudentDataRequested(studentUid: widget.student.uid),
     );
@@ -250,104 +251,6 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
     }
   }
 
-  // ── remove a rule ──────────────────────────────────────────────────────────
-
-  void _removeRule(int index) {
-    setState(() => _rules.removeAt(index));
-    _markDirty();
-  }
-
-  Future<void> _confirmRemoveRule(PendingAppRule rule, int index) async {
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        final loc = AppLocalizations.of(dialogContext);
-        return Dialog(
-          backgroundColor: const Color(0xFFFFFFFF),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  loc.removeAppConfirmTitle(rule.appLabel),
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1E293B),
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  loc.removeAppConfirmMessage,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.cairo(
-                    color: const Color(0xFF64748B),
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(dialogContext).pop(),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            loc.commonCancel,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          _removeRule(index);
-                          Navigator.of(dialogContext).pop();
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE53935),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            loc.removeButton,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   // ── build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -459,11 +362,10 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                onPressed: () {
+                onPressed: () async {
                   if (_isDirty) {
-                    _showUnsavedChangesDialog().then((leave) {
-                      if (leave && context.mounted) Navigator.of(context).pop();
-                    });
+                    final leave = await _showUnsavedChangesDialog();
+                    if (leave == true && mounted) Navigator.of(context).pop();
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -618,7 +520,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFFFFF8E1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFFFCC02).withOpacity(0.5)),
+          border: Border.all(color: const Color(0xFFFFCC02).withValues(alpha: 0.5)),
           boxShadow: const [
             BoxShadow(color: Color(0x08000000), blurRadius: 8, offset: Offset(0, 3)),
           ],
@@ -629,7 +531,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF9800).withOpacity(0.15),
+                color: const Color(0xFFFF9800).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -1267,7 +1169,7 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
       _usageMinutesCtl.text = widget.config.usageMinutes.toString();
       _cooldownHoursCtl.text = widget.config.cooldownHours.toString();
       _cooldownMinutesCtl.text = widget.config.cooldownMinutes.toString();
-      setState(() => _errors.updateAll((_, __) => null));
+      setState(() => _errors.updateAll((_, _) => null));
       // Defer the parent setState — calling onErrorsChanged directly here
       // triggers setState on the parent mid-build, causing the crash.
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1343,7 +1245,7 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: const Color(0xFF4A6CF7).withOpacity(0.25)),
+        side: BorderSide(color: const Color(0xFF4A6CF7).withValues(alpha: 0.25)),
       ),
       color: const Color(0xFFEEF1FF),
       child: Padding(
@@ -1652,7 +1554,7 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
                     controller: scrollCtl,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: _rules.length,
-                    separatorBuilder: (_, __) => const Divider(
+                    separatorBuilder: (_, _) => const Divider(
                         height: 1, color: Color(0xFFF1F5F9), indent: 16, endIndent: 16),
                     itemBuilder: (_, i) {
                       final rule = _rules[i];
@@ -1704,7 +1606,7 @@ class _AppRulesSheetState extends State<_AppRulesSheet> {
                               child: Switch(
                                 value: !rule.isPaused,
                                 onChanged: (isOn) => _toggle(i, isOn),
-                                activeColor: const Color(0xFF2196F3),
+                                activeThumbColor: const Color(0xFF2196F3),
                                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                             ),
@@ -1775,10 +1677,6 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   bool _showSystemApps = false;
 
   static const double _buttonHeight = 32;
-  static const EdgeInsets _buttonPadding = EdgeInsets.symmetric(horizontal: 10);
-  static const BorderRadius _buttonRadius = BorderRadius.all(
-    Radius.circular(8),
-  );
   static const TextStyle _buttonTextStyle = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w600,
@@ -2107,8 +2005,8 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2196F3),
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(0xFF2196F3).withOpacity(0.5),
-                  disabledForegroundColor: Colors.white.withOpacity(0.8),
+                  disabledBackgroundColor: const Color(0xFF2196F3).withValues(alpha: 0.5),
+                  disabledForegroundColor: Colors.white.withValues(alpha: 0.8),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
@@ -2207,64 +2105,6 @@ class _AppLetterAvatar extends StatelessWidget {
   }
 }
 
-// ── _AppRuleCard ──────────────────────────────────────────────────────────────
-
-class _AppRuleCard extends StatelessWidget {
-  final PendingAppRule rule;
-  final VoidCallback onRemove;
-
-  const _AppRuleCard({required this.rule, required this.onRemove});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-        child: Row(
-          children: [
-            _AppLetterAvatar(label: rule.appLabel),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    rule.appLabel,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
-                  Text(
-                    rule.packageName,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.delete_outline,
-                color: Colors.red.shade400,
-                size: 20,
-              ),
-              tooltip: 'Remove',
-              onPressed: onRemove,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── _TimeInput ────────────────────────────────────────────────────────────────
 
 class _TimeInput extends StatelessWidget {
@@ -2334,69 +2174,6 @@ class _TimeInput extends StatelessWidget {
         suffixStyle: TextStyle(
           fontSize: 11,
           color: hasError ? Colors.red.shade400 : Colors.grey.shade500,
-        ),
-      ),
-    );
-  }
-}
-
-// ── _QuickActionButton ────────────────────────────────────────────────────────
-
-class _QuickActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool isDestructive;
-  final bool isLoading;
-  final VoidCallback? onTap;
-
-  const _QuickActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.isDestructive = false,
-    this.isLoading = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bgColor = isDestructive
-        ? Colors.red.shade50
-        : const Color(0xFFE8EDFF);
-
-    return Material(
-      color: bgColor,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              isLoading
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: color,
-                      ),
-                    )
-                  : Icon(icon, size: 16, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -2602,7 +2379,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, -4),
                   ),

@@ -11,7 +11,7 @@ const kLocalePrefsKey = 'app_locale_code';
 
 /// Persists the user's chosen app language (English/Arabic) across sessions.
 class LocaleCubit extends Cubit<Locale> {
-  LocaleCubit(Locale initialLocale) : super(initialLocale);
+  LocaleCubit(super.initialLocale);
 
   /// Reads the saved locale from SharedPreferences synchronously before
   /// the widget tree is built. Call this in main() before runApp() and pass

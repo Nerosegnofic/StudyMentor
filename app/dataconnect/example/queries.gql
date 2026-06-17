@@ -12,7 +12,6 @@ query GetUserByUid($uid: String!) @auth(level: USER) {
 query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
   students(where: { parent: { uid: { eq: $parentUid } } }) {
     uid
-    username
     user {
       fullName
       email
@@ -66,24 +65,6 @@ mutation InsertInstalledApp(
 
 mutation DeleteAllInstalledAppsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Students are authorized to clear their own installed apps list before sync.") {
   installedApp_deleteMany(where: { studentUid: { eq: $studentUid } })
-}
-
-# ── Student Profile ───────────────────────────────────────────────────────────
-
-query GetStudentProfile($uid: String!) @auth(level: USER, insecureReason: "Students are authorized to read their own profile data.") {
-  student(key: { uid: $uid }) {
-    uid
-    username
-    gradeLevel
-  }
-}
-
-# ── Username Uniqueness Check ─────────────────────────────────────────────────
-
-query GetStudentByUsername($username: String!) @auth(level: USER, insecureReason: "Username uniqueness is checked client-side during student registration; no identifier is exposed beyond the username the caller already holds.") {
-  students(where: { username: { eq: $username } }, limit: 1) {
-    username
-  }
 }
 
 # ── Student Settings ──────────────────────────────────────────────────────────

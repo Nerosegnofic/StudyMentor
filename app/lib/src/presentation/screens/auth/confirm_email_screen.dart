@@ -4,6 +4,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class ConfirmEmailScreen extends StatelessWidget {
   const ConfirmEmailScreen({super.key});
@@ -28,18 +29,18 @@ class ConfirmEmailScreen extends StatelessWidget {
           }
           if (state is AuthEmailUnverified) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Your email hasn't been verified yet. Check your inbox.")),
+              SnackBar(content: Text(AppLocalizations.of(context).emailNotVerifiedYetMessage)),
             );
           }
           if (state is EmailVerificationSent) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Email verification link sent!')),
+              SnackBar(content: Text(AppLocalizations.of(context).emailVerificationLinkSentMessage)),
             );
           }
           if (state is EmailVerificationError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(localizeError(state.message, AppLocalizations.of(context)))),
+            );
           }
         },
         builder: (context, state) {

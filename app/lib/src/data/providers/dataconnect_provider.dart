@@ -57,23 +57,12 @@ class DataConnectProvider {
     }
   }
 
-  // Throws Exception('username-already-in-use') if the username is taken.
-  Future<void> checkUsernameAvailable(String username) async {
-    final existing = await _connector
-        .getStudentByUsername(username: username)
-        .execute();
-    if (existing.data.students.isNotEmpty) {
-      throw Exception('username-already-in-use');
-    }
-  }
-
   Future<void> createStudentProfile({
     required String parentUid,
-    required String username,
     required int gradeLevel,
   }) async {
     await _connector
-        .insertStudent(parentUid: parentUid, username: username)
+        .insertStudent(parentUid: parentUid)
         .gradeLevel(gradeLevel)
         .execute();
 
@@ -125,7 +114,6 @@ class DataConnectProvider {
         .map(
           (s) => {
             'uid': s.uid,
-            'username': s.username,
             'full_name': s.user.fullName,
             'email': s.user.email,
             'grade_level': s.gradeLevel,
@@ -303,45 +291,6 @@ class DataConnectProvider {
         .execute();
   }
 
-  // ── Student Profile ───────────────────────────────────────────────────────
-
-  Future<Map<String, dynamic>> getStudentProfile(String uid) async {
-    final result = await _connector.getStudentProfile(uid: uid).execute();
-    final s = result.data.student;
-    if (s == null) throw Exception('Student not found');
-    return {'uid': s.uid, 'username': s.username, 'grade_level': s.gradeLevel};
-  }
-
-  // ── Student Settings ──────────────────────────────────────────────────────
-
-  Future<Map<String, dynamic>?> getStudentSettings(String studentUid) async {
-    final result = await _connector
-        .getStudentSettings(studentUid: studentUid)
-        .execute();
-    final s = result.data.studentSettings;
-    if (s == null) return null;
-    return {
-      'notifications_enabled': s.notificationsEnabled,
-      'sound_effects_enabled': s.soundEffectsEnabled,
-      'background_music_enabled': s.backgroundMusicEnabled,
-    };
-  }
-
-  Future<void> upsertStudentSettings({
-    required String studentUid,
-    required bool notificationsEnabled,
-    required bool soundEffectsEnabled,
-    required bool backgroundMusicEnabled,
-  }) async {
-    await _connector
-        .upsertStudentSettings(
-          studentUid: studentUid,
-          notificationsEnabled: notificationsEnabled,
-          soundEffectsEnabled: soundEffectsEnabled,
-          backgroundMusicEnabled: backgroundMusicEnabled,
-        )
-        .execute();
-  }
 
   // ── Avatar Shop ───────────────────────────────────────────────────────────
 
@@ -578,9 +527,7 @@ class DataConnectProvider {
           }
         }
       }
-    } catch (e) {
-      print('Failed to get real skills for subject from AI engine: $e');
-    }
+    } catch (_) {}
 
     return skills;
   }
@@ -593,9 +540,7 @@ class DataConnectProvider {
     List<Map<String, dynamic>> analyticsList = [];
     try {
       analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
-    } catch (e) {
-      print('Failed to fetch subjects analytics from AI engine: $e');
-    }
+    } catch (_) {}
 
     return analyticsList.map((a) {
       final name = (a['name'] as String).toLowerCase().trim();
@@ -605,7 +550,7 @@ class DataConnectProvider {
 
       return SubjectSummaryModel(
         subjectKey: def.key,
-        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        colorHex: '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: skillsCount,
         masteryPercent: masteryPercent,
         quizzesCompleted: 0,
@@ -631,7 +576,7 @@ class DataConnectProvider {
       return SubjectSummaryModel(
         subjectKey: def.key,
         colorHex:
-            '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+            '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: 3,
         masteryPercent: 0,
         quizzesCompleted: 0,
@@ -647,9 +592,7 @@ class DataConnectProvider {
   }) async {
     try {
       await AiEngineRepository.instance.ensureSubjects(subjectKeys, studentUid);
-    } catch (e) {
-      print('Failed to sync subjects to AI engine: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> removeSubject({
@@ -658,14 +601,12 @@ class DataConnectProvider {
   }) async {
     try {
       await AiEngineRepository.instance.deleteSubject(subjectKey, studentUid);
-    } catch (e) {
-      print('AI engine subject delete skipped or failed: $e');
-    }
+    } catch (_) {}
   }
 
   Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
     final def = SubjectMetadataRegistry.getDefinition(subjectKey);
-    final colorHex = '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
+    final colorHex = '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
 
     int skillsCount = 0;
     int masteryPercent = 0;
@@ -722,9 +663,7 @@ class DataConnectProvider {
           totalTimeSpent = Duration(seconds: totalDurationSeconds);
         }
       }
-    } catch (e) {
-      print('Failed to get real subject overview from AI engine: $e');
-    }
+    } catch (_) {}
 
     return SubjectSummaryModel(
       subjectKey: subjectKey,
@@ -815,8 +754,7 @@ class DataConnectProvider {
           correctAnswerNumbers: correctAnswerNumbers,
         );
       }).toList();
-    } catch (e) {
-      print('Failed to load quiz history from AI engine: $e');
+    } catch (_) {
       return [];
     }
   }
@@ -839,7 +777,6 @@ class DataConnectProvider {
         );
       }).toList();
     } catch (e) {
-      print('Failed to load session questions: $e');
       rethrow;
     }
   }
@@ -1083,7 +1020,6 @@ class DataConnectProvider {
       uid: studentUid,
       email: newEmail ?? studentEmail ?? 'student@example.com',
       fullName: newFullName ?? 'Student Name',
-      username: 'student123',
       gradeLevel: newGradeLevel != null ? int.tryParse(newGradeLevel) ?? 8 : 8,
       totalXp: 450,
       totalCoins: 200,

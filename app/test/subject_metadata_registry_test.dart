@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/src/data/catalog/subject_metadata_registry.dart';
+import 'package:studymentor/src/data/catalog/subject_metadata_registry.dart';
 
 void main() {
   group('SubjectMetadataRegistry', () {
@@ -32,8 +32,8 @@ void main() {
 
       expect(def1.name, def2.name);
       expect(def1.emoji, def2.emoji);
-      expect(def1.primaryColor.value, def2.primaryColor.value);
-      expect(def1.lightColor.value, def2.lightColor.value);
+      expect(def1.primaryColor.toARGB32(), def2.primaryColor.toARGB32());
+      expect(def1.lightColor.toARGB32(), def2.lightColor.toARGB32());
       expect(def1.defaultPlantType, def2.defaultPlantType);
     });
 
@@ -44,7 +44,7 @@ void main() {
       expect(def1.name, 'Marine Biology');
       // Because it trims and lowercases, both should hash to the exact same fallback values
       expect(def1.emoji, def2.emoji);
-      expect(def1.primaryColor.value, def2.primaryColor.value);
+      expect(def1.primaryColor.toARGB32(), def2.primaryColor.toARGB32());
     });
 
     test('getSubjectIcon returns correct representative icons for global keys', () {

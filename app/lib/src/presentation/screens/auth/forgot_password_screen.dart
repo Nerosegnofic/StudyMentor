@@ -4,6 +4,7 @@ import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -29,9 +30,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Navigator.pop(context);
           }
           if (state is AuthError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(localizeError(state.message, loc))),
+            );
           }
         },
         child: Padding(

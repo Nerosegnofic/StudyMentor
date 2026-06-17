@@ -38,7 +38,6 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
         password: event.password,
         parentUid: event.parentUid,
         gradeLevel: event.gradeLevel,
-        username: event.username,
       );
       emit(StudentCreated());
     } catch (e) {
@@ -103,13 +102,9 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   }
 
   String _mapRegistrationException(dynamic e) {
-    print('STUDENT_REGISTRATION_FAILED: $e');
     final str = e.toString();
     if (str.contains('Session expired')) {
       return 'Session expired. Please log out and log in again before adding a student.';
-    }
-    if (str.contains('username-already-in-use')) {
-      return 'That username is already taken. Please choose another one.';
     }
     if (str.contains('email-already-in-use')) {
       return 'This email is already registered. Try logging in or resetting the password.';

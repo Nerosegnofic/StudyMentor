@@ -14,6 +14,7 @@ import '../../../bloc/parent_profile/parent_profile_event.dart';
 import '../../../bloc/parent_profile/parent_profile_state.dart';
 import '../../../domain/models/user_model.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 import 'parent_preferences.dart';
 
 class ParentAccountScreen extends StatefulWidget {
@@ -327,7 +328,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
               setState(() => _isSaving = false);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message),
+                  content: Text(localizeError(state.message, AppLocalizations.of(context))),
                   backgroundColor: Colors.red.shade700,
                 ),
               );

@@ -14,9 +14,6 @@ class StudentSettings extends StatefulWidget {
 
 class _StudentSettingsState extends State<StudentSettings> {
   SettingsService? _settings;
-  bool _notificationsEnabled = true;
-  bool _soundEffectsEnabled = true;
-  bool _backgroundMusicEnabled = false;
   bool _timerNotificationEnabled = true;
   bool _cooldownNotificationEnabled = true;
   bool _loading = true;
@@ -32,9 +29,6 @@ class _StudentSettingsState extends State<StudentSettings> {
     if (!mounted) return;
     setState(() {
       _settings = settings;
-      _notificationsEnabled = settings.notificationsEnabled;
-      _soundEffectsEnabled = settings.soundEffectsEnabled;
-      _backgroundMusicEnabled = settings.backgroundMusicEnabled;
       _timerNotificationEnabled = settings.timerNotificationEnabled;
       _cooldownNotificationEnabled = settings.cooldownNotificationEnabled;
       _loading = false;
@@ -48,12 +42,6 @@ class _StudentSettingsState extends State<StudentSettings> {
   ) async {
     setState(() {
       switch (key) {
-        case 'notifications':
-          _notificationsEnabled = value;
-        case 'sound':
-          _soundEffectsEnabled = value;
-        case 'music':
-          _backgroundMusicEnabled = value;
         case 'timerNotification':
           _timerNotificationEnabled = value;
           MascotOverlayService.instance.setTimerNotificationEnabled(value);
@@ -107,33 +95,6 @@ class _StudentSettingsState extends State<StudentSettings> {
   Widget _buildPreferencesCard(AppLocalizations loc) => _card(
     children: [
       _toggleRow(
-        icon: Icons.notifications_outlined,
-        title: loc.pushNotificationsTitle,
-        subtitle: loc.pushNotificationsSubtitle,
-        value: _notificationsEnabled,
-        onChanged: (v) =>
-            _toggle('notifications', v, _settings!.setNotificationsEnabled),
-      ),
-      _divider(),
-      _toggleRow(
-        icon: Icons.volume_up_outlined,
-        title: loc.soundEffectsTitle,
-        subtitle: loc.soundEffectsSubtitle,
-        value: _soundEffectsEnabled,
-        onChanged: (v) =>
-            _toggle('sound', v, _settings!.setSoundEffectsEnabled),
-      ),
-      _divider(),
-      _toggleRow(
-        icon: Icons.music_note_outlined,
-        title: loc.backgroundMusicTitle,
-        subtitle: loc.backgroundMusicSubtitle,
-        value: _backgroundMusicEnabled,
-        onChanged: (v) =>
-            _toggle('music', v, _settings!.setBackgroundMusicEnabled),
-      ),
-      _divider(),
-      _toggleRow(
         icon: Icons.timer_outlined,
         title: loc.usageTimerNotificationTitle,
         subtitle: loc.usageTimerNotificationSubtitle,
@@ -178,7 +139,7 @@ class _StudentSettingsState extends State<StudentSettings> {
       borderRadius: BorderRadius.circular(14),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.black.withValues(alpha: 0.04),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
@@ -225,7 +186,7 @@ class _StudentSettingsState extends State<StudentSettings> {
         Switch.adaptive(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFF4A6CF7),
+          activeThumbColor: const Color(0xFF4A6CF7),
         ),
       ],
     ),

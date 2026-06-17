@@ -574,7 +574,7 @@ class _QuestionCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: _difficultyColor(question.difficulty)
-                      .withOpacity(0.12),
+                      .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

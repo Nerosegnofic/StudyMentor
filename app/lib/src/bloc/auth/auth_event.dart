@@ -1,7 +1,6 @@
 // lib/src/bloc/auth/auth_event.dart
 
 import 'package:equatable/equatable.dart';
-import '../../domain/models/student_model.dart';
 import '../../domain/models/app_config_model.dart';
 
 abstract class AuthEvent extends Equatable {
@@ -49,41 +48,11 @@ class PasswordResetRequested extends AuthEvent {
   List<Object?> get props => [email];
 }
 
-class CreateStudentRequested extends AuthEvent {
-  final String fullName;
-  final String email;
-  final String password;
-  final String parentUid;
-  final int gradeLevel;
-  final String username;
-
-  CreateStudentRequested({
-    required this.fullName,
-    required this.email,
-    required this.password,
-    required this.parentUid,
-    required this.gradeLevel,
-    required this.username,
-  });
-
-  @override
-  List<Object?> get props => [fullName, email, parentUid, gradeLevel, username];
-}
-
-
-
 class LoadParentNameRequested extends AuthEvent {
   final String studentUid;
   LoadParentNameRequested({required this.studentUid});
   @override
   List<Object?> get props => [studentUid];
-}
-
-class RefreshStudentVerificationsRequested extends AuthEvent {
-  final List<StudentModel> currentStudents;
-  RefreshStudentVerificationsRequested({required this.currentStudents});
-  @override
-  List<Object?> get props => [currentStudents];
 }
 
 class StudentLogoutVerificationRequested extends AuthEvent {

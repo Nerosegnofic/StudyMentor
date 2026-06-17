@@ -395,25 +395,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get studentInformationSection => 'Student Information';
 
   @override
-  String get fieldUsername => 'Username';
-
-  @override
-  String get usernameHint => 'Shown on the leaderboard (e.g. coolkid42)';
-
-  @override
-  String get validatorUsernameRequired => 'Username is required.';
-
-  @override
-  String get validatorUsernameMinLength => 'At least 3 characters.';
-
-  @override
-  String get validatorUsernameMaxLength => 'Max 50 characters.';
-
-  @override
-  String get validatorUsernameFormat =>
-      'Only letters, numbers and underscores.';
-
-  @override
   String get fieldGrade => 'Grade';
 
   @override
@@ -472,10 +453,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get studentSettingsEmailHelper =>
       'Changing the email will send a verification link to the new address.';
-
-  @override
-  String get usernameCannotBeChangedNotice =>
-      'Usernames cannot be changed after registration.';
 
   @override
   String get fieldStudentCurrentPassword => 'Student\'s Current Password';
@@ -1902,4 +1879,94 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get parentNotifInactivitySubtitle =>
       'Alerts when a child hasn\'t studied in 3+ days';
+
+  @override
+  String get errInvalidCredentials =>
+      'Invalid email or password. Please try again.';
+
+  @override
+  String get errNetworkError => 'Network error. Check your connection.';
+
+  @override
+  String get errNetworkErrorRetry =>
+      'Network error. Check your connection and try again.';
+
+  @override
+  String get errWeakPassword => 'Password is too weak.';
+
+  @override
+  String get errWeakPasswordDetailed =>
+      'Password is too weak. Please use at least 6 characters.';
+
+  @override
+  String get errEmailAlreadyInUse =>
+      'That email address is already registered. Please use a different one.';
+
+  @override
+  String get errInvalidEmailFormat =>
+      'That email address doesn\'t look right. Please check it.';
+
+  @override
+  String get errSessionExpired =>
+      'Session expired. Please log out and log in again.';
+
+  @override
+  String get errTooManyAttempts =>
+      'Too many attempts. Please wait a moment and try again.';
+
+  @override
+  String get errRegistrationFailed => 'Registration failed. Please try again.';
+
+  @override
+  String get errNoSignedInAccount =>
+      'No signed-in account found. Please log in again.';
+
+  @override
+  String get errVerificationEmailFailed =>
+      'Could not send verification email. Please try again.';
+
+  @override
+  String get errWrongCurrentPassword => 'Current password is incorrect.';
+
+  @override
+  String get errNewPasswordTooWeak =>
+      'New password is too weak. Use at least 6 characters.';
+
+  @override
+  String get errEmailAlreadyInUseOther =>
+      'That email address is already in use by another account.';
+
+  @override
+  String get errUpdateFailed => 'Update failed. Please try again.';
+
+  @override
+  String get errUploadFailed => 'Upload failed. Please try again.';
+
+  @override
+  String get errDeleteAccountFailed =>
+      'Unable to delete account. Please try again.';
+
+  @override
+  String get errStudentSessionExpired =>
+      'Session expired. Please log out and log in again before adding a student.';
+
+  @override
+  String get errStudentEmailAlreadyRegistered =>
+      'This email is already registered. Try logging in or resetting the password.';
+
+  @override
+  String get errStudentWeakPassword =>
+      'The password provided is too weak. Please use at least 6 characters.';
+
+  @override
+  String get errStudentInvalidEmail => 'The email address is badly formatted.';
+
+  @override
+  String get errUnexpected => 'An unexpected error occurred. Please try again.';
+
+  @override
+  String get shopItemPurchasedMessage => 'Purchase successful! 🎉';
+
+  @override
+  String get errPurchaseFailed => 'Purchase failed. Please try again.';
 }

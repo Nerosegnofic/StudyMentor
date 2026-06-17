@@ -623,13 +623,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (msg.contains('session expired') || msg.contains('Session expired')) {
       return 'Session expired. Please log out and log in again.';
     }
-    // Username uniqueness — matches exceptions thrown by DataConnect /
-    // the repository when a duplicate username is detected. The repository
-    // should throw Exception('username-already-in-use') for this case.
-    if (msg.contains('username-already-in-use') ||
-        (msg.contains('username') && msg.contains('already'))) {
-      return 'That username is already taken. Please choose a different one.';
-    }
     if (msg.contains('too-many-requests') ||
         msg.contains('too_many_requests')) {
       return 'Too many attempts. Please wait a moment and try again.';

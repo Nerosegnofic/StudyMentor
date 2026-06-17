@@ -142,6 +142,8 @@ class StudentLocalNotificationHandler {
   Future<void> handleLevelUp(int newLevel) async {
     if (!_claimEvent('LEVEL_UP_$newLevel')) return;
 
+    final studentUid = FirebaseAuth.instance.currentUser?.uid;
+
     try {
       final loc = await NotificationLocalizations.current();
       await LocalNotificationService.instance.show(
@@ -149,15 +151,13 @@ class StudentLocalNotificationHandler {
         channelId: kChannelChildMilestones,
         title: loc.notifLevelUpTitle(newLevel),
         body: loc.notifLevelUpBody,
-        // TODO(Phase 4): payload for deep-link to student profile on tap.
-        // payload: 'STUDENT_PROFILE:',
+        payload: studentUid != null ? 'STUDENT_PROFILE:$studentUid' : null,
       );
     } catch (_) {
       // Notification failure must not surface to the user or interrupt the
       // quiz result flow. Silently swallow.
     }
 
-    final studentUid = FirebaseAuth.instance.currentUser?.uid;
     if (studentUid == null) return;
     final parentUid = await _parentUidFor(studentUid);
     if (parentUid == null) return;
