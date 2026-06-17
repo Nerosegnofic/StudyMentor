@@ -12,6 +12,8 @@ import '../../../domain/models/quiz_count.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_state.dart';
+import '../../../features/mascot/mascot_state.dart';
+import '../../../features/mascot/mascot_with_bubble.dart';
 import '../../../../l10n/app_localizations.dart';
 
 const _kGreen = Color(0xFF2E7D32);
@@ -100,16 +102,23 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           future: _skillsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: _kGreen));
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: const MascotWithBubble(
+                    state: MascotState.thinking,
+                    showLoadingSpinner: true,
+                  ),
+                ),
+              );
             }
             if (snapshot.hasError) {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text(
-                    loc.loadSkillsErrorMessage,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.red),
+                  child: MascotWithBubble(
+                    state: MascotState.sad,
+                    message: loc.loadSkillsErrorMessage,
                   ),
                 ),
               );

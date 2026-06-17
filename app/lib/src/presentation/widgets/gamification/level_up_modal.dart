@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/gamification_models.dart';
+import '../../../features/mascot/mascot_state.dart';
+import '../../../features/mascot/mascot_widget.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
@@ -87,6 +89,10 @@ class _LevelUpCelebrationScreenState extends State<LevelUpCelebrationScreen>
           child: Column(
             children: [
               const Spacer(flex: 2),
+
+              // ── Mascot — static, hardcoded celebration state ─────────
+              const MascotWidget(state: MascotState.celebration, size: 160),
+              const SizedBox(height: 12),
 
               // ── Animated glow ring + level number ────────────────────
               AnimatedBuilder(

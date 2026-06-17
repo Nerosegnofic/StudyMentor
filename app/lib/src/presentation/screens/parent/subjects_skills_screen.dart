@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/document/document_upload_bloc.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../features/mascot/mascot_cubit.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/subject_summary_model.dart';
 import 'parent_subject_detail_screen.dart';
@@ -41,8 +42,13 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BlocProvider(
-          create: (_) => DocumentUploadBloc(repository: repo),
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => DocumentUploadBloc(repository: repo)),
+            // Scoped to this upload flow — self-contained, like the quiz
+            // overlay's local MascotCubit.
+            BlocProvider(create: (_) => MascotCubit()),
+          ],
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FF),
             appBar: AppBar(

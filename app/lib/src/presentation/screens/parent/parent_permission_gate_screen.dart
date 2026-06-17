@@ -196,7 +196,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                         _buildPermissionIcon(permission),
                         const SizedBox(height: 28),
                         Text(
-                          permission.displayName,
+                          permission.displayName(loc),
                           textAlign: TextAlign.center,
                           style: GoogleFonts.cairo(
                             fontSize: 22,
@@ -207,7 +207,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          permission.parentRationale,
+                          permission.parentRationale(loc),
                           textAlign: TextAlign.center,
                           style: GoogleFonts.roboto(
                             fontSize: 15,

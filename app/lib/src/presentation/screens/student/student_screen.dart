@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
@@ -29,6 +30,9 @@ import '../../../services/installed_apps_service.dart';
 import '../../../services/permission_service.dart';
 import '../../../services/device_admin_service.dart';
 import '../../../data/providers/dataconnect_provider.dart';
+import '../../../features/mascot/mascot_cubit.dart';
+import '../../../features/mascot/mascot_state.dart';
+import '../../../features/mascot/mascot_widget.dart';
 import 'student_permission_gate_screen.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
@@ -103,6 +107,7 @@ class _StudentScreenState extends State<StudentScreen>
   late final ShopBloc _shopBloc;
   late final GardenBloc _gardenBloc;
   late final GamificationBloc _gamificationBloc;
+  late final MascotCubit _mascotCubit;
 
   @override
   void initState() {
@@ -113,6 +118,7 @@ class _StudentScreenState extends State<StudentScreen>
 
     _shopBloc = ShopBloc();
     _gardenBloc = GardenBloc();
+    _mascotCubit = MascotCubit();
     _gamificationBloc = GamificationBloc(
       repository: GamificationRepositoryImpl(),
     )..add(LoadGamificationDataRequested(studentId: widget.uid))
@@ -258,6 +264,7 @@ class _StudentScreenState extends State<StudentScreen>
     _shopBloc.close();
     _gardenBloc.close();
     _gamificationBloc.close();
+    _mascotCubit.close();
     super.dispose();
   }
 
@@ -507,9 +514,26 @@ class _StudentScreenState extends State<StudentScreen>
   @override
   Widget build(BuildContext context) {
     if (_initializing || _checkingPermissions) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5F7FA),
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const MascotWidget(state: MascotState.idle, size: 140),
+              const SizedBox(height: 16),
+              Text(
+                'StudyMentor',
+                style: GoogleFonts.cairo(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1F2937),
+                  letterSpacing: -0.4,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -532,6 +556,7 @@ class _StudentScreenState extends State<StudentScreen>
         BlocProvider<ShopBloc>.value(value: _shopBloc),
         BlocProvider<GardenBloc>.value(value: _gardenBloc),
         BlocProvider<GamificationBloc>.value(value: _gamificationBloc),
+        BlocProvider<MascotCubit>.value(value: _mascotCubit),
       ],
       child: PopScope(
         canPop: false,

@@ -11,6 +11,10 @@ import '../../../bloc/gamification/gamification_event.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
+import '../../../features/mascot/mascot_cubit.dart';
+import '../../../features/mascot/mascot_state.dart';
+import '../../../features/mascot/mascot_widget.dart';
+import '../../../features/mascot/mascot_with_bubble.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
@@ -74,16 +78,21 @@ class QuizOverlayPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => QuizBloc(repository: repository),
-
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => QuizBloc(repository: repository)),
+        // Scoped to this quiz session — independent of the shared
+        // StudentScreen-level MascotCubit used on the home screen, so the
+        // forced-quiz-during-cooldown case never has the two fight over
+        // the mascot's face.
+        BlocProvider(create: (_) => MascotCubit()),
+      ],
       child: _QuizOverlayScaffold(
         studentId: studentId,
         contextType: contextType,
         totalQuestions: totalQuestions,
         subjectId: subjectId,
       ),
-
     );
   }
 }
@@ -152,6 +161,9 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
 
       body: BlocListener<QuizBloc, QuizState>(
         listener: (context, state) {
+          if (state is QuizLoading || state is QuizSubmitting) {
+            context.read<MascotCubit>().startThinking();
+          }
           if (state is QuizResultsLoaded) {
                 _quizzedSubjectId = state.quizResponse.selectedSubjectId;
                 _quizzedSubjectName = state.quizResponse.selectedSubjectName;
@@ -263,10 +275,10 @@ class _AutoStartPanel extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.auto_awesome_rounded,
-              size: 80,
-              color: _kGreen,
+            const MascotWithBubble(
+              state: MascotState.idle,
+              message: 'Ready to practice?',
+              mascotSize: 90,
             ),
             const SizedBox(height: 24),
             Text(
@@ -441,6 +453,11 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
           ),
         );
     setState(() => _revealed = true);
+
+    final isCorrect = _selectedOption == _currentQuestion.correctAnswer;
+    context.read<MascotCubit>().reactTemporarily(
+          isCorrect ? MascotState.happy : MascotState.sad,
+        );
   }
 
   void _advance(BuildContext context) {
@@ -572,13 +589,22 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Question ${_currentIndex + 1} of $total',
-                style: GoogleFonts.roboto(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: _kMuted,
-                ),
+              Row(
+                children: [
+                  BlocBuilder<MascotCubit, MascotState>(
+                    builder: (context, mascotState) =>
+                        MascotWidget(state: mascotState, size: 40),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Question ${_currentIndex + 1} of $total',
+                    style: GoogleFonts.roboto(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: _kMuted,
+                    ),
+                  ),
+                ],
               ),
               Text(
                 '${answered.length} answered',
@@ -719,7 +745,7 @@ class _QuestionCard extends StatelessWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    _difficultyPill(),
+                    _difficultyPill(AppLocalizations.of(context)),
                     _skillChip(),
                   ],
                 ),
@@ -758,7 +784,7 @@ class _QuestionCard extends StatelessWidget {
     );
   }
 
-  Widget _difficultyPill() {
+  Widget _difficultyPill(AppLocalizations loc) {
     final color = _difficultyColor(question.difficulty);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -767,7 +793,7 @@ class _QuestionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _difficultyLabel(question.difficulty),
+        _difficultyLabel(loc, question.difficulty),
         style: GoogleFonts.roboto(
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -1056,20 +1082,18 @@ class _ResultsView extends StatelessWidget {
     final score = state.result.score;
     final pct = score.round();
     final isGood = score >= 50;
+    final mascotState = score >= 85
+        ? MascotState.celebration
+        : score >= 50
+            ? MascotState.happy
+            : MascotState.sad;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           const SizedBox(height: 20),
-          Text(
-            pct >= 85
-                ? '🎉'
-                : pct >= 50
-                    ? '👍'
-                    : '💪',
-            style: const TextStyle(fontSize: 64),
-          ),
+          MascotWidget(state: mascotState, size: 140),
           const SizedBox(height: 16),
           Text(
             '$pct%',
@@ -1174,16 +1198,14 @@ class _LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(color: _kGreen),
-          const SizedBox(height: 20),
-          Text(
-            message,
-            style: GoogleFonts.roboto(color: _kMuted, fontSize: 15),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: MascotWithBubble(
+          state: MascotState.thinking,
+          showLoadingSpinner: true,
+          mascotSize: 100,
+          message: message,
+        ),
       ),
     );
   }
@@ -1203,8 +1225,6 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 56, color: _kRed),
-            const SizedBox(height: 16),
             Text(
               'Something went wrong',
               style: GoogleFonts.cairo(
@@ -1213,11 +1233,11 @@ class _ErrorView extends StatelessWidget {
                 color: _kInk,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(color: _kMuted, fontSize: 13),
+            const SizedBox(height: 16),
+            MascotWithBubble(
+              state: MascotState.sad,
+              mascotSize: 90,
+              message: message,
             ),
             const SizedBox(height: 24),
             ElevatedButton(

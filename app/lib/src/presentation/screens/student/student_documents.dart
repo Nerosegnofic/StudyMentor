@@ -8,6 +8,10 @@ import '../../../bloc/document/document_upload_event.dart';
 import '../../../bloc/document/document_upload_state.dart';
 import '../../../bloc/subject/subject_bloc.dart';
 import '../../../bloc/subject/subject_event.dart';
+import '../../../features/mascot/mascot_cubit.dart';
+import '../../../features/mascot/mascot_state.dart';
+import '../../../features/mascot/mascot_widget.dart';
+import '../../../features/mascot/mascot_with_bubble.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// Document upload screen that lets the student browse for a PDF and upload it
@@ -107,21 +111,22 @@ class _StudentDocumentUploadScreenState
               selectedKeys: [_subjectNameController.text.trim().toLowerCase()],
             ),
           );
+          context.read<MascotCubit>().reactTemporarily(
+                MascotState.happy,
+                duration: const Duration(seconds: 2),
+              );
         }
       },
       builder: (context, state) {
         if (state is DocumentUploadLoading) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(color: Color(0xFF4A6CF7)),
-                const SizedBox(height: 20),
-                Text(
-                  loc.uploadingProcessingMessage,
-                  style: const TextStyle(color: Color(0xFF8B93A7), fontSize: 15),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: MascotWithBubble(
+                state: MascotState.thinking,
+                showLoadingSpinner: true,
+                message: loc.uploadingProcessingMessage,
+              ),
             ),
           );
         }
@@ -310,22 +315,32 @@ class _StudentDocumentUploadScreenState
               const SizedBox(height: 12),
 
               // Error banner if previous attempt failed
-              if (state is DocumentUploadError)
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEBEE),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFEA4335)),
-                  ),
-                  child: Text(
-                    state.message,
-                    style: GoogleFonts.cairo(
-                      color: const Color(0xFFB71C1C),
-                      fontSize: 13,
+              if (state is DocumentUploadError) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const MascotWidget(state: MascotState.sad, size: 64),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEBEE),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEA4335)),
+                        ),
+                        child: Text(
+                          state.message,
+                          style: GoogleFonts.cairo(
+                            color: const Color(0xFFB71C1C),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
+              ],
             ],
           ),
         );
@@ -353,12 +368,6 @@ class _SuccessView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.check_circle_rounded,
-              size: 80,
-              color: Color(0xFF34A853),
-            ),
-            const SizedBox(height: 24),
             Text(
               loc.curriculumAddedSuccessTitle,
               textAlign: TextAlign.center,
@@ -368,14 +377,12 @@ class _SuccessView extends StatelessWidget {
                 color: const Color(0xFF1E293B),
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              loc.curriculumAddedSuccessMessage(subjectName),
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
-                fontSize: 14,
-                color: const Color(0xFF64748B),
-                height: 1.5,
+            const SizedBox(height: 24),
+            BlocBuilder<MascotCubit, MascotState>(
+              builder: (context, mascotState) => MascotWithBubble(
+                state: mascotState,
+                mascotSize: 90,
+                message: loc.curriculumAddedSuccessMessage(subjectName),
               ),
             ),
             const SizedBox(height: 32),

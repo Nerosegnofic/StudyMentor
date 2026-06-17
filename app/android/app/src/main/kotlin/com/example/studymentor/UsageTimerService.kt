@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.BitmapFactory
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
@@ -49,6 +50,14 @@ import androidx.core.app.NotificationCompat
  * Compatibility: Android 8 (API 26) – Android 15+ (API 35).
  */
 class UsageTimerService : Service() {
+
+    // Decoded once and reused across every notification rebuild — the
+    // foreground notification is rebuilt every second while a monitored app
+    // is in the foreground, so decoding the PNG fresh each time would be
+    // wasteful.
+    private val mascotIdleBitmap by lazy {
+        BitmapFactory.decodeResource(resources, R.drawable.mascot_idle)
+    }
 
     companion object {
         // ── Intent actions ────────────────────────────────────────────────────
@@ -446,6 +455,7 @@ class UsageTimerService : Service() {
         }
         val notification = NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setLargeIcon(mascotIdleBitmap)
             .setContentTitle(alert.title).setContentText(alert.body)
             .setOngoing(false).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -478,6 +488,7 @@ class UsageTimerService : Service() {
         }
         val notification = NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setLargeIcon(mascotIdleBitmap)
             .setContentTitle(alert.title).setContentText(alert.body)
             .setOngoing(false).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -534,6 +545,7 @@ class UsageTimerService : Service() {
 
         return NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
+            .setLargeIcon(mascotIdleBitmap)
             .setContentTitle(title).setContentText(body)
             .setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
             .setPriority(

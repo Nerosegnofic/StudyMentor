@@ -40,6 +40,8 @@ import 'src/services/streak_reminder_service.dart';
 import 'src/services/student_local_notification_handler.dart';
 import 'src/services/parent_notification_poll_service.dart';
 import 'src/services/parent_inactivity_check_service.dart';
+import 'src/features/mascot/mascot_state.dart';
+import 'src/features/mascot/mascot_widget.dart';
 
 // ── WorkManager task identifiers ─────────────────────────────────────────────
 const _kSyncTaskName = 'installedAppSync';
@@ -284,9 +286,7 @@ class RootPage extends StatelessWidget {
             curr is AuthEmailUnverified,
         builder: (context, state) {
           if (state is AuthInitial || state is AuthLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return const _BrandedSplash();
           }
           if (state is AuthUnauthenticated) {
             return const LoginScreen();
@@ -303,10 +303,41 @@ class RootPage extends StatelessWidget {
               return StudentScreen(fullName: fullName, uid: state.user.uid);
             }
           }
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const _BrandedSplash();
         },
+      ),
+    );
+  }
+}
+
+/// Branded loading/splash screen shown while auth state resolves — replaces
+/// the generic purple [CircularProgressIndicator] with the Study Mentor
+/// mascot + wordmark, per the design system (Soft Cloud background, Cairo
+/// bold heading, dark ink text).
+class _BrandedSplash extends StatelessWidget {
+  const _BrandedSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA), // Soft Cloud
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const MascotWidget(state: MascotState.idle, size: 140),
+            const SizedBox(height: 16),
+            Text(
+              'StudyMentor',
+              style: GoogleFonts.cairo(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1F2937), // dark ink
+                letterSpacing: -0.4,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import 'auth_style.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -21,6 +22,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     // Computed above the Scaffold so the keyboard is detected (a Scaffold zeroes
     // viewInsets.bottom for its body subtree).
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: kAuthBackground,
       body: BlocListener<AuthBloc, AuthState>(
