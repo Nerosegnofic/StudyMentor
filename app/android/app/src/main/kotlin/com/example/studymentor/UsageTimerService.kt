@@ -434,6 +434,14 @@ class UsageTimerService : Service() {
         )
     }
 
+    private fun alertRemoteViews(title: String, body: String): android.widget.RemoteViews =
+        android.widget.RemoteViews(packageName, R.layout.notification_alert).apply {
+            setTextViewText(R.id.notif_title, title)
+            setTextViewText(R.id.notif_body, body)
+            setTextColor(R.id.notif_title, android.graphics.Color.parseColor("#1F2937"))
+            setTextColor(R.id.notif_body,  android.graphics.Color.parseColor("#4B5563"))
+        }
+
     private fun postUsageThresholdAlert(remainingSeconds: Int) {
         data class AlertInfo(val notifId: Int, val title: String, val body: String)
         val alert = when {
@@ -455,8 +463,8 @@ class UsageTimerService : Service() {
         }
         val notification = NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setLargeIcon(mascotIdleBitmap)
             .setContentTitle(alert.title).setContentText(alert.body)
+            .setCustomContentView(alertRemoteViews(alert.title, alert.body))
             .setOngoing(false).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -488,8 +496,8 @@ class UsageTimerService : Service() {
         }
         val notification = NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setLargeIcon(mascotIdleBitmap)
             .setContentTitle(alert.title).setContentText(alert.body)
+            .setCustomContentView(alertRemoteViews(alert.title, alert.body))
             .setOngoing(false).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)

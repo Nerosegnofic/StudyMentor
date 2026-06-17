@@ -57,23 +57,15 @@ class DataConnectProvider {
     }
   }
 
-  // Throws Exception('username-already-in-use') if the username is taken.
-  Future<void> checkUsernameAvailable(String username) async {
-    final existing = await _connector
-        .getStudentByUsername(username: username)
-        .execute();
-    if (existing.data.students.isNotEmpty) {
-      throw Exception('username-already-in-use');
-    }
-  }
+  // Username uniqueness check removed — schema no longer stores usernames.
+  Future<void> checkUsernameAvailable(String username) async {}
 
   Future<void> createStudentProfile({
     required String parentUid,
-    required String username,
     required int gradeLevel,
   }) async {
     await _connector
-        .insertStudent(parentUid: parentUid, username: username)
+        .insertStudent(parentUid: parentUid)
         .gradeLevel(gradeLevel)
         .execute();
 
@@ -125,7 +117,6 @@ class DataConnectProvider {
         .map(
           (s) => {
             'uid': s.uid,
-            'username': s.username,
             'full_name': s.user.fullName,
             'email': s.user.email,
             'grade_level': s.gradeLevel,
@@ -306,10 +297,7 @@ class DataConnectProvider {
   // ── Student Profile ───────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getStudentProfile(String uid) async {
-    final result = await _connector.getStudentProfile(uid: uid).execute();
-    final s = result.data.student;
-    if (s == null) throw Exception('Student not found');
-    return {'uid': s.uid, 'username': s.username, 'grade_level': s.gradeLevel};
+    throw UnimplementedError('getStudentProfile was removed from the schema');
   }
 
   // ── Student Settings ──────────────────────────────────────────────────────
@@ -458,14 +446,7 @@ class DataConnectProvider {
     required String issueType,
     required String message,
   }) async {
-    await _connector
-        .insertSupportTicket(
-          userId: userId,
-          userName: userName,
-          issueType: issueType,
-          message: message,
-        )
-        .execute();
+    // insertSupportTicket was removed from the schema — no-op for now.
   }
 
   // ── Local Notification System ─────────────────────────────────────────────
@@ -1102,7 +1083,6 @@ class DataConnectProvider {
       uid: studentUid,
       email: newEmail ?? studentEmail ?? 'student@example.com',
       fullName: newFullName ?? 'Student Name',
-      username: 'student123',
       gradeLevel: newGradeLevel != null ? int.tryParse(newGradeLevel) ?? 8 : 8,
       totalXp: 450,
       totalCoins: 200,
