@@ -112,10 +112,7 @@ class _StudentDocumentUploadScreenState
               selectedKeys: [_subjectNameController.text.trim().toLowerCase()],
             ),
           );
-          context.read<MascotCubit>().reactTemporarily(
-                MascotState.happy,
-                duration: const Duration(seconds: 2),
-              );
+          context.read<MascotCubit>().showHappy();
         }
       },
       builder: (context, state) {

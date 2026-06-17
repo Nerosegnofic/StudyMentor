@@ -9,7 +9,10 @@ import '../../../bloc/reports/reports_bloc.dart';
 import '../../../bloc/reports/reports_event.dart';
 import '../../../bloc/reports/reports_state.dart';
 import '../../../domain/models/student_model.dart';
+import '../../../domain/models/avatar_config.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../data/providers/dataconnect_provider.dart';
+import '../../widgets/avatar_widget.dart';
 import 'student_config_screen.dart';
 import 'subjects_skills_screen.dart';
 import 'reports_analysis_screen.dart';
@@ -47,6 +50,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
   int _xp = 0;
   int _coins = 0;
   int _streak = 0;
+  AvatarConfig? _avatarConfig;
 
   @override
   void initState() {
@@ -57,6 +61,15 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
         );
 
     _loadGamification();
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    try {
+      final raw = await DataConnectProvider().getStudentAvatar(_student.uid);
+      if (!mounted || raw == null) return;
+      setState(() => _avatarConfig = AvatarConfig.fromMap(raw));
+    } catch (_) {}
   }
 
   Future<void> _loadGamification() async {
@@ -102,6 +115,7 @@ class _StudentProfileDashboardState extends State<StudentProfileDashboard> {
                   _HeroProfileCard(
                     student: _student,
                     initial: _initial,
+                    avatarConfig: _avatarConfig,
                     xp: _xp,
                     coins: _coins,
                     streak: _streak,
@@ -193,13 +207,15 @@ class _StickyHeader extends StatelessWidget {
 class _HeroProfileCard extends StatelessWidget {
   final StudentModel student;
   final String initial;
+  final AvatarConfig? avatarConfig;
   final int xp;
   final int coins;
   final int streak;
-  
+
   const _HeroProfileCard({
     required this.student,
     required this.initial,
+    this.avatarConfig,
     required this.xp,
     required this.coins,
     required this.streak,
@@ -231,18 +247,20 @@ class _HeroProfileCard extends StatelessWidget {
       child: Column(
         children: [
           // Avatar
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: _kPrimary,
-            child: Text(
-              initial,
-              style: GoogleFonts.cairo(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+          avatarConfig != null
+              ? AvatarWidget(config: avatarConfig!, size: 64)
+              : CircleAvatar(
+                  radius: 32,
+                  backgroundColor: _kPrimary,
+                  child: Text(
+                    initial,
+                    style: GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
           const SizedBox(height: 12),
 
           // Name

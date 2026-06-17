@@ -414,6 +414,10 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   void initState() {
     super.initState();
     _questionStartedAt = DateTime.now();
+    // Put the mascot into thinking state as soon as the question is visible.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<MascotCubit>().startThinking();
+    });
   }
 
   @override
@@ -455,9 +459,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
     setState(() => _revealed = true);
 
     final isCorrect = _selectedOption == _currentQuestion.correctAnswer;
-    context.read<MascotCubit>().reactTemporarily(
-          isCorrect ? MascotState.happy : MascotState.sad,
-        );
+    // Persist happy/sad until the student moves to the next question.
+    context.read<MascotCubit>().react(isCorrect);
   }
 
   void _advance(BuildContext context) {
@@ -467,6 +470,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
           );
       return;
     }
+    // Reset mascot to thinking for the next question.
+    context.read<MascotCubit>().startThinking();
     setState(() {
       _currentIndex++;
       _hintsUsed = 0;
@@ -500,46 +505,64 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
           borderRadius: BorderRadius.circular(24),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  color: _kAmberLight,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.lightbulb_rounded,
-                  color: _kAmber,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Hint $hintNumber',
-                style: GoogleFonts.cairo(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: _kInk,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Directionality(
-                textDirection: _dirOf(hintText),
-                child: Text(
-                  hintText,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.cairo(
-                    fontSize: 15,
-                    height: 1.5,
-                    color: _kInk,
+              // Header row: hint content left, thinking mascot right
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: _kAmberLight,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.lightbulb_rounded,
+                                color: _kAmber,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Hint $hintNumber',
+                              style: GoogleFonts.cairo(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: _kInk,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Directionality(
+                          textDirection: _dirOf(hintText),
+                          child: Text(
+                            hintText,
+                            textAlign: TextAlign.start,
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              height: 1.5,
+                              color: _kInk,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  MascotWidget(state: MascotState.thinking, size: 72),
+                ],
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -593,7 +616,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                 children: [
                   BlocBuilder<MascotCubit, MascotState>(
                     builder: (context, mascotState) =>
-                        MascotWidget(state: mascotState, size: 40),
+                        MascotWidget(state: mascotState, size: 56),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -980,6 +1003,7 @@ class _SolutionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = isCorrect ? _kGreen : _kAmber;
     final bg = isCorrect ? _kGreenLight : _kAmberLight;
+    final mascotEmotion = isCorrect ? MascotState.happy : MascotState.sad;
 
     return Container(
       width: double.infinity,
@@ -990,64 +1014,75 @@ class _SolutionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: accent),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Icon(
-                isCorrect ? Icons.check_circle : Icons.lightbulb_rounded,
-                size: 18,
-                color: accent,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isCorrect ? 'Correct!' : 'Solution',
-                style: GoogleFonts.roboto(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: accent,
+          // Left: label + optional correct answer + explanation
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      isCorrect ? Icons.check_circle : Icons.lightbulb_rounded,
+                      size: 18,
+                      color: accent,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isCorrect ? 'Correct!' : 'Solution',
+                      style: GoogleFonts.roboto(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          if (!isCorrect) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Correct answer',
-              style: GoogleFonts.roboto(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: _kMuted,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Directionality(
-              textDirection: _dirOf(question.correctAnswer),
-              child: Text(
-                question.correctAnswer,
-                textAlign: TextAlign.start,
-                style: GoogleFonts.cairo(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: _kInk,
+                if (!isCorrect) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Correct answer',
+                    style: GoogleFonts.roboto(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _kMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Directionality(
+                    textDirection: _dirOf(question.correctAnswer),
+                    child: Text(
+                      question.correctAnswer,
+                      textAlign: TextAlign.start,
+                      style: GoogleFonts.cairo(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: _kInk,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Directionality(
+                  textDirection: _dirOf(question.explanation),
+                  child: Text(
+                    question.explanation,
+                    textAlign: TextAlign.start,
+                    style: GoogleFonts.cairo(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: _kInk,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Directionality(
-            textDirection: _dirOf(question.explanation),
-            child: Text(
-              question.explanation,
-              textAlign: TextAlign.start,
-              style: GoogleFonts.cairo(
-                fontSize: 13,
-                height: 1.5,
-                color: _kInk,
-              ),
+              ],
             ),
           ),
+          // Right: mascot reacting to the answer
+          const SizedBox(width: 12),
+          MascotWidget(state: mascotEmotion, size: 72),
         ],
       ),
     );
@@ -1202,7 +1237,6 @@ class _LoadingView extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: MascotWithBubble(
           state: MascotState.thinking,
-          showLoadingSpinner: true,
           mascotSize: 100,
           message: message,
         ),

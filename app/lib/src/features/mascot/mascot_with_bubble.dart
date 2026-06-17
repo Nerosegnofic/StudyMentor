@@ -34,12 +34,6 @@ const _greenTheme = _BubbleTheme(
   text: Color(0xFF1B5E20),
 );
 
-const _blueTheme = _BubbleTheme(
-  background: Color(0xFFE3F2FD),
-  border: Color(0xFF2196F3), // Secondary Blue
-  text: Color(0xFF0D47A1),
-);
-
 const _amberTheme = _BubbleTheme(
   background: Color(0xFFFFF8E1),
   border: Color(0xFFFFC107), // Accent Amber
@@ -50,7 +44,7 @@ const Map<MascotState, _BubbleTheme> _kBubbleThemes = {
   MascotState.idle: _greenTheme,
   MascotState.happy: _greenTheme,
   MascotState.celebration: _greenTheme,
-  MascotState.thinking: _blueTheme,
+  MascotState.thinking: _greenTheme,
   MascotState.sad: _amberTheme,
 };
 

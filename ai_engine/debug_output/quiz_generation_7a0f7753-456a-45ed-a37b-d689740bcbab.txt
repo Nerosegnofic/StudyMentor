@@ -1,0 +1,371 @@
+==================================================
+QUIZ GENERATION DEBUG REPORT
+==================================================
+
+1. SKILLS PICKED FOR QUIZ
+--------------------------------------------------
+  1. Identifying vocabulary related to life in the Nile River
+  2. Answering comprehension questions about Nile River ecosystems
+  3. Identifying vocabulary related to desert animals and their ecological roles
+  4. Identifying vocabulary and moral lessons in a fictional narrative
+
+2. PAYLOAD DETAILS & MASTERY LEVELS
+--------------------------------------------------
+  • Skill: Identifying vocabulary related to life in the Nile River
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 2
+    - Current Mastery Level: 0.18459652259601644
+
+  • Skill: Answering comprehension questions about Nile River ecosystems
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.18015781717948304
+
+  • Skill: Identifying vocabulary related to desert animals and their ecological roles
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.07744626758030641
+
+  • Skill: Identifying vocabulary and moral lessons in a fictional narrative
+    - Zone: preview
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.01
+
+3. FETCHED CHUNKS (RAG Context)
+--------------------------------------------------
+[Unit 3 > Lesson 5: Think and Create]
+## Now I can ...  
+**Identify vocabulary about life in the Nile River.**  
+Water hyacinth Crocodile and rabbit Crocodile Dragonflies Nile River  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Identify vocabulary about health.**  
+fit – mental health – stressed – lungs – muscles  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Identify vocabulary about extreme weather.**  
+Drought Wildfire Heatwave Lightning Sandstorm Flood  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Say these sounds:**  
+pl plant tr truck – tree dr drink bl black cr crops  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Say one-syllable words.**  
+arm – jump – meet – bread – leaf – feed – pot – flag  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Say these sounds:**  
+leaped flood boat  
+<page_number>60</page_number>
+
+---
+
+[Unit 1 > Lesson 1: icon]
+# 7 Read and write T (True) or F (False).  
+1. Crocodiles are hunted by many animals. ( )
+2. The Nile River is not important for both animals and people. ( )
+3. Small fish in the Nile River eat water weeds. ( )
+4. Crocodiles are the kings of the Nile River. ( )
+5. Big fish in the Nile River eat big animals. ( )  
+True/False checkmark and cross
+
+# 8 Discuss with your classmates.  
+1. If you were a small fish, what would be the hardest thing of living in the Nile?
+2. Name things that live in the Nile.
+3. What can you do to help keep the Nile clean and safe?  
+Students discussing  
+**Think** What would happen if people harmed the Nile River? How would that affect animals and humans?  
+<page_number>10</page_number>
+
+---
+
+| \*\*5. Our World, Our Resources\*\* | sunlight, water, soil, fossil fuel, minerals, wind, natural resources, cotton, electricity, fertile, cargo, digger, give up, cheerfully, path, thick, load | Formation and usage of comparative adjectives.                                                                                              | \*\*Reading:\*\*<br/>• Informational texts about Egypt's natural resources and their uses.<br/>\*\*Writing:\*\*<br/>• Object-perspective narratives<br/>\*\*Listening:\*\*<br/>• Stories and factual texts about the environment and resource use.<br/>• Prefixes<br/>\*\*Speaking:\*\*<br/>• Talk about resource use and conservation.<br/>• Express comparisons using comparative adjectives.        | • Environmental responsibility<br/>• Analytical thinking<br/>• Decision making | • Responsible management of resources<br/>• Appreciation of resources | A poster about resources       |
+| \*\*6. The Talking Earth\*\*        | canoe, Earth, Everglades, swamp, Naitonal Park, alligator, owl, shell, scientist, splash                                                                   | Use of expressive sentence structures and tense reflection (present vs. past) to articulate personal insights and narrative interpretation. | \*\*Reading:\*\*<br/>• Literary narrative exploring nature and environmental identity.<br/>\*\*Writing:\*\*<br/>• Creative reflections on personal and environmental themes.<br/>\*\*Listening:\*\*<br/>• Narrative listening for details and thematic understanding.<br/>\*\*Speaking:\*\*<br/>• Express emotions and personal reflections.<br/>• Discuss themes of nature, identity, and connection. | Reflection<br/>Emotional expression<br/>Creative thinking                      | Identity<br/>Connection with nature                                   | —                              |  
+<page_number>5</page_number>
+
+---
+
+[Unit 3 > Extreme Weather in Ancient Egypt]
+## The Weather in Ancient Egypt  
+**Ancient Egypt** had **weather** that made farming possible, even in the desert. The Nile River gave water and **rich soil**, which helped crops grow. But sometimes, the weather also brought problems like floods, droughts, and sandstorms.  
+**Floods:** The Nile River **flooded** every year. The water brought **rich soil** to the land, which helped crops grow. But sometimes, the floods were too strong and **damaged** farms. **To stop** **this,** the Ancient Egyptians built canals and **basins** to control the water and spread it over their fields.  
+A boat on the Nile River  
+**Droughts:** **Droughts** happened when there was **not enough rain**. The Nile’s water became low, and the **land became dry**. Crops could not grow. **To solve this**, the Ancient Egyptians made irrigation systems to bring water to their fields.  
+**Sandstorms:** **Sandstorms**, called Khamsin, brought **strong, hot winds** **with sand**. It was **hard to see and breathe**. People stayed inside to stay safe. **They built their homes with thick mud bricks** to protect themselves from the wind and sand.  
+The Ancient Egyptians didn’t have modern machines, but they found **smart** ways to survive. **They worked hard,** used simple tools, and protected themselves from heat, sand, and floods.  
+**Think** **How does weather affect the way people live, both in the past and now?**  
+<page_number>45</page_number>  
+Unit 3  
+**3 Choose the correct answer from a, b, c or d.**  
+1. The floods brought water and .................................... to the land.
+a. **sand**     b. **rich soil**     c. **rocks**                           d. **heat**  
+2. Droughts made the Nile’s water .................................... .
+a. **soil**     b. **spread**        c. **high**                            d. **low**  
+3. The .................................... protected the Ancient Egyptians from sandstorms.
+
+---
+
+| Unit                                | Vocabulary                                                                                                                                                 | Language in Use                                                                                                                             | Skills                                                                                                                                                                                                                                                                                                                                                                                                 | Life Skill(s)                                                                  | Core Value(s)                                                         | Integrated Learning Activities |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------ |
+
+---
+
+# A MESSAGE FROM  
+## THE MINISTRY OF EDUCATION AND TECHNICAL EDUCATION  
+**Welcome to Your English Learning Journey!**  
+Dear Students, Educators, and Stakeholders,  
+It is with great pleasure that the Ministry of Education presents the *Primary 5 Framework for Egyptian Learners*. This comprehensive textbook has been meticulously developed to support our young learners in acquiring essential English language skills while honoring and integrating the rich cultural heritage of Egypt.  
+**Our Vision for English Language Education:**  
+In today's interconnected world, proficiency in English is a vital skill that opens doors to global opportunities and fosters cross-cultural communication. Our vision is to equip Primary 5 students with a strong foundation in English, enabling them to navigate academic pursuits and future careers with confidence and competence.  
+**Key Features of the Textbook**  
+* **Culturally Relevant Stories:** Each unit features engaging fables inspired by Middle Eastern folklore, designed to resonate with students' cultural backgrounds while imparting valuable moral lessons.  
+* **Structured Learning Activities:** The textbook is organized into weekly sessions, each focusing on different aspects of language acquisition:  
+* **Listening and Speaking:** Interactive storytelling, discussions, and role-playing activities enhance listening comprehension and oral communication skills.  
+* **Reading and Phonics:** Phonics exercises and reading activities develop students' ability to decode and comprehend written English.  
+* **Writing and Vocabulary:** Targeted writing exercises and vocabulary-building activities encourage students to express themselves clearly and expand their word knowledge.  
+* **Cultural Integration:** Lessons are intertwined with cultural insights, promoting an appreciation for both the English language and Egyptian traditions.
+
+---
+
+# TERM 1 SCOPE AND SEQUENCE  
+| Unit                                 | Vocabulary                                                                                           | Language in Use                                         | Skills                                                                                                                                                                                                                                                                                                                                                                                                                                               | Life Skill(s)                                                              | Core Value(s)                                  | Integrated Learning Activities |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------ |
+
+---
+
+[Unit 1 > Lesson 3: Story Time]
+A split image showing a healthy, fruit-bearing apple tree on the left and a withered, leafless tree on the right.  
+Tom traveled to another place. Years passed and Tom came back home.  
+The tree looked sad. Its leaves **bent**, and its **branches** were weak. When Tom saw the tree, he realized that he had been **selfish**.  
+Tom started to **care for** the tree, watering it, and protecting it from the sun. Slowly, the tree began to become better.  
+Tom learned that taking care of something meant giving back, and he and the tree became the best of friends.  
+**Think** **How can we care for those who help us?**  
+<page_number>14</page_number>
+
+---
+
+[Unit 3 > Lesson 5: Think and Create]
+# Review 1  
+**1 Read and sort the words below into their categories.**  
+**storm – crocodile - lungs – heat wave – muscles - water weeds**  
+| \*\*My Body\*\* | \*\*Extreme Weather\*\* | \*\*The Nile River\*\* |
+| --------------- | ----------------------- | ---------------------- |  
+**2 Choose the correct answer from a, b, c or d.**  
+1. The ……………………….....………… systems brought water to crops in Ancient Egypt.
+**a.** mud brick   **b.** sandstorm  **c.** irrigation   **d.** wind
+2. Exercising and sleeping enough are good for our ……………………….....………… .
+**a.** mental health  **b.** snack   **c.** medicine   **d.** knowledge
+3. Some animals, like crocodiles, ……………………….....………… to get food.
+**a.** play   **b.** keep   **c.** sail   **d.** hunt
+4. I saw a deep ……………………….....………… that was full of water last week.
+**a.** tool   **b.** well   **c.** frog   **d.** sun  
+**3 Listen and fill in the missing letters.**  
+A truck
+**– – uck**  
+The Egyptian flag
+**– –ag**  
+A loaf of bread
+**br – – d**  
+A plant
+**– – ant**  
+<page_number>57</page_number>  
+Review 1  
+**4** **Read and write the correct form of the word(s) between brackets.**  
+1. Adel eats ........................... **(a)** apple every day.  
+2. I don’t go to the club. I ........................... **(always)** go there.  
+3. My sister didn’t ........................... **(went)** to the bakery shop yesterday.  
+4. Hala ........................... **(never)** plays tennis. She likes playing it.  
+5. I didn’t buy ........................... **(some)** toys today.  
+6. ........................... **(Was)** you at school last week?  
+**5** **Re-write the sentences using the instructions between brackets.**  
+1. He doesn’t watch TV at night. ........................................................................................................................................................................................................ ............................................... **(use “never”)**
+
+---
+
+[Unit 1: Food, Nature,]
+# **Unit 1** **Food, Nature,**  
+## and Culture  
+Three children having a picnic in a forest setting
+
+# Learning Outcomes  
+**Speaking**
+* Ask and answer questions about the Nile River and the hot desert
+* Use new vocabulary related to life in the Nile River and the hot desert
+* Recognize and repeat consonant clusters in common words  
+**Reading**
+* Discuss the moral of a short story
+* Identify the sequence of events and the end in a story
+* Reorder the steps of an Egyptian food recipe  
+**Listening**
+* Identify new vocabulary related to life in the Nile River
+* Answer comprehension questions based on a listening text about life in the Nile River  
+**Writing**
+* Complete sentences using the adverbs of frequency
+* Write a recipe using sequence words
+* Make a flyer about your favorite restaurant  
+Unit 1
+
+---
+
+[Unit 3 > Lesson 1]
+**3.** Why can’t farmers grow food in the US?
+........................................................................................................................................................................................................ ......................................
+**4.** What can Mazen and Dina do to help the planet?
+........................................................................................................................................................................................................ ......................................  
+**Think** **How do weather changes affect people, animals, and places we know?**  
+<page_number>43</page_number>  
+<page_number>44</page_number>
+**Unit 3**  
+**6** **Complete the word that describes the picture.**  
+A sandstorm in a desert landscape
+A flooded road during a storm
+A dry, cracked landscape with a small plant  
+1. s.................................... 2. f.................................... 3. d....................................  
+**7** **Read and circle the correct word.**  
+1. A lot of trees burned down in a **wildfire/drought.**
+2. During a **heat wave/flood,** the weather is very hot.
+3. A **thunderstorm/drought** can prevent farmers from growing food.  
+**8** **Complete the sentences using the words in the box.**  
+**damaged – spread – planet – news – stuck**  
+1. I was .................................... in my car during the flood. I couldn’t move.
+2. The wildfire .................................... quickly in the forest.
+3. I heard on the .................................... that there was a bad storm in the village.
+4. Medhat’s house was .................................... after the storm hit it.
+5. To save our ...................................., we must keep it clean.  
+**9** **Work with your partner. Read the example and describe the pictures.**  
+A girl speaking
+> **In Picture (1), there is a**
+> **heat wave. The man is**
+> **feeling very hot.**
+
+---
+
+<page_number>3</page_number>  
+<page_number>4</page_number>  
+| Unit                           | Vocabulary                                                                                                          | Language in Use                                                                                              | Skills                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Life Skill(s)                                               | Core Value(s)                                   | Integrated Learning Activities |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------- | ------------------------------ |
+
+---
+
+Ministry of Education and Technical Education logo
+
+# English  
+Three children reading and playing in a forest  
+2025/2026
+**Term 1**  
+Primary 5
+<page_number>1</page_number>  
+Ministry of Education and Technical Education logo  
+تهدي وزارة التربية والتعليم والتعليم الفني هذا الكتاب ، بكل الحب إلى الأطفال والأسر في جمهورية مصر العربية.  
+**"THE MINISTRY OF EDUCATION AND TECHNICAL EDUCATION**
+**DEDICATES THIS BOOK, WITH LOVE, TO THE CHILDREN AND**
+**FAMILIES OF THE ARAB REPUBLIC OF EGYPT."**  
+© 2025 Ministry of Education and Technical Education
+All rights reserved. No part of this publication may be reproduced, stored in a retrieval system, or transmitted in any form or by any means—electronic, mechanical, photocopying, recording, or otherwise—without the prior written permission of the copyright holders.  
+**Ministry of Education and Technical Education**
+**New Administrative Capital**
+**Cairo, Egypt**  
+* **Name :** [____________________]
+* **Class :** [____________________]
+* **School :** [____________________]  
+<page_number>2</page_number>
+
+---
+
+[Unit 2 > Lesson 1: Sports for Better Health]
+3. Why is **exercising regularly** important?
+________________________________________________________________________________________________________________________________________________________________________________________________________  
+4. How does **swimming** help the body?
+________________________________________________________________________________________________________________________________________________________________________________________________________  
+**4** star icon **Match the words to their definitions.**  
+| ① fit           | a. how you feel and think                         |
+| --------------- | ------------------------------------------------- |
+| ② mental health | b. the parts of your body that help you move      |
+| ③ stressed      | c. the organs in your chest that help you breathe |
+| ④ lungs         | d. feeling unhappy or tired                       |
+| ⑤ muscles       | e. being healthy and strong because you exercise  |  
+**5** star icon **Read and discuss with your partner.**  
+1. **What sport do you want to play to**
+**make yourself stronger?**  
+2. **Why is it important for you to stay**
+**healthy?**  
+Two boys sitting at a desk in a classroom talking to each other  
+<page_number>27</page_number>  
+Unit 2
+
+---
+
+[Unit 1 > Lesson 2: Food in the Hot Desert]
+# Lesson 2 Food in the Hot Desert  
+**1 Read and check (✔).**  
+**What animals do you think live in the desert?**  
+* **a.** Lions, elephants, and giraffes
+* **b.** Camels, snakes, and foxes
+* **c.** Fish, crocodiles, and turtles  
+A camel, a fennec fox, and a snake in the desert
+
+## Animals in the Desert  
+The desert is hot and dry, but many animals live there. Snakes often eat small animals like rats or lizards. Camels live in the desert, too. They eat plants to stay strong. Lizards eat insects, which give them energy. Some animals hide under rocks to stay cool during the day. Others, like owls, come out at night when it is cooler. Each animal has an important role in the desert. They help nature stay in balance.  
+**2 Choose the correct answer from a, b, c, or d.**  
+**1.** Snakes often eat small animals, like ………………………………… or lizards.
+**a.** rats     **b.** hippos                 **c.** camels                 **d.** lions  
+**2.** Camels eat ………………………………… .
+**a.** plants     **b.** insects              **c.** birds                  **d.** lizards  
+**3.** Insects give lizards ………………………………… .
+**a.** water      **b.** energy               **c.** food                   **d.** home  
+**4.** Each animal in the desert has an ………………………………… role to play.
+**a.** simple     **b.** easy                 **c.** important              **d.** hard  
+**3 Discuss with your classmates.**  
+Two boys looking at a book  
+**What other animals can live in the desert?**  
+**Think** **How can humans live in the desert?**  
+<page_number>11</page_number>  
+<page_number>12</page_number> Unit 1
+
+---
+
+[Unit 1 > Lesson 3]
+# Lesson 3  
+**5** **Read and write T (True) or F (False).**  
+1. **The apple tree gave the boy everything. ( )**  
+2. **The boy gave the tree water and food everyday. ( )**  
+3. **When Tom came back, the tree was strong and healthy. ( )**  
+**6** **Work in pairs. Read the story again and check (✔) the correct answer.**  
+**What is the moral of the story?**  
+**a.** We should appreciate those who care for us. [ ]  
+**b.** We should ignore people who help us. [ ]  
+**7** **Complete the summary using the words in the box.**  
+**selfish - strong - apples - weak**  
+Tom had a healthy apple tree. The tree gave Tom **(1)**.................................. and Tom played on it. Tom traveled away and when he came back, the tree was **(2)**.................................. . Tom knew that he was **(3)**................................... So he decided to take care of the tree. The tree grew **(4)**.................................. again.  
+**8** **Read and think.**  
+```mermaid
+graph TD
+A["**Problem****The boy took more from the****tree than he gave.**"] --> B["**Solution****He helped the tree grow****again.**"]
+B --> C["**Result****The tree became healthy. The****boy learned to care for it like it****cared for him.**"]
+```  
+<page_number>15</page_number>
+
+⚠️ PREVIOUSLY ASKED QUESTIONS (DO NOT REPEAT):
+  - "What does the word 'crocodile' mean?..."
+  - "Which of the following is the correct spelling of the adverb of frequency that means 100% of the time?..."
+  - "Which of the following is the correct spelling of the insect found near the Nile River?..."
+  - "What does the word 'water weeds' mean?..."
+  - "Which of the following is the correct spelling of the river that is important for animals and people in Egypt?..."
+  - "Which of the following is the correct spelling of the past simple form of the verb 'leap'?..."
+  - "Which of the following is the correct spelling of the desert animal with a hump?..."
+  - "What does the adverb of frequency 'never' mean?..."
+  - "According to the lesson, what does the phrase 'kings of the Nile River' mean when describing crocodiles?..."
+  - "What does the word 'lizard' mean?..."
+
+Generate COMPLETELY DIFFERENT questions with different numbers, names, and scenarios.
+
