@@ -14,6 +14,8 @@ import '../../../bloc/parent_profile/parent_profile_event.dart';
 import '../../../bloc/parent_profile/parent_profile_state.dart';
 import '../../../domain/models/user_model.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
+import 'parent_preferences.dart';
 
 class ParentAccountScreen extends StatefulWidget {
   const ParentAccountScreen({super.key});
@@ -326,7 +328,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
               setState(() => _isSaving = false);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message),
+                  content: Text(localizeError(state.message, AppLocalizations.of(context))),
                   backgroundColor: Colors.red.shade700,
                 ),
               );
@@ -455,6 +457,8 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                     ),
                     const SizedBox(height: 24),
                     _buildSaveButton(),
+                    const SizedBox(height: 12),
+                    _buildManagePreferencesButton(),
                     const SizedBox(height: 32),
                     _buildDangerZoneCard(),
                     const SizedBox(height: 16),
@@ -736,6 +740,37 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                   color: canSave ? Colors.white : const Color(0xFF94A3B8),
                 ),
               ),
+      ),
+    );
+  }
+
+  // ── manage preferences button ───────────────────────────────────────────────
+
+  Widget _buildManagePreferencesButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const ParentPreferencesScreen(),
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: const StadiumBorder(),
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF2196F3),
+          side: const BorderSide(color: Color(0xFF2196F3), width: 1.5),
+          elevation: 0,
+        ),
+        child: Text(
+          AppLocalizations.of(context).managePreferencesButton,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2196F3),
+          ),
+        ),
       ),
     );
   }

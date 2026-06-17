@@ -114,6 +114,12 @@ class ParentInactivityCheckService {
         final dedupKey = 'last_inactivity_notified_reference_$childUid';
         if (prefs.getString(dedupKey) == referenceKey) continue;
 
+        final studentEnabled = prefs.getBool(
+              'pref_${parentUid}_notif_student_$childUid',
+            ) ??
+            true;
+        if (!studentEnabled) continue;
+
         final studentName = student['full_name'] as String;
         await LocalNotificationService.instance.show(
           id: stableIntFromUuid(childUid),

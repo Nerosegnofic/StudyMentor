@@ -27,7 +27,29 @@ class StudentProfileBloc extends Bloc<StudentProfileEvent, StudentProfileState> 
       );
       emit(StudentProfileUpdateSuccess(updatedStudent));
     } catch (e) {
-      emit(StudentProfileError(e.toString()));
+      emit(StudentProfileError(_mapProfileError(e)));
     }
+  }
+
+  String _mapProfileError(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('wrong-password') ||
+        msg.contains('invalid-credential') ||
+        msg.contains('INVALID_LOGIN_CREDENTIALS')) {
+      return 'Current password is incorrect.';
+    }
+    if (msg.contains('weak-password')) {
+      return 'New password is too weak. Use at least 6 characters.';
+    }
+    if (msg.contains('requires-recent-login')) {
+      return 'Session expired. Please log out and log in again.';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Check your connection and try again.';
+    }
+    if (msg.contains('email-already-in-use')) {
+      return 'That email address is already in use by another account.';
+    }
+    return 'Update failed. Please try again.';
   }
 }

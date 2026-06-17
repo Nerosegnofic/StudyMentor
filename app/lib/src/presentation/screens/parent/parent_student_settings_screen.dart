@@ -6,8 +6,8 @@ import '../../../bloc/student_profile/student_profile_bloc.dart';
 import '../../../bloc/student_profile/student_profile_event.dart';
 import '../../../bloc/student_profile/student_profile_state.dart';
 import '../../../domain/models/student_model.dart';
-import '../../../data/providers/dataconnect_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class ParentStudentSettingsScreen extends StatefulWidget {
   final StudentModel student;
@@ -39,9 +39,6 @@ class _ParentStudentSettingsScreenState
   String _originalFullName = '';
   String _originalEmail = '';
 
-  final _usernameCtl = TextEditingController();
-  bool _loadingExtra = true;
-
   // Shown after a successful email-change request.
   String? _pendingEmailNotice;
 
@@ -63,34 +60,16 @@ class _ParentStudentSettingsScreenState
     _newPassCtl.addListener(_onFieldChanged);
     _confirmPassCtl.addListener(_onFieldChanged);
 
-    _loadExtra();
-
   }
 
   @override
   void dispose() {
     _fullNameCtl.dispose();
     _emailCtl.dispose();
-    _usernameCtl.dispose();
     _currentPassCtl.dispose();
     _newPassCtl.dispose();
     _confirmPassCtl.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadExtra() async {
-    try {
-      final profile = await DataConnectProvider().getStudentProfile(
-        widget.student.uid,
-      );
-      if (mounted) {
-        final username = profile['username'] as String? ?? '';
-        _usernameCtl.text = username;
-        setState(() => _loadingExtra = false);
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loadingExtra = false);
-    }
   }
 
   // ── dirty tracking ──────────────────────────────────────────────────────────
@@ -204,7 +183,7 @@ class _ParentStudentSettingsScreenState
           setState(() => _isSaving = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
+              content: Text(localizeError(state.message, AppLocalizations.of(context))),
               backgroundColor: Colors.red.shade700,
             ),
           );
@@ -224,7 +203,7 @@ class _ParentStudentSettingsScreenState
           appBar: AppBar(
             backgroundColor: const Color(0xFF2196F3),
             elevation: 4,
-            shadowColor: Colors.black.withOpacity(0.15),
+            shadowColor: Colors.black.withValues(alpha: 0.15),
             surfaceTintColor: Colors.transparent,
             iconTheme: const IconThemeData(color: Colors.white),
             title: Column(
@@ -270,7 +249,7 @@ class _ParentStudentSettingsScreenState
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -291,8 +270,6 @@ class _ParentStudentSettingsScreenState
                         _buildFullNameField(),
                         const SizedBox(height: 16),
                         _buildEmailField(),
-                        const SizedBox(height: 16),
-                        _buildUsernameField(),
                       ],
                     ),
                   ),
@@ -305,7 +282,7 @@ class _ParentStudentSettingsScreenState
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -465,55 +442,6 @@ class _ParentStudentSettingsScreenState
         const SizedBox(height: 6),
         Text(
           loc.studentSettingsEmailHelper,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-        ),
-      ],
-    );
-  }
-
-  // ── username (read-only, controller-driven so it updates after async load) ──
-
-  Widget _buildUsernameField() {
-    final loc = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          loc.fieldUsername,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _usernameCtl,
-          enabled: false,
-          style: const TextStyle(
-            color: Color(0xFF94A3B8),
-            fontSize: 15,
-          ),
-          decoration: _inputDecoration(
-            label: loc.fieldUsername,
-            icon: Icons.alternate_email_rounded,
-            enabled: false,
-          ).copyWith(
-            suffixIcon: _loadingExtra
-                ? const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : const Icon(Icons.lock_outline, size: 16, color: Color(0xFF94A3B8)),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          loc.usernameCannotBeChangedNotice,
           style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
       ],

@@ -41,7 +41,6 @@ mutation InsertParent($pinCode: String, $phoneNumber: String) @auth(level: USER)
 
 mutation InsertStudent(
   $parentUid: String!
-  $username: String!
   $gradeLevel: Int
 ) @auth(level: USER) {
   student_insert(
@@ -49,7 +48,6 @@ mutation InsertStudent(
       uid_expr: "auth.uid"
       userUid_expr: "auth.uid"
       parentUid: $parentUid
-      username: $username
       gradeLevel: $gradeLevel
     }
   )
@@ -107,24 +105,6 @@ mutation UpsertStudentSettings(
       notificationsEnabled: $notificationsEnabled
       soundEffectsEnabled: $soundEffectsEnabled
       backgroundMusicEnabled: $backgroundMusicEnabled
-    }
-  )
-}
-
-# ── Support Tickets ───────────────────────────────────────────────────────────
-
-mutation InsertSupportTicket(
-  $userId: String!
-  $userName: String!
-  $issueType: String!
-  $message: String!
-) @auth(level: USER, insecureReason: "Any authenticated student may submit a support ticket.") {
-  supportTicket_insert(
-    data: {
-      userId: $userId
-      userName: $userName
-      issueType: $issueType
-      message: $message
     }
   )
 }

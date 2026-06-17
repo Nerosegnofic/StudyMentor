@@ -24,7 +24,6 @@ type Student @table(name: "students", key: ["uid"]) {
   uid: String! @default(expr: "auth.uid")
   user: User!
   parent: Parent!
-  username: String! @col(dataType: "varchar(50)") @unique
   gradeLevel: Int
   # Last time this student completed a quiz. Null until their first quiz.
   lastActiveAt: Timestamp
@@ -69,17 +68,6 @@ type StudentSettings @table(name: "student_settings", key: ["studentUid"]) {
   notificationsEnabled: Boolean! @default(expr: "true")
   soundEffectsEnabled: Boolean! @default(expr: "true")
   backgroundMusicEnabled: Boolean! @default(expr: "false")
-}
-
-# Support tickets submitted from the Help Center.
-type SupportTicket @table(name: "support_tickets", key: ["id"]) {
-  id: UUID! @default(expr: "uuidV4()")
-  userId: String! @col(dataType: "varchar(128)")
-  userName: String! @col(dataType: "varchar(255)")
-  issueType: String! @col(dataType: "varchar(100)")
-  message: String! @col(dataType: "text")
-  status: String! @col(dataType: "varchar(20)") @default(expr: "'open'")
-  createdAt: Timestamp! @default(expr: "request.time")
 }
 
 # Records a shop item purchased by a student.

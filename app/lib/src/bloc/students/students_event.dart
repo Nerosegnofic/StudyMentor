@@ -24,7 +24,6 @@ class CreateStudentRequested extends StudentsEvent {
   final String password;
   final String parentUid;
   final int gradeLevel;
-  final String username;
   final List<AppRuleModel> rules;
   final StudentConfigModel config;
 
@@ -34,7 +33,6 @@ class CreateStudentRequested extends StudentsEvent {
     required this.password,
     required this.parentUid,
     required this.gradeLevel,
-    required this.username,
     required this.rules,
     required this.config,
   });
@@ -45,7 +43,6 @@ class CreateStudentRequested extends StudentsEvent {
         email,
         parentUid,
         gradeLevel,
-        username,
         rules,
         config,
       ];

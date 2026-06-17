@@ -466,11 +466,11 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
       },
     );
 
-    if (confirmed == true && mounted) {
-      context.read<SubjectBloc>().add(
-        RemoveSubjectRequested(studentUid: widget.student.uid, subjectKey: subject.subjectKey)
-      );
-    }
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+    context.read<SubjectBloc>().add(
+      RemoveSubjectRequested(studentUid: widget.student.uid, subjectKey: subject.subjectKey),
+    );
   }
 
   void _showAddSubjectModal(BuildContext context, List<String> existingKeys) {
