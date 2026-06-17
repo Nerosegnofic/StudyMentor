@@ -1,4 +1,4 @@
-from .skill_repo import save_skills_from_mastery_data, delete_skills_by_subject, get_skills_by_subject_id, get_skills_by_names
+from .skill_repo import save_skills_from_mastery_data, delete_skills_by_subject, get_skills_by_subject_id, get_skills_by_names, subject_has_skills
 from .bkt_repo import get_student_skill_state
 from .analytics_repo import (
     get_all_student_skill_states,
@@ -40,6 +40,7 @@ __all__ = [
     "delete_skills_by_subject",
     "get_skills_by_subject_id",
     "get_skills_by_names",
+    "subject_has_skills",
     "get_student_skill_state",
     "get_all_student_skill_states",
     "get_subject_mastery_hierarchy",

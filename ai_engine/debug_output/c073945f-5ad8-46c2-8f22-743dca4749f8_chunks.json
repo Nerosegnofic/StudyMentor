@@ -1,0 +1,53 @@
+[
+    {
+        "page_content": "Cairo University — FCAI | GP Appendices: Templates & Evaluation Criteria | April 2026\n\n# APPENDIX B  \n## Graduation Project Final Documentation Requirements  \n### B.1 — General Formatting Guidelines  \n| Document Length     | 50–70 pages (excluding cover, tables of contents, references, and appendices)                  |\n| ------------------- | ---------------------------------------------------------------------------------------------- |\n| Font                | Times New Roman or Arial, 12pt for body text                                                   |\n| Line Spacing        | 1.5 for body text; single spacing for tables and captions                                      |\n| Margins             | 2.5 cm on all sides                                                                            |\n| Page Numbers        | Bottom center, starting from Chapter 1                                                         |\n| Figures and Tables  | High resolution; numbered and captioned; listed in a separate List of Figures/Tables           |\n| References          | IEEE format; minimum 10 references                                                             |\n| Language            | English (unless the department head approves Arabic; bilingual abstract required in all cases) |\n| Submission Format   | PDF via the faculty platform, plus ONE bound printed copy                                      |\n| Submission Deadline | As announced in Appendix B.4 (Delivery Schedule)                                               |",
+        "metadata": {
+            "h1": "APPENDIX B",
+            "h2": "Graduation Project Final Documentation Requirements",
+            "h3": "B.1 — General Formatting Guidelines",
+            "substantive_score": 8,
+            "structural_score": 0,
+            "content_type": "substantive",
+            "word_count": 168,
+            "parent_unit": null,
+            "parent_concept": null,
+            "parent_lesson": null,
+            "chunk_role": "toc",
+            "document_id": "c073945f-5ad8-46c2-8f22-743dca4749f8"
+        }
+    },
+    {
+        "page_content": "### B.2 — Required Document Structure\nAll graduation project documents must follow the structure below. Departments may add domain-specific sub-sections within the defined chapters without removing any required element.  \n**Cover Page**\n* University name, faculty name, department name\n* Project title\n* Academic year\n* 'Graduation Project' designation and document type (Phase 1 / Final)\n* Supervisor(s) name(s) and title(s)\n* Team member names and student IDs  \n**Front Matter**\n* Table of Contents (with page numbers)\n* List of Figures\n* List of Tables\n* List of Abbreviations\n* Abstract (Arabic and English, 150–250 words each): problem, approach, outcome  \n**Chapter 1: Introduction**\n* 1.1 Background and Motivation\n* 1.2 Problem Definition\n* 1.3 Project Objectives and Proposed Solution\n* 1.4 Project Scope and Limitations  \nCairo University — FCAI | GP Appendices: Templates & Evaluation Criteria | April 2026  \n* 1.5 Development Methodology\n* 1.6 Tools and Technologies Used (Software and Hardware)\n* 1.7 Project Timeline / Gantt Chart\n* 1.8 Report Organization  \n**Chapter 2: Related Work**\n* Overview of existing systems, research, or solutions in the same domain\n* Comparative analysis: what distinguishes this project from existing work\n* All sources properly cited using IEEE format  \n**Chapter 3: System Analysis**\n* 3.1 Stakeholder Analysis\n* 3.2 Functional Requirements\n* 3.3 Non-Functional Requirements\n* 3.4 Use Case Diagrams with actor descriptions\n* 3.5 Feasibility Study (technical, economic, and operational — brief)  \n**Chapter 4: System Design**\n* 4.1 System Architecture / Component Diagram\n* 4.2 Class Diagrams\n* 4.3 Sequence Diagrams (for key use cases)\n* 4.4 Database Entity-Relationship Diagram (ERD) — if applicable\n* 4.5 User Interface Wireframes / Mockups\n* 4.6 Security Design Considerations\n* Note: Research-track projects replace design chapters with Research Methodology, Experimental Setup, and Data Analysis chapters.  \n**Chapter 5: Implementation**",
+        "metadata": {
+            "h1": "APPENDIX B",
+            "h2": "Graduation Project Final Documentation Requirements",
+            "h3": "B.2 — Required Document Structure",
+            "substantive_score": 12,
+            "structural_score": 5,
+            "content_type": "substantive",
+            "word_count": 293,
+            "parent_unit": "Chapter 1: Introduction",
+            "parent_concept": null,
+            "parent_lesson": "APPENDIX B",
+            "chunk_role": "toc",
+            "document_id": "c073945f-5ad8-46c2-8f22-743dca4749f8"
+        }
+    },
+    {
+        "page_content": "* 4.6 Security Design Considerations\n* Note: Research-track projects replace design chapters with Research Methodology, Experimental Setup, and Data Analysis chapters.  \n**Chapter 5: Implementation**\n* 5.1 Implementation Environment and Setup\n* 5.2 Key Implementation Details (algorithms, modules, major decisions)\n* 5.3 Sample Screenshots / Output Samples  \n**Chapter 6: Testing and Evaluation**\n* 6.1 Testing Strategy\n* 6.2 Test Cases and Results (table format)\n* 6.3 Performance Evaluation / Benchmarking (where applicable)\n* 6.4 Limitations and Known Issues  \n**Chapter 7: Conclusion and Future Work**\n* 7.1 Summary of Achievements\n* 7.2 Lessons Learned\n* 7.3 Future Enhancements  \n**References**\n* IEEE-format numbered reference list\n* Minimum 15 references; all must be cited in the text  \n**Appendices (optional)**\n* User manuals, source code excerpts, raw data tables, additional diagrams",
+        "metadata": {
+            "h1": "APPENDIX B",
+            "h2": "Graduation Project Final Documentation Requirements",
+            "h3": "B.2 — Required Document Structure",
+            "substantive_score": 8,
+            "structural_score": 5,
+            "content_type": "substantive",
+            "word_count": 126,
+            "parent_unit": "Chapter 5: Implementation",
+            "parent_concept": null,
+            "parent_lesson": "APPENDIX B",
+            "chunk_role": "unit_header",
+            "document_id": "c073945f-5ad8-46c2-8f22-743dca4749f8"
+        }
+    }
+]

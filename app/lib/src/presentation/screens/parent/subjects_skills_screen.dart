@@ -9,6 +9,8 @@ import 'parent_subject_detail_screen.dart';
 import '../../../bloc/subject/subject_bloc.dart';
 import '../../../bloc/subject/subject_event.dart';
 import '../../../bloc/subject/subject_state.dart';
+import '../../../bloc/subject_status/subject_status_cubit.dart';
+import '../../../data/catalog/document_models.dart';
 import '../student/student_documents.dart';
 import '../../../data/catalog/subject_metadata_registry.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -29,11 +31,22 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
 
   static const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
 
+  /// Child-scoped ingestion-status poll. The parent uploads on the child's behalf, so
+  /// this passes the child's uid to see THAT child's subjects (the endpoint falls back
+  /// to the JWT uid only when omitted). Drives the transient "Preparing…" banner.
+  late final SubjectStatusCubit _statusCubit;
 
   @override
   void initState() {
     super.initState();
     context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
+    _statusCubit = SubjectStatusCubit(studentUid: widget.student.uid)..start();
+  }
+
+  @override
+  void dispose() {
+    _statusCubit.close();
+    super.dispose();
   }
 
   void _openDocumentUpload(BuildContext context, List<String> existingKeys) {
@@ -98,6 +111,12 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
             return Column(
               children: [
                 _buildHeader(context, existingKeys),
+                // Transient "preparing" banner — only present while ≥1 subject is still
+                // ingesting; absent (normal UI) otherwise. Cards themselves are unchanged.
+                BlocBuilder<SubjectStatusCubit, SubjectStatusState>(
+                  bloc: _statusCubit,
+                  builder: (context, st) => _buildPreparingBanner(context, st),
+                ),
                 Expanded(
                   child: subjects.isEmpty
                       ? _buildEmptyState(context)
@@ -197,6 +216,72 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.add, color: Color(0xFF2196F3)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Maps an ingestion `stage` to a localized human label.
+  String _stageLabel(AppLocalizations loc, String? stage) {
+    switch (stage) {
+      case 'parsing':
+        return loc.subjectStageParsing;
+      case 'analyzing':
+        return loc.subjectStageAnalyzing;
+      case 'building_skills':
+        return loc.subjectStageBuildingSkills;
+      default:
+        return loc.subjectPreparingLabel;
+    }
+  }
+
+  /// Transient banner shown ONLY while ≥1 subject is still ingesting (or failed).
+  /// Returns an empty box (no space taken) otherwise, so the normal UI is unchanged
+  /// in the common all-ready case.
+  Widget _buildPreparingBanner(BuildContext context, SubjectStatusState st) {
+    final loc = AppLocalizations.of(context);
+    final processing = st.processing;
+    final failed = st.bySubjectId.values.where((s) => s.isFailed).toList();
+
+    if (processing.isEmpty && failed.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Prefer surfacing an in-progress subject; otherwise a failed one.
+    final bool isFailed = processing.isEmpty;
+    final SubjectStatus s = isFailed ? failed.first : processing.first;
+    final String message = isFailed
+        ? loc.subjectIngestFailed
+        : '${_stageLabel(loc, s.stage)} — ${s.subjectName}';
+
+    final Color bg = isFailed ? const Color(0xFFFFEBEE) : const Color(0xFFFFF8E1);
+    final Color fg = isFailed ? const Color(0xFFB71C1C) : const Color(0xFF8D6E00);
+
+    return Container(
+      width: double.infinity,
+      color: bg,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          if (isFailed)
+            Icon(Icons.error_outline_rounded, color: fg, size: 20)
+          else
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: fg),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.cairo(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: fg,
+              ),
             ),
           ),
         ],

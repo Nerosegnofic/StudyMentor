@@ -172,6 +172,15 @@ class QuizSubmissionResponse {
 // Repository
 // ---------------------------------------------------------------------------
 
+/// Thrown when an upload is rejected because a document for the same subject is
+/// still ingesting (server returns 409). The bloc maps this to a friendly
+/// "please wait" message.
+class SubjectStillProcessingException implements Exception {
+  const SubjectStillProcessingException();
+  @override
+  String toString() => 'SubjectStillProcessingException';
+}
+
 /// Centralised HTTP client for all AI Engine endpoints.
 ///
 /// Every method automatically attaches the Firebase JWT obtained from the
@@ -248,6 +257,11 @@ class AiEngineRepository {
       headers: headers,
       body: jsonEncode(request.toJson()),
     );
+    // 409 = subject's curriculum is still ingesting (the server backstop). Surface it
+    // typed so the bloc shows the friendly "still preparing" message.
+    if (response.statusCode == 409) {
+      throw const SubjectStillProcessingException();
+    }
     _assertSuccess(response, 'generateQuiz');
     return GenerateQuizResponse.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);
@@ -352,6 +366,12 @@ class AiEngineRepository {
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
 
+    // 409 = a document for this subject is still ingesting (the server's concurrent-
+    // upload guard). Surface it as a typed exception so the bloc can show a friendly
+    // "still processing" message rather than a generic failure.
+    if (response.statusCode == 409) {
+      throw const SubjectStillProcessingException();
+    }
     if (response.statusCode != 200) {
       throw Exception(
           'uploadDocument failed [${response.statusCode}]: ${response.body}');
@@ -359,6 +379,27 @@ class AiEngineRepository {
 
     return DocumentUploadResponse.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  /// `GET /documents/subjects/status` — per-subject ingestion readiness for the
+  /// current student. Polled (only while something is processing) to drive the
+  /// "Preparing…" indicator, gate the Practice button, and detect the
+  /// processing→ready edge that triggers the first-quiz pre-warm.
+  /// [studentUid]: a PARENT passes the child's uid to see that child's subjects
+  /// (the parent uploads on the child's behalf); a student omits it and the
+  /// JWT uid is used server-side. Mirrors `getSubjectsAnalytics`.
+  Future<List<SubjectStatus>> getSubjectsStatus({String? studentUid}) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/documents/subjects/status').replace(
+      queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
+    );
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getSubjectsStatus');
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = (body['subjects'] as List? ?? const []);
+    return list
+        .map((e) => SubjectStatus.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // -------------------------------------------------------------------------

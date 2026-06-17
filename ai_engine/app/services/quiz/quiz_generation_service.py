@@ -12,6 +12,7 @@ from app.repositories import (
     upsert_student_subject_profile_last_quizzed,
     save_questions,
     get_recent_question_fingerprints,
+    subject_has_skills,
 )
 from app.services.quiz.subject_selector import get_priority_subject
 from app.services.quiz.builder import build_quiz_payload
@@ -184,6 +185,16 @@ def generate_quiz_for_student(
         effective_total, request_body.student_grade
     )
     if not payload:
+        # No skills yet. If a document for this subject is still ingesting, this is a
+        # "not ready yet" condition, not a user error — return 409 so the client can show
+        # a friendly "still preparing" message. (The app gate is the primary defense;
+        # this is the backstop for a stale client.)
+        doc_counts = document_repo.get_subject_doc_status(db, target_subject_id)
+        if doc_counts.get("processing", 0) > 0:
+            raise HTTPException(
+                status_code=409,
+                detail="This subject is still being prepared. Please try again in a moment."
+            )
         raise HTTPException(
             status_code=400,
             detail="Could not allocate questions. No skills found for this subject."
@@ -355,3 +366,44 @@ def generate_quiz_for_student(
         questions=return_questions,
         quiz_source=quiz_source,
     )
+
+
+def warm_first_quiz_for_subject(db: Session, student_uid: str, subject_id: int) -> None:
+    """
+    Best-effort pre-generation of a subject's FIRST quiz, so the student's first
+    "Practice" returns instantly as quiz_source="CACHED".
+
+    Invoked from the post-ingestion hook (`ingest_then_warm`) — the only place
+    guaranteed to run the moment a subject becomes quizzable, since the parent who
+    uploaded may have closed the app and the student app may not be open. Reuses
+    `generate_quiz_for_student` so the warmed (unsubmitted) session is exactly what the
+    cache-check path serves later; the VOLUNTARY/FORCED label is re-stamped when the
+    student actually starts the quiz, so the placeholder context here is harmless.
+
+    Guards (and never raises — a warm failure must not affect ingestion or status):
+      - only warm when skills exist (otherwise generation would 404/409 anyway),
+      - skip if an active unsubmitted session already exists (idempotent, no duplicates).
+    """
+    try:
+        if not subject_has_skills(db, subject_id):
+            return
+        if get_active_quiz_session(db, student_uid, subject_id):
+            print(
+                f"[QuizWarm] Skip subject_id={subject_id}: active session already exists.",
+                flush=True,
+            )
+            return
+
+        request = GenerateQuizRequest(
+            subject_id=subject_id,
+            quiz_context="VOLUNTARY",  # placeholder; re-stamped when the student starts it
+        )
+        generate_quiz_for_student(db=db, request_body=request, student_uid=student_uid)
+        print(
+            f"[QuizWarm] Pre-generated first quiz for student={student_uid}, "
+            f"subject_id={subject_id}.",
+            flush=True,
+        )
+    except Exception as e:
+        # Best-effort: log and move on. Ingestion (and the 'ready' status) must stand.
+        print(f"[QuizWarm] Warm failed for subject_id={subject_id}: {e}", flush=True)

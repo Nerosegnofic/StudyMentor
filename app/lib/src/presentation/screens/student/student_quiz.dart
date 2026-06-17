@@ -12,6 +12,7 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 // ---------------------------------------------------------------------------
 // Study Mentor design-system tokens (Student app)
@@ -1244,7 +1245,7 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              message,
+              localizeError(message, loc),
               textAlign: TextAlign.center,
               style: GoogleFonts.roboto(color: _kMuted, fontSize: 13),
             ),

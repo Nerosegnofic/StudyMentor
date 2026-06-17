@@ -6,6 +6,12 @@ import '../../domain/models/gamification_enums.dart';
 import 'quiz_event.dart';
 import 'quiz_state.dart';
 
+/// Stable sentinel emitted when quiz generation is rejected because the subject's
+/// curriculum is still being prepared (409). Mapped to a localized string by
+/// `localizeError` (`quizSubjectStillPreparing`).
+const String kQuizSubjectStillPreparingError =
+    'This subject is still being prepared. Please try again in a moment.';
+
 class QuizBloc extends Bloc<QuizEvent, QuizState> {
   final AiEngineRepository repository;
 
@@ -41,6 +47,8 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       // Transparently fast when a pre-warmed session exists (quiz_source="CACHED").
       final response = await repository.generateQuiz(request);
       emit(QuizLoaded(quizResponse: response));
+    } on SubjectStillProcessingException {
+      emit(QuizError(kQuizSubjectStillPreparingError));
     } catch (e) {
       emit(QuizError(e.toString()));
     }

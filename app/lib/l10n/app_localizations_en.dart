@@ -1943,6 +1943,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errUploadFailed => 'Upload failed. Please try again.';
 
   @override
+  String get errSubjectStillProcessing =>
+      'A document for this subject is still being prepared. Please wait until it finishes before uploading another.';
+
+  @override
+  String get subjectPreparingLabel => 'Preparing your subject…';
+
+  @override
+  String get subjectStageParsing => 'Reading your document…';
+
+  @override
+  String get subjectStageAnalyzing => 'Finding topics…';
+
+  @override
+  String get subjectStageBuildingSkills => 'Building your skill tree…';
+
+  @override
+  String get subjectPreparingPracticeDisabled => 'Preparing…';
+
+  @override
+  String get subjectIngestFailed =>
+      'We couldn\'t process this document. Please try uploading it again.';
+
+  @override
+  String get quizSubjectStillPreparing =>
+      'This subject is still being prepared. Please try again in a moment.';
+
+  @override
   String get errDeleteAccountFailed =>
       'Unable to delete account. Please try again.';
 

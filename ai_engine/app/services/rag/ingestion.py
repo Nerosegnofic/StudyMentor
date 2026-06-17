@@ -59,6 +59,7 @@ def process_and_ingest_document(
             # language. We then verify against the parsed content and re-parse ONCE in
             # the correct mode when the guess was clearly wrong (this owns the cost of
             # the extra LlamaParse call here, in the orchestrator, not in the parser).
+            document_repo.set_stage(db, document_id, "parsing")
             initial_lang = guess_language_from_subject_name(subject_name)
             full_text = parser_context.execute_parse(document_id, temp_file_path, language=initial_lang)
 
@@ -89,6 +90,7 @@ def process_and_ingest_document(
                 f.write(cleaned_text)
 
             # Step 3: Extract Mastery Points (regex-based, zero API cost)
+            document_repo.set_stage(db, document_id, "analyzing")
             raw_mastery_data = extract_all_objectives(cleaned_text)
 
             # DEBUG DUMP 2: Raw Skills
@@ -157,13 +159,15 @@ def process_and_ingest_document(
                     print(f"[{document_id}] Tagged {tagged_count}/{len(langchain_docs)} chunks with skill_names.", flush=True)
 
             # Step 7: Store Vector Embeddings
+            document_repo.set_stage(db, document_id, "building_skills")
             save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
-            
+
             # Step 8: Save skills to DB
             if final_mastery_data:
                 save_skills_from_mastery_data(db, final_mastery_data, subject_id=subject_id)
 
-            # Mark the upload as fully ingested.
+            # Mark the upload as fully ingested (clear the in-flight stage).
+            document_repo.set_stage(db, document_id, None)
             document_repo.set_status(db, document_id, "ready")
 
         except Exception as e:
@@ -176,6 +180,44 @@ def process_and_ingest_document(
         finally:
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
+    finally:
+        db.close()
+
+
+def ingest_then_warm(
+    document_id: UUID,
+    file_content: bytes,
+    filename: str,
+    subject_id: int = 1,
+    firebase_uid: str = None,
+    subject_name: str = "",
+) -> None:
+    """
+    Background-task entrypoint: run the ingestion pipeline, then — only on success —
+    pre-warm the subject's first quiz.
+
+    This keeps `process_and_ingest_document` single-responsibility (PDF → curriculum +
+    skills): it is run untouched, and the "after a subject becomes ready" hook lives
+    here in the orchestrator. The warm runs in its OWN short-lived session (ingestion
+    closes its own session before returning) and is best-effort — `warm_first_quiz_for_subject`
+    never raises. If ingestion fails it raises, so the warm is naturally skipped.
+    """
+    process_and_ingest_document(
+        document_id=document_id,
+        file_content=file_content,
+        filename=filename,
+        subject_id=subject_id,
+        firebase_uid=firebase_uid,
+        subject_name=subject_name,
+    )
+
+    # Imported lazily to avoid a circular import (quiz layer imports repositories that
+    # would otherwise pull this module in at import time).
+    from app.services.quiz.quiz_generation_service import warm_first_quiz_for_subject
+
+    db = SessionLocal()
+    try:
+        warm_first_quiz_for_subject(db, firebase_uid, subject_id)
     finally:
         db.close()
 

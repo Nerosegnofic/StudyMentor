@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
@@ -49,6 +51,16 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   /// Null until loaded; falls back to 5 in the quiz request.
   int? _studentGrade;
 
+  /// Ingestion state for THIS subject ("processing" | "ready" | "failed"), or null
+  /// when there are no documents / not yet loaded. Drives the Practice gate so the
+  /// student can't launch a quiz while the curriculum is still being prepared.
+  String? _subjectState;
+
+  /// Bounded poll that runs ONLY while this subject is still `processing`, so the
+  /// Practice button flips from "Preparing…" to enabled live (no need to leave/re-open
+  /// the screen). Cancelled as soon as the subject is no longer processing, and on dispose.
+  Timer? _statusPoll;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +68,37 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
     _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
     _loadConfig();
     _loadGrade();
+    _loadSubjectState();
+  }
+
+  @override
+  void dispose() {
+    _statusPoll?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadSubjectState() async {
+    try {
+      // Student side → no studentUid (the JWT uid is the student).
+      final statuses = await AiEngineRepository.instance.getSubjectsStatus();
+      if (!mounted) return;
+      final match = statuses.where((s) => s.subjectId == widget.subjectId);
+      final newState = match.isEmpty ? null : match.first.state;
+      setState(() => _subjectState = newState);
+
+      // Keep polling while preparing; stop the moment it's ready/failed/absent.
+      if (newState == 'processing') {
+        _statusPoll ??= Timer.periodic(
+          const Duration(seconds: 12),
+          (_) => _loadSubjectState(),
+        );
+      } else {
+        _statusPoll?.cancel();
+        _statusPoll = null;
+      }
+    } catch (_) {
+      // Best-effort gate; on failure leave Practice enabled (server 409 is the backstop).
+    }
   }
 
   Future<void> _loadGrade() async {
@@ -254,60 +297,73 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           ],
 
           // ── Practice CTA ─────────────────────────────────────────────────
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final gamificationBloc = context.read<GamificationBloc>();
-                final gardenBloc = context.read<GardenBloc>();
-                await Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    fullscreenDialog: true,
+          // Gated while the subject's curriculum is still ingesting: the student
+          // can't start a quiz before skills exist. The server 409 is the backstop.
+          Builder(builder: (context) {
+            final isPreparing = _subjectState == 'processing';
+            return SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: isPreparing
+                    ? null
+                    : () async {
+                        final gamificationBloc = context.read<GamificationBloc>();
+                        final gardenBloc = context.read<GardenBloc>();
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            fullscreenDialog: true,
 
-                    builder: (_) => MultiBlocProvider(
-                      providers: [
-                        BlocProvider.value(value: gamificationBloc),
-                        BlocProvider.value(value: gardenBloc),
-                      ],
-                      child: QuizOverlayPage(
-                        repository: AiEngineRepository.instance,
-                        studentId: widget.studentUid,
-                        contextType: QuizContext.voluntary,
-                        subjectId: widget.subjectId,
-                        studentGrade: _studentGrade,
-                        totalQuestions: switch (_config.quizCount) {
-                          Auto() => 5,
-                          Fixed(:final count) => count,
-                        },
-                        autoLength: _config.quizCount is Auto,
-                      ),
+                            builder: (_) => MultiBlocProvider(
+                              providers: [
+                                BlocProvider.value(value: gamificationBloc),
+                                BlocProvider.value(value: gardenBloc),
+                              ],
+                              child: QuizOverlayPage(
+                                repository: AiEngineRepository.instance,
+                                studentId: widget.studentUid,
+                                contextType: QuizContext.voluntary,
+                                subjectId: widget.subjectId,
+                                studentGrade: _studentGrade,
+                                totalQuestions: switch (_config.quizCount) {
+                                  Auto() => 5,
+                                  Fixed(:final count) => count,
+                                },
+                                autoLength: _config.quizCount is Auto,
+                              ),
 
-                    ),
-                  ),
-                );
-                if (mounted) {
-                  setState(() {
-                    _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
-                  });
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kGreen,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
+                            ),
+                          ),
+                        );
+                        if (mounted) {
+                          setState(() {
+                            _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
+                          });
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kGreen,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: const Color(0xFFCED4DA),
+                  shape: RoundedRectangleBorder(
 
-                    borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14)),
 
-                elevation: 0,
+                  elevation: 0,
+                ),
+                icon: Icon(
+                  isPreparing ? Icons.hourglass_top_rounded : Icons.play_arrow_rounded,
+                  size: 22,
+                ),
+                label: Text(
+                  isPreparing
+                      ? loc.subjectPreparingPracticeDisabled
+                      : loc.practiceNowButton,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
               ),
-              icon: const Icon(Icons.play_arrow_rounded, size: 22),
-              label: Text(
-                loc.practiceNowButton,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );

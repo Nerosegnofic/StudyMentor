@@ -6,7 +6,7 @@ record used for duplicate rejection (Task 3), content-detection metadata (Task 4
 and subject-delete cleanup (Task 2).
 """
 from collections import Counter
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -83,6 +83,101 @@ def set_status(db: Session, document_id: UUID, status: str) -> None:
     if doc:
         doc.status = status
         db.commit()
+
+
+def set_stage(db: Session, document_id: UUID, stage: Optional[str]) -> None:
+    """
+    Update the coarse progress stage (parsing | analyzing | building_skills, or None).
+
+    Purely a "which ingestion step am I on" report consumed by the readiness endpoint —
+    it carries no quiz/business logic, so it doesn't widen ingestion's responsibility.
+    """
+    doc = db.query(Document).filter(Document.document_id == document_id).first()
+    if doc:
+        doc.stage = stage
+        db.commit()
+
+
+def has_processing_document(db: Session, firebase_uid: Optional[str], subject_id: Optional[int]) -> bool:
+    """
+    True if this owner has a document for this subject that is still `processing`.
+
+    Used by the upload route to reject a second (different) upload for a subject whose
+    first document is still ingesting — avoiding the concurrent skill-save race.
+    """
+    if not firebase_uid or subject_id is None:
+        return False
+    return (
+        db.query(Document.document_id)
+        .filter(
+            Document.firebase_uid == firebase_uid,
+            Document.subject_id == subject_id,
+            Document.status == "processing",
+        )
+        .first()
+        is not None
+    )
+
+
+def get_subject_doc_status(db: Session, subject_id: int) -> Dict[str, int]:
+    """
+    Return counts of this subject's documents grouped by status,
+    e.g. {"processing": 1, "ready": 2, "failed": 0}.
+    """
+    counts = {"processing": 0, "ready": 0, "failed": 0}
+    for doc in db.query(Document.status).filter(Document.subject_id == subject_id).all():
+        status = doc.status or "processing"
+        counts[status] = counts.get(status, 0) + 1
+    return counts
+
+
+def get_latest_stage_for_subject(db: Session, subject_id: int) -> Optional[str]:
+    """Stage of the most recent still-processing document for a subject, or None."""
+    doc = (
+        db.query(Document)
+        .filter(Document.subject_id == subject_id, Document.status == "processing")
+        .order_by(Document.created_at.desc())
+        .first()
+    )
+    return doc.stage if doc else None
+
+
+def get_subjects_ingestion_status(db: Session, student_uid: str) -> List[dict]:
+    """
+    Per-subject ingestion readiness for the student's ACTIVE subjects.
+
+    Returns a list of dicts: {subject_id, subject_name, state, stage, has_skills}, where
+    `state` is derived per subject (any processing ⇒ "processing"; else any ready ⇒
+    "ready"; else only failed ⇒ "failed"). Subjects with no documents at all are omitted.
+
+    Composes sibling repositories so the controller stays free of DB queries.
+    """
+    # Imported here (not at module top) to avoid an import cycle between repos.
+    from app.repositories.subject_repo import get_active_subjects
+    from app.repositories.skill_repo import subject_has_skills
+
+    results: List[dict] = []
+    for subj in get_active_subjects(db, student_uid):
+        counts = get_subject_doc_status(db, subj.subject_id)
+        if counts.get("processing", 0) > 0:
+            state = "processing"
+        elif counts.get("ready", 0) > 0:
+            state = "ready"
+        elif counts.get("failed", 0) > 0:
+            state = "failed"
+        else:
+            continue  # no documents — nothing to report
+
+        results.append(
+            {
+                "subject_id": subj.subject_id,
+                "subject_name": subj.name,
+                "state": state,
+                "stage": get_latest_stage_for_subject(db, subj.subject_id) if state == "processing" else None,
+                "has_skills": subject_has_skills(db, subj.subject_id),
+            }
+        )
+    return results
 
 
 def get_document(db: Session, document_id: UUID) -> Optional[Document]:

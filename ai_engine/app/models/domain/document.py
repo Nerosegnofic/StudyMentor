@@ -29,6 +29,7 @@ class Document(Base):
     detected_language = Column(String, nullable=True)               # "ar" | "en" (script-detected)
     detected_subject = Column(String, nullable=True)                # content-classified subject NAME (e.g. "Mathematics")
     status = Column(String, default="processing")                   # processing | ready | failed
+    stage = Column(String, nullable=True)                           # coarse progress label: parsing | analyzing | building_skills (null once ready/failed)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     subject = relationship("Subject", back_populates="documents")

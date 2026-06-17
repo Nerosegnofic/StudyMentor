@@ -102,6 +102,22 @@ def get_active_subject_ids(db: Session, student_uid: str) -> set:
     active_privates = owned_ids - get_deselected_subject_ids(db, student_uid)
     return selected_globals | active_privates
 
+
+def get_active_subjects(db: Session, student_uid: str) -> list:
+    """
+    The student's ACTIVE subjects as full Subject rows (globals they selected + their own
+    private subjects minus deselected). Same membership rule as get_active_subject_ids;
+    used wherever the rows themselves are needed (e.g. the ingestion-status endpoint).
+    """
+    active_ids = get_active_subject_ids(db, student_uid)
+    if not active_ids:
+        return []
+    return (
+        db.query(Subject)
+        .filter(Subject.subject_id.in_(active_ids))
+        .all()
+    )
+
 def set_subject_selection(
     db: Session, student_uid: str, subject_id: int, is_selected: bool
 ) -> StudentSubjectProfile:
