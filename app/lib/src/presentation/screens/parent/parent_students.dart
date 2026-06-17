@@ -9,6 +9,7 @@ import '../../../bloc/students/students_state.dart';
 import '../../../domain/models/student_model.dart';
 import '../../widgets/student_card.dart';
 import 'student_profile_dashboard.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ParentStudents extends StatefulWidget {
   final String parentUid;
@@ -95,6 +96,7 @@ class _ParentStudentsState extends State<ParentStudents> {
   // ── Empty / banner widgets ─────────────────────────────────────────────────
 
   Widget _buildEmptyState() {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: SizedBox(
@@ -106,7 +108,7 @@ class _ParentStudentsState extends State<ParentStudents> {
               Icon(Icons.group_outlined, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
               Text(
-                'No children added yet.',
+                loc.noChildrenAddedYetTitle,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
@@ -115,7 +117,7 @@ class _ParentStudentsState extends State<ParentStudents> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Use the Add Student button to register your first child.',
+                loc.useAddStudentButtonHint,
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               ),
             ],
@@ -126,6 +128,7 @@ class _ParentStudentsState extends State<ParentStudents> {
   }
 
   Widget _buildUnverifiedBanner(List<StudentModel> unverifiedStudents) {
+    final loc = AppLocalizations.of(context);
     final count = unverifiedStudents.length;
     final names = unverifiedStudents
         .map((s) => s.fullName.split(' ').first)
@@ -162,9 +165,7 @@ class _ParentStudentsState extends State<ParentStudents> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  count == 1
-                      ? '$nameList hasn\'t activated their account yet.'
-                      : '$nameList haven\'t activated their accounts yet.',
+                  loc.studentNotActivatedBanner(count, nameList),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -172,9 +173,9 @@ class _ParentStudentsState extends State<ParentStudents> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Ask them to open the app, log in with the credentials you created, and verify their email.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFFBF360C)),
+                Text(
+                  loc.verifyEmailInstructionBanner,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFFBF360C)),
                 ),
               ],
             ),
@@ -185,6 +186,7 @@ class _ParentStudentsState extends State<ParentStudents> {
   }
 
   Widget _buildTapHintBanner() {
+    final loc = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -194,13 +196,13 @@ class _ParentStudentsState extends State<ParentStudents> {
         border: Border.all(color: const Color(0xFF4A6CF7).withOpacity(0.3)),
       ),
       child: Row(
-        children: const [
-          Icon(Icons.touch_app_outlined, color: Color(0xFF4A6CF7), size: 18),
-          SizedBox(width: 10),
+        children: [
+          const Icon(Icons.touch_app_outlined, color: Color(0xFF4A6CF7), size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Tap on a student card to monitor their activity, manage app usage rules, and review their academic status.',
-              style: TextStyle(
+              loc.tapStudentCardHint,
+              style: const TextStyle(
                 fontSize: 12,
                 color: Color(0xFF4A6CF7),
                 fontWeight: FontWeight.w500,
@@ -233,9 +235,9 @@ class _ParentStudentsState extends State<ParentStudents> {
           ),
           onPressed: () => _confirmAndDeleteStudent(student),
           icon: const Icon(Icons.delete_outline, size: 15),
-          label: const Text(
-            'Delete Account',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          label: Text(
+            AppLocalizations.of(context).deleteAccountTitle,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -351,7 +353,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
     if (_serverError != null) return _serverError;
     if (!_submitted) return null;
     if (_passwordController.text.trim().isEmpty) {
-      return 'Please enter the student\'s password.';
+      return AppLocalizations.of(context).validatorStudentPasswordRequired;
     }
     return null;
   }
@@ -388,14 +390,17 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
           setState(() {
             _isLoading = false;
             _serverError = isWrongPassword
-                ? 'Incorrect password. Please try again.'
+                ? AppLocalizations.of(context).incorrectPasswordRetryMessage
                 : state.message;
           });
         }
       },
       child: PopScope(
         canPop: !_isLoading,
-        child: AlertDialog(
+        child: Builder(
+          builder: (context) {
+            final loc = AppLocalizations.of(context);
+            return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -414,9 +419,9 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Delete Child Account',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              Text(
+                loc.deleteChildAccountTitle,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -433,16 +438,15 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
                       height: 1.5,
                     ),
                     children: [
-                      const TextSpan(
-                        text: 'You are about to permanently delete ',
+                      TextSpan(
+                        text: loc.deleteChildAccountWarningPrefix,
                       ),
                       TextSpan(
                         text: widget.student.fullName,
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
-                      const TextSpan(
-                        text:
-                            '\'s account. This will remove all of their data and cannot be undone.',
+                      TextSpan(
+                        text: loc.deleteChildAccountWarningSuffix,
                       ),
                     ],
                   ),
@@ -472,8 +476,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '$_firstName\'s login credentials, progress, and settings '
-                          'will all be permanently deleted.',
+                          loc.studentCredentialsWillBeDeleted(_firstName),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFFE65100),
@@ -495,8 +498,8 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
                     if (!_isLoading) _submit();
                   },
                   decoration: InputDecoration(
-                    labelText: 'Student\'s password',
-                    hintText: 'Password you created for $_firstName',
+                    labelText: loc.fieldStudentPassword,
+                    hintText: loc.passwordYouCreatedForHint(_firstName),
                     hintStyle: const TextStyle(fontSize: 12),
                     errorText: _passwordError,
                     isDense: true,
@@ -533,9 +536,9 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
           actions: [
             TextButton(
               onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color(0xFF666666)),
+              child: Text(
+                loc.commonCancel,
+                style: const TextStyle(color: Color(0xFF666666)),
               ),
             ),
             FilledButton(
@@ -555,9 +558,11 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Delete Permanently'),
+                  : Text(loc.deletePermanentlyButton),
             ),
           ],
+        );
+          },
         ),
       ),
     );

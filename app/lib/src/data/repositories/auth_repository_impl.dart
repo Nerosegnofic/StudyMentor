@@ -178,6 +178,10 @@ class AuthRepositoryImpl implements AuthRepository {
       dataConnect.getParentFullName(studentUid);
 
   @override
+  Future<String> getParentUidForStudent(String studentUid) =>
+      dataConnect.getParentUidForStudent(studentUid);
+
+  @override
   Future<bool> verifyParentCredentials({
     required String studentUid,
     required String parentEmail,
@@ -376,10 +380,13 @@ class AuthRepositoryImpl implements AuthRepository {
       studentPassword: studentPassword,
     );
     // Clean DataConnect and AI-engine in parallel; AI-engine is best-effort.
+    // A short timeout keeps deletion from hanging indefinitely if the
+    // AI-engine server is unreachable.
     await Future.wait([
       dataConnect.deleteStudentAllData(studentUid),
       AiEngineRepository.instance
           .deleteStudentAllData(studentUid)
+          .timeout(const Duration(seconds: 8))
           .catchError((e) {
         // Don't block account deletion if the AI engine is unreachable.
       }),

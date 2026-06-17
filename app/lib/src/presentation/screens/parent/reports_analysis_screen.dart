@@ -8,6 +8,7 @@ import '../../../bloc/reports/reports_event.dart';
 import '../../../bloc/reports/reports_state.dart';
 import '../../../domain/models/report_models.dart';
 import '../../../domain/models/student_model.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFF2196F3);
@@ -109,7 +110,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               ),
               Expanded(
                 child: Text(
-                  "Reports & Analysis",
+                  AppLocalizations.of(context).reportsAnalysisTitle,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     color: Colors.white,
@@ -127,6 +128,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   }
 
   Widget _buildTabBar() {
+    final loc = AppLocalizations.of(context);
     return Container(
       color: _kWhite,
       child: TabBar(
@@ -134,12 +136,12 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
         labelColor: _kPrimary,
         unselectedLabelColor: _kSubText,
         indicatorColor: _kPrimary,
-        labelStyle: GoogleFonts.roboto(fontWeight: FontWeight.bold),
-        unselectedLabelStyle: GoogleFonts.roboto(fontWeight: FontWeight.normal),
-        tabs: const [
-          Tab(text: 'Overview'),
-          Tab(text: 'Mastery'),
-          Tab(text: 'Habits'),
+        labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+        unselectedLabelStyle: GoogleFonts.cairo(fontWeight: FontWeight.normal),
+        tabs: [
+          Tab(text: loc.tabOverview),
+          Tab(text: loc.tabMastery),
+          Tab(text: loc.tabHabits),
         ],
       ),
     );
@@ -148,6 +150,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   // ── Overview Tab ────────────────────────────────────────────────────────────
 
   Widget _buildOverviewTab() {
+    final loc = AppLocalizations.of(context);
     return BlocBuilder<ReportsBloc, ReportsState>(
       builder: (context, state) {
         if (state.isWeeklyLoading) {
@@ -163,7 +166,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
         }
         final report = state.weeklyReport;
         if (report == null) {
-          return const Center(child: Text('No report available.'));
+          return Center(child: Text(loc.noReportAvailableMessage));
         }
 
         return SingleChildScrollView(
@@ -182,7 +185,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 children: [
                   Expanded(
                     child: _buildMetricCard(
-                      "Accuracy",
+                      loc.accuracyLabel,
                       "${report.overallAccuracyPercent.toInt()}%",
                       _kTeal,
                       delta: (report.accuracyDelta != null &&
@@ -195,7 +198,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildMetricCard(
-                      "Quizzes",
+                      loc.metricQuizzesLabel,
                       "${report.totalQuizzes}",
                       _kPrimary,
                       delta: report.quizzesDelta != 0
@@ -207,7 +210,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildMetricCard(
-                      "Study Time",
+                      loc.studyTimeLabel,
                       "${report.totalStudyTime.inHours}h ${report.totalStudyTime.inMinutes.remainder(60)}m",
                       _kAmber,
                       delta: report.studyMinutesDelta != 0
@@ -228,7 +231,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Accuracy Trend",
+                      loc.accuracyTrendTitle,
                       style: GoogleFonts.cairo(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -237,8 +240,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Weekly accuracy over the past 6 weeks",
-                      style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+                      loc.weeklyAccuracyTrendSubtitle,
+                      style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
                     ),
                     const SizedBox(height: 20),
                     if (report.accuracyTrend.length >= 2) ...[
@@ -267,15 +270,15 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                                   size: 36, color: _kSubText.withValues(alpha: 0.4)),
                               const SizedBox(height: 8),
                               Text(
-                                "Not enough data yet",
-                                style: GoogleFonts.roboto(
+                                loc.notEnoughDataYetMessage,
+                                style: GoogleFonts.cairo(
                                   fontSize: 13,
                                   color: _kSubText,
                                 ),
                               ),
                               Text(
-                                "Complete quizzes over multiple weeks to see a trend",
-                                style: GoogleFonts.roboto(
+                                loc.completeQuizzesTrendHint,
+                                style: GoogleFonts.cairo(
                                   fontSize: 11,
                                   color: _kSubText.withValues(alpha: 0.7),
                                 ),
@@ -326,7 +329,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          "Smart Insights",
+                          loc.smartInsightsTitle,
                           style: GoogleFonts.cairo(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -358,6 +361,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   }
 
   Widget _buildStreakCard(WeeklyReportModel report) {
+    final loc = AppLocalizations.of(context);
     final current = report.currentStreakDays;
     final best = report.longestStreakDays;
     final fraction = best > 0 ? (current / best).clamp(0.0, 1.0) : 0.0;
@@ -368,7 +372,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Streak Progress",
+            loc.streakProgressTitle,
             style: GoogleFonts.cairo(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -377,27 +381,27 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            "Current streak vs. personal best",
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            loc.currentStreakVsBestSubtitle,
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 20),
           Row(
             children: [
               _streakStat(Icons.local_fire_department_rounded, _kAmber,
-                  '$current', 'Current streak', 'days'),
+                  '$current', loc.currentStreakLabel, loc.daysUnitLabel),
               const SizedBox(width: 12),
               Expanded(child: Container(height: 1, color: const Color(0xFFE2E8F0))),
               const SizedBox(width: 12),
               _streakStat(Icons.emoji_events_rounded, _kTeal,
-                  '$best', 'Personal best', 'days'),
+                  '$best', loc.personalBestLabel, loc.daysUnitLabel),
             ],
           ),
           const SizedBox(height: 20),
           Text(
             best > 0
-                ? '${(fraction * 100).toInt()}% of personal best'
-                : 'No streak yet — start studying to build one!',
-            style: GoogleFonts.roboto(
+                ? loc.percentOfPersonalBest((fraction * 100).toInt())
+                : loc.noStreakYetMessage,
+            style: GoogleFonts.cairo(
               fontSize: 12,
               color: _kSubText,
               fontWeight: FontWeight.w500,
@@ -430,7 +434,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             const SizedBox(width: 6),
             Text(
               value,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: _kDarkText,
@@ -442,7 +446,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               padding: const EdgeInsets.only(bottom: 3),
               child: Text(
                 unit,
-                style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+                style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
               ),
             ),
           ],
@@ -450,7 +454,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+          style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
         ),
       ],
     );
@@ -576,26 +580,27 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   }
 
   String _generateInsight(WeeklyReportModel report) {
+    final loc = AppLocalizations.of(context);
     final q = report.totalQuizzes;
     final acc = report.overallAccuracyPercent.toInt();
     final streak = report.currentStreakDays;
 
     if (q == 0) {
-      return 'No quizzes completed this week yet. Encourage your student to log in and start a session to keep their streak alive!';
+      return loc.insightNoQuizzes;
     }
     if (acc >= 85 && q >= 5) {
-      return '$q quizzes completed this week with $acc% accuracy — an outstanding performance! The student is mastering the material at a high level. Keep the momentum going.';
+      return loc.insightOutstanding(q, acc);
     }
     if (acc >= 70 && q >= 3) {
-      return 'Good week overall: $q quizzes at $acc% accuracy. To push higher, visit the Mastery tab and focus on skills rated below 60%.';
+      return loc.insightGoodWeek(q, acc);
     }
     if (acc >= 55) {
-      return '$q quizzes completed with $acc% accuracy. There is room to improve — check the Mastery tab to identify specific concept gaps that need attention.';
+      return loc.insightRoomToImprove(q, acc);
     }
     if (streak >= 3) {
-      return 'The student has kept a $streak-day streak, which is great for consistency! Accuracy is at $acc% — reviewing weaker topics between sessions should help raise scores.';
+      return loc.insightStreakKept(streak, acc);
     }
-    return 'Accuracy was $acc% across $q quizzes this week. Encourage shorter, more focused study sessions and review any topics marked as weak in the Mastery tab.';
+    return loc.insightDefault(acc, q);
   }
 
   Widget _buildAlertsCard(List<AlertModel> alerts) {
@@ -677,7 +682,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
         children: [
           Text(
             value,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.cairo(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: color,
@@ -686,7 +691,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           const SizedBox(height: 4),
           Text(
             title,
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
             textAlign: TextAlign.center,
           ),
           if (delta != null) ...[
@@ -1004,12 +1009,12 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   children: state.subjects.map((sub) {
                     final isSelected = sub.id == state.selectedSubjectId;
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
+                      padding: const EdgeInsetsDirectional.only(end: 8.0),
                       child: ChoiceChip(
                         label: Text(sub.name),
                         selected: isSelected,
                         selectedColor: _kPrimary,
-                        labelStyle: GoogleFonts.roboto(
+                        labelStyle: GoogleFonts.cairo(
                           color: isSelected ? Colors.white : _kDarkText,
                           fontWeight: isSelected
                               ? FontWeight.bold
@@ -1159,6 +1164,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   }
 
   Widget _buildTotalMasteryCard(double percent, String label) {
+    final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1187,7 +1193,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Total Average Mastery",
+                  loc.totalAverageMasteryLabel,
                   style: GoogleFonts.cairo(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -1196,7 +1202,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   ),
                 ),
                 Text(
-                  "${percent.toStringAsFixed(1)}% Mastery Score",
+                  loc.masteryScorePercentLabel(percent.toStringAsFixed(1)),
                   style: GoogleFonts.cairo(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1215,7 +1221,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             ),
             child: Text(
               label,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
@@ -1228,6 +1234,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   }
 
   Widget _buildErrorAnalyticsCard(ErrorAnalyticModel analytics, String subjectName) {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: _cardDecoration(),
@@ -1239,7 +1246,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               const Icon(Icons.analytics_rounded, color: _kRed, size: 22),
               const SizedBox(width: 8),
               Text(
-                "Error Analytics",
+                loc.errorAnalyticsTitle,
                 style: GoogleFonts.cairo(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1299,7 +1306,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             children: [
               Text(
                 title,
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: _kDarkText,
@@ -1308,7 +1315,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               ),
               Text(
                 description,
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   fontSize: 11,
                   color: _kSubText,
                   height: 1.2,
@@ -1355,7 +1362,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               const SizedBox(width: 8),
               Text(
                 "$score%",
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: failed ? _kRed : _kDarkText,
@@ -1394,6 +1401,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   // ── Time & Habits Tab ───────────────────────────────────────────────────────
 
   Widget _buildTimeHabitsTab() {
+    final loc = AppLocalizations.of(context);
     return BlocBuilder<ReportsBloc, ReportsState>(
       builder: (context, state) {
         if (state.isHabitsLoading) {
@@ -1410,7 +1418,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
 
         final report = state.habitsReport;
         if (report == null) {
-          return const Center(child: Text('No habits report available.'));
+          return Center(child: Text(loc.noHabitsReportMessage));
         }
 
         return SingleChildScrollView(
@@ -1437,15 +1445,15 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Current Streak",
-                                style: GoogleFonts.roboto(
+                                loc.currentStreakStatLabel,
+                                style: GoogleFonts.cairo(
                                   fontSize: 12,
                                   color: _kSubText,
                                 ),
                               ),
                               Text(
-                                "${report.currentStreakDays} Days",
-                                style: GoogleFonts.roboto(
+                                loc.daysCountLabel(report.currentStreakDays),
+                                style: GoogleFonts.cairo(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: _kDarkText,
@@ -1474,15 +1482,15 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Longest Streak",
-                                style: GoogleFonts.roboto(
+                                loc.longestStreakStatLabel,
+                                style: GoogleFonts.cairo(
                                   fontSize: 12,
                                   color: _kSubText,
                                 ),
                               ),
                               Text(
-                                "${report.longestStreakDays} Days",
-                                style: GoogleFonts.roboto(
+                                loc.daysCountLabel(report.longestStreakDays),
+                                style: GoogleFonts.cairo(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: _kDarkText,
@@ -1645,6 +1653,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   }
 
   Widget _buildHeatmapCard(StudyHabitsReport report) {
+    final loc = AppLocalizations.of(context);
     // Map HeatmapDay objects into an array of 28 ints for the painter
     final studyMinutes = report.consistencyHeatmap
         .map((d) => d.studyMinutes)
@@ -1660,7 +1669,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Study Consistency Grid",
+            loc.studyConsistencyGridTitle,
             style: GoogleFonts.cairo(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1669,8 +1678,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           ),
           const SizedBox(height: 6),
           Text(
-            "Active study days over the last 4 weeks.",
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            loc.activeStudyDaysSubtitle,
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 20),
           Row(
@@ -1680,10 +1689,10 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 18),
-                  _heatmapWeekLabel("3w ago"),
-                  _heatmapWeekLabel("2w ago"),
-                  _heatmapWeekLabel("1w ago"),
-                  _heatmapWeekLabel("This wk"),
+                  _heatmapWeekLabel(loc.threeWeeksAgoLabel),
+                  _heatmapWeekLabel(loc.twoWeeksAgoLabel),
+                  _heatmapWeekLabel(loc.oneWeekAgoLabel),
+                  _heatmapWeekLabel(loc.thisWeekLabel),
                 ],
               ),
               const SizedBox(width: 12),
@@ -1695,13 +1704,13 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     children: [
                       Row(
                         children: [
-                          _heatmapDayLabel("M"),
-                          _heatmapDayLabel("T"),
-                          _heatmapDayLabel("W"),
-                          _heatmapDayLabel("T"),
-                          _heatmapDayLabel("F"),
-                          _heatmapDayLabel("S"),
-                          _heatmapDayLabel("S"),
+                          _heatmapDayLabel(loc.dayAbbrevMon),
+                          _heatmapDayLabel(loc.dayAbbrevTue),
+                          _heatmapDayLabel(loc.dayAbbrevWed),
+                          _heatmapDayLabel(loc.dayAbbrevThu),
+                          _heatmapDayLabel(loc.dayAbbrevFri),
+                          _heatmapDayLabel(loc.dayAbbrevSat),
+                          _heatmapDayLabel(loc.dayAbbrevSun),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -1725,8 +1734,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
-                "Less",
-                style: GoogleFonts.roboto(fontSize: 10, color: _kSubText),
+                loc.legendLessLabel,
+                style: GoogleFonts.cairo(fontSize: 10, color: _kSubText),
               ),
               const SizedBox(width: 6),
               _heatmapLegendBox(0),
@@ -1740,8 +1749,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               _heatmapLegendBox(100),
               const SizedBox(width: 6),
               Text(
-                "More",
-                style: GoogleFonts.roboto(fontSize: 10, color: _kSubText),
+                loc.legendMoreLabel,
+                style: GoogleFonts.cairo(fontSize: 10, color: _kSubText),
               ),
             ],
           ),
@@ -1756,7 +1765,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
       child: Center(
         child: Text(
           text,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             fontSize: 10,
             color: _kSubText,
             fontWeight: FontWeight.w500,
@@ -1772,7 +1781,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
       child: Center(
         child: Text(
           text,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             fontSize: 10,
             color: _kSubText,
             fontWeight: FontWeight.bold,
@@ -1822,7 +1831,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   Widget _chartLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.roboto(fontSize: 10, color: _kSubText),
+      style: GoogleFonts.cairo(fontSize: 10, color: _kSubText),
     );
   }
 }

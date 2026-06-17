@@ -26,6 +26,7 @@ import '../../widgets/student_home/today_stats_card.dart';
 import '../../widgets/student_home/weekly_study_chart.dart';
 import '../../widgets/student_home/monitored_apps_card.dart';
 import 'subject_detail_screen.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class StudentHome extends StatefulWidget {
   final String fullName;
@@ -281,6 +282,7 @@ class StudentHomeState extends State<StudentHome> {
   // ── Atmospheric garden ──────────────────────────────────────────────────────
 
   Widget _buildGardenArea() {
+    final loc = AppLocalizations.of(context);
     return BlocBuilder<GardenBloc, GardenState>(
       builder: (context, state) {
         if ((state is GardenLoading || state is GardenInitial) &&
@@ -298,7 +300,7 @@ class StudentHomeState extends State<StudentHome> {
               height: 180,
               child: Center(
                 child: Text(
-                  "Couldn't load your garden. Pull down to retry.",
+                  loc.gardenLoadErrorMessage,
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
               ),
@@ -319,7 +321,7 @@ class StudentHomeState extends State<StudentHome> {
                         size: 40, color: Colors.green.shade300),
                     const SizedBox(height: 10),
                     Text(
-                      'Ask a parent to add your subjects',
+                      loc.askParentAddSubjectsMessage,
                       style: TextStyle(
                           fontSize: 13, color: Colors.grey.shade600),
                     ),
@@ -500,11 +502,19 @@ class StudentHomeState extends State<StudentHome> {
     );
   }
 
+  /// Average mastery across subjects the student has actually started
+  /// (masteryPercent > 0). Untouched subjects are excluded so a few unstarted
+  /// plants don't drag the whole garden toward 0% (mirrors the backend's
+  /// "practiced skills only" rule). Returns null when nothing is started yet.
+  double? _avgGardenMastery() {
+    final practiced = _gardenCache.where((p) => p.masteryPercent > 0);
+    if (practiced.isEmpty) return null;
+    return practiced.fold(0.0, (sum, p) => sum + p.masteryPercent) /
+        practiced.length;
+  }
+
   double _overallGardenProgress() {
-    if (_gardenCache.isEmpty) return 0.0;
-    final avg = _gardenCache.fold(0.0, (sum, p) => sum + p.masteryPercent) /
-        _gardenCache.length;
-    return (avg / 100).clamp(0.0, 1.0);
+    return ((_avgGardenMastery() ?? 0.0) / 100).clamp(0.0, 1.0);
   }
 
   Widget _buildLoadingCard() {

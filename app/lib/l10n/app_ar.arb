@@ -1,0 +1,704 @@
+{
+  "@@locale": "ar",
+  "appTitle": "ستادي مينتور",
+  "languageSettingTitle": "اللغة",
+  "languageSettingSubtitle": "العربية / الإنجليزية",
+  "languageDialogTitle": "اختر اللغة",
+  "languageEnglish": "الإنجليزية",
+  "languageArabic": "العربية",
+  "commonCancel": "إلغاء",
+  "commonOk": "حسنًا",
+  "commonSave": "حفظ",
+  "commonRetry": "إعادة المحاولة",
+  "commonDelete": "حذف",
+  "commonClose": "إغلاق",
+  "commonError": "خطأ",
+  "commonLoading": "جارٍ التحميل...",
+
+  "studentSettingsTitle": "الإعدادات",
+  "preferencesSection": "التفضيلات",
+  "accountSection": "الحساب",
+  "aboutSection": "حول",
+  "pushNotificationsTitle": "الإشعارات",
+  "pushNotificationsSubtitle": "تلقي تذكيرات وتحديثات الدراسة",
+  "soundEffectsTitle": "المؤثرات الصوتية",
+  "soundEffectsSubtitle": "أصوات الأزرار والتفاعلات",
+  "backgroundMusicTitle": "الموسيقى الخلفية",
+  "backgroundMusicSubtitle": "تشغيل الموسيقى أثناء الدراسة",
+  "usageTimerNotificationTitle": "إشعار مؤقت الاستخدام",
+  "usageTimerNotificationSubtitle": "إظهار إشعار يعرض العد التنازلي للوقت المتبقي من استخدام التطبيق",
+  "cooldownTimerNotificationTitle": "إشعار مؤقت الاستراحة",
+  "cooldownTimerNotificationSubtitle": "إظهار إشعار يعرض العد التنازلي للوقت المتبقي من الاستراحة",
+  "appVersionLabel": "إصدار التطبيق",
+
+  "parentSettingsEmailPendingBanner": "تم إرسال رابط تأكيد إلى {email}. سيتم تحديث بريدك الإلكتروني بعد الضغط عليه.",
+  "parentSettingsAccountInfoSection": "معلومات الحساب",
+  "parentSettingsChangePasswordSection": "تغيير كلمة المرور",
+  "parentSettingsPasswordHint": "اترك جميع حقول كلمة المرور فارغة للاحتفاظ بكلمة المرور الحالية.",
+  "fieldFullName": "الاسم الكامل",
+  "validatorFullNameRequired": "الاسم الكامل مطلوب.",
+  "validatorFullNameMinLength": "يجب أن يكون الاسم مكونًا من حرفين على الأقل.",
+  "fieldEmail": "البريد الإلكتروني",
+  "parentSettingsEmailHelper": "سيتم إرسال رابط تأكيد إلى عنوان البريد الإلكتروني الجديد عند تغييره.",
+  "validatorEmailRequired": "البريد الإلكتروني مطلوب.",
+  "validatorEmailInvalid": "أدخل بريدًا إلكترونيًا صالحًا.",
+  "fieldCurrentPassword": "كلمة المرور الحالية",
+  "validatorCurrentPasswordForEmail": "أدخل كلمة مرورك الحالية لتغيير بريدك الإلكتروني.",
+  "validatorCurrentPasswordForNewPassword": "أدخل كلمة مرورك الحالية لتعيين كلمة مرور جديدة.",
+  "fieldNewPassword": "كلمة المرور الجديدة",
+  "validatorPasswordMinLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل.",
+  "validatorEnterCurrentPasswordFirst": "أدخل كلمة مرورك الحالية أولاً.",
+  "fieldConfirmNewPassword": "تأكيد كلمة المرور الجديدة",
+  "validatorPasswordsDoNotMatch": "كلمتا المرور غير متطابقتين.",
+  "saveChangesButton": "حفظ التغييرات",
+  "profileUpdatedSuccess": "تم تحديث الملف الشخصي بنجاح.",
+  "couldNotLoadLinkedStudents": "تعذر تحميل الطلاب المرتبطين. تحقق من اتصالك.",
+  "dangerZoneSection": "منطقة الخطر",
+  "deleteAccountTitle": "حذف الحساب",
+  "deleteAccountDescription": "يحذف حسابك وجميع بياناتك بشكل نهائي. يجب حذف جميع حسابات الطلاب أولاً.",
+  "deleteAccountBlockedTooltip": "أزل جميع الأطفال المرتبطين قبل حذف حسابك.",
+  "deleteAccountRetryTooltip": "تعذر التحقق من الطلاب المرتبطين. يرجى إعادة المحاولة.",
+  "deleteMyAccountButton": "حذف حسابي",
+  "childLoadErrorNotice": "تعذر التحقق من الطلاب المرتبطين. تم تعطيل الحذف حتى يتم حل هذه المشكلة.",
+  "linkedChildrenNotice": "لا يمكنك حذف حسابك إلا بعد إزالة جميع الأطفال المرتبطين. انتقل إلى تبويب الطلاب لحذف حساب كل طفل أولاً.",
+  "deleteYourAccountDialogTitle": "حذف حسابك",
+  "deleteYourAccountDialogContent": "سيؤدي هذا إلى حذف حسابك بشكل نهائي. هل أنت متأكد؟",
+  "continueButton": "استمرار",
+  "confirmYourPasswordDialogTitle": "تأكيد كلمة المرور",
+  "confirmPasswordDeleteWarning": "أدخل كلمة مرورك الحالية لحذف حسابك بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.",
+  "validatorEnterCurrentPassword": "يرجى إدخال كلمة مرورك الحالية.",
+
+  "signInTitle": "تسجيل الدخول",
+  "fieldPassword": "كلمة المرور",
+  "validatorPasswordRequired": "كلمة المرور مطلوبة.",
+  "loginEmailValidator": "يرجى إدخال بريد إلكتروني صالح.",
+  "registerPromptButton": "لم تسجل بعد؟ سجل كولي أمر",
+  "forgotPasswordButton": "هل نسيت كلمة المرور؟",
+
+  "registerAsParentTitle": "التسجيل كولي أمر",
+  "fieldConfirmPassword": "تأكيد كلمة المرور",
+  "registerButton": "تسجيل",
+  "alreadyRegisteredButton": "مسجل بالفعل؟ سجل الدخول",
+
+  "resetPasswordTitle": "إعادة تعيين كلمة المرور",
+  "passwordResetLinkSentMessage": "تم إرسال رابط إعادة تعيين كلمة المرور! تحقق من بريدك الوارد.",
+  "sendResetLinkButton": "إرسال رابط إعادة التعيين",
+
+  "confirmEmailTitle": "تأكيد البريد الإلكتروني",
+  "emailNotVerifiedYetMessage": "لم يتم تأكيد بريدك الإلكتروني بعد. تحقق من بريدك الوارد.",
+  "emailVerificationLinkSentMessage": "تم إرسال رابط تأكيد البريد الإلكتروني!",
+  "confirmEmailInstructions": "يرجى التحقق من بريدك الوارد وتأكيد بريدك الإلكتروني للاستمرار.",
+  "sendEmailVerificationButton": "إرسال رابط تأكيد البريد الإلكتروني",
+  "emailVerifiedButton": "لقد قمت بتأكيد بريدي الإلكتروني",
+  "logOutButton": "تسجيل الخروج",
+
+  "dashboardTitle": "لوحة التحكم",
+  "nothingHereYetTitle": "لا يوجد شيء هنا حتى الآن.",
+  "activityAlertsWillAppearHere": "ستظهر الأنشطة والتنبيهات هنا.",
+  "myChildrenTitle": "أطفالي",
+  "validatorStudentPasswordRequired": "يرجى إدخال كلمة مرور الطالب.",
+  "removeStudentTitle": "إزالة الطالب",
+  "removeStudentConfirmMessage": "سيؤدي هذا إلى حذف حساب {studentName} بشكل نهائي. أدخل كلمة المرور التي أنشأتها له للتأكيد.",
+  "fieldStudentPassword": "كلمة مرور الطالب",
+  "removeButton": "إزالة",
+
+  "noChildrenAddedYetTitle": "لم تتم إضافة أي أطفال حتى الآن.",
+  "useAddStudentButtonHint": "استخدم زر إضافة طالب لتسجيل طفلك الأول.",
+  "studentNotActivatedBanner": "{count, plural, =1{{names} لم يقم بتفعيل حسابه بعد.} other{{names} لم يقوموا بتفعيل حساباتهم بعد.}}",
+  "verifyEmailInstructionBanner": "اطلب منهم فتح التطبيق وتسجيل الدخول ببيانات الاعتماد التي أنشأتها، وتأكيد بريدهم الإلكتروني.",
+  "tapStudentCardHint": "اضغط على بطاقة الطالب لمراقبة نشاطه، وإدارة قواعد استخدام التطبيق، ومراجعة حالته الدراسية.",
+  "incorrectPasswordRetryMessage": "كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.",
+  "deleteChildAccountTitle": "حذف حساب الطفل",
+  "deleteChildAccountWarningPrefix": "أنت على وشك حذف حساب ",
+  "deleteChildAccountWarningSuffix": " بشكل نهائي. سيؤدي هذا إلى إزالة جميع بياناته ولا يمكن التراجع عن هذا الإجراء.",
+  "studentCredentialsWillBeDeleted": "سيتم حذف بيانات تسجيل دخول {firstName} وتقدمه وإعداداته بشكل نهائي.",
+  "passwordYouCreatedForHint": "كلمة المرور التي أنشأتها لـ {firstName}",
+  "deletePermanentlyButton": "حذف نهائيًا",
+
+  "gradeLabel": "الصف {grade}",
+  "studentRegisteredSuccessTitle": "تم تسجيل الطالب بنجاح!",
+  "studentRegisteredSuccessDetail": "على هاتف طفلك، افتح التطبيق وسجل الدخول ببيانات الاعتماد التي أنشأتها للتو. سيحتاج إلى تأكيد بريده الإلكتروني قبل البدء.",
+  "registerStudentTitle": "تسجيل طالب",
+  "createNewStudentAccountSubtitle": "إنشاء حساب طالب جديد",
+  "studentInformationSection": "معلومات الطالب",
+  "fieldUsername": "اسم المستخدم",
+  "usernameHint": "يظهر في لوحة المتصدرين (مثال: coolkid42)",
+  "validatorUsernameRequired": "اسم المستخدم مطلوب.",
+  "validatorUsernameMinLength": "3 أحرف على الأقل.",
+  "validatorUsernameMaxLength": "50 حرفًا كحد أقصى.",
+  "validatorUsernameFormat": "أحرف وأرقام وشرطات سفلية فقط.",
+  "fieldGrade": "الصف",
+  "validatorGradeRequired": "يرجى اختيار الصف.",
+  "accountCredentialsSection": "بيانات اعتماد الحساب",
+  "fieldEmailAddress": "البريد الإلكتروني",
+  "emailAddressHint": "سيستخدم الطالب هذا لتسجيل الدخول.",
+  "validatorConfirmPasswordRequired": "يرجى تأكيد كلمة المرور.",
+
+  "accountSettingsTitle": "إعدادات الحساب",
+  "unsavedChangesDialogTitle": "تغييرات غير محفوظة",
+  "unsavedChangesDialogContent": "لديك تغييرات غير محفوظة. هل تريد الخروج دون حفظها؟",
+  "stayButton": "البقاء",
+  "leaveButton": "خروج",
+  "logoutConfirmationMessage": "هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟",
+  "requiredToChangeEmailHint": "مطلوب لتغيير عنوان البريد الإلكتروني.",
+
+  "studentProfileStaticTitle": "الملف الشخصي للطالب",
+  "studentProfileUpdatedEmailPending": "تم تحديث الملف الشخصي. تم إرسال رابط تأكيد إلى {email}.",
+  "studentSettingsEmailPendingBanner": "تم إرسال رابط تأكيد إلى {email}. سيتم تحديث بريد الطالب الإلكتروني بعد الضغط عليه.",
+  "studentSettingsEmailHelper": "سيؤدي تغيير البريد الإلكتروني إلى إرسال رابط تأكيد إلى العنوان الجديد.",
+  "usernameCannotBeChangedNotice": "لا يمكن تغيير اسم المستخدم بعد التسجيل.",
+  "fieldStudentCurrentPassword": "كلمة مرور الطالب الحالية",
+  "validatorStudentCurrentPasswordForEmail": "أدخل كلمة مرور الطالب الحالية لتغيير بريده الإلكتروني.",
+  "validatorStudentCurrentPasswordForNewPassword": "أدخل كلمة مرور الطالب الحالية لتعيين كلمة مرور جديدة.",
+  "validatorEnterStudentCurrentPasswordFirst": "أدخل كلمة مرور الطالب الحالية أولاً.",
+
+  "discardChangesDialogContent": "سيؤدي التحديث إلى تجاهل التغييرات غير المحفوظة. هل تريد الاستمرار؟",
+  "discardAndRefreshButton": "تجاهل وتحديث",
+  "stillLoadingAppListMessage": "لا يزال جاري تحميل قائمة التطبيقات — يرجى الانتظار.",
+  "deviceNotSyncedMessage": "لم تتم مزامنة جهاز {name} بعد. اطلب منه فتح التطبيق مرة واحدة.",
+  "allAppsAlreadyConfiguredMessage": "تم إعداد جميع التطبيقات المثبتة بالفعل.",
+  "removeAppConfirmTitle": "إزالة {appLabel}؟",
+  "removeAppConfirmMessage": "هل أنت متأكد من رغبتك في إيقاف مراقبة هذا التطبيق؟ سيتمكن طفلك من الوصول إليه دون قيود.",
+  "configSavedSuccessMessage": "تم حفظ الإعدادات بنجاح.",
+  "configurationsTitle": "الإعدادات",
+  "screenTimeRewardTitle": "مكافأة وقت الشاشة لكل اختبار",
+  "screenTimeRewardDescription": "يحصل الطفل على هذا القدر من وقت الشاشة غير المقيد عن كل اختبار ينجح فيه.",
+  "setCooldownTimeTitle": "تحديد فترة الاستراحة",
+  "cooldownPeriodTitle": "فترة الاستراحة",
+  "cooldownPeriodDescription": "مدة القفل بعد انتهاء وقت الاستخدام.",
+  "appRulesTitle": "قواعد التطبيقات",
+  "noAppsConfiguredHint": "لا توجد تطبيقات مُعدّة حتى الآن. اضغط على + لإضافة أول تطبيق.",
+  "monitoredCountLabel": "{count} مُراقَب",
+  "pausedCountLabel": "{count} متوقف",
+  "manageAllAppsLabel": "إدارة جميع التطبيقات ({count})",
+  "quizSettingsTitle": "إعدادات الاختبار",
+  "questionsPerQuizLabel": "عدد الأسئلة لكل اختبار",
+  "quizCountAutoLabel": "تلقائي",
+  "quizCountAutoDescription": "سيقوم المعلم الذكي بضبط طول الاختبار ديناميكيًا بناءً على أداء الطفل الحالي.",
+  "quizCountFixedDescription": "يجب على الطفل الإجابة بشكل صحيح عن {count} أسئلة لإلغاء قفل جهازه.",
+  "editProfileButton": "تعديل الملف الشخصي",
+  "passwordRequiredToDeleteAccountMessage": "كلمة المرور مطلوبة لحذف الحساب.",
+  "deleteStudentDialogTitle": "حذف الطالب",
+  "deleteStudentWarningPrefix": "سيؤدي هذا إلى حذف حساب ",
+  "deleteStudentWarningSuffix": " بشكل نهائي — التقدم والعناصر والإعدادات. لا يمكن التراجع عن هذا الإجراء.",
+  "monitoredAndPausedLabel": "{monitored} مُراقَب · {paused} متوقف",
+  "noAppsConfiguredTitle": "لا توجد تطبيقات مُعدّة حتى الآن.",
+  "tapAddAppHint": "اضغط على \"إضافة تطبيق\" أدناه للبدء.",
+  "appStatusPaused": "متوقف",
+  "appStatusMonitored": "مُراقَب",
+  "addAppButton": "إضافة تطبيق",
+  "installedAppsFilterLabel": "التطبيقات المثبتة",
+  "installedAppsFilterSubtitle": "التطبيقات التي قام الطالب بتنزيلها",
+  "allAppsFilterLabel": "جميع التطبيقات",
+  "allAppsFilterSubtitle": "يشمل تطبيقات النظام والمثبتة مسبقًا",
+  "selectAppsTitle": "اختر التطبيقات",
+  "searchAppsHint": "البحث عن تطبيقات…",
+  "addSelectedButton": "إضافة المحدد",
+  "noAppsMatchQuery": "لا توجد تطبيقات تطابق \"{query}\"",
+  "noUserInstalledAppsFound": "لم يتم العثور على تطبيقات مثبتة من قِبل المستخدم",
+  "switchToAllAppsHint": "بدّل إلى جميع التطبيقات لرؤية تطبيقات النظام",
+  "setRewardTimeTitle": "تحديد وقت المكافأة",
+  "presetMinutesLabel": "{minutes} دقيقة",
+  "preset1HourLabel": "ساعة واحدة",
+  "saveTimeButton": "حفظ الوقت",
+
+  "masteryTierAdvanced": "متقدم",
+  "masteryTierProficient": "ماهر",
+  "masteryTierDeveloping": "في تطور",
+  "masteryTierBeginner": "مبتدئ",
+  "sortQuizzesTitle": "ترتيب الاختبارات",
+  "sortDateNewestToOldest": "التاريخ: من الأحدث إلى الأقدم",
+  "sortDateOldestToNewest": "التاريخ: من الأقدم إلى الأحدث",
+  "sortScoreHighestToLowest": "الدرجة: من الأعلى إلى الأقل",
+  "sortScoreLowestToHighest": "الدرجة: من الأقل إلى الأعلى",
+  "overallMasteryLevelLabel": "مستوى التمكن الإجمالي",
+  "accuracyLabel": "الدقة",
+  "quizzesDoneLabel": "الاختبارات المكتملة",
+  "timeSpentLabel": "الوقت المستغرق",
+  "skillsProgressTitle": "تقدم المهارات",
+  "seeAllLabel": "عرض الكل",
+  "quizHistoryTitle": "سجل الاختبارات",
+  "sortSkillsTitle": "ترتيب المهارات",
+  "sortMasteryLowestFirst": "التمكن: من الأقل أولاً",
+  "sortMasteryHighestFirst": "التمكن: من الأعلى أولاً",
+  "sortAZLabel": "أ - ي",
+  "recommendationNotStarted": "لم تبدأ بعد — شجّع طفلك على تجربة هذه المهارة",
+  "recommendationUrgent": "تحتاج إلى اهتمام عاجل — يُنصح بجلسات تدريب يومية قصيرة",
+  "recommendationProgress": "تقدم جيد — مراجعة الأخطاء السابقة ستساعد",
+  "recommendationOnTrack": "على المسار الصحيح — جلسات قليلة أخرى ستحقق التمكن",
+  "recommendationStrong": "مهارة قوية — مراجعة دورية للحفاظ عليها",
+  "statTotalLabel": "الإجمالي",
+  "allSkillsTitle": "جميع المهارات",
+  "correctOfAttemptsLabel": "{correct} صحيحة / {attempts} محاولات",
+  "neverPracticedLabel": "لم تتم الممارسة من قبل",
+  "lastPracticedLabel": "آخر مرة: {date}",
+  "uploadCurriculumTitle": "رفع المنهج",
+  "noSubjectsYetTitle": "لا توجد مواد بعد",
+  "noSubjectsYetDescription": "اضغط على زر \"+\" في الأعلى لبدء تتبع المواد أو رفع منهج جديد لـ {studentName}.",
+  "subjectsAndSkillsTitle": "المواد والمهارات",
+  "skillsTrackedLabel": "{count} مهارة مُتتبعة",
+  "masteryLabel": "التمكن",
+  "removeSubjectConfirmTitle": "إزالة {subjectName}؟",
+  "removeSubjectConfirmMessage": "هل أنت متأكد من رغبتك في إزالة هذه المادة؟",
+  "searchSubjectsHint": "البحث عن المواد...",
+  "addSelectedCountButton": "إضافة المحدد ({count})",
+
+  "noQuizzesYetMessage": "لا توجد اختبارات بعد",
+  "allQuizzesTitle": "جميع الاختبارات",
+
+  "tabOverview": "نظرة عامة",
+  "tabMastery": "التمكن",
+  "tabHabits": "العادات",
+  "reportsAnalysisTitle": "التقارير والتحليلات",
+  "noReportAvailableMessage": "لا يوجد تقرير متاح.",
+  "metricQuizzesLabel": "الاختبارات",
+  "studyTimeLabel": "وقت الدراسة",
+  "accuracyTrendTitle": "اتجاه الدقة",
+  "weeklyAccuracyTrendSubtitle": "الدقة الأسبوعية خلال آخر 6 أسابيع",
+  "notEnoughDataYetMessage": "لا توجد بيانات كافية بعد",
+  "completeQuizzesTrendHint": "أكمل اختبارات على مدار عدة أسابيع لرؤية الاتجاه",
+  "streakProgressTitle": "تقدم سلسلة الأيام",
+  "currentStreakVsBestSubtitle": "السلسلة الحالية مقارنة بأفضل سلسلة",
+  "currentStreakLabel": "السلسلة الحالية",
+  "personalBestLabel": "أفضل رقم شخصي",
+  "daysUnitLabel": "أيام",
+  "percentOfPersonalBest": "{percent}% من أفضل رقم شخصي",
+  "noStreakYetMessage": "لا توجد سلسلة بعد — ابدأ الدراسة لبناء واحدة!",
+  "smartInsightsTitle": "رؤى ذكية",
+  "insightNoQuizzes": "لم يتم إكمال أي اختبارات هذا الأسبوع بعد. شجّع طفلك على تسجيل الدخول وبدء جلسة للحفاظ على سلسلته!",
+  "insightOutstanding": "تم إكمال {quizzes} اختبارات هذا الأسبوع بدقة {accuracy}% — أداء متميز! يتمكن الطالب من المادة بمستوى عالٍ. حافظ على هذا الزخم.",
+  "insightGoodWeek": "أسبوع جيد بشكل عام: {quizzes} اختبارات بدقة {accuracy}%. لتحسين الأداء أكثر، تفقد تبويب التمكن وركّز على المهارات الأقل من 60%.",
+  "insightRoomToImprove": "تم إكمال {quizzes} اختبارات بدقة {accuracy}%. هناك مجال للتحسين — تفقد تبويب التمكن لتحديد ثغرات المفاهيم التي تحتاج إلى اهتمام.",
+  "insightStreakKept": "حافظ الطالب على سلسلة لمدة {streak} أيام، وهذا رائع للاستمرارية! الدقة عند {accuracy}% — مراجعة المواضيع الأضعف بين الجلسات قد تساعد في رفع الدرجات.",
+  "insightDefault": "كانت الدقة {accuracy}% خلال {quizzes} اختبارات هذا الأسبوع. شجّع على جلسات دراسة أقصر وأكثر تركيزًا، وراجع أي مواضيع مُحددة كضعيفة في تبويب التمكن.",
+  "noMasteryReportMessage": "لا يوجد تقرير تمكن متاح.",
+  "totalAverageMasteryLabel": "متوسط التمكن الإجمالي",
+  "masteryScorePercentLabel": "{percent}% درجة التمكن",
+  "masteredLabel": "متمكن",
+  "strongAreasTitle": "🔥 نقاط القوة",
+  "noStrongAreasMessage": "لم يتم تحديد نقاط قوة بعد.",
+  "needsWorkAreasTitle": "⚠️ تحتاج إلى عمل",
+  "noWeakAreasMessage": "لم يتم تحديد نقاط ضعف بعد.",
+  "errorAnalyticsTitle": "تحليلات الأخطاء",
+  "commonMistakeTypesLabel": "أكثر أنواع الأخطاء شيوعًا في اختبارات {subject}.",
+  "carelessMistakesLabel": "أخطاء عدم الانتباه ({percent}%)",
+  "carelessMistakesDescription": "الإجابة بسرعة كبيرة على الحسابات",
+  "conceptGapsLabel": "ثغرات في المفاهيم ({percent}%)",
+  "conceptGapsDescription": "صعوبة في المواضيع المُقدمة حديثًا",
+  "timePressureLabel": "ضغط الوقت ({percent}%)",
+  "timePressureDescription": "عدم الانتهاء ضمن مؤقت الاختبار",
+  "noHabitsReportMessage": "لا يوجد تقرير عادات متاح.",
+  "currentStreakStatLabel": "السلسلة الحالية",
+  "longestStreakStatLabel": "أطول سلسلة",
+  "daysCountLabel": "{count} أيام",
+  "studyVsAppUsageTitle": "وقت الدراسة مقابل استخدام التطبيقات المُراقبة",
+  "studyVsAppUsageSubtitle": "قارن وقت التعلم النشط بالوقت المحظور على تطبيقات أخرى.",
+  "appUsageLegendLabel": "استخدام التطبيقات",
+  "studyConsistencyGridTitle": "شبكة استمرارية الدراسة",
+  "activeStudyDaysSubtitle": "أيام الدراسة النشطة خلال آخر 4 أسابيع.",
+  "threeWeeksAgoLabel": "قبل 3 أسابيع",
+  "twoWeeksAgoLabel": "قبل أسبوعين",
+  "oneWeekAgoLabel": "قبل أسبوع",
+  "thisWeekLabel": "هذا الأسبوع",
+  "dayAbbrevMon": "ن",
+  "dayAbbrevTue": "ث",
+  "dayAbbrevWed": "ر",
+  "dayAbbrevThu": "خ",
+  "dayAbbrevFri": "ج",
+  "dayAbbrevSat": "س",
+  "dayAbbrevSun": "ح",
+  "legendLessLabel": "أقل",
+  "legendMoreLabel": "أكثر",
+
+  "studentProfileTitle": "ملف {name}",
+  "gradeUnknownLabel": "الصف —",
+  "gradeLabel": "الصف {grade}",
+  "thisWeekSublabel": "هذا الأسبوع",
+  "weeklyAvgSublabel": "المتوسط الأسبوعي",
+  "dayStreakLabel": "سلسلة الأيام",
+  "currentLabel": "الحالي",
+  "manageSubjectsSubtitle": "إدارة المواد وعرض تقدم المهارات",
+  "reportsAnalyticsNavTitle": "التقارير والتحليلات",
+  "weeklyReportsSubtitle": "التقارير الأسبوعية، اتجاهات الدقة، المواضيع الضعيفة",
+  "appConfigurationsTitle": "إعدادات التطبيق",
+  "appConfigurationsSubtitle": "مؤقتات البوابة، التطبيقات المراقبة، قواعد الاختبارات",
+
+  "permissionDisplayNameSystemAlertWindow": "العرض فوق التطبيقات الأخرى",
+  "permissionDisplayNamePackageUsageStats": "الوصول إلى بيانات الاستخدام",
+  "permissionDisplayNamePostNotifications": "الإشعارات",
+  "permissionDisplayNameAccessibilityService": "خدمة إمكانية الوصول",
+  "permissionDisplayNameDeviceAdmin": "مسؤول الجهاز",
+  "permissionDisplayNameBatteryOptimization": "تعطيل تحسين البطارية",
+  "permissionRationaleSystemAlertWindow": "العرض فوق التطبيقات الأخرى مطلوب لإظهار تذكيرات الدراسة وتطبيق قواعد التطبيق أثناء استخدامك لتطبيقات أخرى.",
+  "permissionRationalePackageUsageStats": "الوصول إلى بيانات الاستخدام مطلوب لتتبع وقت الشاشة وتطبيق حدود استخدام التطبيقات التي حددها ولي الأمر.",
+  "permissionRationalePostNotifications": "الإشعارات مطلوبة لإرسال تذكيرات الدراسة والتنبيهات المهمة من ولي الأمر.",
+  "permissionRationaleAccessibilityService": "خدمة إمكانية الوصول مطلوبة لمراقبة التطبيقات المفتوحة وتطبيق القواعد التي حددها ولي الأمر.",
+  "permissionRationaleDeviceAdmin": "مسؤول الجهاز مطلوب لحماية التطبيق من إزالة التثبيت دون إذن ولي الأمر.",
+  "permissionRationaleBatteryOptimization": "تعطيل تحسين البطارية يحافظ على عمل الخدمات الخلفية بشكل موثوق. بدون هذا، قد يقوم نظام أندرويد بإيقاف خدمات StudyMentor الخلفية على بعض الأجهزة، مما يؤدي إلى توقف المؤقتات وقواعد التطبيق عن العمل.",
+  "permissionParentRationalePostNotifications": "يُرسل StudyMentor إشعارًا عندما يرتقي طفلك بمستواه، يحصل على شعار، أو لم يدرس منذ عدة أيام. يمكنك تغيير ذلك في أي وقت من الإعدادات.",
+  "permissionParentRationaleBatteryOptimization": "لإشعارك بشكل موثوق بنشاط طفلك، يحتاج StudyMentor إلى العمل في الخلفية. بدون هذا، قد يؤخر أندرويد أو يفقد التنبيهات المهمة على بعض الأجهزة.",
+
+  "stepOfTotalLabel": "الخطوة {step} من {total}",
+  "permissionEnabledMessage": "تم تفعيل {permissionName}.",
+  "permissionNotGrantedMessage": "لم يتم منح الإذن بعد. اضغط على الزر أدناه لفتح الإعدادات.",
+  "openSettingsButton": "فتح الإعدادات",
+  "postNotificationsHint": "اسمح لـ StudyMentor بإرسال الإشعارات إليك.",
+  "batteryOptimizationHint": "ابحث عن \"StudyMentor\"، اختر \"عدم التحسين\" أو \"غير مقيد\"، ثم قم بالتأكيد.",
+  "systemAlertWindowHint": "ابحث عن \"StudyMentor\" وفعّل \"السماح بالعرض فوق التطبيقات الأخرى\".",
+  "packageUsageStatsHint": "ابحث عن \"StudyMentor\" وفعّل إذن الوصول إلى الاستخدام.",
+  "accessibilityServiceHint": "ضمن التطبيقات المثبتة، اختر \"StudyMentor\" وفعّله.",
+  "deviceAdminHint": "اضغط على \"تفعيل تطبيق إدارة الجهاز هذا\" للتأكيد.",
+
+  "helpCenterTitle": "مركز المساعدة",
+  "whatCanWeHelpWithTitle": "بماذا يمكننا مساعدتك؟",
+  "issueAppNotWorking": "التطبيق لا يعمل بشكل صحيح",
+  "issueQuizQuestionError": "سؤال الاختبار يحتوي على خطأ",
+  "issueHowDoI": "كيف يمكنني...؟",
+  "tellUsMoreTitle": "أخبرنا بالمزيد",
+  "needHelpGreeting": "هل تحتاج إلى مساعدة يا {name}؟ أنا هنا من أجلك!",
+  "describeIssueHint": "صف مشكلتك هنا... سيساعدك فريقنا!",
+  "charCounterLabel": "{count}/500",
+  "sendToTeamButton": "إرسال إلى الفريق",
+  "messageSentSuccessMessage": "تم إرسال الرسالة! سيتواصل معك فريقنا قريبًا.",
+  "messageSendErrorMessage": "تعذر إرسال رسالتك. حاول مرة أخرى.",
+
+  "levelShortLabel": "المستوى {level}",
+
+  "welcomeBackGreeting": "مرحبًا بعودتك، {name}! ",
+  "gardenGrowingMessage": "حديقتك تنمو بشكل رائع!",
+  "gardenLoadErrorMessage": "تعذر تحميل حديقتك. اسحب للأسفل لإعادة المحاولة.",
+  "askParentAddSubjectsMessage": "اطلب من أحد والديك إضافة موادك الدراسية",
+  "owlEncouragementMessage": "أحسنت اليوم! استمر في الدراسة لتساعد حديقتك على التزهر! 🌸",
+  "owlNameLabel": "هوتي، صديقك في الدراسة",
+  "streakDaysCountLabel": "{count, plural, =1{يوم واحد} other{{count} أيام}}",
+  "lessonsLabel": "الدروس",
+  "streakLabel": "التتابع",
+  "yourParentLabel": "ولي أمرك",
+  "appRulesTitle": "قواعد التطبيقات",
+  "rulesConfiguredByParentMessage": "القواعد التي حددها ولي أمرك.",
+  "screenTimeLabel": "وقت الشاشة",
+  "timeRemainingLabel": "{time} متبقي",
+  "usedTimeLabel": "المستخدم: {time}",
+  "limitTimeLabel": "الحد: {time}",
+  "cooldownAfterLimitLabel": "فترة الانتظار بعد الحد: {time}",
+  "onCooldownTitle": "أنت في فترة انتظار! 😴",
+  "cooldownMessage": "ستُفتح التطبيقات قريبًا. حان وقت الدراسة! 📚",
+  "remainingLabel": "متبقي",
+  "parentRulesIntroMessage": "وضع ولي أمرك هذه القواعد لجميع التطبيقات المقيدة:",
+  "noAppRulesSetMessage": "لا توجد قواعد تطبيقات بعد.",
+  "noAppRulesDescriptionMessage": "لم يقم ولي أمرك بتكوين أي قواعد لجهازك حتى الآن.",
+
+  "backTooltip": "رجوع",
+  "levelLabel": "المستوى {level}",
+  "myProgressTitle": "تقدمي",
+  "totalXpLabel": "إجمالي نقاط الخبرة",
+  "dayStreakLabel": "أيام متتالية",
+  "questionsLabel": "الأسئلة",
+  "coinsAvailableLabel": "عملة متاحة",
+  "appSettingsTitle": "إعدادات التطبيق",
+  "appSettingsSubtitle": "الإشعارات، الصوت",
+
+  "selectPdfFirstMessage": "يرجى اختيار ملف PDF أولاً.",
+  "enterSubjectNameMessage": "يرجى إدخال اسم المادة.",
+  "subjectAlreadyExistsMessage": "هذه المادة موجودة بالفعل.",
+  "uploadingProcessingMessage": "جارٍ الرفع والمعالجة…",
+  "uploadCurriculumDescription": "قم برفع كتاب PDF لإنشاء اختبار تكيفي من محتواه.",
+  "subjectNameLabel": "اسم المادة",
+  "subjectNameHint": "مثال: الرياضيات، العلوم...",
+  "removeFileButton": "إزالة الملف",
+  "tapToBrowsePdfMessage": "اضغط لتصفح ملف PDF",
+  "onlyPdfSupportedMessage": "يتم دعم ملفات PDF فقط",
+  "uploadAndIngestButton": "رفع ومعالجة",
+  "curriculumAddedSuccessTitle": "تمت إضافة المنهج بنجاح!",
+  "curriculumAddedSuccessMessage": "لقد أضفنا بنجاح '{subjectName}' إلى لوحة التحكم الخاصة بك. يقوم الذكاء الاصطناعي الآن بمعالجة كتابك في الخلفية لإنشاء أسئلة الاختبار.",
+  "uploadAnotherButton": "رفع ملف آخر",
+
+  "studyQuizTitle": "اختبار الدراسة",
+  "masteryUpdateMessage": "{subject}: {oldPct}% → {newPct}% (+{delta}%)",
+  "masteryUpdatedSimpleMessage": "تم تحديث مستوى التمكن في {subject}!",
+  "generatingQuizMessage": "جارٍ إنشاء اختبارك…",
+  "submittingAnswersMessage": "جارٍ إرسال الإجابات…",
+  "timeToPracticeTitle": "حان وقت التدريب!",
+  "quizPromptMessage": "انتهى وقت التركيز. لنقم باختبار سريع لتنشيط عقلك!",
+  "startQuizButton": "ابدأ الاختبار",
+  "tailoredToLevelMessage": "مصمم خصيصًا لمستواك الحالي",
+  "selectAnswerFirstMessage": "يرجى اختيار إجابة أولاً.",
+  "noMoreHintsMessage": "لا توجد تلميحات أخرى متاحة.",
+  "hintNumberTitle": "تلميح {number}",
+  "questionOfTotalLabel": "السؤال {current} من {total}",
+  "answeredCountLabel": "{count} مُجابة",
+  "hintCountLabel": "تلميح ({count})",
+  "submitButton": "إرسال",
+  "nextButton": "التالي",
+  "veryEasyLabel": "سهل جدًا",
+  "easyLabel": "سهل",
+  "mediumLabel": "متوسط",
+  "hardLabel": "صعب",
+  "veryHardLabel": "صعب جدًا",
+  "questionsCountLabel": "{count, plural, =1{سؤال واحد} other{{count} أسئلة}}",
+  "doneButton": "تم",
+  "takeAnotherQuizButton": "إجراء اختبار آخر",
+  "somethingWentWrongTitle": "حدث خطأ ما",
+  "tryAgainButton": "حاول مرة أخرى",
+
+  "subjectGardenTitle": "حديقة {subject}",
+  "@subjectGardenTitle": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "loadSkillsErrorMessage": "تعذر تحميل المهارات. يرجى الرجوع والمحاولة مرة أخرى.",
+  "overallMasteryLabel": "التمكن الكلي: {percent}%",
+  "@overallMasteryLabel": {
+    "placeholders": {
+      "percent": {"type": "String"}
+    }
+  },
+  "skillsTitle": "المهارات",
+  "strengthsTitle": "نقاط القوة",
+  "needsPracticeTitle": "يحتاج إلى تدريب",
+  "practiceNowButton": "تدرب الآن",
+  "growthProgressTitle": "تقدم النمو",
+  "levelNumberLabel": "المستوى {level}",
+  "@levelNumberLabel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "maxLevelBadge": "الحد الأقصى ✨",
+  "maxLevelReachedMessage": "لقد وصلت إلى المستوى الأقصى! 🌟",
+  "percentMoreToLevelMessage": "{percent}% أخرى للوصول إلى المستوى {level}!",
+  "@percentMoreToLevelMessage": {
+    "placeholders": {
+      "percent": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "flourishingLabel": "مزدهر",
+  "masteryGrowingWellLabel": "ينمو بشكل جيد",
+  "masteryMakingProgressLabel": "يحقق تقدمًا",
+  "masteryJustStartedLabel": "بدأ للتو",
+  "masteryNotStartedYetLabel": "لم يبدأ بعد",
+  "growthStageSeed": "بذرة",
+  "growthStageSprout": "برعم",
+  "growthStageSapling": "شتلة",
+  "growthStageGrowing": "ينمو",
+  "masteryAttemptsLabel": "{percent}% تمكن  ·  {attempts} محاولة",
+  "@masteryAttemptsLabel": {
+    "placeholders": {
+      "percent": {"type": "String"},
+      "attempts": {"type": "int"}
+    }
+  },
+  "skillNotStartedLabel": "لم يبدأ بعد",
+
+  "avatarShopTitle": "متجر الصور الرمزية",
+  "categoryHairStyle": "تصفيفة الشعر",
+  "categoryOutfit": "الملابس",
+  "categoryHairColor": "لون الشعر",
+  "categoryOutfitColor": "لون الملابس",
+  "categoryAccessory": "إكسسوار",
+  "categoryFacialHair": "شعر الوجه",
+  "categoryBeardColor": "لون اللحية",
+  "categoryEyes": "العيون",
+  "categoryEyebrows": "الحواجب",
+  "categoryMouth": "الفم",
+  "categorySkinTone": "لون البشرة",
+  "unlocksAtLevelMessage": "يُفتح عند المستوى {level}",
+  "@unlocksAtLevelMessage": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "notEnoughCoinsMessage": "لا توجد عملات كافية! تحتاج إلى {amount} عملة إضافية.",
+  "@notEnoughCoinsMessage": {
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "buyItemTitle": "شراء {itemName}؟",
+  "@buyItemTitle": {
+    "placeholders": {
+      "itemName": {"type": "String"}
+    }
+  },
+  "itemCostMessage": "سيكلف هذا {price} عملة.",
+  "@itemCostMessage": {
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "buyButton": "شراء",
+
+  "levelUpTitle": "🎉 ترقية المستوى!",
+  "levelUpSubtitleMessage": "لقد وصلت إلى المستوى {level}! استمر في الدراسة لتصبح أقوى! 🌱",
+  "@levelUpSubtitleMessage": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "awesomeButton": "رائع!",
+  "streakMilestoneOnARoll": "في طريقك للنجاح!",
+  "streakMilestoneWeekWarrior": "محارب الأسبوع!",
+  "streakMilestoneFortnightFocus": "تركيز أسبوعين!",
+  "streakMilestoneMonthlyMaster": "سيد الشهر!",
+  "streakMilestoneGeneric": "إنجاز متتالي!",
+  "streakMilestoneDescriptionMessage": "لقد حققت سلسلة تعلم لمدة {days} يومًا!\nواستمر!",
+  "@streakMilestoneDescriptionMessage": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "coinsRewardLabel": "+{coins} عملة",
+  "@coinsRewardLabel": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+
+  "aiSummaryNotAvailableMessage": "ملخص الذكاء الاصطناعي غير متوفر.",
+  "aiDailySummaryTitle": "✨ الملخص اليومي",
+  "smartInsightsLabel": "رؤى ذكية",
+  "notificationsTitle": "الإشعارات",
+  "markAllAsReadButton": "تحديد الكل كمقروء",
+  "allCaughtUpTitle": "أنت على اطلاع بكل شيء",
+  "allCaughtUpMessage": "أنت على اطلاع بكل شيء! ستظهر تنبيهات النشاط هنا.",
+  "minutesAgoLabel": "قبل {minutes} د",
+  "@minutesAgoLabel": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "hoursAgoLabel": "قبل {hours} س",
+  "@hoursAgoLabel": {
+    "placeholders": {
+      "hours": {"type": "int"}
+    }
+  },
+  "daysAgoLabel": "قبل {days} ي",
+  "@daysAgoLabel": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "xpLabel": "خبرة",
+  "coinsLabel": "عملات",
+  "thisWeekSublabel": "هذا الأسبوع",
+  "unverifiedLabel": "غير مُفعّل",
+  "waitingForVerificationMessage": "في انتظار تفعيل الطالب لبريده الإلكتروني وتسجيل الدخول لأول مرة.",
+  "firstLoginCoinsRewardMessage": "ستُمنح 3 عملات عند أول تسجيل دخول",
+  "weeklyAccuracyLabel": "الدقة الأسبوعية",
+  "navMyStudentsLabel": "أبنائي",
+  "navHelpLabel": "المساعدة",
+  "navHomeLabel": "الرئيسية",
+  "navShopLabel": "المتجر",
+  "noGradeLabel": "بدون صف",
+  "tapToViewLabel": "اضغط للعرض",
+  "awaitingEmailVerificationLabel": "في انتظار تفعيل البريد الإلكتروني",
+  "xpAmountLabel": "{xp} خبرة",
+  "@xpAmountLabel": {
+    "placeholders": {
+      "xp": {"type": "int"}
+    }
+  },
+  "questionsAttemptedLabel": "الأسئلة المُحاولة ({total})",
+  "@questionsAttemptedLabel": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "correctLabel": "صحيح",
+  "incorrectLabel": "غير صحيح",
+  "questionNumberLabel": "السؤال {number}",
+  "@questionNumberLabel": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "parentVerificationRequiredTitle": "مطلوب تحقق من ولي الأمر",
+  "logoutParentCredentialsMessage": "لتسجيل الخروج، يرجى إدخال بيانات اعتماد ولي الأمر.",
+  "parentEmailLabel": "البريد الإلكتروني لولي الأمر",
+  "parentPasswordLabel": "كلمة مرور ولي الأمر",
+  "verifyAndLogOutButton": "تحقق وتسجيل الخروج",
+  "xpRewardLabel": "+{xp} خبرة",
+  "@xpRewardLabel": {
+    "placeholders": {
+      "xp": {"type": "int"}
+    }
+  },
+
+  "notifLevelUpTitle": "لقد وصلت إلى المستوى {level}! 🎓",
+  "@notifLevelUpTitle": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "notifLevelUpBody": "أحسنت! المزيد من المكافآت في انتظارك بالمستوى التالي.",
+  "notifParentLevelUpTitle": "{studentName} وصل إلى المستوى {level}! 🎓",
+  "@notifParentLevelUpTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "notifParentLevelUpBody": "لقد كان مجتهدًا. تابع تقدمه الآن.",
+  "notifStreakMilestoneTitle": "سلسلة {streak} يوم متتالية! 🔥",
+  "@notifStreakMilestoneTitle": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifStreakMilestoneBody": "لقد ذاكرت {streak} يوم متتالي. حافظ على حماسك!",
+  "@notifStreakMilestoneBody": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifNearMilestoneTitle": "يوم واحد فقط! 🔥",
+  "notifNearMilestoneBody": "استمر — مكافأة سلسلة {nextMilestone} يوم في انتظارك غدًا.",
+  "@notifNearMilestoneBody": {
+    "placeholders": {
+      "nextMilestone": {"type": "int"}
+    }
+  },
+  "notifStreakReminderTitle": "لا تكسر سلسلتك! 🔥",
+  "notifStreakReminderBody": "اختبار واحد فقط يحافظ على سلسلتك من {streak} يوم.",
+  "@notifStreakReminderBody": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "notifStartStreakTitle": "ابدأ سلسلة جديدة اليوم!",
+  "notifStartStreakBody": "أنجز اختبارًا سريعًا وابدأ سلسلة مذاكرتك.",
+  "notifParentStreakBrokenTitle": "انتهت سلسلة {studentName}",
+  "@notifParentStreakBrokenTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"}
+    }
+  },
+  "notifParentStreakBrokenBody": "انقطعت سلسلته البالغة {previousStreak} يوم. قد يساعده القليل من التشجيع.",
+  "@notifParentStreakBrokenBody": {
+    "placeholders": {
+      "previousStreak": {"type": "int"}
+    }
+  },
+  "notifGardenNudgeTitle": "نبتة {subject} بحاجة إليك 🌱",
+  "@notifGardenNudgeTitle": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "notifGardenNudgeBody": "مرت أيام قليلة — تعال واسقِ حديقة {subject}!",
+  "@notifGardenNudgeBody": {
+    "placeholders": {
+      "subject": {"type": "String"}
+    }
+  },
+  "notifInactivityTitle": "{studentName} لم يحل أي اختبار منذ 3 أيام",
+  "@notifInactivityTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"}
+    }
+  },
+  "notifInactivityBody": "قد يساعده القليل من التشجيع على العودة إلى المسار الصحيح."
+}

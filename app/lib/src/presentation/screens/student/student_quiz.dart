@@ -11,6 +11,7 @@ import '../../../bloc/gamification/gamification_event.dart';
 import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_event.dart';
 import '../../../bloc/garden/garden_state.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Study Mentor design-system tokens (Student app)
@@ -65,6 +66,9 @@ class QuizOverlayPage extends StatelessWidget {
   final bool autoLength;
   final int? subjectId;
 
+  /// The student's grade level (from their profile); null falls back to 5.
+  final int? studentGrade;
+
 
   const QuizOverlayPage({
     super.key,
@@ -74,6 +78,7 @@ class QuizOverlayPage extends StatelessWidget {
     this.totalQuestions = 5,
     this.autoLength = false,
     this.subjectId,
+    this.studentGrade,
   });
 
   @override
@@ -87,6 +92,7 @@ class QuizOverlayPage extends StatelessWidget {
         totalQuestions: totalQuestions,
         autoLength: autoLength,
         subjectId: subjectId,
+        studentGrade: studentGrade,
       ),
 
     );
@@ -102,6 +108,7 @@ class _QuizOverlayScaffold extends StatefulWidget {
   final int totalQuestions;
   final bool autoLength;
   final int? subjectId;
+  final int? studentGrade;
 
   const _QuizOverlayScaffold({
     required this.studentId,
@@ -109,6 +116,7 @@ class _QuizOverlayScaffold extends StatefulWidget {
     required this.totalQuestions,
     this.autoLength = false,
     this.subjectId,
+    this.studentGrade,
   });
 
 
@@ -125,6 +133,7 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: _kBg,
       appBar: AppBar(
@@ -199,8 +208,13 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
                 final delta = pre != null ? newMastery - pre : null;
 
                 final message = (delta != null && delta > 0.05)
-                    ? '$_quizzedSubjectName: ${pre!.toStringAsFixed(0)}% → ${newMastery.toStringAsFixed(0)}% (+${delta.toStringAsFixed(1)}%)'
-                    : '$_quizzedSubjectName mastery updated!';
+                    ? loc.masteryUpdateMessage(
+                        _quizzedSubjectName ?? '',
+                        pre!.toStringAsFixed(0),
+                        newMastery.toStringAsFixed(0),
+                        delta.toStringAsFixed(1),
+                      )
+                    : loc.masteryUpdatedSimpleMessage(_quizzedSubjectName ?? '');
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -219,14 +233,16 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
                 totalQuestions: widget.totalQuestions,
                 autoLength: widget.autoLength,
                 subjectId: widget.subjectId,
+                studentGrade: widget.studentGrade,
+                contextType: widget.contextType,
               );
             }
             if (state is QuizLoading) {
-              return const _LoadingView(message: 'Generating your quiz…');
+              return _LoadingView(message: loc.generatingQuizMessage);
             }
             if (state is QuizLoaded) return _QuizActiveView(state: state);
             if (state is QuizSubmitting) {
-              return const _LoadingView(message: 'Submitting answers…');
+              return _LoadingView(message: loc.submittingAnswersMessage);
             }
             if (state is QuizResultsLoaded) {
               return _ResultsView(state: state, studentId: widget.studentId);
@@ -250,16 +266,21 @@ class _AutoStartPanel extends StatelessWidget {
   final int totalQuestions;
   final bool autoLength;
   final int? subjectId;
+  final int? studentGrade;
+  final QuizContext contextType;
 
   const _AutoStartPanel({
     required this.totalQuestions,
+    required this.contextType,
     this.autoLength = false,
     this.subjectId,
+    this.studentGrade,
   });
 
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -300,6 +321,8 @@ class _AutoStartPanel extends StatelessWidget {
                     totalQuestions: totalQuestions,
                     autoLength: autoLength,
                     subjectId: subjectId,
+                    studentGrade: studentGrade ?? 5,
+                    quizContext: contextType,
                   ),
                 );
 
@@ -373,7 +396,8 @@ class StudentQuizScreen extends StatelessWidget {
 
   @override
 
-  Widget build(BuildContext context) => const _AutoStartPanel(totalQuestions: 5);
+  Widget build(BuildContext context) =>
+      const _AutoStartPanel(totalQuestions: 5, contextType: QuizContext.voluntary);
 
 }
 
@@ -468,10 +492,11 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   }
 
   void _showHint(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final hints = _currentQuestion.hints;
     if (_hintsUsed >= hints.length) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No more hints available.')));
+          SnackBar(content: Text(loc.noMoreHintsMessage)));
       return;
     }
     setState(() => _hintsUsed++);
@@ -554,6 +579,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final questions = widget.state.quizResponse.questions;
     final answered = widget.state.currentAnswers;
     final total = questions.length;
@@ -692,6 +718,7 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final isCorrectSelection = selectedOption == question.correctAnswer;
 
     return SingleChildScrollView(
@@ -721,7 +748,7 @@ class _QuestionCard extends StatelessWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    _difficultyPill(),
+                    _difficultyPill(loc),
                     _skillChip(),
                   ],
                 ),
@@ -760,7 +787,7 @@ class _QuestionCard extends StatelessWidget {
     );
   }
 
-  Widget _difficultyPill() {
+  Widget _difficultyPill(AppLocalizations loc) {
     final color = _difficultyColor(question.difficulty);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -769,7 +796,7 @@ class _QuestionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _difficultyLabel(question.difficulty),
+        _difficultyLabel(loc, question.difficulty),
         style: GoogleFonts.roboto(
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -825,18 +852,18 @@ class _QuestionCard extends StatelessWidget {
     }
   }
 
-  String _difficultyLabel(int d) {
+  String _difficultyLabel(AppLocalizations loc, int d) {
     switch (d) {
       case 1:
-        return 'Very Easy';
+        return loc.veryEasyLabel;
       case 2:
-        return 'Easy';
+        return loc.easyLabel;
       case 3:
-        return 'Medium';
+        return loc.mediumLabel;
       case 4:
-        return 'Hard';
+        return loc.hardLabel;
       default:
-        return 'Very Hard';
+        return loc.veryHardLabel;
     }
   }
 }
@@ -1054,6 +1081,7 @@ class _ResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final score = state.result.score;
     final pct = score.round();
     final isGood = score >= 50;
@@ -1197,6 +1225,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),

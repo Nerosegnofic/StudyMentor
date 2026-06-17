@@ -7,6 +7,7 @@ import '../../../bloc/student_profile/student_profile_event.dart';
 import '../../../bloc/student_profile/student_profile_state.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../data/providers/dataconnect_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ParentStudentSettingsScreen extends StatefulWidget {
   final StudentModel student;
@@ -144,9 +145,10 @@ class _ParentStudentSettingsScreenState
       fullName: nameChanged ? newName : null,
     );
 
+    final loc = AppLocalizations.of(context);
     final message = pendingEmail != null
-        ? 'Profile updated. A verification link was sent to $pendingEmail.'
-        : 'Profile updated successfully.';
+        ? loc.studentProfileUpdatedEmailPending(pendingEmail)
+        : loc.profileUpdatedSuccess;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -162,23 +164,26 @@ class _ParentStudentSettingsScreenState
     if (!_isDirty) return true;
     final leave = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Unsaved Changes'),
-        content: const Text('You have unsaved changes. Leave without saving?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Stay'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
+      builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(loc.unsavedChangesDialogTitle),
+          content: Text(loc.unsavedChangesDialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(loc.stayButton),
             ),
-            child: const Text('Leave'),
-          ),
-        ],
-      ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+              ),
+              child: Text(loc.leaveButton),
+            ),
+          ],
+        );
+      },
     );
     return leave ?? false;
   }
@@ -187,6 +192,7 @@ class _ParentStudentSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocListener<StudentProfileBloc, StudentProfileState>(
       listener: (context, state) {
         if (state is StudentProfileLoading) {
@@ -224,9 +230,9 @@ class _ParentStudentSettingsScreenState
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Student Profile',
-                  style: TextStyle(
+                Text(
+                  loc.studentProfileStaticTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -273,9 +279,9 @@ class _ParentStudentSettingsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Account Information',
-                          style: TextStyle(
+                        Text(
+                          loc.parentSettingsAccountInfoSection,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1E293B),
@@ -308,9 +314,9 @@ class _ParentStudentSettingsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Change Password',
-                          style: TextStyle(
+                        Text(
+                          loc.parentSettingsChangePasswordSection,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1E293B),
@@ -342,6 +348,7 @@ class _ParentStudentSettingsScreenState
   // ── pending email banner ────────────────────────────────────────────────────
 
   Widget _buildEmailPendingBanner(String pendingEmail) {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -360,8 +367,7 @@ class _ParentStudentSettingsScreenState
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'A verification link was sent to $pendingEmail. '
-              'The student\'s email will update after they click it.',
+              loc.studentSettingsEmailPendingBanner(pendingEmail),
               style: const TextStyle(fontSize: 13, color: Color(0xFF5D4037)),
             ),
           ),
@@ -377,21 +383,22 @@ class _ParentStudentSettingsScreenState
   // ── password hint ───────────────────────────────────────────────────────────
 
   Widget _buildPasswordHint() {
-    return const Text(
-      'Leave all password fields empty to keep the current password.',
-      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+    return Text(
+      AppLocalizations.of(context).parentSettingsPasswordHint,
+      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
     );
   }
 
   // ── full name ───────────────────────────────────────────────────────────────
 
   Widget _buildFullNameField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Full Name',
-          style: TextStyle(
+        Text(
+          loc.fieldFullName,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -406,12 +413,12 @@ class _ParentStudentSettingsScreenState
             fontSize: 15,
           ),
           decoration: _inputDecoration(
-            label: 'Full Name',
+            label: loc.fieldFullName,
             icon: Icons.person_outline,
           ),
           validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Full name is required.';
-            if (v.trim().length < 2) return 'Name must be at least 2 characters.';
+            if (v == null || v.trim().isEmpty) return loc.validatorFullNameRequired;
+            if (v.trim().length < 2) return loc.validatorFullNameMinLength;
             return null;
           },
         ),
@@ -422,12 +429,13 @@ class _ParentStudentSettingsScreenState
   // ── email ───────────────────────────────────────────────────────────────────
 
   Widget _buildEmailField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Email',
-          style: TextStyle(
+        Text(
+          loc.fieldEmail,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -442,22 +450,22 @@ class _ParentStudentSettingsScreenState
             fontSize: 15,
           ),
           decoration: _inputDecoration(
-            label: 'Email',
+            label: loc.fieldEmail,
             icon: Icons.email_outlined,
           ),
           validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Email is required.';
+            if (v == null || v.trim().isEmpty) return loc.validatorEmailRequired;
             final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
             if (!emailRegex.hasMatch(v.trim())) {
-              return 'Enter a valid email address.';
+              return loc.validatorEmailInvalid;
             }
             return null;
           },
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Changing the email will send a verification link to the new address.',
-          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+        Text(
+          loc.studentSettingsEmailHelper,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
       ],
     );
@@ -466,12 +474,13 @@ class _ParentStudentSettingsScreenState
   // ── username (read-only, controller-driven so it updates after async load) ──
 
   Widget _buildUsernameField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Username',
-          style: TextStyle(
+        Text(
+          loc.fieldUsername,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -486,7 +495,7 @@ class _ParentStudentSettingsScreenState
             fontSize: 15,
           ),
           decoration: _inputDecoration(
-            label: 'Username',
+            label: loc.fieldUsername,
             icon: Icons.alternate_email_rounded,
             enabled: false,
           ).copyWith(
@@ -503,9 +512,9 @@ class _ParentStudentSettingsScreenState
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Usernames cannot be changed after registration.',
-          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+        Text(
+          loc.usernameCannotBeChangedNotice,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
       ],
     );
@@ -514,6 +523,7 @@ class _ParentStudentSettingsScreenState
   // ── current password ────────────────────────────────────────────────────────
 
   Widget _buildCurrentPasswordField() {
+    final loc = AppLocalizations.of(context);
     final emailChanged =
         _emailCtl.text.trim() != _originalEmail &&
         _emailCtl.text.trim().isNotEmpty;
@@ -521,9 +531,9 @@ class _ParentStudentSettingsScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Student's Current Password",
-          style: TextStyle(
+        Text(
+          loc.fieldStudentCurrentPassword,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -538,7 +548,7 @@ class _ParentStudentSettingsScreenState
             fontSize: 15,
           ),
           decoration: _inputDecoration(
-            label: "Student's Current Password",
+            label: loc.fieldStudentCurrentPassword,
             icon: Icons.lock_outline,
           ).copyWith(
             suffixIcon: _visibilityToggle(
@@ -556,17 +566,17 @@ class _ParentStudentSettingsScreenState
 
             if ((changingPassword || changingEmail) && (v == null || v.isEmpty)) {
               return changingEmail
-                  ? "Enter the student's current password to change their email."
-                  : "Enter the student's current password to set a new one.";
+                  ? loc.validatorStudentCurrentPasswordForEmail
+                  : loc.validatorStudentCurrentPasswordForNewPassword;
             }
             return null;
           },
         ),
         if (emailChanged) ...[
           const SizedBox(height: 6),
-          const Text(
-            'Required to change the email address.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          Text(
+            loc.requiredToChangeEmailHint,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
         ],
       ],
@@ -576,12 +586,13 @@ class _ParentStudentSettingsScreenState
   // ── new password ────────────────────────────────────────────────────────────
 
   Widget _buildNewPasswordField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'New Password',
-          style: TextStyle(
+        Text(
+          loc.fieldNewPassword,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -596,7 +607,7 @@ class _ParentStudentSettingsScreenState
             fontSize: 15,
           ),
           decoration: _inputDecoration(
-            label: 'New Password',
+            label: loc.fieldNewPassword,
             icon: Icons.lock_reset_outlined,
           ).copyWith(
             suffixIcon: _visibilityToggle(
@@ -606,9 +617,9 @@ class _ParentStudentSettingsScreenState
           ),
           validator: (v) {
             if (v == null || v.isEmpty) return null;
-            if (v.length < 6) return 'Password must be at least 6 characters.';
+            if (v.length < 6) return loc.validatorPasswordMinLength;
             if (_currentPassCtl.text.isEmpty) {
-              return "Enter the student's current password first.";
+              return loc.validatorEnterStudentCurrentPasswordFirst;
             }
             return null;
           },
@@ -620,12 +631,13 @@ class _ParentStudentSettingsScreenState
   // ── confirm password ────────────────────────────────────────────────────────
 
   Widget _buildConfirmPasswordField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Confirm New Password',
-          style: TextStyle(
+        Text(
+          loc.fieldConfirmNewPassword,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -640,7 +652,7 @@ class _ParentStudentSettingsScreenState
             fontSize: 15,
           ),
           decoration: _inputDecoration(
-            label: 'Confirm New Password',
+            label: loc.fieldConfirmNewPassword,
             icon: Icons.lock_outline,
           ).copyWith(
             suffixIcon: _visibilityToggle(
@@ -650,7 +662,7 @@ class _ParentStudentSettingsScreenState
           ),
           validator: (v) {
             if (_newPassCtl.text.isEmpty) return null;
-            if (v != _newPassCtl.text) return 'Passwords do not match.';
+            if (v != _newPassCtl.text) return loc.validatorPasswordsDoNotMatch;
             return null;
           },
         ),
@@ -686,7 +698,7 @@ class _ParentStudentSettingsScreenState
                 ),
               )
             : Text(
-                'Save Changes',
+                AppLocalizations.of(context).saveChangesButton,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

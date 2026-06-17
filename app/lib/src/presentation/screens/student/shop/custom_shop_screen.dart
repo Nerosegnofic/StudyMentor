@@ -9,6 +9,7 @@ import '../../../../bloc/shop/shop_state.dart';
 import '../../../../domain/models/avatar_item.dart';
 import '../../../../../core/avatar/fluttermojiController.dart';
 import '../../../widgets/avatar_widget.dart';
+import '../../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Study Mentor design-system tokens (Student app)
@@ -64,24 +65,25 @@ class _CustomShopScreenState extends State<CustomShopScreen>
     super.dispose();
   }
 
-  String _categoryLabel(ItemCategory cat) {
+  String _categoryLabel(AppLocalizations loc, ItemCategory cat) {
     return switch (cat) {
-      ItemCategory.hair => 'Hair Style',
-      ItemCategory.outfit => 'Outfit',
-      ItemCategory.hairColor => 'Hair Color',
-      ItemCategory.outfitColor => 'Outfit Color',
-      ItemCategory.accessory => 'Accessory',
-      ItemCategory.facialHair => 'Facial Hair',
-      ItemCategory.facialHairColor => 'Beard Color',
-      ItemCategory.eyes => 'Eyes',
-      ItemCategory.eyebrow => 'Eyebrows',
-      ItemCategory.mouth => 'Mouth',
-      ItemCategory.skinTone => 'Skin Tone',
+      ItemCategory.hair => loc.categoryHairStyle,
+      ItemCategory.outfit => loc.categoryOutfit,
+      ItemCategory.hairColor => loc.categoryHairColor,
+      ItemCategory.outfitColor => loc.categoryOutfitColor,
+      ItemCategory.accessory => loc.categoryAccessory,
+      ItemCategory.facialHair => loc.categoryFacialHair,
+      ItemCategory.facialHairColor => loc.categoryBeardColor,
+      ItemCategory.eyes => loc.categoryEyes,
+      ItemCategory.eyebrow => loc.categoryEyebrows,
+      ItemCategory.mouth => loc.categoryMouth,
+      ItemCategory.skinTone => loc.categorySkinTone,
     };
   }
 
   void _handleItemTap(
       BuildContext context, ShopLoaded state, AvatarItem item, bool isOwned, bool meetsLevel) {
+    final loc = AppLocalizations.of(context);
     if (isOwned) {
       context.read<ShopBloc>().add(
             EquipItemToggled(
@@ -355,6 +357,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocConsumer<ShopBloc, ShopState>(
       listenWhen: (prev, curr) =>
           curr is ShopLoaded &&
@@ -412,7 +415,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             iconTheme: const IconThemeData(color: _kInk),
             actions: [
               Container(
-                margin: const EdgeInsets.only(right: 16),
+                margin: const EdgeInsetsDirectional.only(end: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: _kAmberLight,
@@ -444,7 +447,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
               unselectedLabelStyle:
                   GoogleFonts.roboto(fontWeight: FontWeight.w500),
               tabs: ItemCategory.values.map((cat) {
-                return Tab(text: _categoryLabel(cat));
+                return Tab(text: _categoryLabel(loc, cat));
               }).toList(),
             ),
           ),

@@ -13,6 +13,7 @@ import '../../../data/repositories/ai_engine_repository.dart';
 import 'student_config_screen.dart';
 import 'subjects_skills_screen.dart';
 import 'reports_analysis_screen.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFF2196F3);
@@ -170,7 +171,7 @@ class _StickyHeader extends StatelessWidget {
               // Center: student name
               Expanded(
                 child: Text(
-                  "$name's Profile",
+                  AppLocalizations.of(context).studentProfileTitle(name),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     color: Colors.white,
@@ -206,14 +207,15 @@ class _HeroProfileCard extends StatelessWidget {
     required this.streak,
   });
 
-  String get _gradeLabel {
+  String _gradeLabel(AppLocalizations loc) {
     final g = student.gradeLevel;
-    if (g == null) return 'Grade —';
-    return 'Grade $g';
+    if (g == null) return loc.gradeUnknownLabel;
+    return loc.gradeLabel(g);
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -277,8 +279,8 @@ class _HeroProfileCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              _gradeLabel,
-              style: GoogleFonts.roboto(
+              _gradeLabel(loc),
+              style: GoogleFonts.cairo(
                 color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -311,7 +313,7 @@ class _GamPill extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             value,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.cairo(
               color: _kAmber,
               fontSize: 13,
               fontWeight: FontWeight.bold,
@@ -338,6 +340,7 @@ class _QuickStatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocBuilder<ReportsBloc, ReportsState>(
       builder: (context, state) {
         final isLoading = state.isWeeklyLoading;
@@ -356,8 +359,8 @@ class _QuickStatsGrid extends StatelessWidget {
                     icon: Icons.quiz_rounded,
                     color: _kPrimary,
                     value: v(report != null ? '${report.totalQuizzes}' : null),
-                    label: 'Quizzes',
-                    sublabel: 'This week',
+                    label: loc.metricQuizzesLabel,
+                    sublabel: loc.thisWeekSublabel,
                     isLoading: isLoading,
                   ),
                 ),
@@ -367,8 +370,8 @@ class _QuickStatsGrid extends StatelessWidget {
                     icon: Icons.schedule_rounded,
                     color: const Color(0xFF8B5CF6),
                     value: v(report != null ? _formatDuration(report.totalStudyTime) : null),
-                    label: 'Study Time',
-                    sublabel: 'This week',
+                    label: loc.studyTimeLabel,
+                    sublabel: loc.thisWeekSublabel,
                     isLoading: isLoading,
                   ),
                 ),
@@ -382,8 +385,8 @@ class _QuickStatsGrid extends StatelessWidget {
                     icon: Icons.track_changes_rounded,
                     color: const Color(0xFF22C55E),
                     value: v(report != null ? '${report.overallAccuracyPercent.toInt()}%' : null),
-                    label: 'Accuracy',
-                    sublabel: 'Weekly avg',
+                    label: loc.accuracyLabel,
+                    sublabel: loc.weeklyAvgSublabel,
                     isLoading: isLoading,
                   ),
                 ),
@@ -393,8 +396,8 @@ class _QuickStatsGrid extends StatelessWidget {
                     icon: Icons.local_fire_department_rounded,
                     color: _kAmber,
                     value: v(report != null ? '${report.currentStreakDays}' : null),
-                    label: 'Day Streak',
-                    sublabel: 'Current',
+                    label: loc.dayStreakLabel,
+                    sublabel: loc.currentLabel,
                     isLoading: isLoading,
                   ),
                 ),
@@ -464,7 +467,7 @@ class _StatCard extends StatelessWidget {
           else
             Text(
               value,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 color: _kDarkText,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -474,7 +477,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.cairo(
               color: _kDarkText,
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -483,7 +486,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 1),
           Text(
             sublabel,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.cairo(
               color: _kSubText,
               fontSize: 11,
             ),
@@ -503,12 +506,13 @@ class _NavigationList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Column(
       children: [
         _NavRow(
           icon: Icons.menu_book_rounded,
-          title: 'Subjects & Skills',
-          subtitle: 'Manage subjects and view skill progress',
+          title: loc.subjectsAndSkillsTitle,
+          subtitle: loc.manageSubjectsSubtitle,
           onTap: () {
             Navigator.push(
               context,
@@ -521,8 +525,8 @@ class _NavigationList extends StatelessWidget {
         const SizedBox(height: 12),
         _NavRow(
           icon: Icons.bar_chart_rounded,
-          title: 'Reports & Analytics',
-          subtitle: 'Weekly reports, accuracy trends, weak topics',
+          title: loc.reportsAnalyticsNavTitle,
+          subtitle: loc.weeklyReportsSubtitle,
           onTap: () {
             Navigator.push(
               context,
@@ -535,8 +539,8 @@ class _NavigationList extends StatelessWidget {
         const SizedBox(height: 12),
         _NavRow(
           icon: Icons.settings_rounded,
-          title: 'App Configurations',
-          subtitle: 'Gateway timers, monitored apps, quiz rules',
+          title: loc.appConfigurationsTitle,
+          subtitle: loc.appConfigurationsSubtitle,
           onTap: () async {
             final updated = await Navigator.push<StudentModel>(
               context,
@@ -611,7 +615,7 @@ class _NavRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         color: _kDarkText,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -620,7 +624,7 @@ class _NavRow extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         color: _kSubText,
                         fontSize: 12,
                       ),

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../services/device_admin_service.dart';
 import '../../../services/permission_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
 const Color _kBackground = Color(0xFFF5F7FA); // Soft Cloud
@@ -188,6 +189,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   }
 
   Widget _buildContent(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     final stepNumber = RequiredPermission.values.indexOf(permission) + 1;
     final totalSteps = RequiredPermission.values.length;
 
@@ -206,7 +208,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                 _buildPermissionIcon(permission),
                 const SizedBox(height: 28),
                 Text(
-                  permission.displayName,
+                  permission.displayName(loc),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     fontSize: 22,
@@ -217,7 +219,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  permission.rationale,
+                  permission.rationale(loc),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.roboto(
                     fontSize: 15,
@@ -242,6 +244,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Header with progress indicator ────────────────────────────────────────
 
   Widget _buildHeader(int step, int total) {
+    final loc = AppLocalizations.of(context);
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -371,13 +374,14 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Status card ────────────────────────────────────────────────────────────
 
   Widget _buildStatusCard(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     if (_currentGranted) {
       return _statusRow(
         icon: Icons.check_circle_rounded,
         iconColor: _kGreen,
         backgroundColor: const Color(0xFFEDF7EE),
         borderColor: _kGreen,
-        text: '${permission.displayName} has been enabled.',
+        text: '${permission.displayName(loc)} has been enabled.',
         textColor: const Color(0xFF2E7D32),
       );
     }
@@ -473,20 +477,14 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Hint text below button ─────────────────────────────────────────────────
 
   Widget _buildSettingsHint(RequiredPermission permission) {
+    final loc = AppLocalizations.of(context);
     final hint = switch (permission) {
-      RequiredPermission.systemAlertWindow =>
-        'Find "StudyMentor" and enable "Allow display over other apps".',
-      RequiredPermission.packageUsageStats =>
-        'Find "StudyMentor" and toggle Usage Access on.',
-      RequiredPermission.postNotifications =>
-        'Allow StudyMentor to send you notifications.',
-      RequiredPermission.accessibilityService =>
-        'Under Installed Apps, select "StudyMentor" and enable it.',
-      RequiredPermission.deviceAdmin =>
-        'Tap "Activate this device admin app" to confirm.',
-      RequiredPermission.batteryOptimization =>
-        'Find "StudyMentor", select "Don\'t optimize" or "Unrestricted", '
-            'then confirm.',
+      RequiredPermission.systemAlertWindow => loc.systemAlertWindowHint,
+      RequiredPermission.packageUsageStats => loc.packageUsageStatsHint,
+      RequiredPermission.postNotifications => loc.postNotificationsHint,
+      RequiredPermission.accessibilityService => loc.accessibilityServiceHint,
+      RequiredPermission.deviceAdmin => loc.deviceAdminHint,
+      RequiredPermission.batteryOptimization => loc.batteryOptimizationHint,
     };
 
     return Text(

@@ -4,6 +4,7 @@ import '../../../bloc/students/students_bloc.dart';
 import '../../../bloc/students/students_event.dart';
 import '../../../bloc/students/students_state.dart';
 import '../../../domain/models/app_config_model.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class AddStudentScreen extends StatefulWidget {
   final String parentUid;
@@ -24,14 +25,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
-  static const List<Map<String, dynamic>> _gradeOptions = [
-    {'label': 'Grade 1', 'value': 1},
-    {'label': 'Grade 2', 'value': 2},
-    {'label': 'Grade 3', 'value': 3},
-    {'label': 'Grade 4', 'value': 4},
-    {'label': 'Grade 5', 'value': 5},
-    {'label': 'Grade 6', 'value': 6},
-  ];
+  static const List<int> _gradeOptions = [1, 2, 3, 4, 5, 6];
 
   @override
   void dispose() {
@@ -63,28 +57,29 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocListener<StudentsBloc, StudentsState>(
       listener: (context, state) {
         if (state is StudentCreated) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Student Registered Successfully!',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    loc.studentRegisteredSuccessTitle,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'On your child\'s phone, open the app and log in with the credentials you just created. They\'ll need to verify their email before getting started.',
-                    style: TextStyle(fontSize: 13),
+                    loc.studentRegisteredSuccessDetail,
+                    style: const TextStyle(fontSize: 13),
                   ),
                 ],
               ),
-              backgroundColor: Color(0xFF34A853),
-              duration: Duration(seconds: 10),
+              backgroundColor: const Color(0xFF34A853),
+              duration: const Duration(seconds: 10),
             ),
           );
           Navigator.pop(context);
@@ -108,20 +103,20 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
             shadowColor: Colors.black.withValues(alpha: 0.15),
             surfaceTintColor: Colors.transparent,
             iconTheme: const IconThemeData(color: Colors.white),
-            title: const Column(
+            title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Register Student',
-                  style: TextStyle(
+                  loc.registerStudentTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
                 Text(
-                  'Create a new student account',
-                  style: TextStyle(fontSize: 12, color: Colors.white),
+                  loc.createNewStudentAccountSubtitle,
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
                 ),
               ],
             ),
@@ -140,23 +135,23 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                     children: [
                       // Card 1: Student Information
                       _buildCard(
-                        title: 'Student Information',
+                        title: loc.studentInformationSection,
                         children: [
                           _buildField(
-                            label: 'Full Name',
+                            label: loc.fieldFullName,
                             child: TextFormField(
                               controller: _fullNameCtl,
                               textCapitalization: TextCapitalization.words,
                               style: const TextStyle(
                                   color: Color(0xFF1E293B), fontSize: 15),
                               decoration: _inputDecoration(
-                                  label: 'Full Name', icon: Icons.person_outline),
+                                  label: loc.fieldFullName, icon: Icons.person_outline),
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) {
-                                  return 'Full name is required.';
+                                  return loc.validatorFullNameRequired;
                                 }
                                 if (v.trim().length < 2) {
-                                  return 'Name must be at least 2 characters.';
+                                  return loc.validatorFullNameMinLength;
                                 }
                                 return null;
                               },
@@ -164,8 +159,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                           ),
                           const SizedBox(height: 16),
                           _buildField(
-                            label: 'Username',
-                            hint: 'Shown on the leaderboard (e.g. coolkid42)',
+                            label: loc.fieldUsername,
+                            hint: loc.usernameHint,
                             child: TextFormField(
                               controller: _usernameCtl,
                               autocorrect: false,
@@ -173,20 +168,20 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                               style: const TextStyle(
                                   color: Color(0xFF1E293B), fontSize: 15),
                               decoration: _inputDecoration(
-                                  label: 'Username',
+                                  label: loc.fieldUsername,
                                   icon: Icons.alternate_email_rounded),
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) {
-                                  return 'Username is required.';
+                                  return loc.validatorUsernameRequired;
                                 }
                                 if (v.trim().length < 3) {
-                                  return 'At least 3 characters.';
+                                  return loc.validatorUsernameMinLength;
                                 }
                                 if (v.trim().length > 50) {
-                                  return 'Max 50 characters.';
+                                  return loc.validatorUsernameMaxLength;
                                 }
                                 if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v.trim())) {
-                                  return 'Only letters, numbers and underscores.';
+                                  return loc.validatorUsernameFormat;
                                 }
                                 return null;
                               },
@@ -194,25 +189,25 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                           ),
                           const SizedBox(height: 16),
                           _buildField(
-                            label: 'Grade',
+                            label: loc.fieldGrade,
                             child: DropdownButtonFormField<int>(
                               value: _selectedGrade,
                               style: const TextStyle(
                                   color: Color(0xFF1E293B), fontSize: 15),
                               decoration: _inputDecoration(
-                                  label: 'Grade', icon: Icons.school_outlined),
+                                  label: loc.fieldGrade, icon: Icons.school_outlined),
                               items: _gradeOptions
                                   .map(
                                     (g) => DropdownMenuItem<int>(
-                                      value: g['value'] as int,
-                                      child: Text(g['label'] as String),
+                                      value: g,
+                                      child: Text(loc.gradeLabel(g)),
                                     ),
                                   )
                                   .toList(),
                               onChanged: (value) =>
                                   setState(() => _selectedGrade = value),
                               validator: (v) =>
-                                  v == null ? 'Please select a grade.' : null,
+                                  v == null ? loc.validatorGradeRequired : null,
                             ),
                           ),
                         ],
@@ -220,27 +215,27 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                       const SizedBox(height: 16),
                       // Card 2: Account Credentials
                       _buildCard(
-                        title: 'Account Credentials',
+                        title: loc.accountCredentialsSection,
                         children: [
                           _buildField(
-                            label: 'Email Address',
-                            hint: 'The student will use this to log in.',
+                            label: loc.fieldEmailAddress,
+                            hint: loc.emailAddressHint,
                             child: TextFormField(
                               controller: _emailCtl,
                               keyboardType: TextInputType.emailAddress,
                               style: const TextStyle(
                                   color: Color(0xFF1E293B), fontSize: 15),
                               decoration: _inputDecoration(
-                                  label: 'Email Address',
+                                  label: loc.fieldEmailAddress,
                                   icon: Icons.email_outlined),
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) {
-                                  return 'Email is required.';
+                                  return loc.validatorEmailRequired;
                                 }
                                 final emailRegex =
                                     RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
                                 if (!emailRegex.hasMatch(v.trim())) {
-                                  return 'Enter a valid email address.';
+                                  return loc.validatorEmailInvalid;
                                 }
                                 return null;
                               },
@@ -248,14 +243,14 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                           ),
                           const SizedBox(height: 16),
                           _buildField(
-                            label: 'Password',
+                            label: loc.fieldPassword,
                             child: TextFormField(
                               controller: _passCtl,
                               obscureText: _obscurePassword,
                               style: const TextStyle(
                                   color: Color(0xFF1E293B), fontSize: 15),
                               decoration: _inputDecoration(
-                                label: 'Password',
+                                label: loc.fieldPassword,
                                 icon: Icons.lock_outline,
                               ).copyWith(
                                 suffixIcon: _visibilityToggle(
@@ -266,10 +261,10 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                               ),
                               validator: (v) {
                                 if (v == null || v.isEmpty) {
-                                  return 'Password is required.';
+                                  return loc.validatorPasswordRequired;
                                 }
                                 if (v.length < 6) {
-                                  return 'Password must be at least 6 characters.';
+                                  return loc.validatorPasswordMinLength;
                                 }
                                 return null;
                               },
@@ -277,14 +272,14 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                           ),
                           const SizedBox(height: 16),
                           _buildField(
-                            label: 'Confirm Password',
+                            label: loc.fieldConfirmPassword,
                             child: TextFormField(
                               controller: _confirmCtl,
                               obscureText: _obscureConfirm,
                               style: const TextStyle(
                                   color: Color(0xFF1E293B), fontSize: 15),
                               decoration: _inputDecoration(
-                                label: 'Confirm Password',
+                                label: loc.fieldConfirmPassword,
                                 icon: Icons.lock_reset_outlined,
                               ).copyWith(
                                 suffixIcon: _visibilityToggle(
@@ -295,10 +290,10 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                               ),
                               validator: (v) {
                                 if (v == null || v.isEmpty) {
-                                  return 'Please confirm your password.';
+                                  return loc.validatorConfirmPasswordRequired;
                                 }
                                 if (v != _passCtl.text) {
-                                  return 'Passwords do not match.';
+                                  return loc.validatorPasswordsDoNotMatch;
                                 }
                                 return null;
                               },
@@ -327,9 +322,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                                   child: CircularProgressIndicator(
                                       strokeWidth: 2.5, color: Colors.white),
                                 )
-                              : const Text(
-                                  'Register Student',
-                                  style: TextStyle(
+                              : Text(
+                                  loc.registerStudentTitle,
+                                  style: const TextStyle(
                                       fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                         ),

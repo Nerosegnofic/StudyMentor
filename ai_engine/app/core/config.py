@@ -71,8 +71,11 @@ class Settings(BaseSettings):
     # LLM Resilience
     LLM_MAX_RETRIES: int = 3
 
-    # Rate Limiting (slowapi format: "N/period" — e.g., "3/minute")
-    QUIZ_GENERATE_RATE_LIMIT: str = "3/minute"
+    # Rate Limiting (slowapi format: "N/period" — e.g., "6/minute")
+    # Headroom for client-side pre-warming: each quiz cycle issues ~2 /generate calls
+    # (the fire-and-forget warm after submit + the CACHED start of the next quiz), so the
+    # limit is set above the ~1/quiz a non-warming client would use.
+    QUIZ_GENERATE_RATE_LIMIT: str = "6/minute"
 
     # BKT Evaluation / Spam Detection
     # Minimum time in ms required for an answer to be considered genuine comprehension.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../bloc/ai_summary/ai_summary_bloc.dart';
 import '../../../bloc/ai_summary/ai_summary_event.dart';
 import '../../../bloc/ai_summary/ai_summary_state.dart';
@@ -92,6 +93,7 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocBuilder<AiSummaryBloc, AiSummaryState>(
       builder: (context, state) {
         if (state is AiSummaryLoading || state is AiSummaryInitial) {

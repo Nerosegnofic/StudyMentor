@@ -34,6 +34,7 @@ import 'student_home.dart';
 import 'student_quiz.dart';
 import 'student_profile.dart';
 import 'shop/custom_shop_screen.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
@@ -87,6 +88,10 @@ class _StudentScreenState extends State<StudentScreen>
   /// Parent-configured quiz question count — kept in sync when config loads.
   QuizCount _quizCount = const Auto();
 
+  /// Student's grade level (set by the parent) — used to size generated quizzes.
+  /// Null until loaded; falls back to 5 in the quiz request.
+  int? _studentGrade;
+
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
 
@@ -122,6 +127,7 @@ class _StudentScreenState extends State<StudentScreen>
     _initMascotService();
 
     _loadAvatar();
+    _loadGrade();
 
     // Sync the installed-app inventory on every login so DataConnect always
     // has an up-to-date list for this account. The repository's diff logic
@@ -224,9 +230,36 @@ class _StudentScreenState extends State<StudentScreen>
     } catch (_) {}
   }
 
+  Future<void> _loadGrade() async {
+    try {
+      final profile = await DataConnectProvider().getStudentProfile(widget.uid);
+      if (mounted) {
+        setState(() => _studentGrade = profile['grade_level'] as int?);
+      }
+    } catch (_) {}
+  }
+
+  /// Re-fetch the parent-configured quiz count so a change made while the student
+  /// app was backgrounded takes effect on the next forced quiz. (The voluntary path
+  /// already reloads config when the subject screen opens.) The count is also
+  /// enforced server-side: a pre-warmed quiz with a stale count is not reused — a
+  /// fresh quiz is generated for the new count instead.
+  Future<void> _refreshQuizCount() async {
+    try {
+      final repo = context.read<AuthBloc>().repository;
+      final config = (await repo.getAppConfigForStudent(widget.uid)).config;
+      if (mounted && config != null) {
+        setState(() => _quizCount = config.quizCount);
+      }
+    } catch (_) {}
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
+
+    // Pick up parent config changes (e.g. quiz count) made while backgrounded.
+    _refreshQuizCount();
 
     // Sync on resume only when the native side flags a package change.
     InstalledAppsService.instance.isInventoryDirty().then((dirty) {
@@ -361,6 +394,7 @@ class _StudentScreenState extends State<StudentScreen>
                 repository: _aiRepo,
                 studentId: widget.uid,
                 contextType: QuizContext.forced,
+                studentGrade: _studentGrade,
                 totalQuestions: switch (_quizCount) {
                   Auto() => 5,
                   Fixed(:final count) => count,

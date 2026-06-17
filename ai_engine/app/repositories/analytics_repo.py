@@ -461,15 +461,17 @@ def get_subject_stats(db: Session, student_uid: str, subject_id: int) -> Dict:
     if not states:
         return {"average_mastery": 0.0, "learning_velocity": 0.0, "total_skills": total_skills, "mastered_skills": 0}
 
-    # Weight each skill's BKT probability by how much evidence exists.
-    # A skill needs at least MIN_ATTEMPTS answers before its mastery is fully trusted.
-    # This prevents 5 lucky correct answers from inflating the garden stage.
-    MIN_ATTEMPTS = 20
-    avg_mastery = sum(
-        s.mastery_probability * min(1.0, s.attempts / MIN_ATTEMPTS)
-        for s in states
-    ) / total_skills
-    mastered_count = sum(1 for s in states if s.is_mastered and s.attempts >= MIN_ATTEMPTS)
+    # Garden/subject mastery reflects how well the student knows the skills they
+    # have actually practiced. Untouched skills are excluded so a large curriculum
+    # doesn't pin the plant near 0% (the old `/ total_skills` capped growth at
+    # practiced/total). The gentle per-question mastery_step (see BKTConfig) is what
+    # now guards against a few lucky answers inflating the stage.
+    attempted = [s for s in states if s.attempts > 0]
+    avg_mastery = (
+        sum(s.mastery_probability for s in attempted) / len(attempted)
+        if attempted else 0.0
+    )
+    mastered_count = sum(1 for s in attempted if s.is_mastered)
 
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     recently_active = sum(1 for s in states if s.last_practiced and s.last_practiced >= seven_days_ago)

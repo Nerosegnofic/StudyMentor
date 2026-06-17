@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../l10n/app_localizations.dart';
 
 // Design-system tokens (mirrored from student_quiz.dart).
 const _kGreen = Color(0xFF2E7D32);
@@ -10,6 +11,7 @@ class RewardToast {
 
   /// Shows a brief floating SnackBar announcing the XP and Coins just earned.
   static void show(BuildContext context, int xp, int coins) {
+    final loc = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(

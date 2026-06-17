@@ -7,6 +7,7 @@ import '../../../bloc/notifications/notifications_event.dart';
 import '../../../bloc/notifications/notifications_state.dart';
 import '../../../domain/models/notification_model.dart';
 import '../../screens/parent/parent_account_screen.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class BrandedHeader extends StatefulWidget {
   final String parentName;
@@ -178,6 +179,7 @@ class _NotificationsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -206,7 +208,7 @@ class _NotificationsSheet extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Notifications',
+                    loc.notificationsTitle,
                     style: GoogleFonts.cairo(
                       color: const Color(0xFF1E293B),
                       fontSize: 18,
@@ -222,9 +224,9 @@ class _NotificationsSheet extends StatelessWidget {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
-                      'Mark all as read',
-                      style: TextStyle(
+                    child: Text(
+                      loc.markAllAsReadButton,
+                      style: const TextStyle(
                         color: Color(0xFF2196F3),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -251,7 +253,7 @@ class _NotificationsSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "You're All Caught Up",
+                      loc.allCaughtUpTitle,
                       style: GoogleFonts.cairo(
                         color: const Color(0xFF1E293B),
                         fontSize: 16,
@@ -260,9 +262,9 @@ class _NotificationsSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "You're all caught up! Activity alerts will appear here.",
+                      loc.allCaughtUpMessage,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         color: const Color(0xFF64748B),
                         fontSize: 14,
                       ),
@@ -303,11 +305,11 @@ class _NotificationsSheet extends StatelessWidget {
                 final diff = DateTime.now().difference(notif.createdAt);
                 String timeStr;
                 if (diff.inMinutes < 60) {
-                  timeStr = '${diff.inMinutes}m ago';
+                  timeStr = loc.minutesAgoLabel(diff.inMinutes);
                 } else if (diff.inHours < 24) {
-                  timeStr = '${diff.inHours}h ago';
+                  timeStr = loc.hoursAgoLabel(diff.inHours);
                 } else {
-                  timeStr = '${diff.inDays}d ago';
+                  timeStr = loc.daysAgoLabel(diff.inDays);
                 }
 
                 return _NotificationItem(
@@ -384,7 +386,7 @@ class _NotificationItem extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     color: const Color(0xFF64748B),
                     fontSize: 12,
                   ),
@@ -395,7 +397,7 @@ class _NotificationItem extends StatelessWidget {
           const SizedBox(width: 16),
           Text(
             time,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.cairo(
               color: const Color(0xFF94A3B8),
               fontSize: 10,
             ),

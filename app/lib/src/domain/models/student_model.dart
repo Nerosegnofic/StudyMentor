@@ -9,6 +9,8 @@ class StudentModel {
   final int? totalXp;
   final int? totalCoins;
   final bool isEmailVerified;
+  final DateTime? createdAt;
+  final DateTime? lastActiveAt;
 
   StudentModel({
     required this.uid,
@@ -19,6 +21,8 @@ class StudentModel {
     this.totalXp,
     this.totalCoins,
     this.isEmailVerified = false,
+    this.createdAt,
+    this.lastActiveAt,
   });
 
   factory StudentModel.fromJson(Map<String, dynamic> json) => StudentModel(
@@ -30,6 +34,12 @@ class StudentModel {
     totalXp: json['total_xp'] as int?,
     totalCoins: json['total_coins'] as int?,
     isEmailVerified: json['is_email_verified'] as bool? ?? false,
+    createdAt: json['created_at'] == null
+        ? null
+        : DateTime.parse(json['created_at'] as String),
+    lastActiveAt: json['last_active_at'] == null
+        ? null
+        : DateTime.parse(json['last_active_at'] as String),
   );
 
   StudentModel copyWith({
@@ -46,5 +56,7 @@ class StudentModel {
         totalXp: totalXp,
         totalCoins: totalCoins,
         isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+        createdAt: createdAt,
+        lastActiveAt: lastActiveAt,
       );
 }

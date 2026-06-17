@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../bloc/subject_detail/subject_detail_bloc.dart';
 import '../../bloc/subject_detail/subject_detail_event.dart';
 import '../../bloc/subject_detail/subject_detail_state.dart';
+import '../../../l10n/app_localizations.dart';
 
 class QuizHistoryCard extends StatefulWidget {
   final String quizAttemptId;
@@ -36,6 +37,7 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -68,7 +70,7 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                   Expanded(
                     child: Text(
                       widget.time,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF1E293B),
@@ -80,7 +82,7 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                     children: [
                       Text(
                         widget.score,
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF1E293B),
@@ -89,7 +91,7 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                       const SizedBox(height: 4),
                       Text(
                         widget.duration,
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           fontSize: 12,
                           color: const Color(0xFF64748B),
                         ),
@@ -114,8 +116,8 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                   const Divider(color: Color(0xFFE2E8F0)),
                   const SizedBox(height: 8),
                   Text(
-                    'Questions Attempted (${widget.totalQuestions})',
-                    style: GoogleFonts.roboto(
+                    loc.questionsAttemptedLabel(widget.totalQuestions),
+                    style: GoogleFonts.cairo(
                       fontSize: 12,
                       color: const Color(0xFF64748B),
                     ),
@@ -142,7 +144,7 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                           ),
                           child: Text(
                             qNum.toString(),
-                            style: GoogleFonts.roboto(
+                            style: GoogleFonts.cairo(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -179,6 +181,7 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
+        final loc = AppLocalizations.of(sheetContext);
         return BlocBuilder<SubjectDetailBloc, SubjectDetailState>(
           bloc: bloc,
           builder: (_, state) {
@@ -238,7 +241,7 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Question $qNum',
+                            loc.questionNumberLabel(qNum),
                             style: GoogleFonts.cairo(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -255,8 +258,8 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              detail.isCorrect ? 'Correct' : 'Incorrect',
-                              style: GoogleFonts.roboto(
+                              detail.isCorrect ? loc.correctLabel : loc.incorrectLabel,
+                              style: GoogleFonts.cairo(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: detail.isCorrect
@@ -310,8 +313,8 @@ class _QuizHistoryCardState extends State<QuizHistoryCard> {
                             elevation: 0,
                           ),
                           child: Text(
-                            'Close',
-                            style: GoogleFonts.roboto(
+                            loc.commonClose,
+                            style: GoogleFonts.cairo(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),

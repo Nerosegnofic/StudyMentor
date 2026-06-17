@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../l10n/app_localizations.dart';
 
 // ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
 const Color _kGreen = Color(0xFF4CAF50); // Primary Green
@@ -70,6 +71,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     // PopScope prevents back-gesture and barrier-tap dismissal while a
     // verification request is in flight, so the loading state is never
     // orphaned and the user cannot get stuck on a blank screen.
@@ -137,7 +139,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   validator: (v) =>
-                      (v != null && v.contains('@')) ? null : 'Please enter a valid email address.',
+                      (v != null && v.contains('@')) ? null : loc.loginEmailValidator,
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
@@ -177,7 +179,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: widget.isLoading ? null : (_) => _submit(),
                   validator: (v) =>
-                      (v != null && v.isNotEmpty) ? null : 'Password is required.',
+                      (v != null && v.isNotEmpty) ? null : loc.validatorPasswordRequired,
                 ),
               ],
             ),

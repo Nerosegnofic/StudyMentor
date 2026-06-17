@@ -93,17 +93,13 @@ def get_overall_dashboard_stats(db: Session, student_uid: str) -> dict:
         .filter(StudentSkillState.student_uid == student_uid)
         .all()
     )
-    # Denominator = only skills this student has ever interacted with,
-    # weighted by evidence (same MIN_ATTEMPTS contract as get_subject_stats).
-    MIN_ATTEMPTS = 20
-    total_skills = len(all_states) if all_states else 0
-    mastered_skills = sum(1 for s in all_states if s.is_mastered and s.attempts >= MIN_ATTEMPTS)
+    # Denominator = only skills this student has actually practiced (same
+    # practiced-skills contract as get_subject_stats).
+    attempted = [s for s in all_states if s.attempts > 0]
+    total_skills = len(attempted)
+    mastered_skills = sum(1 for s in attempted if s.is_mastered)
     overall_mastery = (
-        round(
-            sum(s.mastery_probability * min(1.0, s.attempts / MIN_ATTEMPTS) for s in all_states)
-            / total_skills,
-            4,
-        )
+        round(sum(s.mastery_probability for s in attempted) / total_skills, 4)
         if total_skills
         else 0.0
     )

@@ -13,6 +13,7 @@ import '../../../bloc/parent_profile/parent_profile_bloc.dart';
 import '../../../bloc/parent_profile/parent_profile_event.dart';
 import '../../../bloc/parent_profile/parent_profile_state.dart';
 import '../../../domain/models/user_model.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ParentAccountScreen extends StatefulWidget {
   const ParentAccountScreen({super.key});
@@ -126,9 +127,9 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     setState(() => _isDirty = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile updated successfully.'),
-        backgroundColor: Color(0xFF34A853),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).profileUpdatedSuccess),
+        backgroundColor: const Color(0xFF34A853),
       ),
     );
   }
@@ -152,21 +153,24 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     if (!_isDirty) return true;
     final leave = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Unsaved Changes'),
-        content: const Text('You have unsaved changes. Leave without saving?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Stay'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
-            child: const Text('Leave'),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(loc.unsavedChangesDialogTitle),
+          content: Text(loc.unsavedChangesDialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(loc.stayButton),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+              child: Text(loc.leaveButton),
+            ),
+          ],
+        );
+      },
     );
     return leave ?? false;
   }
@@ -176,23 +180,24 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   Future<void> _confirmDeleteAccount() async {
     final proceed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Your Account'),
-        content: const Text(
-          'This will permanently delete your account. Are you sure?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(loc.deleteYourAccountDialogTitle),
+          content: Text(loc.deleteYourAccountDialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(loc.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+              child: Text(loc.continueButton),
+            ),
+          ],
+        );
+      },
     );
     if (proceed != true || !mounted) return;
 
@@ -215,44 +220,47 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   Future<void> _confirmLogout() async {
     final proceed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
+      builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.logout_rounded, color: Colors.red, size: 20),
               ),
-              child: const Icon(Icons.logout_rounded, color: Colors.red, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                loc.logOutButton,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Text(
+            loc.logoutConfirmationMessage,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(loc.commonCancel),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'Log Out',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: Text(loc.logOutButton),
             ),
           ],
-        ),
-        content: Text(
-          'Are you sure you want to log out of your account?',
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Log Out'),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (proceed == true && mounted) {
@@ -265,6 +273,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final authState = context.read<AuthBloc>().state;
     final parentName = authState is AuthAuthenticated ? authState.user.fullName : '';
 
@@ -284,12 +293,10 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text(
-                    'Could not load linked students. Check your connection.',
-                  ),
+                  content: Text(loc.couldNotLoadLinkedStudents),
                   backgroundColor: Colors.red.shade700,
                   action: SnackBarAction(
-                    label: 'Retry',
+                    label: loc.commonRetry,
                     textColor: Colors.white,
                     onPressed: _retryLoadChildren,
                   ),
@@ -347,9 +354,9 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Account Settings',
-                    style: TextStyle(
+                  Text(
+                    loc.accountSettingsTitle,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -391,9 +398,9 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Account Information',
-                            style: TextStyle(
+                          Text(
+                            loc.parentSettingsAccountInfoSection,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E293B),
@@ -424,18 +431,18 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Change Password',
-                            style: TextStyle(
+                          Text(
+                            loc.parentSettingsChangePasswordSection,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E293B),
                             ),
                           ),
                           const SizedBox(height: 6),
-                          const Text(
-                            'Leave all password fields empty to keep your current password.',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          Text(
+                            loc.parentSettingsPasswordHint,
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                           ),
                           const SizedBox(height: 24),
                           _buildCurrentPasswordField(),
@@ -466,6 +473,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   // ── pending-email banner ────────────────────────────────────────────────────
 
   Widget _buildEmailPendingBanner(String pendingEmail) {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -480,8 +488,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'A verification link was sent to $pendingEmail. '
-              'Your email address will update after you click it.',
+              loc.parentSettingsEmailPendingBanner(pendingEmail),
               style: const TextStyle(fontSize: 13, color: Color(0xFF5D4037)),
             ),
           ),
@@ -497,12 +504,13 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   // ── full name ───────────────────────────────────────────────────────────────
 
   Widget _buildFullNameField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Full Name',
-          style: TextStyle(
+        Text(
+          loc.fieldFullName,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -513,10 +521,10 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           controller: _fullNameCtl,
           textCapitalization: TextCapitalization.words,
           style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
-          decoration: _inputDecoration(label: 'Full Name', icon: Icons.person_outline),
+          decoration: _inputDecoration(label: loc.fieldFullName, icon: Icons.person_outline),
           validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Full name is required.';
-            if (v.trim().length < 2) return 'Name must be at least 2 characters.';
+            if (v == null || v.trim().isEmpty) return loc.validatorFullNameRequired;
+            if (v.trim().length < 2) return loc.validatorFullNameMinLength;
             return null;
           },
         ),
@@ -527,12 +535,13 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   // ── email ───────────────────────────────────────────────────────────────────
 
   Widget _buildEmailField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Email',
-          style: TextStyle(
+        Text(
+          loc.fieldEmail,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -543,18 +552,18 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           controller: _emailCtl,
           keyboardType: TextInputType.emailAddress,
           style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
-          decoration: _inputDecoration(label: 'Email', icon: Icons.email_outlined),
+          decoration: _inputDecoration(label: loc.fieldEmail, icon: Icons.email_outlined),
           validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Email is required.';
+            if (v == null || v.trim().isEmpty) return loc.validatorEmailRequired;
             final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-            if (!emailRegex.hasMatch(v.trim())) return 'Enter a valid email address.';
+            if (!emailRegex.hasMatch(v.trim())) return loc.validatorEmailInvalid;
             return null;
           },
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Changing your email will send a verification link to the new address.',
-          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+        Text(
+          loc.parentSettingsEmailHelper,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
       ],
     );
@@ -563,6 +572,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   // ── current password ────────────────────────────────────────────────────────
 
   Widget _buildCurrentPasswordField() {
+    final loc = AppLocalizations.of(context);
     final emailChanged =
         _emailCtl.text.trim() != _originalEmail &&
         _emailCtl.text.trim().isNotEmpty;
@@ -570,9 +580,9 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Current Password',
-          style: TextStyle(
+        Text(
+          loc.fieldCurrentPassword,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -584,7 +594,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           obscureText: _obscureCurrent,
           style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
           decoration: _inputDecoration(
-            label: 'Current Password',
+            label: loc.fieldCurrentPassword,
             icon: Icons.lock_outline,
           ).copyWith(
             suffixIcon: _visibilityToggle(
@@ -599,17 +609,17 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                 _emailCtl.text.trim().isNotEmpty;
             if ((changingPassword || changingEmail) && (v == null || v.isEmpty)) {
               return changingEmail
-                  ? 'Enter your current password to change your email.'
-                  : 'Enter your current password to set a new one.';
+                  ? loc.validatorCurrentPasswordForEmail
+                  : loc.validatorCurrentPasswordForNewPassword;
             }
             return null;
           },
         ),
         if (emailChanged) ...[
           const SizedBox(height: 6),
-          const Text(
-            'Required to change the email address.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          Text(
+            loc.requiredToChangeEmailHint,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
         ],
       ],
@@ -619,12 +629,13 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   // ── new password ────────────────────────────────────────────────────────────
 
   Widget _buildNewPasswordField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'New Password',
-          style: TextStyle(
+        Text(
+          loc.fieldNewPassword,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -636,7 +647,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           obscureText: _obscureNew,
           style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
           decoration: _inputDecoration(
-            label: 'New Password',
+            label: loc.fieldNewPassword,
             icon: Icons.lock_reset_outlined,
           ).copyWith(
             suffixIcon: _visibilityToggle(
@@ -646,8 +657,8 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           ),
           validator: (v) {
             if (v == null || v.isEmpty) return null;
-            if (v.length < 6) return 'Password must be at least 6 characters.';
-            if (_currentPassCtl.text.isEmpty) return 'Enter your current password first.';
+            if (v.length < 6) return loc.validatorPasswordMinLength;
+            if (_currentPassCtl.text.isEmpty) return loc.validatorEnterCurrentPasswordFirst;
             return null;
           },
         ),
@@ -658,12 +669,13 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   // ── confirm password ────────────────────────────────────────────────────────
 
   Widget _buildConfirmPasswordField() {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Confirm New Password',
-          style: TextStyle(
+        Text(
+          loc.fieldConfirmNewPassword,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -675,7 +687,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           obscureText: _obscureConfirm,
           style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
           decoration: _inputDecoration(
-            label: 'Confirm New Password',
+            label: loc.fieldConfirmNewPassword,
             icon: Icons.lock_outline,
           ).copyWith(
             suffixIcon: _visibilityToggle(
@@ -685,7 +697,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           ),
           validator: (v) {
             if (_newPassCtl.text.isEmpty) return null;
-            if (v != _newPassCtl.text) return 'Passwords do not match.';
+            if (v != _newPassCtl.text) return loc.validatorPasswordsDoNotMatch;
             return null;
           },
         ),
@@ -717,7 +729,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
               )
             : Text(
-                'Save Changes',
+                AppLocalizations.of(context).saveChangesButton,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -731,6 +743,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   // ── danger zone card ────────────────────────────────────────────────────────
 
   Widget _buildDangerZoneCard() {
+    final loc = AppLocalizations.of(context);
     final isLoadingChildren = !_childLoadError && _linkedChildCount == null;
     final hasLinkedChildren = _linkedChildCount != null && _linkedChildCount! > 0;
     final canDelete = !isLoadingChildren && !hasLinkedChildren && !_childLoadError;
@@ -763,9 +776,9 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                 child: Icon(Icons.warning_amber_rounded, color: Colors.red.shade600, size: 18),
               ),
               const SizedBox(width: 10),
-              const Text(
-                'Danger Zone',
-                style: TextStyle(
+              Text(
+                loc.dangerZoneSection,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1E293B),
@@ -775,8 +788,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Permanently removes your account and all data. '
-            'You must delete all student accounts first.',
+            loc.deleteAccountDescription,
             style: TextStyle(fontSize: 13, color: Colors.red.shade800, height: 1.4),
           ),
           if (_childLoadError) ...[
@@ -792,9 +804,9 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
             width: double.infinity,
             child: Tooltip(
               message: hasLinkedChildren
-                  ? 'Remove all linked children before deleting your account.'
+                  ? loc.deleteAccountBlockedTooltip
                   : _childLoadError
-                      ? 'Could not verify linked students. Please retry.'
+                      ? loc.deleteAccountRetryTooltip
                       : '',
               child: OutlinedButton.icon(
                 onPressed: canDelete ? _confirmDeleteAccount : null,
@@ -813,7 +825,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                         color: canDelete ? Colors.red.shade600 : Colors.grey.shade400,
                       ),
                 label: Text(
-                  'Delete My Account',
+                  loc.deleteMyAccountButton,
                   style: TextStyle(
                     color: canDelete ? Colors.red.shade600 : Colors.grey.shade400,
                     fontWeight: FontWeight.w600,
@@ -837,6 +849,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   }
 
   Widget _buildChildLoadErrorNotice() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -854,8 +867,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Could not verify linked students. '
-              'Deletion is disabled until this is resolved.',
+              loc.childLoadErrorNotice,
               style: TextStyle(fontSize: 12, color: Colors.orange.shade900, height: 1.4),
             ),
           ),
@@ -868,9 +880,9 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                 color: const Color(0xFFF57C00),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Text(
-                'Retry',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+              child: Text(
+                loc.commonRetry,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
           ),
@@ -880,6 +892,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
   }
 
   Widget _buildLinkedChildrenNotice() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -897,8 +910,7 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'You can only delete your account after removing all linked '
-              'children. Go to the Students tab to delete each child\'s account first.',
+              loc.linkedChildrenNotice,
               style: TextStyle(fontSize: 12, color: Colors.orange.shade900, height: 1.4),
             ),
           ),
@@ -913,9 +925,9 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     return OutlinedButton.icon(
       onPressed: _confirmLogout,
       icon: const Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 18),
-      label: const Text(
-        'Log Out',
-        style: TextStyle(
+      label: Text(
+        AppLocalizations.of(context).logOutButton,
+        style: const TextStyle(
           color: Color(0xFFEF4444),
           fontWeight: FontWeight.w600,
           fontSize: 15,
@@ -1013,7 +1025,7 @@ class _ParentDeletePasswordDialogState
   void _submit() {
     final password = _passCtl.text.trim();
     if (password.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your current password.');
+      setState(() => _errorMessage = AppLocalizations.of(context).validatorEnterCurrentPassword);
       return;
     }
     setState(() => _errorMessage = null);
@@ -1027,6 +1039,7 @@ class _ParentDeletePasswordDialogState
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return PopScope(
       canPop: !_isLoading,
       child: BlocListener<ParentProfileBloc, ParentProfileState>(
@@ -1058,9 +1071,9 @@ class _ParentDeletePasswordDialogState
                 child: Icon(Icons.lock_outline, color: Colors.red.shade600, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Confirm Your Password',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              Text(
+                loc.confirmYourPasswordDialogTitle,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -1070,7 +1083,7 @@ class _ParentDeletePasswordDialogState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Enter your current password to permanently delete your account. This cannot be undone.',
+                  loc.confirmPasswordDeleteWarning,
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade700,
@@ -1090,7 +1103,7 @@ class _ParentDeletePasswordDialogState
                     if (!_isLoading) _submit();
                   },
                   decoration: InputDecoration(
-                    labelText: 'Current Password',
+                    labelText: loc.fieldCurrentPassword,
                     errorText: _errorMessage,
                     isDense: true,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -1126,9 +1139,9 @@ class _ParentDeletePasswordDialogState
           actions: [
             TextButton(
               onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color(0xFF666666)),
+              child: Text(
+                loc.commonCancel,
+                style: const TextStyle(color: Color(0xFF666666)),
               ),
             ),
             FilledButton(
@@ -1143,7 +1156,7 @@ class _ParentDeletePasswordDialogState
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Delete Account'),
+                  : Text(loc.deleteAccountTitle),
             ),
           ],
         ),
