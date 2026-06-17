@@ -3,11 +3,18 @@ from app.models.domain import QuizSession, Question, QuestionResponse, StudentSu
 from datetime import datetime
 from typing import List, Optional, Set
 
-def create_quiz_session(db: Session, student_uid: str, subject_id: int, total_questions: int) -> QuizSession:
+def create_quiz_session(
+    db: Session,
+    student_uid: str,
+    subject_id: int,
+    total_questions: int,
+    quiz_context: str = "VOLUNTARY",
+) -> QuizSession:
     quiz_session = QuizSession(
         student_uid=student_uid,
         subject_id=subject_id,
-        total_questions=total_questions
+        total_questions=total_questions,
+        quiz_context=quiz_context,
     )
     db.add(quiz_session)
     db.flush()
@@ -54,9 +61,14 @@ def get_active_quiz_session(
     """
     Returns the most recent unsubmitted quiz session for this student + subject.
 
-    Used by the /generate endpoint to enable cross-device quiz caching:
-    if an active session already exists, its questions are returned directly
-    without calling the LLM or consuming the rate limit.
+    Used by the /generate endpoint to enable quiz caching (cross-device reuse and
+    client-side pre-warming): if an active session already exists, its questions are
+    returned directly without calling the LLM or consuming the rate limit.
+
+    Note: this intentionally does NOT filter by question count. An already-warmed quiz
+    is served as-is even if the parent has since changed the quiz-count setting — that
+    first cached quiz keeps its original count. The new count takes effect on the next
+    generated quiz, because the next warm replays the launch's (updated) count.
     """
     return (
         db.query(QuizSession)

@@ -1,7 +1,41 @@
+import re
 from typing import List, Optional
 from app.core.database import get_vector_store
 from app.core.config import settings
 from app.core.exceptions import InsufficientContextError
+
+
+# ---------------------------------------------------------------------------
+# Subject-aware retrieval threshold.
+# Language subjects (Arabic/English) have short rule/vocabulary chunks that
+# tend to score less similar, so they get a more lenient distance threshold.
+# ---------------------------------------------------------------------------
+_LANGUAGE_SUBJECT_PATTERNS = re.compile(
+    r"english|connect|انجليز|إنجليز|عربي|عربية|لغتي|لغة\s*عربية|قراءة|نحو",
+    re.IGNORECASE,
+)
+
+
+def _is_language_subject(subject_name: Optional[str]) -> bool:
+    """True if the subject name looks like an Arabic/English language subject."""
+    if not subject_name:
+        return False
+    return bool(_LANGUAGE_SUBJECT_PATTERNS.search(subject_name))
+
+
+def get_score_threshold(subject_name: Optional[str] = None) -> float:
+    """
+    Return the retrieval distance threshold for a subject.
+
+    Language subjects use the lenient 'language' override; everything else
+    (and an unknown/missing subject) uses 'default', which mirrors the legacy
+    flat RETRIEVAL_SCORE_THRESHOLD for backward compatibility.
+    """
+    by_subject = settings.RETRIEVAL_SCORE_THRESHOLD_BY_SUBJECT or {}
+    default = by_subject.get("default", settings.RETRIEVAL_SCORE_THRESHOLD)
+    if _is_language_subject(subject_name):
+        return by_subject.get("language", default)
+    return default
 
 
 # ---------------------------------------------------------------------------
@@ -30,13 +64,15 @@ def retrieve_context_for_topics(
     k: int = 10,
     firebase_uid: str = None,
     subject_id: int = None,
+    subject_name: str = None,
+    is_global: bool = False,
 ) -> str:
     """
     Retrieves a fair distribution of textbook chunks across multiple topics
     and formats them for injection into the LLM prompt.
 
     Uses MMR (Maximum Marginal Relevance) retrieval with:
-      - 4-tier safe fallback chain (never drops all filters — data leak risk)
+      - Tenant-safe fallback chain (a private subject never drops firebase_uid)
       - Subject-scoped filtering (prevents cross-subject context contamination)
       - Deduplication across topics
       - Empty context guard (never calls LLM with blank curriculum content)
@@ -48,8 +84,15 @@ def retrieve_context_for_topics(
                       retrieval to this student's uploaded documents.
         subject_id: The subject ID of the quiz being generated. Prevents chunks
                     from other subjects being injected into the prompt.
+        subject_name: Subject name used only to select a subject-tuned retrieval
+                      threshold (language subjects get a more lenient value).
+        is_global: Whether the subject is admin-published shared curriculum. Only
+                   global subjects may be retrieved by subject_id alone (their
+                   chunks carry no firebase_uid); private subjects ALWAYS require
+                   the owner's firebase_uid (cross-student isolation).
     """
     vector_store = get_vector_store()
+    score_threshold = get_score_threshold(subject_name)
 
     # Calculate per-topic quota (minimum 2 chunks per topic to ensure coverage)
     quota = max(2, k // max(len(topics), 1))
@@ -64,6 +107,8 @@ def retrieve_context_for_topics(
             k=quota * 4,  # Fetch more than needed for MMR diversity pool
             firebase_uid=firebase_uid,
             subject_id=subject_id,
+            score_threshold=score_threshold,
+            is_global=is_global,
         )
 
         # Re-rank by role priority (examples/exercises first)
@@ -103,6 +148,8 @@ def retrieve_context_for_quiz(
     k: int = 15,
     firebase_uid: str = None,
     subject_id: int = None,
+    subject_name: str = None,
+    is_global: bool = False,
 ) -> str:
     """
     Zone-aware retrieval: allocates different context budgets per zone.
@@ -117,8 +164,14 @@ def retrieve_context_for_quiz(
         k: Maximum total chunks across all skills.
         firebase_uid: Student's Firebase UID for scoping.
         subject_id: Subject ID for scoping.
+        subject_name: Subject name used only to select a subject-tuned retrieval
+                      threshold (language subjects get a more lenient value).
+        is_global: Whether the subject is admin-published shared curriculum. Only
+                   global subjects may be retrieved by subject_id alone; private
+                   subjects ALWAYS require the owner's firebase_uid.
     """
     vector_store = get_vector_store()
+    score_threshold = get_score_threshold(subject_name)
 
     seen_contents: set = set()
     final_docs: list = []
@@ -135,6 +188,8 @@ def retrieve_context_for_quiz(
             k=budget * 3,  # Fetch 3x budget for filtering headroom
             firebase_uid=firebase_uid,
             subject_id=subject_id,
+            score_threshold=score_threshold,
+            is_global=is_global,
         )
 
         # Re-rank by role priority — adapted to difficulty level.
@@ -188,42 +243,55 @@ def _retrieve_with_safe_fallback(
     k: int,
     firebase_uid: Optional[str],
     subject_id: Optional[int],
+    score_threshold: Optional[float] = None,
+    is_global: bool = False,
 ) -> list:
     """
-    4-tier safe retrieval fallback using MMR for diversity.
-    NEVER drops all filters simultaneously (cross-tenant data leak risk).
+    Tenant-safe retrieval fallback using MMR for diversity.
 
-    Tier 1: firebase_uid + subject_id + content_type=substantive  (full filter)
-    Tier 2: firebase_uid + subject_id                             (drop content_type)
-    Tier 3: subject_id only                                       (global subjects)
-    ❌ Tier 4: no filter at all → REMOVED (was a cross-tenant data leak)
+    The tier chain is chosen by subject ownership so a PRIVATE subject can never
+    leak another student's chunks:
+
+    Private subject (is_global=False) — owner's chunks only:
+        Tier 1: firebase_uid + subject_id + content_type=substantive
+        Tier 2: firebase_uid + subject_id            (drop content_type)
+        (NO subject_id-only tier — that would drop the owner filter.)
+
+    Global subject (is_global=True) — admin-published shared curriculum whose
+    chunks carry no firebase_uid:
+        Tier 1: subject_id + content_type=substantive
+        Tier 2: subject_id                            (drop content_type)
     """
-    # Build filter tiers
     tiers = []
 
-    # Tier 1: Full filter (student's docs, correct subject, substantive content only)
-    t1 = {"content_type": "substantive"}
-    if firebase_uid:
-        t1["firebase_uid"] = firebase_uid
-    if subject_id is not None:
-        t1["subject_id"] = subject_id
-    tiers.append(t1)
+    if is_global:
+        # Shared curriculum: scope by subject only (chunks have no owner).
+        t1 = {"content_type": "substantive"}
+        if subject_id is not None:
+            t1["subject_id"] = subject_id
+        tiers.append(t1)
 
-    # Tier 2: Drop content_type restriction (include structural chunks as fallback)
-    t2 = {}
-    if firebase_uid:
-        t2["firebase_uid"] = firebase_uid
-    if subject_id is not None:
-        t2["subject_id"] = subject_id
-    if t2:  # Only attempt if we have at least one filter
-        tiers.append(t2)
+        if subject_id is not None:
+            tiers.append({"subject_id": subject_id})
+    else:
+        # Private subject: the owner's firebase_uid is mandatory on every tier.
+        t1 = {"content_type": "substantive"}
+        if firebase_uid:
+            t1["firebase_uid"] = firebase_uid
+        if subject_id is not None:
+            t1["subject_id"] = subject_id
+        tiers.append(t1)
 
-    # Tier 3: Subject-only filter (for global/shared curriculum subjects)
-    if subject_id is not None:
-        tiers.append({"subject_id": subject_id})
+        t2 = {}
+        if firebase_uid:
+            t2["firebase_uid"] = firebase_uid
+        if subject_id is not None:
+            t2["subject_id"] = subject_id
+        if t2:  # Only attempt if we have at least one filter
+            tiers.append(t2)
 
     for filter_dict in tiers:
-        docs = _search_with_mmr(vector_store, topic, k, filter_dict)
+        docs = _search_with_mmr(vector_store, topic, k, filter_dict, score_threshold=score_threshold)
         if docs:
             return docs
 
@@ -238,6 +306,7 @@ def _search_with_mmr(
     k: int,
     filter_dict: dict,
     lambda_mult: float = 0.5,
+    score_threshold: Optional[float] = None,
 ) -> list:
     """
     MMR (Maximum Marginal Relevance) retrieval: balances relevance
@@ -265,20 +334,24 @@ def _search_with_mmr(
             f"[Retrieval] MMR not available, falling back to similarity search.",
             flush=True,
         )
-        return _search_with_score(vector_store, topic, k, filter_dict)
+        return _search_with_score(vector_store, topic, k, filter_dict, score_threshold=score_threshold)
     except Exception as e:
         print(f"[Retrieval] MMR search failed with filter {filter_dict}: {e}", flush=True)
-        return _search_with_score(vector_store, topic, k, filter_dict)
+        return _search_with_score(vector_store, topic, k, filter_dict, score_threshold=score_threshold)
 
 
-def _search_with_score(vector_store, topic: str, k: int, filter_dict: dict) -> list:
+def _search_with_score(
+    vector_store, topic: str, k: int, filter_dict: dict, score_threshold: Optional[float] = None
+) -> list:
     """
     Fallback: similarity search with score-based relevance filtering.
 
     PGVector returns cosine distance: 0.0 = identical, 2.0 = opposite.
-    Chunks with distance > RETRIEVAL_SCORE_THRESHOLD are too dissimilar to
-    inject as curriculum context — they would degrade quiz quality.
+    Chunks with distance > the threshold are too dissimilar to inject as
+    curriculum context — they would degrade quiz quality. The threshold is
+    subject-tuned by the caller; defaults to the flat RETRIEVAL_SCORE_THRESHOLD.
     """
+    threshold = score_threshold if score_threshold is not None else settings.RETRIEVAL_SCORE_THRESHOLD
     try:
         docs_with_scores = vector_store.similarity_search_with_score(
             topic, k=k, filter=filter_dict
@@ -286,14 +359,14 @@ def _search_with_score(vector_store, topic: str, k: int, filter_dict: dict) -> l
         accepted = []
         rejected_scores = []
         for doc, score in docs_with_scores:
-            if score <= settings.RETRIEVAL_SCORE_THRESHOLD:
+            if score <= threshold:
                 accepted.append(doc)
             else:
                 rejected_scores.append(round(score, 3))
         if rejected_scores:
             print(
                 f"[Retrieval] Filtered {len(rejected_scores)} chunks above threshold "
-                f"({settings.RETRIEVAL_SCORE_THRESHOLD}): {rejected_scores[:5]}",
+                f"({threshold}): {rejected_scores[:5]}",
                 flush=True,
             )
         return accepted

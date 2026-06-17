@@ -5,8 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../utils/error_localizer.dart';
+import 'auth_style.dart';
 
 class ParentRegisterScreen extends StatefulWidget {
   const ParentRegisterScreen({super.key});
@@ -23,13 +22,19 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
   final _confirmCtl = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  String? _error;
+
+  void _clearError() {
+    if (_error != null) setState(() => _error = null);
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Computed above the Scaffold so the keyboard is detected (a Scaffold zeroes
+    // viewInsets.bottom for its body subtree).
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).registerAsParentTitle),
-      ),
+      backgroundColor: kAuthBackground,
       body: BlocConsumer<AuthBloc, AuthState>(
         // Only rebuild the button when loading state changes.
         buildWhen: (prev, curr) => curr is AuthLoading || prev is AuthLoading,
@@ -44,101 +49,117 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
             if (ModalRoute.of(context)?.isCurrent ?? false) {
               _passCtl.clear();
               _confirmCtl.clear();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(localizeError(state.message, AppLocalizations.of(context)))),
-              );
+              setState(() => _error = state.message);
             }
           }
         },
         builder: (context, state) {
           final loading = state is AuthLoading;
-          final loc = AppLocalizations.of(context);
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                children: [
-                  TextFormField(
-                    controller: _fullNameCtl,
-                    decoration: InputDecoration(labelText: loc.fieldFullName),
-                    validator: (v) =>
-                        v!.isEmpty ? loc.validatorFullNameRequired : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _emailCtl,
-                    decoration: InputDecoration(labelText: loc.fieldEmail),
-                    validator: (v) =>
-                        v!.contains('@') ? null : loc.loginEmailValidator,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _passCtl,
-                    decoration: InputDecoration(
-                      labelText: loc.fieldPassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
-                      ),
-                    ),
-                    obscureText: _obscurePassword,
-                    validator: (v) =>
-                        v!.length >= 6 ? null : loc.validatorPasswordMinLength,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _confirmCtl,
-                    decoration: InputDecoration(
-                      labelText: loc.fieldConfirmPassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirm
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () =>
-                            setState(() => _obscureConfirm = !_obscureConfirm),
-                      ),
-                    ),
-                    obscureText: _obscureConfirm,
-                    validator: (v) => v == _passCtl.text
-                        ? null
-                        : loc.validatorPasswordsDoNotMatch,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: loading
-                        ? null
-                        : () {
-                            if (_formKey.currentState!.validate()) {
-                              context.read<AuthBloc>().add(
-                                RegisterRequested(
-                                  fullName: _fullNameCtl.text.trim(),
-                                  email: _emailCtl.text.trim(),
-                                  password: _passCtl.text.trim(),
-                                ),
-                              );
-                            }
-                          },
-                    child: loading
-                        ? const CircularProgressIndicator()
-                        : Text(loc.registerButton),
-                  ),
-                  TextButton(
-                    onPressed: () =>
-                        Navigator.pushReplacementNamed(context, '/login'),
-                    child: Text(loc.alreadyRegisteredButton),
-                  ),
-                ],
+          return Column(
+            children: [
+              AuthHeader(
+                subtitle: 'Create your parent account',
+                keyboardOpen: keyboardOpen,
+                onBack: () => Navigator.of(context).maybePop(),
               ),
-            ),
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                    children: [
+                      authErrorBanner(_error),
+                      TextFormField(
+                        controller: _fullNameCtl,
+                        onChanged: (_) => _clearError(),
+                        decoration: authInputDecoration(
+                          label: 'Full Name',
+                          icon: Icons.person_outline,
+                        ),
+                        validator: (v) => v!.isEmpty ? 'Full name is required.' : null,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _emailCtl,
+                        onChanged: (_) => _clearError(),
+                        decoration: authInputDecoration(
+                          label: 'Email',
+                          icon: Icons.email_outlined,
+                        ),
+                        validator: (v) => v!.contains('@') ? null : 'Please enter a valid email address.',
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _passCtl,
+                        onChanged: (_) => _clearError(),
+                        decoration: authInputDecoration(
+                          label: 'Password',
+                          icon: Icons.lock_outline,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey.shade500,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                          ),
+                        ),
+                        obscureText: _obscurePassword,
+                        validator: (v) => v!.length >= 6 ? null : 'Password must be at least 6 characters.',
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _confirmCtl,
+                        onChanged: (_) => _clearError(),
+                        decoration: authInputDecoration(
+                          label: 'Confirm Password',
+                          icon: Icons.lock_outline,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirm
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey.shade500,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscureConfirm = !_obscureConfirm,
+                            ),
+                          ),
+                        ),
+                        obscureText: _obscureConfirm,
+                        validator: (v) =>
+                            v == _passCtl.text ? null : 'Passwords do not match',
+                      ),
+                      const SizedBox(height: 24),
+                      authPrimaryButton(
+                        label: 'Register',
+                        loading: loading,
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            context.read<AuthBloc>().add(
+                              RegisterRequested(
+                                fullName: _fullNameCtl.text.trim(),
+                                email: _emailCtl.text.trim(),
+                                password: _passCtl.text.trim(),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 4),
+                      authTextLink(
+                        text: 'Already registered? Sign In',
+                        onPressed: () =>
+                            Navigator.pushReplacementNamed(context, '/login'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),

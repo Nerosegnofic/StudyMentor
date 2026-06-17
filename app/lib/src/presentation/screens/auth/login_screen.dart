@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../utils/app_info.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../widgets/language_picker_dialog.dart';
-import '../../utils/error_localizer.dart';
+import 'auth_style.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,28 +18,22 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passCtl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  String? _error;
 
   @override
   Widget build(BuildContext context) {
     final canGoBack = Navigator.of(context).canPop();
+    // Computed here (above the Scaffold) so the keyboard is actually detected —
+    // a Scaffold zeroes viewInsets.bottom for its body subtree.
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return PopScope(
       canPop: canGoBack,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && !canGoBack) SystemNavigator.pop();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(AppLocalizations.of(context).signInTitle),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.language),
-              onPressed: () => showLanguagePickerDialog(context),
-            ),
-          ],
-        ),
-        body: Stack(
-          children: [
-            BlocConsumer<AuthBloc, AuthState>(
+        backgroundColor: kAuthBackground,
+        body: BlocConsumer<AuthBloc, AuthState>(
           // Only rebuild the button when loading state changes.
           buildWhen: (prev, curr) => curr is AuthLoading || prev is AuthLoading,
           // Handle side effects without setState.
@@ -60,51 +51,73 @@ class _LoginScreenState extends State<LoginScreen> {
             if (state is AuthError) {
               if (ModalRoute.of(context)?.isCurrent ?? false) {
                 _passCtl.clear();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(localizeError(state.message, AppLocalizations.of(context)))),
-                );
+                setState(() => _error = state.message);
               }
             }
           },
           builder: (context, state) {
             final loading = state is AuthLoading;
-            final loc = AppLocalizations.of(context);
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _emailCtl,
-                      decoration: InputDecoration(labelText: loc.fieldEmail),
-                      validator: (v) =>
-                          v!.contains('@') ? null : loc.loginEmailValidator,
-                    ),
-                    TextFormField(
-                      controller: _passCtl,
-                      decoration: InputDecoration(
-                        labelText: loc.fieldPassword,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+            return Column(
+              children: [
+                AuthHeader(
+                  keyboardOpen: keyboardOpen,
+                  onBack: canGoBack
+                      ? () => Navigator.of(context).maybePop()
+                      : null,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          authErrorBanner(_error),
+                          TextFormField(
+                            controller: _emailCtl,
+                            onChanged: (_) {
+                              if (_error != null) {
+                                setState(() => _error = null);
+                              }
+                            },
+                            decoration: authInputDecoration(
+                              label: 'Email',
+                              icon: Icons.email_outlined,
+                            ),
+                            validator: (v) =>
+                                v!.contains('@') ? null : 'Please enter a valid email address.',
                           ),
-                          onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _passCtl,
+                            onChanged: (_) {
+                              if (_error != null) {
+                                setState(() => _error = null);
+                              }
+                            },
+                            decoration: authInputDecoration(
+                              label: 'Password',
+                              icon: Icons.lock_outline,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.grey.shade500,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                              ),
+                            ),
+                            obscureText: _obscurePassword,
+                            validator: (v) => v!.isNotEmpty ? null : 'Password is required.',
                           ),
-                        ),
-                      ),
-                      obscureText: _obscurePassword,
-                      validator: (v) =>
-                          v!.isNotEmpty ? null : loc.validatorPasswordRequired,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: loading
-                          ? null
-                          : () {
+                          const SizedBox(height: 24),
+                          authPrimaryButton(
+                            label: 'Sign In',
+                            loading: loading,
+                            onPressed: () {
                               if (_formKey.currentState!.validate()) {
                                 context.read<AuthBloc>().add(
                                   LoginRequested(
@@ -114,35 +127,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                 );
                               }
                             },
-                      child: loading
-                          ? const CircularProgressIndicator()
-                          : Text(loc.signInTitle),
+                          ),
+                          const SizedBox(height: 4),
+                          authTextLink(
+                            text: 'Not registered yet? Register as a Parent',
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/register'),
+                          ),
+                          authTextLink(
+                            text: 'Forgot Password?',
+                            onPressed: () => Navigator.pushNamed(
+                              context,
+                              '/forgot-password',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    TextButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, '/register'),
-                      child: Text(loc.registerPromptButton),
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, '/forgot-password'),
-                      child: Text(loc.forgotPasswordButton),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             );
           },
-        ),
-            Positioned(
-              bottom: 12,
-              left: 20,
-              child: Text(
-                kAppVersion,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-              ),
-            ),
-          ],
         ),
       ),
     );

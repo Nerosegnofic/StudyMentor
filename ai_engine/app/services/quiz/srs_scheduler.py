@@ -21,12 +21,42 @@ _INTERVAL_TIERS = [
 ]
 
 
+# How strongly a fragile (low-mastery) skill jumps the review queue, in "days" of
+# priority. Kept small relative to the interval tiers so overdue-ness still dominates;
+# this only gives shakier skills a modest head start and breaks near-ties.
+_MASTERY_BIAS_DAYS = 2.0
+
+
 def _compute_review_interval(attempts: int) -> timedelta:
     """Get the SRS interval for a skill based on how many times it's been practiced."""
     for max_attempts, interval in _INTERVAL_TIERS:
         if attempts <= max_attempts:
             return interval
     return timedelta(days=14)
+
+
+def count_due_reviews(mastered_skills: List[dict], now: Optional[datetime] = None) -> int:
+    """
+    Count mastered skills whose SRS review is currently due (overdue, due today, or
+    never practiced). Used by the adaptive auto quiz-length to size a quiz from how much
+    review work is actually pending — distinct from ``select_srs_review_skills``, which
+    returns the most-overdue skills up to a cap regardless of whether they are due yet.
+    """
+    if not mastered_skills:
+        return 0
+    if now is None:
+        now = datetime.utcnow()
+
+    due = 0
+    for entry in mastered_skills:
+        last = entry.get("last_practiced")
+        if last is None:
+            due += 1  # never practiced → due
+            continue
+        interval = _compute_review_interval(entry.get("attempts", 0))
+        if last + interval <= now:
+            due += 1
+    return due
 
 
 def select_srs_review_skills(
@@ -62,6 +92,16 @@ def select_srs_review_skills(
         due_date = last + interval
         return (due_date - now).total_seconds() / 86400.0
 
-    # Sort: most overdue first (most negative overdue_days)
-    scored = sorted(mastered_skills, key=overdue_days)
+    def review_priority(entry: dict) -> float:
+        """
+        Lower sorts first. Starts from overdue-ness, then nudges more-fragile
+        (lower-mastery) skills earlier. BKT mastery already integrates the student's
+        accuracy, response time, and hint usage, so it serves as the quality signal —
+        no extra queries needed.
+        """
+        mastery = entry.get("mastery", 1.0)
+        return overdue_days(entry) + mastery * _MASTERY_BIAS_DAYS
+
+    # Sort: most-overdue and most-fragile first.
+    scored = sorted(mastered_skills, key=review_priority)
     return scored[:max_review]

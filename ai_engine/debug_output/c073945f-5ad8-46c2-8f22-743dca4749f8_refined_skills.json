@@ -1,0 +1,232 @@
+[
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "B.1 — General Formatting Guidelines",
+        "objectives": [
+            "Adherence to document length requirements",
+            "Application of specified font style and size",
+            "Application of specified line spacing",
+            "Setting document margins correctly",
+            "Implementing page numbering from Chapter 1",
+            "Formatting, numbering, and captioning figures and tables",
+            "Citing references using IEEE format",
+            "Selecting the appropriate language for documentation",
+            "Adhering to submission format requirements",
+            "Awareness of the submission deadline"
+        ],
+        "skill_ids": [
+            "u1_l1_s1",
+            "u1_l1_s2",
+            "u1_l1_s3",
+            "u1_l1_s4",
+            "u1_l1_s5",
+            "u1_l1_s6",
+            "u1_l1_s7",
+            "u1_l1_s8",
+            "u1_l1_s9",
+            "u1_l1_s10"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "B.2 — Required Document Structure",
+        "objectives": [
+            "Understanding the mandatory sections of a graduation project document",
+            "Integrating domain-specific sub-sections within defined chapters"
+        ],
+        "skill_ids": [
+            "u1_l2_s1",
+            "u1_l2_s2"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Cover Page",
+        "objectives": [
+            "Including university, faculty, and department names on the cover page",
+            "Including the project title on the cover page",
+            "Including the academic year on the cover page",
+            "Designating the document type (Phase 1 / Final) on the cover page",
+            "Including supervisor(s) names and titles on the cover page",
+            "Including team member names and student IDs on the cover page"
+        ],
+        "skill_ids": [
+            "u1_l3_s1",
+            "u1_l3_s2",
+            "u1_l3_s3",
+            "u1_l3_s4",
+            "u1_l3_s5",
+            "u1_l3_s6"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Front Matter",
+        "objectives": [
+            "Creating a Table of Contents with page numbers",
+            "Creating a List of Figures",
+            "Creating a List of Tables",
+            "Creating a List of Abbreviations",
+            "Writing a bilingual abstract (Arabic and English) including problem, approach, and outcome (150–250 words)"
+        ],
+        "skill_ids": [
+            "u1_l4_s1",
+            "u1_l4_s2",
+            "u1_l4_s3",
+            "u1_l4_s4",
+            "u1_l4_s5"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Chapter 1: Introduction",
+        "objectives": [
+            "Developing a background and motivation section",
+            "Defining the project problem",
+            "Stating project objectives and proposed solution",
+            "Defining project scope and limitations",
+            "Describing the development methodology",
+            "Listing tools and technologies used (software and hardware)",
+            "Presenting a project timeline / Gantt Chart",
+            "Explaining the report organization"
+        ],
+        "skill_ids": [
+            "u1_l5_s1",
+            "u1_l5_s2",
+            "u1_l5_s3",
+            "u1_l5_s4",
+            "u1_l5_s5",
+            "u1_l5_s6",
+            "u1_l5_s7",
+            "u1_l5_s8"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Chapter 2: Related Work",
+        "objectives": [
+            "Overviewing existing systems, research, or solutions in the same domain",
+            "Conducting comparative analysis to distinguish the project from existing work",
+            "Citing all sources properly using IEEE format"
+        ],
+        "skill_ids": [
+            "u1_l6_s1",
+            "u1_l6_s2",
+            "u1_l6_s3"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Chapter 3: System Analysis",
+        "objectives": [
+            "Performing stakeholder analysis",
+            "Defining functional requirements",
+            "Defining non-functional requirements",
+            "Creating Use Case Diagrams with actor descriptions",
+            "Conducting a brief feasibility study (technical, economic, and operational)"
+        ],
+        "skill_ids": [
+            "u1_l7_s1",
+            "u1_l7_s2",
+            "u1_l7_s3",
+            "u1_l7_s4",
+            "u1_l7_s5"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Chapter 4: System Design",
+        "objectives": [
+            "Developing a system architecture / component diagram",
+            "Creating Class Diagrams",
+            "Creating Sequence Diagrams for key use cases",
+            "Developing a Database Entity-Relationship Diagram (ERD) if applicable",
+            "Designing User Interface Wireframes / Mockups",
+            "Considering security design aspects",
+            "Adapting design chapters for research-track projects (Research Methodology, Experimental Setup, Data Analysis)"
+        ],
+        "skill_ids": [
+            "u1_l8_s1",
+            "u1_l8_s2",
+            "u1_l8_s3",
+            "u1_l8_s4",
+            "u1_l8_s5",
+            "u1_l8_s6",
+            "u1_l8_s7"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Chapter 5: Implementation",
+        "objectives": [
+            "Describing the implementation environment and setup",
+            "Detailing key implementation aspects (algorithms, modules, major decisions)",
+            "Including sample screenshots / output samples"
+        ],
+        "skill_ids": [
+            "u1_l9_s1",
+            "u1_l9_s2",
+            "u1_l9_s3"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Chapter 6: Testing and Evaluation",
+        "objectives": [
+            "Formulating a testing strategy",
+            "Presenting test cases and results in table format",
+            "Conducting performance evaluation / benchmarking where applicable",
+            "Documenting limitations and known issues"
+        ],
+        "skill_ids": [
+            "u1_l10_s1",
+            "u1_l10_s2",
+            "u1_l10_s3",
+            "u1_l10_s4"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Chapter 7: Conclusion and Future Work",
+        "objectives": [
+            "Summarizing project achievements",
+            "Documenting lessons learned",
+            "Proposing future enhancements"
+        ],
+        "skill_ids": [
+            "u1_l11_s1",
+            "u1_l11_s2",
+            "u1_l11_s3"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "References",
+        "objectives": [
+            "Creating an IEEE-format numbered reference list",
+            "Ensuring a minimum of 15 references",
+            "Verifying all references are cited in the text"
+        ],
+        "skill_ids": [
+            "u1_l12_s1",
+            "u1_l12_s2",
+            "u1_l12_s3"
+        ]
+    },
+    {
+        "unit": "Graduation Project Final Documentation Requirements",
+        "lesson": "Appendices (optional)",
+        "objectives": [
+            "Including user manuals in appendices",
+            "Including source code excerpts in appendices",
+            "Including raw data tables in appendices",
+            "Including additional diagrams in appendices"
+        ],
+        "skill_ids": [
+            "u1_l13_s1",
+            "u1_l13_s2",
+            "u1_l13_s3",
+            "u1_l13_s4"
+        ]
+    }
+]

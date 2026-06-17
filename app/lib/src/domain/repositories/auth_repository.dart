@@ -73,10 +73,12 @@ abstract class AuthRepository {
 
   // ── Subjects & Skills ───────────────────────────────────────────────────
   Future<List<SubjectSummaryModel>> getSubjectsByStudent(String studentUid);
-  Future<List<SubjectSummaryModel>> getAvailableSubjects();
+  Future<List<SubjectSummaryModel>> getAvailableSubjects(String studentUid);
   Future<void> addSubjectsForStudent({required String studentUid, required List<String> subjectKeys});
   Future<void> removeSubject({required String studentUid, required String subjectKey});
-  
+  Future<void> setSubjectSelection({required String studentUid, required int subjectId, required bool isSelected});
+  Future<void> removeStudentSubjectData({required String studentUid, required int subjectId});
+
   Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey);
   Future<List<SkillProgressModel>> getSkillsForSubject(String studentUid, String subjectKey);
   
@@ -88,12 +90,13 @@ abstract class AuthRepository {
 
   // ── Reports & Analytics ──────────────────────────────────────────────────
   Future<WeeklyReportModel> getWeeklyReport(String studentUid);
-  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, String subjectKey);
+  Future<List<SubjectChipModel>> getReportSubjects(String studentUid);
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId);
   Future<StudyHabitsReport> getStudyHabitsReport(String studentUid);
   Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid);
   
   // Dashboard additions
-  Future<AiSummaryModel> getAiSummary(String parentUid);
+  Future<AiSummaryModel> getAiSummary(List<StudentModel> children);
   Future<List<NotificationModel>> getNotificationsForParent(String parentUid);
   Future<void> markAllNotificationsRead(String parentUid);
 

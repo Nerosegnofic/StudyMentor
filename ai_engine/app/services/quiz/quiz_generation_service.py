@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.schemas import GenerateQuizRequest, GenerateQuizResponse, QuestionSchema
 from app.models.domain import Question
 from app.repositories import (
-    get_priority_subject,
-    get_subject_by_id,
+    get_quizzable_subject,
     get_active_quiz_session,
     get_questions_for_session,
     get_skills_by_names,
@@ -13,8 +12,11 @@ from app.repositories import (
     upsert_student_subject_profile_last_quizzed,
     save_questions,
     get_recent_question_fingerprints,
+    subject_has_skills,
 )
+from app.services.quiz.subject_selector import get_priority_subject
 from app.services.quiz.builder import build_quiz_payload
+from app.services.quiz.length_selector import compute_adaptive_quiz_length
 from app.services.rag.retrieval import retrieve_context_for_quiz
 from app.services.rag.generation.context import GeneratorContext
 from app.services.rag.generation.gemini_strategy import GeminiStrategy
@@ -27,6 +29,7 @@ from app.services.quiz.utils import (
     filter_mismatched_questions,
 )
 from app.services.quiz.strategy_resolver import resolve_subject_strategy
+from app.repositories import document_repo
 from app.core.prompts import build_quiz_prompt
 
 DIFFICULTY_LABELS = {1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard"}
@@ -37,6 +40,53 @@ GRADE_LABELS = {
 }
 
 generator_context = GeneratorContext(strategy=GeminiStrategy())
+
+
+def _question_schema(q: Question, topic: str) -> QuestionSchema:
+    """Map a persisted Question row to the API QuestionSchema."""
+    return QuestionSchema(
+        question_id=str(q.question_id),
+        topic=topic,
+        question_text=q.text_content,
+        options=q.options,
+        correct_answer=q.correct_answer,
+        explanation=q.explanation or "",
+        difficulty=int(q.difficulty),
+        hints=q.hints or [],
+    )
+
+
+def _write_quiz_debug_report(session_id, all_topics, payload, context) -> None:
+    """Best-effort dump of the skills/payload/context used for a generation."""
+    try:
+        import os
+        os.makedirs("debug_output", exist_ok=True)
+        debug_path = f"debug_output/quiz_generation_{session_id}.txt"
+        with open(debug_path, "w", encoding="utf-8") as f:
+            f.write("==================================================\n")
+            f.write("QUIZ GENERATION DEBUG REPORT\n")
+            f.write("==================================================\n\n")
+
+            f.write("1. SKILLS PICKED FOR QUIZ\n")
+            f.write("-" * 50 + "\n")
+            for idx, skill in enumerate(all_topics, 1):
+                f.write(f"  {idx}. {skill}\n")
+            f.write("\n")
+
+            f.write("2. PAYLOAD DETAILS & MASTERY LEVELS\n")
+            f.write("-" * 50 + "\n")
+            for cfg in payload:
+                f.write(f"  • Skill: {cfg['skill']}\n")
+                f.write(f"    - Zone: {cfg.get('zone', 'unknown')}\n")
+                f.write(f"    - Requested Difficulty: {cfg['difficulty']}\n")
+                f.write(f"    - Question Count: {cfg['count']}\n")
+                f.write(f"    - Current Mastery Level: {cfg.get('mastery', 'N/A')}\n\n")
+
+            f.write("3. FETCHED CHUNKS (RAG Context)\n")
+            f.write("-" * 50 + "\n")
+            f.write(f"{context}\n\n" if context else "  [No chunks fetched]\n")
+    except Exception as e:
+        print(f"[Debug] Failed to write quiz debug report: {e}", flush=True)
 
 
 def generate_quiz_for_student(
@@ -55,7 +105,10 @@ def generate_quiz_for_student(
                 detail="No subjects with skills found. Please upload curriculum documents first."
             )
     else:
-        subject = get_subject_by_id(db, request_body.subject_id)
+        # Ownership guard: only the subject's owner (or a global subject) is quizzable.
+        # Returning 404 for someone else's private subject prevents both enumeration
+        # and the cross-student context leak via the retrieval fallback.
+        subject = get_quizzable_subject(db, request_body.subject_id, student_uid)
         if not subject:
             raise HTTPException(
                 status_code=404,
@@ -64,9 +117,17 @@ def generate_quiz_for_student(
 
     target_subject_id = subject.subject_id
     target_subject_name = subject.name
+    target_is_global = bool(subject.is_global)
+
+    # Content-detected subject/language (majority vote across the subject's ready docs).
+    # The engine uses these internally so a mislabeled subject (e.g. an English-medium
+    # Math book named "Arabic") still gets the right strategy and retrieval threshold;
+    # the parent's `target_subject_name` is kept only as the display label.
+    _detected_language, detected_subject = document_repo.get_detected_for_subject(db, target_subject_id)
+    effective_subject_name = detected_subject or target_subject_name
 
     # ── Resolve Subject Strategy (once) ──────────────────────────────
-    strategy = resolve_subject_strategy(target_subject_name)
+    strategy = resolve_subject_strategy(target_subject_name, detected_subject=detected_subject)
     quiz_prompt = build_quiz_prompt(strategy)
 
     # Resolve grade label for prompt (e.g., 5 → "5th")
@@ -75,26 +136,28 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 0.5: Quiz Cache Check (Cross-Device Reuse)
     # ------------------------------------------------------------------ #
+    # The first already-warmed quiz is served as-is (with its original question
+    # count) even if the parent changed the count meanwhile; the new count takes
+    # effect on the next generated quiz. See get_active_quiz_session for details.
     active_session = get_active_quiz_session(db, student_uid, target_subject_id)
     if active_session:
         cached_questions = get_questions_for_session(db, active_session.session_id)
         if cached_questions and all(q.text_content is not None for q in cached_questions):
+            # Re-stamp the served session with the *consuming* request's context.
+            # A pre-warmed session is generated blindly (its context is a placeholder);
+            # the request that actually hands the quiz to the student decides whether it
+            # counts as VOLUNTARY or FORCED for grading. Grading reads this at submit time.
+            if active_session.quiz_context != request_body.quiz_context:
+                active_session.quiz_context = request_body.quiz_context
+                db.commit()
             print(
                 f"[QuizCache] Returning cached session {active_session.session_id} "
-                f"for student={student_uid}, subject_id={target_subject_id}",
+                f"for student={student_uid}, subject_id={target_subject_id} "
+                f"(context={request_body.quiz_context})",
                 flush=True,
             )
             question_schemas = [
-                QuestionSchema(
-                    question_id=str(q.question_id),
-                    topic=q.skill.name if q.skill else "General",
-                    question_text=q.text_content,
-                    options=q.options,
-                    correct_answer=q.correct_answer,
-                    explanation=q.explanation or "",
-                    difficulty=int(q.difficulty),
-                    hints=q.hints or [],
-                )
+                _question_schema(q, q.skill.name if q.skill else "General")
                 for q in cached_questions
             ]
             return GenerateQuizResponse(
@@ -109,11 +172,29 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 1+2: Build quiz payload via Ordered Frontier + SRS
     # ------------------------------------------------------------------ #
+    # When the parent chose "Auto", size the quiz adaptively from the student's active
+    # material and recent accuracy; otherwise honor the fixed count they picked.
+    effective_total = (
+        compute_adaptive_quiz_length(db, student_uid, target_subject_id, request_body.student_grade)
+        if request_body.auto_length
+        else request_body.total_questions
+    )
+
     payload = build_quiz_payload(
         db, student_uid, target_subject_id,
-        request_body.total_questions, request_body.student_grade
+        effective_total, request_body.student_grade
     )
     if not payload:
+        # No skills yet. If a document for this subject is still ingesting, this is a
+        # "not ready yet" condition, not a user error — return 409 so the client can show
+        # a friendly "still preparing" message. (The app gate is the primary defense;
+        # this is the backstop for a stale client.)
+        doc_counts = document_repo.get_subject_doc_status(db, target_subject_id)
+        if doc_counts.get("processing", 0) > 0:
+            raise HTTPException(
+                status_code=409,
+                detail="This subject is still being prepared. Please try again in a moment."
+            )
         raise HTTPException(
             status_code=400,
             detail="Could not allocate questions. No skills found for this subject."
@@ -136,7 +217,10 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 3: Create Quiz Session
     # ------------------------------------------------------------------ #
-    quiz_session = create_quiz_session(db, student_uid, target_subject_id, request_body.total_questions)
+    quiz_session = create_quiz_session(
+        db, student_uid, target_subject_id, effective_total,
+        quiz_context=request_body.quiz_context,
+    )
     upsert_student_subject_profile_last_quizzed(db, student_uid, target_subject_id)
 
     skills_used = get_skills_by_names(db, all_topics)
@@ -154,6 +238,8 @@ def generate_quiz_for_student(
             k=15,
             firebase_uid=student_uid,
             subject_id=target_subject_id,
+            subject_name=effective_subject_name,
+            is_global=target_is_global,
         )
 
         variance_block = generate_variance_block(
@@ -170,42 +256,7 @@ def generate_quiz_for_student(
             )
             context = context + avoidance_instructions
 
-        try:
-            import os
-            os.makedirs("debug_output", exist_ok=True)
-            debug_path = f"debug_output/quiz_generation_{quiz_session.session_id}.txt"
-            with open(debug_path, "w", encoding="utf-8") as f:
-                f.write("==================================================\n")
-                f.write("QUIZ GENERATION DEBUG REPORT\n")
-                f.write("==================================================\n\n")
-
-                f.write("1. SKILLS PICKED FOR QUIZ\n")
-                f.write("-" * 50 + "\n")
-                for idx, skill in enumerate(all_topics, 1):
-                    f.write(f"  {idx}. {skill}\n")
-                f.write("\n")
-
-                f.write("2. PAYLOAD DETAILS & MASTERY LEVELS\n")
-                f.write("-" * 50 + "\n")
-                for cfg in payload:
-                    skill_name = cfg['skill']
-                    mastery = cfg.get('mastery', 'N/A')
-                    zone = cfg.get('zone', 'unknown')
-                    f.write(f"  • Skill: {skill_name}\n")
-                    f.write(f"    - Zone: {zone}\n")
-                    f.write(f"    - Requested Difficulty: {cfg['difficulty']}\n")
-                    f.write(f"    - Question Count: {cfg['count']}\n")
-                    f.write(f"    - Current Mastery Level: {mastery}\n\n")
-
-                f.write("3. FETCHED CHUNKS (RAG Context)\n")
-                f.write("-" * 50 + "\n")
-                if not context:
-                    f.write("  [No chunks fetched]\n")
-                else:
-                    f.write(f"{context}\n\n")
-
-        except Exception as e:
-            print(f"[Debug] Failed to write to {debug_path}: {e}")
+        _write_quiz_debug_report(quiz_session.session_id, all_topics, payload, context)
 
         response = generator_context.execute_generation(
             quiz_prompt=quiz_prompt,
@@ -299,16 +350,7 @@ def generate_quiz_for_student(
             (name for name, sid in skill_name_to_id.items() if sid == q.skill_id),
             "General"
         )
-        return_questions.append(QuestionSchema(
-            question_id=str(q.question_id),
-            topic=skill_name,
-            question_text=q.text_content,
-            options=q.options,
-            correct_answer=q.correct_answer,
-            explanation=q.explanation or "",
-            difficulty=int(q.difficulty),
-            hints=q.hints or [],
-        ))
+        return_questions.append(_question_schema(q, skill_name))
 
     # In Python, if we hit the bank fallback we won't have `response.quiz_title`
     # So we should conditionally assign it
@@ -324,3 +366,44 @@ def generate_quiz_for_student(
         questions=return_questions,
         quiz_source=quiz_source,
     )
+
+
+def warm_first_quiz_for_subject(db: Session, student_uid: str, subject_id: int) -> None:
+    """
+    Best-effort pre-generation of a subject's FIRST quiz, so the student's first
+    "Practice" returns instantly as quiz_source="CACHED".
+
+    Invoked from the post-ingestion hook (`ingest_then_warm`) — the only place
+    guaranteed to run the moment a subject becomes quizzable, since the parent who
+    uploaded may have closed the app and the student app may not be open. Reuses
+    `generate_quiz_for_student` so the warmed (unsubmitted) session is exactly what the
+    cache-check path serves later; the VOLUNTARY/FORCED label is re-stamped when the
+    student actually starts the quiz, so the placeholder context here is harmless.
+
+    Guards (and never raises — a warm failure must not affect ingestion or status):
+      - only warm when skills exist (otherwise generation would 404/409 anyway),
+      - skip if an active unsubmitted session already exists (idempotent, no duplicates).
+    """
+    try:
+        if not subject_has_skills(db, subject_id):
+            return
+        if get_active_quiz_session(db, student_uid, subject_id):
+            print(
+                f"[QuizWarm] Skip subject_id={subject_id}: active session already exists.",
+                flush=True,
+            )
+            return
+
+        request = GenerateQuizRequest(
+            subject_id=subject_id,
+            quiz_context="VOLUNTARY",  # placeholder; re-stamped when the student starts it
+        )
+        generate_quiz_for_student(db=db, request_body=request, student_uid=student_uid)
+        print(
+            f"[QuizWarm] Pre-generated first quiz for student={student_uid}, "
+            f"subject_id={subject_id}.",
+            flush=True,
+        )
+    except Exception as e:
+        # Best-effort: log and move on. Ingestion (and the 'ready' status) must stand.
+        print(f"[QuizWarm] Warm failed for subject_id={subject_id}: {e}", flush=True)

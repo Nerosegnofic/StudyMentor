@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/shop/shop_bloc.dart';
@@ -11,6 +13,11 @@ import '../../widgets/avatar_widget.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'shop/custom_shop_screen.dart';
 import 'student_settings.dart';
+
+// ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
+const Color _kGreen = Color(0xFF4CAF50); // Primary Green
+const Color _kAmber = Color(0xFFFFC107); // Accent Amber
+const Color _kInk = Color(0xFF1F2937); // Title ink
 
 class StudentProfile extends StatefulWidget {
   final String fullName;
@@ -72,7 +79,11 @@ class _StudentProfileState extends State<StudentProfile> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    // Light (white) status-bar icons so they read over the green header that
+    // now extends up under the notification bar.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 32),
       child: Column(
         children: [
@@ -92,6 +103,7 @@ class _StudentProfileState extends State<StudentProfile> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -101,8 +113,19 @@ class _StudentProfileState extends State<StudentProfile> {
     final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 28, bottom: 28),
-      decoration: const BoxDecoration(color: Color(0xFFF5F7FF)),
+      // Extend the green up under the status/notification bar (matches the
+      // home StudentTopBar). MediaQuery.padding.top is the status-bar inset.
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 28,
+        bottom: 32,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF43A047), _kGreen],
+        ),
+      ),
       child: Stack(
         children: [
           Center(
@@ -112,10 +135,10 @@ class _StudentProfileState extends State<StudentProfile> {
                 const SizedBox(height: 14),
                 Text(
                   widget.fullName,
-                  style: const TextStyle(
+                  style: GoogleFonts.cairo(
                     fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A2E),
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -129,7 +152,7 @@ class _StudentProfileState extends State<StudentProfile> {
             child: SafeArea(
               child: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                color: const Color(0xFF1A1A2E),
+                color: Colors.white,
                 onPressed: () => Navigator.of(context).pop(),
                 tooltip: loc.backTooltip,
               ),
@@ -188,7 +211,7 @@ class _StudentProfileState extends State<StudentProfile> {
             child: Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: const Color(0xFF4A6CF7),
+                color: _kGreen,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
@@ -203,7 +226,7 @@ class _StudentProfileState extends State<StudentProfile> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF8F00),
+                  color: _kAmber,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white, width: 2),
                 ),
@@ -213,16 +236,16 @@ class _StudentProfileState extends State<StudentProfile> {
                         height: 12,
                         child: LinearProgressIndicator(
                           backgroundColor: Colors.transparent,
-                          color: Colors.white,
+                          color: _kInk,
                           minHeight: 2,
                         ),
                       )
                     : Text(
-                        loc.levelLabel(_level),
-                        style: const TextStyle(
+                        'Level $_level',
+                        style: GoogleFonts.cairo(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: _kInk,
                         ),
                       ),
               ),
@@ -239,19 +262,19 @@ class _StudentProfileState extends State<StudentProfile> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFB300)),
+        border: Border.all(color: _kAmber),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.bolt, color: Color(0xFFFF8F00), size: 15),
+          const Icon(Icons.bolt, color: Color(0xFF8D6E00), size: 15),
           const SizedBox(width: 4),
           Text(
             _loading ? '…' : _rank,
-            style: const TextStyle(
+            style: GoogleFonts.cairo(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFFFF8F00),
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF8D6E00),
             ),
           ),
         ],
@@ -267,7 +290,7 @@ class _StudentProfileState extends State<StudentProfile> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -280,11 +303,11 @@ class _StudentProfileState extends State<StudentProfile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            loc.myProgressTitle,
-            style: const TextStyle(
+            'My Progress',
+            style: GoogleFonts.cairo(
               fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A2E),
+              fontWeight: FontWeight.w800,
+              color: _kInk,
             ),
           ),
           const SizedBox(height: 16),
@@ -339,8 +362,8 @@ class _StudentProfileState extends State<StudentProfile> {
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF8E1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFFCA28)),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _kAmber),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -349,16 +372,16 @@ class _StudentProfileState extends State<StudentProfile> {
                           const SizedBox(width: 8),
                           Text(
                             _formatNumber(_totalCoins),
-                            style: const TextStyle(
+                            style: GoogleFonts.cairo(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFFF57F17),
+                              color: const Color(0xFFF57F17),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            loc.coinsAvailableLabel,
-                            style: TextStyle(
+                            'coins available',
+                            style: GoogleFonts.roboto(
                               fontSize: 13,
                               color: Colors.amber[800],
                             ),
@@ -391,16 +414,16 @@ class _StudentProfileState extends State<StudentProfile> {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: GoogleFonts.cairo(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1A1A2E),
+            color: _kInk,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          style: GoogleFonts.roboto(fontSize: 11, color: Colors.grey.shade500),
         ),
       ],
     );
@@ -414,20 +437,20 @@ class _StudentProfileState extends State<StudentProfile> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsetsDirectional.only(start: 4, bottom: 10),
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
-            loc.studentSettingsTitle,
-            style: const TextStyle(
+            'Settings',
+            style: GoogleFonts.cairo(
               fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A2E),
+              fontWeight: FontWeight.w800,
+              color: _kInk,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -438,10 +461,10 @@ class _StudentProfileState extends State<StudentProfile> {
           ),
           child: _buildSettingsRow(
             icon: Icons.settings_outlined,
-            iconBg: const Color(0xFFE3F2FD),
-            iconColor: const Color(0xFF1E88E5),
-            title: loc.appSettingsTitle,
-            subtitle: loc.appSettingsSubtitle,
+            iconBg: _kGreen.withValues(alpha: 0.12),
+            iconColor: _kGreen,
+            title: 'App Settings',
+            subtitle: 'Notifications, Sound',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -464,7 +487,7 @@ class _StudentProfileState extends State<StudentProfile> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(18),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -485,16 +508,19 @@ class _StudentProfileState extends State<StudentProfile> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: GoogleFonts.roboto(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
-                      color: Color(0xFF1A1A2E),
+                      color: _kInk,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                    style: GoogleFonts.roboto(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                    ),
                   ),
                 ],
               ),
@@ -517,12 +543,15 @@ class _StudentProfileState extends State<StudentProfile> {
           StudentLogoutVerificationRequested(studentUid: widget.uid),
         ),
         icon: const Icon(Icons.logout, size: 18),
-        label: Text(loc.logOutButton),
+        label: Text(
+          'Log Out',
+          style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
           side: const BorderSide(color: Color(0xFFEF5350)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           foregroundColor: const Color(0xFFEF5350),
           backgroundColor: Colors.white,

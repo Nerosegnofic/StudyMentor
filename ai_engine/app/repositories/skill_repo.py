@@ -5,6 +5,12 @@ from app.models.domain import Skill
 def get_skills_by_subject_id(db: Session, subject_id: int):
     return db.query(Skill).filter(Skill.subject_id == subject_id).all()
 
+def subject_has_skills(db: Session, subject_id: int) -> bool:
+    """True if any skill exists for the subject — the authoritative 'quizzable' signal."""
+    return (
+        db.query(Skill.skill_id).filter(Skill.subject_id == subject_id).first() is not None
+    )
+
 def get_skills_by_names(db: Session, skill_names: list):
     return db.query(Skill).filter(Skill.name.in_(skill_names)).all()
 

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/document/document_upload_bloc.dart';
 import '../../../bloc/document/document_upload_event.dart';
 import '../../../bloc/document/document_upload_state.dart';
@@ -128,7 +130,8 @@ class _StudentDocumentUploadScreenState
         }
 
         if (state is DocumentUploadAccepted) {
-          return _SuccessView(
+          return _PreparingView(
+            studentUid: widget.studentUid,
             subjectName: _subjectNameController.text.trim(),
             onUploadAnother: () {
               _clearSelection();
@@ -336,32 +339,126 @@ class _StudentDocumentUploadScreenState
 }
 
 // ---------------------------------------------------------------------------
-// Success view
+// Preparing view — shown after upload while ingestion runs, with live stage text.
 // ---------------------------------------------------------------------------
 
-class _SuccessView extends StatelessWidget {
+class _PreparingView extends StatefulWidget {
+  final String studentUid;
   final String subjectName;
   final VoidCallback onUploadAnother;
 
-  const _SuccessView({required this.subjectName, required this.onUploadAnother});
+  const _PreparingView({
+    required this.studentUid,
+    required this.subjectName,
+    required this.onUploadAnother,
+  });
+
+  @override
+  State<_PreparingView> createState() => _PreparingViewState();
+}
+
+class _PreparingViewState extends State<_PreparingView> {
+  Timer? _poll;
+
+  /// Live state of the just-uploaded subject: "processing" | "ready" | "failed".
+  /// Starts as processing (the upload was just accepted; ingestion runs in background).
+  String _state = 'processing';
+  String? _stage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+    _poll = Timer.periodic(const Duration(seconds: 12), (_) => _fetch());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetch() async {
+    try {
+      final statuses = await AiEngineRepository.instance
+          .getSubjectsStatus(studentUid: widget.studentUid);
+      if (!mounted) return;
+      final name = widget.subjectName.toLowerCase().trim();
+      final match = statuses
+          .where((s) => s.subjectName.toLowerCase().trim() == name)
+          .toList();
+      if (match.isEmpty) return; // not visible yet; keep "processing" and retry
+      final s = match.first;
+      setState(() {
+        _state = s.state;
+        _stage = s.stage;
+      });
+      if (s.state != 'processing') {
+        _poll?.cancel();
+        _poll = null;
+      }
+    } catch (_) {
+      // Best-effort; keep last state and retry next tick.
+    }
+  }
+
+  String _stageLabel(AppLocalizations loc) {
+    switch (_stage) {
+      case 'parsing':
+        return loc.subjectStageParsing;
+      case 'analyzing':
+        return loc.subjectStageAnalyzing;
+      case 'building_skills':
+        return loc.subjectStageBuildingSkills;
+      default:
+        return loc.subjectPreparingLabel;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final isProcessing = _state == 'processing';
+    final isFailed = _state == 'failed';
+
+    final IconData icon;
+    final Color iconColor;
+    final String title;
+    final String message;
+    if (isProcessing) {
+      icon = Icons.hourglass_top_rounded;
+      iconColor = const Color(0xFF2196F3);
+      title = loc.subjectPreparingLabel;
+      message = _stageLabel(loc);
+    } else if (isFailed) {
+      icon = Icons.error_outline_rounded;
+      iconColor = const Color(0xFFEA4335);
+      title = loc.curriculumAddedSuccessTitle; // reuse heading slot
+      message = loc.subjectIngestFailed;
+    } else {
+      icon = Icons.check_circle_rounded;
+      iconColor = const Color(0xFF34A853);
+      title = loc.curriculumAddedSuccessTitle;
+      message = loc.curriculumAddedSuccessMessage(widget.subjectName);
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.check_circle_rounded,
-              size: 80,
-              color: Color(0xFF34A853),
-            ),
+            if (isProcessing)
+              const SizedBox(
+                width: 64,
+                height: 64,
+                child: CircularProgressIndicator(color: Color(0xFF2196F3)),
+              )
+            else
+              Icon(icon, size: 80, color: iconColor),
             const SizedBox(height: 24),
             Text(
-              loc.curriculumAddedSuccessTitle,
+              title,
               textAlign: TextAlign.center,
               style: GoogleFonts.cairo(
                 fontSize: 22,
@@ -371,7 +468,7 @@ class _SuccessView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              loc.curriculumAddedSuccessMessage(subjectName),
+              message,
               textAlign: TextAlign.center,
               style: GoogleFonts.cairo(
                 fontSize: 14,
@@ -380,11 +477,14 @@ class _SuccessView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
+            // "Upload Another" is disabled while this subject is still processing —
+            // a second upload for the same subject would be rejected with 409 anyway.
             ElevatedButton(
-              onPressed: onUploadAnother,
+              onPressed: isProcessing ? null : widget.onUploadAnother,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2196F3),
                 foregroundColor: Colors.white,
+                disabledBackgroundColor: const Color(0xFFCED4DA),
                 minimumSize: const Size(200, 50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),

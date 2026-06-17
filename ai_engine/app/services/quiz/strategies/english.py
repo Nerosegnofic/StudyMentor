@@ -1,14 +1,8 @@
-from typing import List
-from .base import SubjectStrategy
+from .profile import SubjectProfile
 
-class EnglishStrategy(SubjectStrategy):
-
-    @property
-    def subject_key(self) -> str:
-        return "english"
-
-    def difficulty_scale(self) -> str:
-        return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFILE = SubjectProfile(
+    subject_key="english",
+    difficulty_scale="""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIFFICULTY SCALE (CRITICAL — follow strictly)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Each difficulty level has specific cognitive requirements. Questions MUST match these criteria EXACTLY:
@@ -38,38 +32,29 @@ Level 4 — Hard (Analysis):
 
 Level 5 — Very Hard (Evaluation & Synthesis):
   • Combine multiple grammar/vocabulary concepts or evaluate nuanced language use.
-  • ✅ CORRECT: "Which sentence uses both the past tense and a prepositional phrase correctly?\""""
-
-    def difficulty_violations(self) -> str:
-        return """⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
+  • ✅ CORRECT: "Which sentence uses both the past tense and a prepositional phrase correctly?\"""",
+    difficulty_violations="""⚠️ DIFFICULTY VIOLATIONS — These are WRONG and WILL BE REJECTED:
   • Difficulty 1 with sentence completion → WRONG (Level 1 is pure recall of a word/definition)
   • Difficulty 1 requiring any grammar application → WRONG (grammar application starts at Level 2)
   • Difficulty 1 or 2 with error detection → WRONG (error detection is Level 4+)
-  • Difficulty 5 with a simple vocabulary meaning question → WRONG (Level 5 requires synthesis)"""
-
-    def self_check_rules(self) -> str:
-        return """MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
+  • Difficulty 5 with a simple vocabulary meaning question → WRONG (Level 5 requires synthesis)""",
+    self_check_rules="""MANDATORY SELF-CHECK — Before finalizing EACH question, verify:
   1. Does the question require more than simple recall? Level 1 = ONLY recall a word meaning or spelling.
   2. Does the question require applying a rule? Level 1 = NO rule application. Level 2 = ONE rule only.
   3. Does the question require error analysis? Error detection starts at Level 4.
-  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty."""
-
-    def formatting_rules(self) -> str:
-        return """Language Formatting Rules:
+  4. If ANY check fails, you MUST rewrite the question to match its assigned difficulty.""",
+    formatting_rules="""Language Formatting Rules:
 - ALL questions, options, hints, and explanations MUST be written in ENGLISH.
 - Use proper English capitalization and punctuation.
 - When showing a word to define, put it in quotation marks (e.g., "generous").
-- Keep sentences age-appropriate for the student's grade level."""
-
-    def pedagogical_tone(self) -> str:
-        return """Pedagogical Tone & Style:
+- Keep sentences age-appropriate for the student's grade level.""",
+    pedagogical_tone="""Pedagogical Tone & Style:
 - Write like a professional English teacher for Egyptian students.
 - ALL questions, options, hints, and explanations must be in ENGLISH — do NOT mix Arabic.
 - Adjust vocabulary and sentence complexity to the student's grade level.
 - Use simple, clear instructions (e.g., "Choose the correct word", "Which sentence is correct?").
-- The tone must be clear, encouraging, and exactly like a school English exam paper."""
-
-    _FORMAT_POOLS = {
+- The tone must be clear, encouraging, and exactly like a school English exam paper.""",
+    format_pools={
         1: [
             "vocabulary word meaning (What does '...' mean?)",
             "identify the correct spelling of a word",
@@ -100,7 +85,5 @@ Level 5 — Very Hard (Evaluation & Synthesis):
             "identify the sentence that uses both tense and agreement correctly",
             "choose the most appropriate formal/informal register",
         ],
-    }
-
-    def get_format_pool(self, difficulty: int) -> List[str]:
-        return self._FORMAT_POOLS.get(difficulty, self._FORMAT_POOLS[3])
+    },
+)

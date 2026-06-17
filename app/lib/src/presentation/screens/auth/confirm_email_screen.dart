@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
+import 'auth_style.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../utils/error_localizer.dart';
 
@@ -47,43 +49,73 @@ class ConfirmEmailScreen extends StatelessWidget {
           final isLoading = state is AuthLoading;
           final loc = AppLocalizations.of(context);
           return Scaffold(
-            appBar: AppBar(
-              title: Text(loc.confirmEmailTitle),
-              automaticallyImplyLeading: false, // hide the back arrow
-            ),
-            body: Center(
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Text(
-                            loc.confirmEmailInstructions,
-                            textAlign: TextAlign.center,
+            backgroundColor: kAuthBackground,
+            body: Column(
+              children: [
+                // No back affordance — back is blocked on this screen.
+                const AuthHeader(subtitle: 'One last step'),
+                Expanded(
+                  child: isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: kAuthGreen),
+                        )
+                      : Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 88,
+                                  height: 88,
+                                  decoration: BoxDecoration(
+                                    color: kAuthGreen.withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.mark_email_unread_outlined,
+                                    color: kAuthGreen,
+                                    size: 44,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  'Please check your inbox and verify your email to continue.',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 15,
+                                    color: Colors.grey.shade600,
+                                    height: 1.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 32),
+                                authPrimaryButton(
+                                  label: 'Send Email Verification Link',
+                                  onPressed: () => context.read<AuthBloc>().add(
+                                    SendEmailVerificationRequested(),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                authSecondaryButton(
+                                  label: "I've Verified My Email",
+                                  onPressed: () => context.read<AuthBloc>().add(
+                                    CheckEmailVerificationRequested(),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                authTextLink(
+                                  text: 'Log Out',
+                                  color: Colors.grey.shade600,
+                                  onPressed: () => context
+                                      .read<AuthBloc>()
+                                      .add(LogoutRequested()),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => context.read<AuthBloc>().add(
-                            SendEmailVerificationRequested(),
-                          ),
-                          child: Text(loc.sendEmailVerificationButton),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => context.read<AuthBloc>().add(
-                            CheckEmailVerificationRequested(),
-                          ),
-                          child: Text(loc.emailVerifiedButton),
-                        ),
-                        TextButton(
-                          onPressed: () =>
-                              context.read<AuthBloc>().add(LogoutRequested()),
-                          child: Text(loc.logOutButton),
-                        ),
-                      ],
-                    ),
+                ),
+              ],
             ),
           );
         },

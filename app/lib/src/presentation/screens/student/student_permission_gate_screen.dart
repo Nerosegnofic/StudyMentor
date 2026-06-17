@@ -2,9 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../services/device_admin_service.dart';
 import '../../../services/permission_service.dart';
 import '../../../../l10n/app_localizations.dart';
+
+// ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
+const Color _kBackground = Color(0xFFF5F7FA); // Soft Cloud
+const Color _kGreen = Color(0xFF4CAF50); // Primary Green
+const Color _kAmber = Color(0xFFFFC107); // Accent Amber
+const Color _kInk = Color(0xFF1F2937); // Title ink
 
 /// Shown immediately after student login when one or more required permissions
 /// are missing. Displays permissions one at a time in the mandatory order:
@@ -171,9 +178,11 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: _kBackground,
         body: _checking || _current == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: _kGreen),
+              )
             : _buildContent(_current!),
       ),
     );
@@ -201,10 +210,10 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                 Text(
                   permission.displayName(loc),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: GoogleFonts.cairo(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2937),
+                    color: _kInk,
                     letterSpacing: -0.4,
                   ),
                 ),
@@ -212,7 +221,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                 Text(
                   permission.rationale(loc),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: GoogleFonts.roboto(
                     fontSize: 15,
                     color: Colors.grey.shade600,
                     height: 1.55,
@@ -237,7 +246,13 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   Widget _buildHeader(int step, int total) {
     final loc = AppLocalizations.of(context);
     return Container(
-      decoration: const BoxDecoration(color: Color(0xFF1F2937)),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF43A047), _kGreen],
+        ),
+      ),
       padding: EdgeInsets.fromLTRB(
         24,
         MediaQuery.of(context).padding.top + 20,
@@ -251,19 +266,19 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 12,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                  color: _kAmber,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  loc.stepOfTotalLabel(step, total),
-                  style: const TextStyle(
+                  'Step $step of $total',
+                  style: GoogleFonts.cairo(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF4CAF50),
+                    fontWeight: FontWeight.w700,
+                    color: _kInk,
                   ),
                 ),
               ),
@@ -271,7 +286,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
               TextButton.icon(
                 onPressed: widget.onSignOut,
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.white.withValues(alpha: 0.55),
+                  foregroundColor: Colors.white.withValues(alpha: 0.85),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
@@ -281,22 +296,23 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
                 ),
                 icon: const Icon(Icons.logout_rounded, size: 14),
                 label: Text(
-                  loc.logOutButton,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  'Log out',
+                  style: GoogleFonts.roboto(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: step / total,
-              minHeight: 5,
-              backgroundColor: Colors.white.withValues(alpha: 0.12),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF4CAF50),
-              ),
+              minHeight: 8,
+              backgroundColor: Colors.white.withValues(alpha: 0.25),
+              valueColor: const AlwaysStoppedAnimation<Color>(_kAmber),
             ),
           ),
         ],
@@ -342,6 +358,13 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
           color: color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
           border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.25),
+              blurRadius: 24,
+              spreadRadius: 2,
+            ),
+          ],
         ),
         child: Icon(icon, size: 44, color: color),
       ),
@@ -355,21 +378,22 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     if (_currentGranted) {
       return _statusRow(
         icon: Icons.check_circle_rounded,
-        iconColor: const Color(0xFF10B981),
-        backgroundColor: const Color(0xFFECFDF5),
-        borderColor: const Color(0xFF10B981),
-        text: loc.permissionEnabledMessage(permission.displayName(loc)),
-        textColor: const Color(0xFF065F46),
+        iconColor: _kGreen,
+        backgroundColor: const Color(0xFFEDF7EE),
+        borderColor: _kGreen,
+        text: '${permission.displayName(loc)} has been enabled.',
+        textColor: const Color(0xFF2E7D32),
       );
     }
 
     return _statusRow(
       icon: Icons.lock_outline_rounded,
-      iconColor: const Color(0xFFF59E0B),
-      backgroundColor: const Color(0xFFFFFBEB),
-      borderColor: const Color(0xFFF59E0B),
-      text: loc.permissionNotGrantedMessage,
-      textColor: const Color(0xFF92400E),
+      iconColor: const Color(0xFFB8860B),
+      backgroundColor: const Color(0xFFFFF8E1),
+      borderColor: _kAmber,
+      text:
+          'Permission not granted yet. Tap the button below to open Settings.',
+      textColor: const Color(0xFF8D6E00),
     );
   }
 
@@ -385,7 +409,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor.withValues(alpha: 0.5)),
       ),
       child: Row(
@@ -396,7 +420,11 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 13, color: textColor, height: 1.5),
+              style: GoogleFonts.roboto(
+                fontSize: 13,
+                color: textColor,
+                height: 1.5,
+              ),
             ),
           ),
         ],
@@ -407,11 +435,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Action button ──────────────────────────────────────────────────────────
 
   Widget _buildActionButton() {
-    final loc = AppLocalizations.of(context);
-    final label = _currentGranted ? loc.continueButton : loc.openSettingsButton;
-    final color = _currentGranted
-        ? const Color(0xFF10B981)
-        : const Color(0xFF1F2937);
+    final label = _currentGranted ? 'Continue' : 'Open Settings';
 
     return SizedBox(
       width: double.infinity,
@@ -419,11 +443,12 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
       child: ElevatedButton(
         onPressed: _onActionTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: color,
+          backgroundColor: _kGreen,
           foregroundColor: Colors.white,
-          elevation: 0,
+          elevation: 2,
+          shadowColor: _kGreen.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(20),
           ),
         ),
         child: Row(
@@ -431,7 +456,10 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(width: 8),
             Icon(
@@ -462,7 +490,11 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
     return Text(
       hint,
       textAlign: TextAlign.center,
-      style: TextStyle(fontSize: 12, color: Colors.grey.shade500, height: 1.5),
+      style: GoogleFonts.roboto(
+        fontSize: 12,
+        color: Colors.grey.shade500,
+        height: 1.5,
+      ),
     );
   }
 }

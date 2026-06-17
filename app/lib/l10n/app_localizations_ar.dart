@@ -1931,6 +1931,33 @@ class AppLocalizationsAr extends AppLocalizations {
   String get errUploadFailed => 'فشل الرفع. يرجى المحاولة مرة أخرى.';
 
   @override
+  String get errSubjectStillProcessing =>
+      'لا يزال مستند هذه المادة قيد التجهيز. يرجى الانتظار حتى ينتهي قبل رفع مستند آخر.';
+
+  @override
+  String get subjectPreparingLabel => 'جارٍ تجهيز المادة…';
+
+  @override
+  String get subjectStageParsing => 'جارٍ قراءة المستند…';
+
+  @override
+  String get subjectStageAnalyzing => 'جارٍ تحليل المحتوى…';
+
+  @override
+  String get subjectStageBuildingSkills => 'جارٍ بناء شجرة المهارات…';
+
+  @override
+  String get subjectPreparingPracticeDisabled => 'جارٍ التجهيز…';
+
+  @override
+  String get subjectIngestFailed =>
+      'تعذر معالجة هذا المستند. يرجى محاولة رفعه مرة أخرى.';
+
+  @override
+  String get quizSubjectStillPreparing =>
+      'لا تزال هذه المادة قيد التجهيز. يرجى المحاولة بعد قليل.';
+
+  @override
   String get errDeleteAccountFailed =>
       'تعذر حذف الحساب. يرجى المحاولة مرة أخرى.';
 

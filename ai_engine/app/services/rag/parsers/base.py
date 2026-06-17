@@ -7,5 +7,6 @@ class DocumentParserStrategy(ABC):
     Abstract Base Class defining the interface for document parsers.
     """
     @abstractmethod
-    def parse(self, document_id: UUID, temp_file_path: str, subject_name: str = "") -> str:
+    def parse(self, document_id: UUID, temp_file_path: str, language: str = "ar") -> str:
+        """Parse a PDF into markdown for the given OCR language ("ar" or "en"). Single pass."""
         pass

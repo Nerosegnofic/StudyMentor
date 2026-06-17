@@ -34,6 +34,18 @@ class MascotOverlayService {
   int _remainingCooldownSeconds = 0;
   int _totalUsageSeconds = 0;
 
+  // ── Cumulative daily free time (monitored-app usage across windows) ─────────
+  //
+  // [_totalUsageSeconds] is reset to 0 by the native service on every cooldown
+  // window end, so it only reflects the current window. To show how much free
+  // app-time the student has earned across the whole day, we accumulate the
+  // per-window deltas here and persist them (date-keyed) so they survive
+  // restarts and reset at local midnight.
+  int _dailyFreeTimeSeconds = 0;
+  int _lastWindowUsage = 0;
+  bool _usageBaselineSet = false;
+  String? _freeTimeDate;
+
   // ── Student UID ────────────────────────────────────────────────────────────
 
   /// The UID of the student whose timer is currently active.
@@ -121,6 +133,7 @@ class MascotOverlayService {
       'studentUid': _studentUid,
     });
 
+    await _loadDailyFreeTime();
     await _syncStateFromNative();
 
     final settings = await _getSettings();
@@ -166,6 +179,12 @@ class MascotOverlayService {
     _cooldownNotificationVisible = false;
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
+    // Reset the daily free-time tracker so the next student loads their own
+    // (persisted) total rather than inheriting this session's in-memory state.
+    _dailyFreeTimeSeconds = 0;
+    _lastWindowUsage = 0;
+    _usageBaselineSet = false;
+    _freeTimeDate = null;
     _studentUid = null;
     _quizDismissedForThisCooldown = false;
     _quizShownForThisCooldown = false;
@@ -223,8 +242,81 @@ class MascotOverlayService {
   bool get isCooldownNotificationVisible => _cooldownNotificationVisible;
   int get remainingSeconds => _remainingCooldownSeconds;
   int get totalUsageSeconds => _totalUsageSeconds;
+
+  /// Cumulative monitored-app usage for today, summed across cooldown windows
+  /// (unlike [totalUsageSeconds], which the native service resets each window).
+  int get dailyFreeTimeSeconds => _dailyFreeTimeSeconds;
   MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
+
+  // ── Daily free-time accumulator ────────────────────────────────────────────
+
+  String _todayKey() {
+    final now = DateTime.now();
+    final m = now.month.toString().padLeft(2, '0');
+    final d = now.day.toString().padLeft(2, '0');
+    return '${now.year}-$m-$d';
+  }
+
+  String get _freeTimeKey => 'free_time_${_studentUid ?? 'unknown'}';
+  String get _freeTimeDateKey => 'free_time_date_${_studentUid ?? 'unknown'}';
+
+  Future<void> _loadDailyFreeTime() async {
+    final today = _todayKey();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedDate = prefs.getString(_freeTimeDateKey);
+      if (storedDate == today) {
+        _dailyFreeTimeSeconds = prefs.getInt(_freeTimeKey) ?? 0;
+      } else {
+        _dailyFreeTimeSeconds = 0;
+        await prefs.setString(_freeTimeDateKey, today);
+        await prefs.setInt(_freeTimeKey, 0);
+      }
+    } catch (e) {
+      debugPrint('[MascotOverlayService] load daily free time error: $e');
+      _dailyFreeTimeSeconds = 0;
+    }
+    _freeTimeDate = today;
+  }
+
+  Future<void> _persistDailyFreeTime() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_freeTimeDateKey, _freeTimeDate ?? _todayKey());
+      await prefs.setInt(_freeTimeKey, _dailyFreeTimeSeconds);
+    } catch (_) {/* best-effort; recomputed from deltas next tick */}
+  }
+
+  /// Ingests a usage value reported by the native timer, accumulating the
+  /// cumulative daily total across cooldown-window resets.
+  void _applyUsage(int newUsage) {
+    // Midnight rollover → start a fresh day.
+    final today = _todayKey();
+    if (_freeTimeDate != today) {
+      _freeTimeDate = today;
+      _dailyFreeTimeSeconds = 0;
+      _persistDailyFreeTime();
+    }
+
+    // First reading after launch: align the tracker without accumulating, so a
+    // restart mid-window doesn't double-count usage already in the daily total.
+    if (!_usageBaselineSet) {
+      _usageBaselineSet = true;
+      _lastWindowUsage = newUsage;
+      _totalUsageSeconds = newUsage;
+      return;
+    }
+
+    if (newUsage > _lastWindowUsage) {
+      _dailyFreeTimeSeconds += newUsage - _lastWindowUsage;
+      _persistDailyFreeTime();
+    }
+    // A drop means the native window reset on cooldown end; those seconds were
+    // already counted, so realign without subtracting.
+    _lastWindowUsage = newUsage;
+    _totalUsageSeconds = newUsage;
+  }
 
   // ── Quiz state ─────────────────────────────────────────────────────────────
 
@@ -342,7 +434,7 @@ class MascotOverlayService {
       );
       if (state == null) return;
 
-      _totalUsageSeconds = (state['totalUsage'] as int?) ?? 0;
+      _applyUsage((state['totalUsage'] as int?) ?? 0);
       _isBlocked = (state['isBlocked'] as bool?) ?? false;
       _remainingCooldownSeconds = (state['cooldownRemaining'] as int?) ?? 0;
 
@@ -445,7 +537,7 @@ class MascotOverlayService {
     switch (call.method) {
       case 'onTimerTick':
         final args = call.arguments as Map<dynamic, dynamic>;
-        _totalUsageSeconds = (args['totalUsage'] as int?) ?? 0;
+        _applyUsage((args['totalUsage'] as int?) ?? 0);
         _isBlocked = (args['isBlocked'] as bool?) ?? false;
         _remainingCooldownSeconds = (args['cooldownRemaining'] as int?) ?? 0;
         break;

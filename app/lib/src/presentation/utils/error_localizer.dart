@@ -41,6 +41,12 @@ String localizeError(String message, AppLocalizations loc) {
     // Upload errors
     case 'Upload failed. Please try again.':
       return loc.errUploadFailed;
+    case 'A document for this subject is still being processed. '
+          'Please wait until it finishes before uploading another.':
+      return loc.errSubjectStillProcessing;
+    // Quiz generation rejected because the subject is still ingesting (409 backstop).
+    case 'This subject is still being prepared. Please try again in a moment.':
+      return loc.quizSubjectStillPreparing;
     // Account deletion errors
     case 'Unable to delete account. Please try again.':
       return loc.errDeleteAccountFailed;
