@@ -1001,5 +1001,28 @@
       "studentName": {"type": "String"}
     }
   },
-  "notifInactivityBody": "A little encouragement might help them get back on track."
+  "notifInactivityBody": "A little encouragement might help them get back on track.",
+
+  "notifParentStreakMilestoneTitle": "{studentName} hit a {streak}-day streak! 🔥",
+  "@notifParentStreakMilestoneTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"},
+      "streak": {"type": "int"}
+    }
+  },
+  "notifParentStreakMilestoneBody": "They've been on a roll — keep the encouragement coming!",
+
+  "parentNotifPerStudentSection": "Students",
+  "parentStudentNotifAllLabel": "All notifications from this student",
+  "parentNotifNoStudentsLinked": "No students linked yet.",
+
+  "managePreferencesButton": "Manage Preferences",
+  "parentPreferencesTitle": "Preferences",
+  "parentNotificationsSection": "Notifications",
+  "parentNotifProgressLabel": "Child Progress Alerts",
+  "parentNotifProgressSubtitle": "Level ups and badge achievements",
+  "parentNotifStreakLabel": "Streak Alerts",
+  "parentNotifStreakSubtitle": "Streak milestones and broken streaks",
+  "parentNotifInactivityLabel": "Inactivity Reminders",
+  "parentNotifInactivitySubtitle": "Alerts when a child hasn't studied in 3+ days"
 }

@@ -1110,8 +1110,8 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                RichText(
-                  text: TextSpan(
+                Text.rich(
+                  TextSpan(
                     style: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFF333333),
@@ -1920,7 +1920,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
+                  style: GoogleFonts.cairo(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: isSelected
@@ -1930,7 +1930,8 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: GoogleFonts.cairo(
+                      fontSize: 11, color: Colors.grey.shade500),
                 ),
               ],
             ),

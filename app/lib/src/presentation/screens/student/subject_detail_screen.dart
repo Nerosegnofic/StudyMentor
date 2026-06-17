@@ -320,8 +320,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   color: Color(0xFF1A1A2E),
                 ),
               ),
-              RichText(
-                text: TextSpan(
+              Text.rich(
+                TextSpan(
                   children: [
                     TextSpan(
                       text: '${loc.levelNumberLabel(currentLevel)}  ',

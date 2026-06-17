@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import '../../../services/settings_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../widgets/language_picker_dialog.dart';
@@ -20,7 +19,6 @@ class _StudentSettingsState extends State<StudentSettings> {
   bool _backgroundMusicEnabled = false;
   bool _timerNotificationEnabled = true;
   bool _cooldownNotificationEnabled = true;
-  String _appVersion = 'v1.0';
   bool _loading = true;
 
   @override
@@ -31,10 +29,6 @@ class _StudentSettingsState extends State<StudentSettings> {
 
   Future<void> _init() async {
     final settings = await SettingsService.create();
-    PackageInfo? info;
-    try {
-      info = await PackageInfo.fromPlatform();
-    } catch (_) {}
     if (!mounted) return;
     setState(() {
       _settings = settings;
@@ -43,7 +37,6 @@ class _StudentSettingsState extends State<StudentSettings> {
       _backgroundMusicEnabled = settings.backgroundMusicEnabled;
       _timerNotificationEnabled = settings.timerNotificationEnabled;
       _cooldownNotificationEnabled = settings.cooldownNotificationEnabled;
-      _appVersion = info != null ? 'v${info.version}' : 'v1.0';
       _loading = false;
     });
   }
@@ -92,9 +85,6 @@ class _StudentSettingsState extends State<StudentSettings> {
                 const SizedBox(height: 20),
                 _sectionLabel(loc.accountSection),
                 _buildAccountCard(loc),
-                const SizedBox(height: 20),
-                _sectionLabel(loc.aboutSection),
-                _buildAboutCard(loc),
                 const SizedBox(height: 16),
               ],
             ),
@@ -178,16 +168,6 @@ class _StudentSettingsState extends State<StudentSettings> {
           title: loc.languageSettingTitle,
           subtitle: loc.languageSettingSubtitle,
         ),
-      ),
-    ],
-  );
-
-  Widget _buildAboutCard(AppLocalizations loc) => _card(
-    children: [
-      _infoRow(
-        icon: Icons.info_outline,
-        title: loc.appVersionLabel,
-        trailing: _appVersion,
       ),
     ],
   );
@@ -282,34 +262,6 @@ class _StudentSettingsState extends State<StudentSettings> {
           ),
         ),
         Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
-      ],
-    ),
-  );
-
-  Widget _infoRow({
-    required IconData icon,
-    required String title,
-    required String trailing,
-  }) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    child: Row(
-      children: [
-        _iconBadge(icon),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: Color(0xFF1A1A2E),
-            ),
-          ),
-        ),
-        Text(
-          trailing,
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-        ),
       ],
     ),
   );

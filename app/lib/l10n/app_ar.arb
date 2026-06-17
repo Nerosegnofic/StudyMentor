@@ -700,5 +700,28 @@
       "studentName": {"type": "String"}
     }
   },
-  "notifInactivityBody": "قد يساعده القليل من التشجيع على العودة إلى المسار الصحيح."
+  "notifInactivityBody": "قد يساعده القليل من التشجيع على العودة إلى المسار الصحيح.",
+
+  "notifParentStreakMilestoneTitle": "{studentName} وصل إلى سلسلة {streak} يوم! 🔥",
+  "@notifParentStreakMilestoneTitle": {
+    "placeholders": {
+      "studentName": {"type": "String"},
+      "streak": {"type": "int"}
+    }
+  },
+  "notifParentStreakMilestoneBody": "إنهم في حالة رائعة — استمر في التشجيع!",
+
+  "parentNotifPerStudentSection": "الطلاب",
+  "parentStudentNotifAllLabel": "جميع إشعارات هذا الطالب",
+  "parentNotifNoStudentsLinked": "لا يوجد طلاب مرتبطون بعد.",
+
+  "managePreferencesButton": "إدارة التفضيلات",
+  "parentPreferencesTitle": "التفضيلات",
+  "parentNotificationsSection": "الإشعارات",
+  "parentNotifProgressLabel": "تنبيهات تقدم الطفل",
+  "parentNotifProgressSubtitle": "الترقيات وإنجازات الشارات",
+  "parentNotifStreakLabel": "تنبيهات السلاسل",
+  "parentNotifStreakSubtitle": "إنجازات السلاسل وانقطاعها",
+  "parentNotifInactivityLabel": "تذكيرات عدم النشاط",
+  "parentNotifInactivitySubtitle": "تنبيهات عندما لا يدرس الطفل لمدة 3 أيام أو أكثر"
 }

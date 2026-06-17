@@ -40,6 +40,8 @@ import 'src/services/streak_reminder_service.dart';
 import 'src/services/student_local_notification_handler.dart';
 import 'src/services/parent_notification_poll_service.dart';
 import 'src/services/parent_inactivity_check_service.dart';
+import 'src/utils/app_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 // ── WorkManager task identifiers ─────────────────────────────────────────────
 const _kSyncTaskName = 'installedAppSync';
@@ -142,6 +144,11 @@ Future<void> main() async {
   );
 
   final initialLocale = await LocaleCubit.readSavedLocale();
+
+  try {
+    final info = await PackageInfo.fromPlatform();
+    kAppVersion = 'v${info.version}';
+  } catch (_) {}
 
   runApp(StudyMentorApp(authRepository: authRepository, initialLocale: initialLocale));
 }
