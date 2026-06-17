@@ -92,6 +92,15 @@ class ParentNotificationPollService {
               prefs.getBool('pref_${parentUid}_$preference') ?? true;
           if (!enabled) continue;
 
+          final fromStudentUid = event['from_student_uid'] as String? ?? '';
+          if (fromStudentUid.isNotEmpty) {
+            final studentEnabled = prefs.getBool(
+                  'pref_${parentUid}_notif_student_$fromStudentUid',
+                ) ??
+                true;
+            if (!studentEnabled) continue;
+          }
+
           Map<String, dynamic> payload;
           try {
             payload =
@@ -150,6 +159,14 @@ class ParentNotificationPollService {
           loc.notifParentStreakBrokenTitle(studentName),
           loc.notifParentStreakBrokenBody(previousStreak),
         );
+      case 'STREAK_MILESTONE':
+        final studentName = payload['studentName'] as String? ?? '';
+        final streakDays =
+            int.tryParse(payload['streakDays'] as String? ?? '') ?? 0;
+        return (
+          loc.notifParentStreakMilestoneTitle(studentName, streakDays),
+          loc.notifParentStreakMilestoneBody,
+        );
       default:
         return null;
     }
@@ -163,6 +180,7 @@ class ParentNotificationPollService {
       case 'LEVEL_UP':
       case 'BADGE_EARNED':
         return (kChannelParentProgress, 'PARENT_CHILD_PROGRESS');
+      case 'STREAK_MILESTONE':
       case 'STREAK_BROKEN':
         return (kChannelParentAlerts, 'PARENT_STREAK_ALERTS');
       default:

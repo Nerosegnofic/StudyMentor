@@ -3192,6 +3192,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A little encouragement might help them get back on track.'**
   String get notifInactivityBody;
+
+  /// No description provided for @notifParentStreakMilestoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{studentName} hit a {streak}-day streak! 🔥'**
+  String notifParentStreakMilestoneTitle(String studentName, int streak);
+
+  /// No description provided for @notifParentStreakMilestoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'ve been on a roll — keep the encouragement coming!'**
+  String get notifParentStreakMilestoneBody;
+
+  /// No description provided for @parentNotifPerStudentSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Students'**
+  String get parentNotifPerStudentSection;
+
+  /// No description provided for @parentStudentNotifAllLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All notifications from this student'**
+  String get parentStudentNotifAllLabel;
+
+  /// No description provided for @parentNotifNoStudentsLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'No students linked yet.'**
+  String get parentNotifNoStudentsLinked;
+
+  /// No description provided for @managePreferencesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Preferences'**
+  String get managePreferencesButton;
+
+  /// No description provided for @parentPreferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get parentPreferencesTitle;
+
+  /// No description provided for @parentNotificationsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get parentNotificationsSection;
+
+  /// No description provided for @parentNotifProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Child Progress Alerts'**
+  String get parentNotifProgressLabel;
+
+  /// No description provided for @parentNotifProgressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Level ups and badge achievements'**
+  String get parentNotifProgressSubtitle;
+
+  /// No description provided for @parentNotifStreakLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak Alerts'**
+  String get parentNotifStreakLabel;
+
+  /// No description provided for @parentNotifStreakSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak milestones and broken streaks'**
+  String get parentNotifStreakSubtitle;
+
+  /// No description provided for @parentNotifInactivityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactivity Reminders'**
+  String get parentNotifInactivityLabel;
+
+  /// No description provided for @parentNotifInactivitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts when a child hasn\'t studied in 3+ days'**
+  String get parentNotifInactivitySubtitle;
 }
 
 class _AppLocalizationsDelegate

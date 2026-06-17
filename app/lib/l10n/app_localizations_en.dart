@@ -1854,4 +1854,52 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notifInactivityBody =>
       'A little encouragement might help them get back on track.';
+
+  @override
+  String notifParentStreakMilestoneTitle(String studentName, int streak) {
+    return '$studentName hit a $streak-day streak! 🔥';
+  }
+
+  @override
+  String get notifParentStreakMilestoneBody =>
+      'They\'ve been on a roll — keep the encouragement coming!';
+
+  @override
+  String get parentNotifPerStudentSection => 'Students';
+
+  @override
+  String get parentStudentNotifAllLabel =>
+      'All notifications from this student';
+
+  @override
+  String get parentNotifNoStudentsLinked => 'No students linked yet.';
+
+  @override
+  String get managePreferencesButton => 'Manage Preferences';
+
+  @override
+  String get parentPreferencesTitle => 'Preferences';
+
+  @override
+  String get parentNotificationsSection => 'Notifications';
+
+  @override
+  String get parentNotifProgressLabel => 'Child Progress Alerts';
+
+  @override
+  String get parentNotifProgressSubtitle => 'Level ups and badge achievements';
+
+  @override
+  String get parentNotifStreakLabel => 'Streak Alerts';
+
+  @override
+  String get parentNotifStreakSubtitle =>
+      'Streak milestones and broken streaks';
+
+  @override
+  String get parentNotifInactivityLabel => 'Inactivity Reminders';
+
+  @override
+  String get parentNotifInactivitySubtitle =>
+      'Alerts when a child hasn\'t studied in 3+ days';
 }

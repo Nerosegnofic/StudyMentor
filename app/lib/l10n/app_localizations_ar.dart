@@ -1843,4 +1843,50 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get notifInactivityBody =>
       'قد يساعده القليل من التشجيع على العودة إلى المسار الصحيح.';
+
+  @override
+  String notifParentStreakMilestoneTitle(String studentName, int streak) {
+    return '$studentName وصل إلى سلسلة $streak يوم! 🔥';
+  }
+
+  @override
+  String get notifParentStreakMilestoneBody =>
+      'إنهم في حالة رائعة — استمر في التشجيع!';
+
+  @override
+  String get parentNotifPerStudentSection => 'الطلاب';
+
+  @override
+  String get parentStudentNotifAllLabel => 'جميع إشعارات هذا الطالب';
+
+  @override
+  String get parentNotifNoStudentsLinked => 'لا يوجد طلاب مرتبطون بعد.';
+
+  @override
+  String get managePreferencesButton => 'إدارة التفضيلات';
+
+  @override
+  String get parentPreferencesTitle => 'التفضيلات';
+
+  @override
+  String get parentNotificationsSection => 'الإشعارات';
+
+  @override
+  String get parentNotifProgressLabel => 'تنبيهات تقدم الطفل';
+
+  @override
+  String get parentNotifProgressSubtitle => 'الترقيات وإنجازات الشارات';
+
+  @override
+  String get parentNotifStreakLabel => 'تنبيهات السلاسل';
+
+  @override
+  String get parentNotifStreakSubtitle => 'إنجازات السلاسل وانقطاعها';
+
+  @override
+  String get parentNotifInactivityLabel => 'تذكيرات عدم النشاط';
+
+  @override
+  String get parentNotifInactivitySubtitle =>
+      'تنبيهات عندما لا يدرس الطفل لمدة 3 أيام أو أكثر';
 }

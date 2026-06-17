@@ -71,17 +71,6 @@ type StudentSettings @table(name: "student_settings", key: ["studentUid"]) {
   backgroundMusicEnabled: Boolean! @default(expr: "false")
 }
 
-# Support tickets submitted from the Help Center.
-type SupportTicket @table(name: "support_tickets", key: ["id"]) {
-  id: UUID! @default(expr: "uuidV4()")
-  userId: String! @col(dataType: "varchar(128)")
-  userName: String! @col(dataType: "varchar(255)")
-  issueType: String! @col(dataType: "varchar(100)")
-  message: String! @col(dataType: "text")
-  status: String! @col(dataType: "varchar(20)") @default(expr: "'open'")
-  createdAt: Timestamp! @default(expr: "request.time")
-}
-
 # Records a shop item purchased by a student.
 type StudentOwnedItem @table(name: "student_owned_items", key: ["id"]) {
   id: UUID! @default(expr: "uuidV4()")

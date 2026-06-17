@@ -218,10 +218,9 @@ class StudentLocalNotificationHandler {
       toParentUid: parentUid,
       eventType: 'STREAK_MILESTONE',
       payload: {
-        'title': '$studentName hit a $currentStreak-day streak! 🔥',
-        'body': "They've studied $currentStreak days in a row.",
         'screen': 'STUDENT_DETAIL',
         'childId': studentUid,
+        'studentName': studentName,
         'streakDays': '$currentStreak',
       },
     );

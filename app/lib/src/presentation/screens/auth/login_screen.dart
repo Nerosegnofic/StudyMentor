@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../utils/app_info.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
@@ -38,7 +39,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
-        body: BlocConsumer<AuthBloc, AuthState>(
+        body: Stack(
+          children: [
+            BlocConsumer<AuthBloc, AuthState>(
           // Only rebuild the button when loading state changes.
           buildWhen: (prev, curr) => curr is AuthLoading || prev is AuthLoading,
           // Handle side effects without setState.
@@ -129,6 +132,16 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             );
           },
+        ),
+            Positioned(
+              bottom: 12,
+              left: 20,
+              child: Text(
+                kAppVersion,
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+              ),
+            ),
+          ],
         ),
       ),
     );

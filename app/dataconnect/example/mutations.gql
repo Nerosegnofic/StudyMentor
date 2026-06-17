@@ -111,24 +111,6 @@ mutation UpsertStudentSettings(
   )
 }
 
-# ── Support Tickets ───────────────────────────────────────────────────────────
-
-mutation InsertSupportTicket(
-  $userId: String!
-  $userName: String!
-  $issueType: String!
-  $message: String!
-) @auth(level: USER, insecureReason: "Any authenticated student may submit a support ticket.") {
-  supportTicket_insert(
-    data: {
-      userId: $userId
-      userName: $userName
-      issueType: $issueType
-      message: $message
-    }
-  )
-}
-
 # ── Avatar Shop Mutations ─────────────────────────────────────────────────────
 
 mutation InsertStudentOwnedItem(

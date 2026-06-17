@@ -450,24 +450,6 @@ class DataConnectProvider {
     await _connector.deleteParentRecord().execute();
   }
 
-  // ── Support Tickets ───────────────────────────────────────────────────────
-
-  Future<void> insertSupportTicket({
-    required String userId,
-    required String userName,
-    required String issueType,
-    required String message,
-  }) async {
-    await _connector
-        .insertSupportTicket(
-          userId: userId,
-          userName: userName,
-          issueType: issueType,
-          message: message,
-        )
-        .execute();
-  }
-
   // ── Local Notification System ─────────────────────────────────────────────
 
   Future<void> insertLocalNotificationEvent({
