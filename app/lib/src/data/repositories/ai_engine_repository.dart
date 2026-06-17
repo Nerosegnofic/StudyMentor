@@ -16,16 +16,22 @@ class GenerateQuizRequest {
   final int totalQuestions;
   final int studentGrade;
 
+  /// "VOLUNTARY" (student chose to practice) or "FORCED" (parent/system mandated).
+  /// Sent so the backend can label the session and grant the FORCED reward bonus.
+  final String quizContext;
+
   const GenerateQuizRequest({
     this.subjectId,
     required this.totalQuestions,
     this.studentGrade = 5,
+    this.quizContext = 'VOLUNTARY',
   });
 
   Map<String, dynamic> toJson() => {
         'subject_id': subjectId,
         'total_questions': totalQuestions,
         'student_grade': studentGrade,
+        'quiz_context': quizContext,
       };
 }
 
@@ -237,6 +243,24 @@ class AiEngineRepository {
     _assertSuccess(response, 'generateQuiz');
     return GenerateQuizResponse.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  /// Fire-and-forget pre-generation of the *next* quiz.
+  ///
+  /// Calling `/generate` proactively (typically right after a submit) makes the
+  /// AI engine create an unsubmitted session and persist its questions — that is
+  /// the engine's quiz cache. The next real `generateQuiz` for the same
+  /// `(student, subject)` then returns it instantly as `quiz_source="CACHED"`.
+  ///
+  /// The response is intentionally discarded and any error is swallowed: warming
+  /// is best-effort and must never surface to the user. If it's throttled or
+  /// fails, the next quiz simply generates live as before.
+  Future<void> prewarmNextQuiz(GenerateQuizRequest request) async {
+    try {
+      await generateQuiz(request);
+    } catch (_) {
+      // best-effort warming — ignore failures (rate limit, network, etc.)
+    }
   }
 
   /// `POST /quizzes/submit` — submits answers and updates BKT mastery.

@@ -382,7 +382,7 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
         iconColor: _kGreen,
         backgroundColor: const Color(0xFFEDF7EE),
         borderColor: _kGreen,
-        text: '${permission.displayName} has been enabled.',
+        text: '${permission.displayName(loc)} has been enabled.',
         textColor: const Color(0xFF2E7D32),
       );
     }

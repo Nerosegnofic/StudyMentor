@@ -4,6 +4,7 @@ import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import 'auth_style.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -25,6 +26,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       backgroundColor: kAuthBackground,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
+          final loc = AppLocalizations.of(context);
           if (state is PasswordResetEmailSent) {
             ScaffoldMessenger.of(
               context,

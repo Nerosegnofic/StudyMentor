@@ -134,13 +134,24 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 0.5: Quiz Cache Check (Cross-Device Reuse)
     # ------------------------------------------------------------------ #
+    # The first already-warmed quiz is served as-is (with its original question
+    # count) even if the parent changed the count meanwhile; the new count takes
+    # effect on the next generated quiz. See get_active_quiz_session for details.
     active_session = get_active_quiz_session(db, student_uid, target_subject_id)
     if active_session:
         cached_questions = get_questions_for_session(db, active_session.session_id)
         if cached_questions and all(q.text_content is not None for q in cached_questions):
+            # Re-stamp the served session with the *consuming* request's context.
+            # A pre-warmed session is generated blindly (its context is a placeholder);
+            # the request that actually hands the quiz to the student decides whether it
+            # counts as VOLUNTARY or FORCED for grading. Grading reads this at submit time.
+            if active_session.quiz_context != request_body.quiz_context:
+                active_session.quiz_context = request_body.quiz_context
+                db.commit()
             print(
                 f"[QuizCache] Returning cached session {active_session.session_id} "
-                f"for student={student_uid}, subject_id={target_subject_id}",
+                f"for student={student_uid}, subject_id={target_subject_id} "
+                f"(context={request_body.quiz_context})",
                 flush=True,
             )
             question_schemas = [
@@ -186,7 +197,10 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 3: Create Quiz Session
     # ------------------------------------------------------------------ #
-    quiz_session = create_quiz_session(db, student_uid, target_subject_id, request_body.total_questions)
+    quiz_session = create_quiz_session(
+        db, student_uid, target_subject_id, request_body.total_questions,
+        quiz_context=request_body.quiz_context,
+    )
     upsert_student_subject_profile_last_quizzed(db, student_uid, target_subject_id)
 
     skills_used = get_skills_by_names(db, all_topics)

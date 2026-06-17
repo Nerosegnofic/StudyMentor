@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
+import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/skill_detail_model.dart';
 import '../../../utils/growth_stage_utils.dart';
 import '../../widgets/plant_widget.dart';
@@ -44,12 +45,26 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   StudentConfigModel _config = const StudentConfigModel();
   late double _masteryPercent;
 
+  /// Student's grade level (set by the parent) — used to size generated quizzes.
+  /// Null until loaded; falls back to 5 in the quiz request.
+  int? _studentGrade;
+
   @override
   void initState() {
     super.initState();
     _masteryPercent = widget.masteryPercent;
     _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
     _loadConfig();
+    _loadGrade();
+  }
+
+  Future<void> _loadGrade() async {
+    try {
+      final profile = await DataConnectProvider().getStudentProfile(widget.studentUid);
+      if (mounted) {
+        setState(() => _studentGrade = profile['grade_level'] as int?);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadConfig() async {
@@ -260,6 +275,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         studentId: widget.studentUid,
                         contextType: QuizContext.voluntary,
                         subjectId: widget.subjectId,
+                        studentGrade: _studentGrade,
                         totalQuestions: switch (_config.quizCount) {
                           Auto() => 5,
                           Fixed(:final count) => count,

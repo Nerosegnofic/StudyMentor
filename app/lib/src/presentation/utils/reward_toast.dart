@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../l10n/app_localizations.dart';
 
 // Design-system tokens (mirrored from student_quiz.dart).
 const _kGreen = Color(0xFF2E7D32);
-
-import '../../../l10n/app_localizations.dart';
 
 /// Utility for showing non-blocking reward notifications.
 class RewardToast {

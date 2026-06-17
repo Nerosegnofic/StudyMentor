@@ -482,11 +482,19 @@ class StudentHomeState extends State<StudentHome> {
     );
   }
 
+  /// Average mastery across subjects the student has actually started
+  /// (masteryPercent > 0). Untouched subjects are excluded so a few unstarted
+  /// plants don't drag the whole garden toward 0% (mirrors the backend's
+  /// "practiced skills only" rule). Returns null when nothing is started yet.
+  double? _avgGardenMastery() {
+    final practiced = _gardenCache.where((p) => p.masteryPercent > 0);
+    if (practiced.isEmpty) return null;
+    return practiced.fold(0.0, (sum, p) => sum + p.masteryPercent) /
+        practiced.length;
+  }
+
   double _overallGardenProgress() {
-    if (_gardenCache.isEmpty) return 0.0;
-    final avg = _gardenCache.fold(0.0, (sum, p) => sum + p.masteryPercent) /
-        _gardenCache.length;
-    return (avg / 100).clamp(0.0, 1.0);
+    return ((_avgGardenMastery() ?? 0.0) / 100).clamp(0.0, 1.0);
   }
 
   // ── Owl mascot ──────────────────────────────────────────────────────────────
@@ -558,9 +566,8 @@ class StudentHomeState extends State<StudentHome> {
   // ── Quick stats ─────────────────────────────────────────────────────────────
 
   Widget _buildQuickStats() {
-    final avgMastery = _gardenCache.isEmpty
-        ? '—'
-        : '${(_gardenCache.map((p) => p.masteryPercent).reduce((a, b) => a + b) / _gardenCache.length).round()}%';
+    final avg = _avgGardenMastery();
+    final avgMastery = avg == null ? '—' : '${avg.round()}%';
 
     final cards = <Widget>[
       _statCard('📚', 'Today', '$_quizzesCompletedToday', const Color(0xFF2196F3)),
@@ -986,10 +993,7 @@ class StudentHomeState extends State<StudentHome> {
     if (_streak >= 3) {
       return '$prefix🔥 $_streak-day streak — you\'re on a roll!';
     }
-    final avgMastery = _gardenCache.isEmpty
-        ? null
-        : _gardenCache.map((p) => p.masteryPercent).reduce((a, b) => a + b) /
-            _gardenCache.length;
+    final avgMastery = _avgGardenMastery();
     if (avgMastery != null && avgMastery >= 80) {
       return '${prefix}your garden is thriving! 🌟';
     }

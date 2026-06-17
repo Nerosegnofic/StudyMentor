@@ -62,6 +62,9 @@ class QuizOverlayPage extends StatelessWidget {
   final int totalQuestions;
   final int? subjectId;
 
+  /// The student's grade level (from their profile); null falls back to 5.
+  final int? studentGrade;
+
 
   const QuizOverlayPage({
     super.key,
@@ -70,6 +73,7 @@ class QuizOverlayPage extends StatelessWidget {
     required this.contextType,
     this.totalQuestions = 5,
     this.subjectId,
+    this.studentGrade,
   });
 
   @override
@@ -82,6 +86,7 @@ class QuizOverlayPage extends StatelessWidget {
         contextType: contextType,
         totalQuestions: totalQuestions,
         subjectId: subjectId,
+        studentGrade: studentGrade,
       ),
 
     );
@@ -96,12 +101,14 @@ class _QuizOverlayScaffold extends StatefulWidget {
   final QuizContext contextType;
   final int totalQuestions;
   final int? subjectId;
+  final int? studentGrade;
 
   const _QuizOverlayScaffold({
     required this.studentId,
     required this.contextType,
     required this.totalQuestions,
     this.subjectId,
+    this.studentGrade,
   });
 
 
@@ -217,6 +224,8 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
               return _AutoStartPanel(
                 totalQuestions: widget.totalQuestions,
                 subjectId: widget.subjectId,
+                studentGrade: widget.studentGrade,
+                contextType: widget.contextType,
               );
             }
             if (state is QuizLoading) {
@@ -247,10 +256,14 @@ class _AutoStartPanel extends StatelessWidget {
 
   final int totalQuestions;
   final int? subjectId;
+  final int? studentGrade;
+  final QuizContext contextType;
 
   const _AutoStartPanel({
     required this.totalQuestions,
+    required this.contextType,
     this.subjectId,
+    this.studentGrade,
   });
 
 
@@ -296,6 +309,8 @@ class _AutoStartPanel extends StatelessWidget {
                   GenerateQuizEvent(
                     totalQuestions: totalQuestions,
                     subjectId: subjectId,
+                    studentGrade: studentGrade ?? 5,
+                    quizContext: contextType,
                   ),
                 );
 
@@ -369,7 +384,8 @@ class StudentQuizScreen extends StatelessWidget {
 
   @override
 
-  Widget build(BuildContext context) => const _AutoStartPanel(totalQuestions: 5);
+  Widget build(BuildContext context) =>
+      const _AutoStartPanel(totalQuestions: 5, contextType: QuizContext.voluntary);
 
 }
 
@@ -690,6 +706,7 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final isCorrectSelection = selectedOption == question.correctAnswer;
 
     return SingleChildScrollView(
@@ -719,7 +736,7 @@ class _QuestionCard extends StatelessWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    _difficultyPill(),
+                    _difficultyPill(loc),
                     _skillChip(),
                   ],
                 ),
@@ -758,7 +775,7 @@ class _QuestionCard extends StatelessWidget {
     );
   }
 
-  Widget _difficultyPill() {
+  Widget _difficultyPill(AppLocalizations loc) {
     final color = _difficultyColor(question.difficulty);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -767,7 +784,7 @@ class _QuestionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _difficultyLabel(question.difficulty),
+        _difficultyLabel(loc, question.difficulty),
         style: GoogleFonts.roboto(
           fontSize: 11,
           fontWeight: FontWeight.w700,
