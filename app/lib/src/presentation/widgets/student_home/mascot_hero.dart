@@ -11,16 +11,17 @@ import 'package:google_fonts/google_fonts.dart';
 /// is unchanged because the slot keeps its 120×120 footprint.
 class MascotHero extends StatelessWidget {
   final String firstName;
-  final String rankName;
 
-  /// Path to the mascot SVG asset (declare its folder in pubspec `assets:`).
-  /// Null until the asset is added — placeholder is shown instead.
+  /// Current level number (1–10). Drives the motivational message.
+  final int level;
+
+  /// Path to the mascot asset. Defaults to idle PNG.
   final String? mascotAsset;
 
   const MascotHero({
     super.key,
     required this.firstName,
-    required this.rankName,
+    required this.level,
     this.mascotAsset,
   });
 
@@ -77,7 +78,7 @@ class MascotHero extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            _motivation(rankName),
+            _motivation(level),
             textAlign: TextAlign.center,
             style: GoogleFonts.roboto(
               fontSize: 13,
@@ -104,17 +105,32 @@ class MascotHero extends StatelessWidget {
     );
   }
 
-  /// Picks a friendly line that always includes the RankName, varying by tier.
-  String _motivation(String rank) {
-    const early = {'Seedling', 'Sprout', 'Explorer'};
-    const mid = {'Curious Mind', 'Scholar', 'Achiever'};
-    if (early.contains(rank)) {
-      return "You're a $rank — great start! 🌱";
+  /// Returns a level-specific encouraging message (levels 1–10).
+  String _motivation(int lvl) {
+    switch (lvl) {
+      case 1:
+        return "You're a Seedling — every expert was once a beginner! 🌱";
+      case 2:
+        return "You're a Sprout — you're growing fast, keep it up! 🌿";
+      case 3:
+        return "You're an Explorer — curiosity is your superpower! 🔍";
+      case 4:
+        return "You're a Curious Mind — great questions lead to great answers! 💡";
+      case 5:
+        return "You're a Scholar — your hard work is really showing! 📚";
+      case 6:
+        return "You're an Achiever — you make it look easy! ⭐";
+      case 7:
+        return "You're a Champion — you inspire everyone around you! 🏆";
+      case 8:
+        return "You're a Sage — your wisdom sets you apart! 🦉";
+      case 9:
+        return "You're a Luminary — you light the way for others! ✨";
+      case 10:
+        return "You're a Master — the pinnacle of excellence! 🌟";
+      default:
+        return "Keep learning — you're doing amazing! 🚀";
     }
-    if (mid.contains(rank)) {
-      return "You're a $rank — keep it up! ⭐";
-    }
-    return 'Amazing work, $rank! 🌟';
   }
 }
 
