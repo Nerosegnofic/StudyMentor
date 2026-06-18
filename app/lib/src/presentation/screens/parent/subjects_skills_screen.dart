@@ -82,6 +82,9 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
           if (state is SubjectRemoved || state is SubjectAdded) {
             context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
           }
+          if (state is SubjectAdded) {
+            _statusCubit.start();
+          }
         },
         child: BlocBuilder<SubjectBloc, SubjectState>(
           buildWhen: (prev, curr) =>
