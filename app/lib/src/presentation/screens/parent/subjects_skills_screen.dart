@@ -29,8 +29,6 @@ class SubjectsSkillsScreen extends StatefulWidget {
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
 
-  static const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
-
   /// Child-scoped ingestion-status poll. The parent uploads on the child's behalf, so
   /// this passes the child's uid to see THAT child's subjects (the endpoint falls back
   /// to the JWT uid only when omitted). Drives the transient "Preparing…" banner.
@@ -50,7 +48,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
   }
 
   void _openDocumentUpload(BuildContext context, List<String> existingKeys) {
-    final repo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
+    final repo = AiEngineRepository(baseUrl: AiEngineRepository.defaultBaseUrl);
     Navigator.push(
       context,
       MaterialPageRoute(

@@ -41,9 +41,6 @@ import '../../../bloc/notifications/notifications_state.dart';
 import '../../../domain/models/notification_model.dart';
 import '../../widgets/student_home/student_notifications_sheet.dart';
 
-/// Base URL for the AI Engine.
-/// Change to your machine's LAN IP when testing on a physical device.
-const _kAiEngineBaseUrl = 'http://192.168.100.18:8000';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -122,7 +119,7 @@ class _StudentScreenState extends State<StudentScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _aiRepo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
+    _aiRepo = AiEngineRepository(baseUrl: AiEngineRepository.defaultBaseUrl);
 
     _shopBloc = ShopBloc();
     _gardenBloc = GardenBloc();
