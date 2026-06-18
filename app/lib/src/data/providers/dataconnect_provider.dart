@@ -932,6 +932,44 @@ class DataConnectProvider {
     ];
   }
 
+  Future<List<NotificationModel>> getNotificationsForStudent(
+    String studentUid,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return [
+      NotificationModel(
+        id: 's1',
+        parentUid: '',
+        studentUid: studentUid,
+        type: NotificationType.streakAchieved,
+        title: '7-Day Streak! 🔥',
+        subtitle: 'You studied 7 days in a row. Keep the fire going!',
+        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+        isRead: false,
+      ),
+      NotificationModel(
+        id: 's2',
+        parentUid: '',
+        studentUid: studentUid,
+        type: NotificationType.needsWork,
+        title: 'Review: Fractions',
+        subtitle: 'A few fractions questions tripped you up. Try a review quiz!',
+        createdAt: DateTime.now().subtract(const Duration(hours: 5)),
+        isRead: false,
+      ),
+      NotificationModel(
+        id: 's3',
+        parentUid: '',
+        studentUid: studentUid,
+        type: NotificationType.systemUpdate,
+        title: 'New Avatar Items',
+        subtitle: 'Fresh items just landed in the shop. Go check them out!',
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        isRead: true,
+      ),
+    ];
+  }
+
   Future<void> markAllNotificationsRead(String parentUid) async {
     await Future.delayed(const Duration(milliseconds: 200));
   }

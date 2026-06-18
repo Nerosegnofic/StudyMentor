@@ -563,6 +563,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<List<NotificationModel>> getNotificationsForStudent(String studentUid) {
+    return dataConnect.getNotificationsForStudent(studentUid);
+  }
+
+  @override
   Future<void> markAllNotificationsRead(String parentUid) {
     return dataConnect.markAllNotificationsRead(parentUid);
   }

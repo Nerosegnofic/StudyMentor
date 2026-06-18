@@ -35,6 +35,11 @@ import 'student_quiz.dart';
 import 'student_profile.dart';
 import 'shop/custom_shop_screen.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../bloc/notifications/notifications_bloc.dart';
+import '../../../bloc/notifications/notifications_event.dart';
+import '../../../bloc/notifications/notifications_state.dart';
+import '../../../domain/models/notification_model.dart';
+import '../../widgets/student_home/student_notifications_sheet.dart';
 
 /// Base URL for the AI Engine.
 /// Change to your machine's LAN IP when testing on a physical device.
@@ -132,6 +137,12 @@ class _StudentScreenState extends State<StudentScreen>
 
     _loadAvatar();
     _loadGrade();
+
+    // Load this student's notifications into the shared NotificationsBloc so
+    // the header bell reflects unread state and the sheet has content.
+    context.read<NotificationsBloc>().add(
+          LoadStudentNotificationsRequested(widget.uid),
+        );
 
     // Sync the installed-app inventory on every login so DataConnect always
     // has an up-to-date list for this account. The repository's diff logic
@@ -706,11 +717,17 @@ class _StudentScreenState extends State<StudentScreen>
   // ── Custom top navigation bar ─────────────────────────────────────────────
 
   Widget _buildTopNav(BuildContext context) {
-    return StudentTopBar(
-      avatarConfig: _avatarConfig,
-      level: _level,
-      coins: _coins,
-      onAvatarTap: () {
+    return BlocBuilder<NotificationsBloc, NotificationsState>(
+      builder: (context, state) {
+        final notifications =
+            state is NotificationsLoaded ? state.notifications : <NotificationModel>[];
+        final hasUnread = notifications.any((n) => !n.isRead);
+        return StudentTopBar(
+          avatarConfig: _avatarConfig,
+          level: _level,
+          coins: _coins,
+          hasNotifications: hasUnread,
+          onAvatarTap: () {
         final shopBloc = context.read<ShopBloc>();
         Navigator.push(
           context,
@@ -754,7 +771,22 @@ class _StudentScreenState extends State<StudentScreen>
           }
         });
       },
-      onNotificationsTap: () {},
+          onNotificationsTap: () => _showNotificationsSheet(context),
+        );
+      },
+    );
+  }
+
+  void _showNotificationsSheet(BuildContext context) {
+    final bloc = context.read<NotificationsBloc>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: bloc,
+        child: StudentNotificationsSheet(studentUid: widget.uid),
+      ),
     );
   }
 }

@@ -1,186 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../bloc/notifications/notifications_bloc.dart';
 import '../../../bloc/notifications/notifications_event.dart';
 import '../../../bloc/notifications/notifications_state.dart';
 import '../../../domain/models/notification_model.dart';
-import '../../screens/parent/parent_account_screen.dart';
-import '../../../../l10n/app_localizations.dart';
 
-class BrandedHeader extends StatefulWidget {
-  final String parentName;
-  final String parentUid;
+/// Student notifications bottom sheet — mirrors the parent's notifications
+/// sheet ([_NotificationsSheet] in `parent_home/branded_header.dart`) but is
+/// re-themed to the student palette: the "Mark All As Read" action uses
+/// Primary Green (`0xFF4CAF50`) instead of the parent's Secondary Blue.
+///
+/// Sources its rows live from [NotificationsBloc] so that marking all as read
+/// re-renders the open sheet immediately.
+class StudentNotificationsSheet extends StatelessWidget {
+  /// The student's uid — passed through [MarkAllNotificationsReadRequested].
+  final String studentUid;
 
-  const BrandedHeader({
-    super.key,
-    required this.parentName,
-    required this.parentUid,
-  });
+  const StudentNotificationsSheet({super.key, required this.studentUid});
 
-  @override
-  State<BrandedHeader> createState() => _BrandedHeaderState();
-}
-
-class _BrandedHeaderState extends State<BrandedHeader> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<NotificationsBloc>().add(LoadNotificationsRequested(widget.parentUid));
-  }
-
-  void _showNotificationsSheet(BuildContext context) {
-    final bloc = context.read<NotificationsBloc>();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => BlocProvider.value(
-        value: bloc,
-        child: _NotificationsSheet(parentUid: widget.parentUid),
-      ),
-    );
-  }
+  // Student palette.
+  static const Color _green = Color(0xFF4CAF50);
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NotificationsBloc, NotificationsState>(
       builder: (context, state) {
-        List<NotificationModel> notifications = [];
-        if (state is NotificationsLoaded) {
-          notifications = state.notifications;
-        }
-        
-        final hasUnread = notifications.any((n) => !n.isRead);
-
-        return Container(
-      width: double.infinity,
-      // Flat rectangle — no border-radius. Shadow cast downward so scrolled
-      // content visibly slides under the sticky header.
-      decoration: const BoxDecoration(
-        color: Color(0xFF2196F3),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x33000000), // soft dark shadow on bottom edge
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.only(
-        top: 20.0,
-        left: 20.0,
-        right: 20.0,
-        bottom: 28.0,
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Left: Circular profile avatar (50x50px)
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const ParentAccountScreen(),
-                  ),
-                );
-              },
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.25),
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: Center(
-                  child: Text(
-                    widget.parentName.isNotEmpty ? widget.parentName[0].toUpperCase() : 'P',
-                    style: GoogleFonts.cairo(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Center: "Study Mentor" — Cairo Bold, white, 24px
-            Text(
-              'Study Mentor',
-              style: GoogleFonts.cairo(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                letterSpacing: 0.3,
-              ),
-            ),
-
-            // Right: Bell icon with red notification dot
-            GestureDetector(
-              onTap: () => _showNotificationsSheet(context),
-              child: SizedBox(
-                width: 50,
-                height: 50,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Center(
-                      child: Icon(
-                        Icons.notifications_outlined,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    if (hasUnread)
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE53935),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF2196F3),
-                              width: 2.0,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-      },
-    );
-  }
-}
-
-// ── Notifications Bottom Sheet ──────────────────────────────────────────────
-
-class _NotificationsSheet extends StatelessWidget {
-  final String parentUid;
-
-  const _NotificationsSheet({
-    required this.parentUid,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<NotificationsBloc, NotificationsState>(
-      builder: (context, state) {
-        final notifications = state is NotificationsLoaded ? state.notifications : <NotificationModel>[];
+        final notifications =
+            state is NotificationsLoaded ? state.notifications : <NotificationModel>[];
         return _buildSheet(context, notifications);
       },
     );
@@ -225,7 +74,9 @@ class _NotificationsSheet extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      context.read<NotificationsBloc>().add(MarkAllNotificationsReadRequested(parentUid));
+                      context
+                          .read<NotificationsBloc>()
+                          .add(MarkAllNotificationsReadRequested(studentUid));
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
@@ -235,7 +86,7 @@ class _NotificationsSheet extends StatelessWidget {
                     child: Text(
                       loc.markAllAsReadButton,
                       style: const TextStyle(
-                        color: Color(0xFF2196F3),
+                        color: _green,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -289,8 +140,8 @@ class _NotificationsSheet extends StatelessWidget {
                 switch (notif.type) {
                   case NotificationType.screenTimeUnlocked:
                     icon = Icons.check_circle_rounded;
-                    iconColor = const Color(0xFF2196F3);
-                    iconBg = const Color(0xFFE3F2FD);
+                    iconColor = const Color(0xFF4CAF50);
+                    iconBg = const Color(0xFFE8F5E9);
                     break;
                   case NotificationType.needsWork:
                     icon = Icons.warning_rounded;
@@ -309,7 +160,7 @@ class _NotificationsSheet extends StatelessWidget {
                     break;
                 }
 
-                // Simple time formatter
+                // Simple relative-time formatter (mirrors the parent sheet).
                 final diff = DateTime.now().difference(notif.createdAt);
                 String timeStr;
                 if (diff.inMinutes < 60) {
