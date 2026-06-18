@@ -225,8 +225,8 @@ class StudentHomeState extends State<StudentHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1 ── Mascot greeting (RankName motivation) ───────────────────
-                MascotHero(firstName: firstName, rankName: rankName),
+                // 1 ── Mascot greeting (level-based motivation) ───────────────
+                MascotHero(firstName: firstName, level: _level),
                 const SizedBox(height: 16),
 
                 // 2 ── Garden (hero growth visual) ─────────────────────────────
