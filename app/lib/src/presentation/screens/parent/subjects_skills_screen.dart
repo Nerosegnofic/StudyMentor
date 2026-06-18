@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/document/document_upload_bloc.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
-import '../../../features/mascot/mascot_cubit.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/subject_summary_model.dart';
 import 'parent_subject_detail_screen.dart';
@@ -28,7 +27,7 @@ class SubjectsSkillsScreen extends StatefulWidget {
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
 
-  static const _kAiEngineBaseUrl = 'http://192.168.1.6:8000';
+  static const _kAiEngineBaseUrl = 'http://192.168.0.219:8000';
 
 
   @override
@@ -42,13 +41,8 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => DocumentUploadBloc(repository: repo)),
-            // Scoped to this upload flow — self-contained, like the quiz
-            // overlay's local MascotCubit.
-            BlocProvider(create: (_) => MascotCubit()),
-          ],
+        builder: (_) => BlocProvider(
+          create: (_) => DocumentUploadBloc(repository: repo),
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FF),
             appBar: AppBar(
@@ -74,17 +68,6 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
       body: BlocListener<SubjectBloc, SubjectState>(
         listener: (context, state) {
           if (state is SubjectRemoved || state is SubjectAdded) {
-            context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
-          }
-          if (state is SubjectsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: const Color(0xFFE53935),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            // Reload to restore UI to actual state
             context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
           }
         },

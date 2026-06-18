@@ -3,11 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/student_model.dart';
 import '../../../domain/models/report_models.dart';
-import '../../../domain/models/avatar_config.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
-import '../../../data/providers/dataconnect_provider.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../widgets/avatar_widget.dart';
 
 class ChildCard extends StatefulWidget {
   final StudentModel student;
@@ -30,13 +27,11 @@ class _ChildCardState extends State<ChildCard> {
   bool _statsLoading = true;
   bool _statsError = false;
   Timer? _refreshTimer;
-  AvatarConfig? _avatarConfig;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
-    _loadAvatar();
     _startPollingIfUnverified();
   }
 
@@ -62,14 +57,6 @@ class _ChildCardState extends State<ChildCard> {
         if (mounted) _loadStats();
       });
     }
-  }
-
-  Future<void> _loadAvatar() async {
-    try {
-      final raw = await DataConnectProvider().getStudentAvatar(widget.student.uid);
-      if (!mounted || raw == null) return;
-      setState(() => _avatarConfig = AvatarConfig.fromMap(raw));
-    } catch (_) {}
   }
 
   Future<void> _loadStats() async {
@@ -140,17 +127,15 @@ class _ChildCardState extends State<ChildCard> {
             // ── Header ─────────────────────────────────────────────────
             Row(
               children: [
-                _avatarConfig != null
-                    ? AvatarWidget(config: _avatarConfig!, size: 44)
-                    : CircleAvatar(
-                        radius: 22,
-                        backgroundColor: const Color(0xFF2196F3),
-                        child: Text(
-                          initial,
-                          style: GoogleFonts.cairo(
-                              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                        ),
-                      ),
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: const Color(0xFF2196F3),
+                  child: Text(
+                    initial,
+                    style: GoogleFonts.cairo(
+                        color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -268,19 +253,17 @@ class _ChildCardState extends State<ChildCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _avatarConfig != null
-                  ? AvatarWidget(config: _avatarConfig!, size: 44)
-                  : CircleAvatar(
-                      radius: 22,
-                      backgroundColor: const Color(0xFF2D3748),
-                      child: Text(
-                        initial,
-                        style: GoogleFonts.cairo(
-                            color: const Color(0xFF4A5568),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18),
-                      ),
-                    ),
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: const Color(0xFF2D3748),
+                child: Text(
+                  initial,
+                  style: GoogleFonts.cairo(
+                      color: const Color(0xFF4A5568),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

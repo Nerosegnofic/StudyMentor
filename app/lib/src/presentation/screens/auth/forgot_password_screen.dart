@@ -43,7 +43,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               subtitle: "We'll email you a reset link",
               keyboardOpen: keyboardOpen,
               onBack: () => Navigator.of(context).maybePop(),
-              logo: Icons.lock_reset_rounded,
+              mascotAsset: 'assets/mascot/sad.png',
             ),
             Expanded(
               child: SingleChildScrollView(
