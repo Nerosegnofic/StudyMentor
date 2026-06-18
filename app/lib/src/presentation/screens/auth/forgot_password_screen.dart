@@ -23,6 +23,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     // Computed above the Scaffold so the keyboard is detected (a Scaffold zeroes
     // viewInsets.bottom for its body subtree).
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: kAuthBackground,
       body: BlocListener<AuthBloc, AuthState>(
@@ -44,7 +45,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               subtitle: "We'll email you a reset link",
               keyboardOpen: keyboardOpen,
               onBack: () => Navigator.of(context).maybePop(),
-              logo: Icons.lock_reset_rounded,
+              mascotAsset: 'assets/mascot/sad.png',
             ),
             Expanded(
               child: SingleChildScrollView(

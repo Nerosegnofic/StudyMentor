@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../features/mascot/mascot_state.dart';
+import '../../features/mascot/mascot_widget.dart';
 import '../../../l10n/app_localizations.dart';
 
 // Design-system tokens (mirrored from student_quiz.dart).
@@ -18,6 +20,8 @@ class RewardToast {
         SnackBar(
           content: Row(
             children: [
+              const MascotWidget(state: MascotState.happy, size: 36),
+              const SizedBox(width: 8),
               const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
               const SizedBox(width: 10),
               Text(

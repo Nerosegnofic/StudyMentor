@@ -32,7 +32,6 @@ import 'src/presentation/screens/auth/login_screen.dart';
 import 'src/presentation/screens/parent/parent_screen.dart';
 import 'src/presentation/screens/auth/parent_register_screen.dart';
 import 'src/presentation/screens/student/student_screen.dart';
-import 'src/presentation/screens/student/student_profile.dart';
 import 'src/services/installed_apps_service.dart';
 import 'src/services/device_admin_service.dart';
 import 'src/services/local_notification_service.dart';
@@ -41,8 +40,8 @@ import 'src/services/streak_reminder_service.dart';
 import 'src/services/student_local_notification_handler.dart';
 import 'src/services/parent_notification_poll_service.dart';
 import 'src/services/parent_inactivity_check_service.dart';
-import 'src/utils/app_info.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'src/features/mascot/mascot_state.dart';
+import 'src/features/mascot/mascot_widget.dart';
 
 // ── WorkManager task identifiers ─────────────────────────────────────────────
 const _kSyncTaskName = 'installedAppSync';
@@ -126,7 +125,7 @@ Future<void> main() async {
 
   await LocalNotificationService.instance.init();
 
-  await Workmanager().initialize(callbackDispatcher);
+  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
 
   await Workmanager().registerPeriodicTask(
     _kSyncTaskName,
@@ -145,11 +144,6 @@ Future<void> main() async {
   );
 
   final initialLocale = await LocaleCubit.readSavedLocale();
-
-  try {
-    final info = await PackageInfo.fromPlatform();
-    kAppVersion = 'v${info.version}';
-  } catch (_) {}
 
   runApp(StudyMentorApp(authRepository: authRepository, initialLocale: initialLocale));
 }
@@ -203,17 +197,11 @@ class StudyMentorApp extends StatelessWidget {
         ],
         child: BlocBuilder<LocaleCubit, Locale>(
           builder: (context, locale) => MaterialApp(
-          navigatorKey: LocalNotificationService.instance.navigatorKey,
           title: 'StudyMentor',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             textTheme: GoogleFonts.cairoTextTheme(),
             primaryTextTheme: GoogleFonts.cairoTextTheme(),
-            scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-            snackBarTheme: SnackBarThemeData(
-              contentTextStyle: GoogleFonts.cairo(),
-              actionTextColor: Colors.white,
-            ),
           ),
           locale: locale,
           localizationsDelegates: const [
@@ -243,16 +231,6 @@ class StudyMentorApp extends StatelessWidget {
               final state = context.read<AuthBloc>().state;
               if (state is AuthAuthenticated) {
                 return StudentScreen(
-                  fullName: state.user.fullName,
-                  uid: state.user.uid,
-                );
-              }
-              return const LoginScreen();
-            },
-            '/student-profile': (context) {
-              final state = context.read<AuthBloc>().state;
-              if (state is AuthAuthenticated) {
-                return StudentProfile(
                   fullName: state.user.fullName,
                   uid: state.user.uid,
                 );
@@ -308,9 +286,7 @@ class RootPage extends StatelessWidget {
             curr is AuthEmailUnverified,
         builder: (context, state) {
           if (state is AuthInitial || state is AuthLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return const _BrandedSplash();
           }
           if (state is AuthUnauthenticated) {
             return const LoginScreen();
@@ -337,10 +313,41 @@ class RootPage extends StatelessWidget {
               );
             }
           }
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const _BrandedSplash();
         },
+      ),
+    );
+  }
+}
+
+/// Branded loading/splash screen shown while auth state resolves — replaces
+/// the generic purple [CircularProgressIndicator] with the Study Mentor
+/// mascot + wordmark, per the design system (Soft Cloud background, Cairo
+/// bold heading, dark ink text).
+class _BrandedSplash extends StatelessWidget {
+  const _BrandedSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA), // Soft Cloud
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const MascotWidget(state: MascotState.idle, size: 140),
+            const SizedBox(height: 16),
+            Text(
+              'StudyMentor',
+              style: GoogleFonts.cairo(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1F2937), // dark ink
+                letterSpacing: -0.4,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

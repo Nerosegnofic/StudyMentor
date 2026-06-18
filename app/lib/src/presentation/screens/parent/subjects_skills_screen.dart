@@ -29,6 +29,7 @@ class SubjectsSkillsScreen extends StatefulWidget {
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
 
+
   /// Child-scoped ingestion-status poll. The parent uploads on the child's behalf, so
   /// this passes the child's uid to see THAT child's subjects (the endpoint falls back
   /// to the JWT uid only when omitted). Drives the transient "Preparing…" banner.
@@ -81,16 +82,8 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
           if (state is SubjectRemoved || state is SubjectAdded) {
             context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
           }
-          if (state is SubjectsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: const Color(0xFFE53935),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            // Reload to restore UI to actual state
-            context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
+          if (state is SubjectAdded) {
+            _statusCubit.start();
           }
         },
         child: BlocBuilder<SubjectBloc, SubjectState>(

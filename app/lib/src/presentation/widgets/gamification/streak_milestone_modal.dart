@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../features/mascot/mascot_state.dart';
+import '../../../features/mascot/mascot_widget.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
@@ -107,6 +109,10 @@ class _StreakMilestoneModalState extends State<StreakMilestoneModal>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ── Mascot — static, hardcoded celebration state ─────────
+            const MascotWidget(state: MascotState.celebration, size: 160),
+            const SizedBox(height: 12),
+
             // ── Animated flame icon ──────────────────────────────────
             ScaleTransition(
               scale: _scale,

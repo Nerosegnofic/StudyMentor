@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Hero greeting card: a speech bubble (with the student's RankName-based
@@ -93,32 +92,14 @@ class MascotHero extends StatelessWidget {
   }
 
   Widget _mascotSlot() {
-    // MASCOT_SLOT: the mascot is an SVG (same pipeline as the garden plants).
-    // When the asset is ready, supply `mascotAsset` and declare its folder
-    // (e.g. `assets/mascot/`) in pubspec.yaml — no layout changes needed here.
-    if (mascotAsset != null) {
-      return SizedBox(
-        width: 120,
-        height: 120,
-        child: SvgPicture.asset(
-          mascotAsset!,
-          fit: BoxFit.contain,
-          alignment: Alignment.bottomCenter,
-        ),
-      );
-    }
-    return Container(
+    final asset = mascotAsset ?? 'assets/mascot/idle.png';
+    return SizedBox(
       width: 120,
       height: 120,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: Color(0xFFE8F5E9),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        Icons.emoji_nature_rounded,
-        size: 60,
-        color: const Color(0xFF4CAF50).withValues(alpha: 0.55),
+      child: Image.asset(
+        asset,
+        fit: BoxFit.contain,
+        alignment: Alignment.bottomCenter,
       ),
     );
   }

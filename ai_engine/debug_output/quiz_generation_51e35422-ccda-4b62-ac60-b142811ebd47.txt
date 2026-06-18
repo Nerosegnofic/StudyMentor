@@ -1,0 +1,516 @@
+==================================================
+QUIZ GENERATION DEBUG REPORT
+==================================================
+
+1. SKILLS PICKED FOR QUIZ
+--------------------------------------------------
+  1. Identifying vocabulary related to desert animals and their ecological roles
+  2. Using adverbs of frequency to describe how often actions occur
+  3. Identifying vocabulary and moral lessons in a short story
+  4. Recognizing and pronouncing consonant clusters
+  5. Identifying vocabulary related to life in the Nile River
+  6. Answering comprehension questions about Nile River ecosystems
+  7. Identifying the structural elements of a fictional plot
+
+2. PAYLOAD DETAILS & MASTERY LEVELS
+--------------------------------------------------
+  • Skill: Identifying vocabulary related to desert animals and their ecological roles
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 2
+    - Current Mastery Level: 0.1985464152548762
+
+  • Skill: Using adverbs of frequency to describe how often actions occur
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 2
+    - Current Mastery Level: 0.23004112930652248
+
+  • Skill: Identifying vocabulary and moral lessons in a short story
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.0774388373197181
+
+  • Skill: Recognizing and pronouncing consonant clusters
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.05114119306418859
+
+  • Skill: Identifying vocabulary related to life in the Nile River
+    - Zone: review
+    - Requested Difficulty: 4
+    - Question Count: 1
+    - Current Mastery Level: 0.7050902145241804
+
+  • Skill: Answering comprehension questions about Nile River ecosystems
+    - Zone: review
+    - Requested Difficulty: 4
+    - Question Count: 1
+    - Current Mastery Level: 0.7487809357576719
+
+  • Skill: Identifying the structural elements of a fictional plot
+    - Zone: preview
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.01
+
+3. FETCHED CHUNKS (RAG Context)
+--------------------------------------------------
+[Unit 3 > Lesson 5: Think and Create]
+## Now I can ...  
+**Identify vocabulary about life in the Nile River.**  
+Water hyacinth Crocodile and rabbit Crocodile Dragonflies Nile River  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Identify vocabulary about health.**  
+fit – mental health – stressed – lungs – muscles  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Identify vocabulary about extreme weather.**  
+Drought Wildfire Heatwave Lightning Sandstorm Flood  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Say these sounds:**  
+pl plant tr truck – tree dr drink bl black cr crops  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Say one-syllable words.**  
+arm – jump – meet – bread – leaf – feed – pot – flag  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+**Say these sounds:**  
+leaped flood boat  
+<page_number>60</page_number>
+
+---
+
+| \*\*5. Our World, Our Resources\*\* | sunlight, water, soil, fossil fuel, minerals, wind, natural resources, cotton, electricity, fertile, cargo, digger, give up, cheerfully, path, thick, load | Formation and usage of comparative adjectives.                                                                                              | \*\*Reading:\*\*<br/>• Informational texts about Egypt's natural resources and their uses.<br/>\*\*Writing:\*\*<br/>• Object-perspective narratives<br/>\*\*Listening:\*\*<br/>• Stories and factual texts about the environment and resource use.<br/>• Prefixes<br/>\*\*Speaking:\*\*<br/>• Talk about resource use and conservation.<br/>• Express comparisons using comparative adjectives.        | • Environmental responsibility<br/>• Analytical thinking<br/>• Decision making | • Responsible management of resources<br/>• Appreciation of resources | A poster about resources       |
+| \*\*6. The Talking Earth\*\*        | canoe, Earth, Everglades, swamp, Naitonal Park, alligator, owl, shell, scientist, splash                                                                   | Use of expressive sentence structures and tense reflection (present vs. past) to articulate personal insights and narrative interpretation. | \*\*Reading:\*\*<br/>• Literary narrative exploring nature and environmental identity.<br/>\*\*Writing:\*\*<br/>• Creative reflections on personal and environmental themes.<br/>\*\*Listening:\*\*<br/>• Narrative listening for details and thematic understanding.<br/>\*\*Speaking:\*\*<br/>• Express emotions and personal reflections.<br/>• Discuss themes of nature, identity, and connection. | Reflection<br/>Emotional expression<br/>Creative thinking                      | Identity<br/>Connection with nature                                   | —                              |  
+<page_number>5</page_number>
+
+---
+
+[Unit 3 > Lesson 1]
+**3.** Why can’t farmers grow food in the US?
+........................................................................................................................................................................................................ ......................................
+**4.** What can Mazen and Dina do to help the planet?
+........................................................................................................................................................................................................ ......................................  
+**Think** **How do weather changes affect people, animals, and places we know?**  
+<page_number>43</page_number>  
+<page_number>44</page_number>
+**Unit 3**  
+**6** **Complete the word that describes the picture.**  
+A sandstorm in a desert landscape
+A flooded road during a storm
+A dry, cracked landscape with a small plant  
+1. s.................................... 2. f.................................... 3. d....................................  
+**7** **Read and circle the correct word.**  
+1. A lot of trees burned down in a **wildfire/drought.**
+2. During a **heat wave/flood,** the weather is very hot.
+3. A **thunderstorm/drought** can prevent farmers from growing food.  
+**8** **Complete the sentences using the words in the box.**  
+**damaged – spread – planet – news – stuck**  
+1. I was .................................... in my car during the flood. I couldn’t move.
+2. The wildfire .................................... quickly in the forest.
+3. I heard on the .................................... that there was a bad storm in the village.
+4. Medhat’s house was .................................... after the storm hit it.
+5. To save our ...................................., we must keep it clean.  
+**9** **Work with your partner. Read the example and describe the pictures.**  
+A girl speaking
+> **In Picture (1), there is a**
+> **heat wave. The man is**
+> **feeling very hot.**
+
+---
+
+[Unit 1 > Lesson 1: icon]
+# 7 Read and write T (True) or F (False).  
+1. Crocodiles are hunted by many animals. ( )
+2. The Nile River is not important for both animals and people. ( )
+3. Small fish in the Nile River eat water weeds. ( )
+4. Crocodiles are the kings of the Nile River. ( )
+5. Big fish in the Nile River eat big animals. ( )  
+True/False checkmark and cross
+
+# 8 Discuss with your classmates.  
+1. If you were a small fish, what would be the hardest thing of living in the Nile?
+2. Name things that live in the Nile.
+3. What can you do to help keep the Nile clean and safe?  
+Students discussing  
+**Think** What would happen if people harmed the Nile River? How would that affect animals and humans?  
+<page_number>10</page_number>
+
+---
+
+<page_number>3</page_number>  
+<page_number>4</page_number>  
+| Unit                           | Vocabulary                                                                                                          | Language in Use                                                                                              | Skills                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Life Skill(s)                                               | Core Value(s)                                   | Integrated Learning Activities |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------- | ------------------------------ |
+
+---
+
+| \*\*1. Food, Nature, and Culture\*\* | crocodile, hunt, water weeds, insects, trunk, crown, care for, selfish, shade, branch, recipe, flyer | Adverbs of frequency                                    | \*\*Reading:\*\*<br/>• Texts about Nile River life, Egyptian food, and desert animals.<br/>\*\*Writing:\*\*<br/>• Paragraph using sequence words.<br/>• Descriptive sentences about foods and animals.<br/>\*\*Listening:\*\*<br/>• Dialogs and stories about river life and food culture.<br/>• Consonant cluster<br/>\*\*Speaking:\*\*<br/>• Describe food and animals.<br/>• Practice expressing likes and dislikes using adverbs of frequency.   | Following instructions<br/>Describing details<br/>Expressing ideas clearly | Appreciation of culture<br/>Respect for nature | A restaurant flyer             |
+| \*\*2. My Healthy Body\*\*           | fit, mental health, stressed, lungs, muscels, organ, blood, vessels, fist, oxygen, nutrients         | Indefinite Articles (a, an)<br/>Quantifiers (some, any) | \*\*Reading:\*\*<br/>• Informational texts about the body, healthy habits, and the heart and blood system.<br/>\*\*Writing:\*\*<br/>• Reflections on personal health.<br/>• Non-fiction texts<br/>\*\*Listening:\*\*<br/>• Dialogs and texts about health routines and medical professionals.<br/>• One syllable words<br/>\*\*Speaking:\*\*<br/>• Talk about daily routines and healthy habits.<br/>• Express personal health goals and challenges. | Healthy lifestyle choices<br/>Self-awareness                               | Responsibility<br/>Respect for self and others | A poster about healthy habits  |  
+<page_number>3</page_number>  
+<page_number>4</page_number>
+
+---
+
+[Unit 2 > Lesson 5: Think and Create]
+3. I bought ............................ green notebook.  
+4. They played with ............................ orange ball.  
+**3** **Write three habits that keep your heart healthy and strong.**  
+1. .................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................  
+<page_number>40</page_number>
+
+---
+
+[Unit 2 > Lesson 4: Writing]
+## Healthcare Heroes  
+**Healthcare workers**—like doctors, nurses, pharmacists, and paramedics
+are real-life heroes who spend their lives helping others. They work day and
+night to keep people healthy and treat
+illnesses. **Doctors** use their knowledge
+and skills to check patients, **diagnose**
+diseases, and provide treatments.
+Nurses often work around the clock to
+give support and care for patients.  
+**Pharmacists** play a very important role, too. They make sure patients
+receive the correct medicine and give advice on how to use it safely.
+**Paramedics** respond quickly in emergencies. They give help on the spot
+and take patients safely to hospitals.  
+Healthcare workers also help us live healthier lives as they encourage us to
+eat healthy meals, stay active, play sports, and stop harmful habits.
+These heroes work long hours with kindness. We should thank them by
+caring for our health and showing them respect. Healthcare workers are
+really our everyday heroes!  
+A group of healthcare workers including doctors and nurses standing together  
+**Think**
+**How do different healthcare heroes work together to protect us?**  
+<page_number>34</page_number>  
+Lesson 4  
+**3 Choose the correct answer from a, b, c or d.**  
+1. To work **around the clock** means ……………………….....………… .
+**a.** to work in a room with a clock
+**b.** to work for long hours without much rest
+**c.** to work while watching a clock
+**d.** all workers must wear a watch  
+2. To give help **on the spot** means ……………………….....………… .
+**a.** to help immediately
+**b.** to help after a long time
+**c.** to help only if asked
+**d.** to help with advice on medicine  
+3. To **diagnose** means ……………………….....………… .
+**a.** to treat patients
+**b.** to identify the cause of a problem or illness
+**c.** to identify the emergency
+**d.** to transport patients  
+**4 Think and answer. How do you take care of your family when they are sick?**  
+1. Who are the healthcare workers mentioned
+as everyday heroes?
+
+---
+
+[Unit 1 > Lesson 3: Story Time]
+A split image showing a healthy, fruit-bearing apple tree on the left and a withered, leafless tree on the right.  
+Tom traveled to another place. Years passed and Tom came back home.  
+The tree looked sad. Its leaves **bent**, and its **branches** were weak. When Tom saw the tree, he realized that he had been **selfish**.  
+Tom started to **care for** the tree, watering it, and protecting it from the sun. Slowly, the tree began to become better.  
+Tom learned that taking care of something meant giving back, and he and the tree became the best of friends.  
+**Think** **How can we care for those who help us?**  
+<page_number>14</page_number>
+
+---
+
+[Unit 1 > Lesson 5]
+## Say these sounds:  
+* **pl** plant
+* **tr** truck - tree
+* **dr** drink
+* **bl** black
+* **cr** crops  
+* [ ] **I got it**
+* [ ] **I’m not sure**
+* [ ] **I need help**  
+**Use adverbs of frequency to talk about how often something happens.**  
+- **Examples:**
+* Snakes **never** eat plants.
+* Lizards are **sometimes** dangerous.  
+* [ ] **I got it**
+* [ ] **I’m not sure**
+* [ ] **I need help**  
+<page_number>24</page_number>
+
+---
+
+# TERM 1 SCOPE AND SEQUENCE  
+| Unit                                 | Vocabulary                                                                                           | Language in Use                                         | Skills                                                                                                                                                                                                                                                                                                                                                                                                                                               | Life Skill(s)                                                              | Core Value(s)                                  | Integrated Learning Activities |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------ |
+
+---
+
+[Unit 2 > Lesson 4: Writing]
+# Tip!  
+**When you write a non-fiction text, ask yourself:**
+**Is the information true?**
+**Did I make anything up?**
+**Is my source reliable?**  
+**Non-Fiction writing should include:**  
+*   An introductory sentence, like *"My neighbor, Selim, is a doctor at our local hospital."*
+*   Details that are all true, like *"He wears a white coat and carries a stethoscope around his neck."*
+*   Adjectives, like *"white"*, *"big"*, *"kind"*.
+*   A closing sentence, like *"The work is tiring, but he’s proud to be a doctor."*  
+**5 Choose a healthcare person and write about him/her.**  
+1. Where do they work?
+2. How do they help us?
+3. Is their work hard? Why?
+4. How can we thank them?  
+**6 Write your text on the following page. Then, exchange it with a classmate and ask for their feedback. Did they like it?**  
+1 star = poor
+2 stars = fair
+3 stars = good
+4 stars = very good
+5 stars = excellent  
+✰✰✰✰✰  
+<page_number>36</page_number>  
+NO_CONTENT_HERE
+
+---
+
+[Unit 1 > Lesson 3]
+# Lesson 3  
+**5** **Read and write T (True) or F (False).**  
+1. **The apple tree gave the boy everything. ( )**  
+2. **The boy gave the tree water and food everyday. ( )**  
+3. **When Tom came back, the tree was strong and healthy. ( )**  
+**6** **Work in pairs. Read the story again and check (✔) the correct answer.**  
+**What is the moral of the story?**  
+**a.** We should appreciate those who care for us. [ ]  
+**b.** We should ignore people who help us. [ ]  
+**7** **Complete the summary using the words in the box.**  
+**selfish - strong - apples - weak**  
+Tom had a healthy apple tree. The tree gave Tom **(1)**.................................. and Tom played on it. Tom traveled away and when he came back, the tree was **(2)**.................................. . Tom knew that he was **(3)**................................... So he decided to take care of the tree. The tree grew **(4)**.................................. again.  
+**8** **Read and think.**  
+```mermaid
+graph TD
+A["**Problem****The boy took more from the****tree than he gave.**"] --> B["**Solution****He helped the tree grow****again.**"]
+B --> C["**Result****The tree became healthy. The****boy learned to care for it like it****cared for him.**"]
+```  
+<page_number>15</page_number>
+
+---
+
+[Unit 2 > Lesson 3]
+3. **fish** mother elephant lesson
+4. **jump** eraser happy jacket
+5. hungry **hat** yellow sofa  
+**3 Listen and put the sounds in order. Then, write the word.**  
+leaf
+f – l – ea
+leaf  
+feeding
+d – ee – f
+feeding  
+pot
+t – o – p
+pot  
+flag
+f – l – g – a
+flag  
+<page_number>33</page_number>  
+<page_number>34</page_number>
+
+# Lesson 4 Writing  
+## Life Savers in Action  
+**1 Think and answer.**  
+**Who are the people in our community that help us take**
+**care of our health? How do they help us?**  
+**2 Read and review your answers.**
+
+---
+
+[Unit 3 > Lesson 5: Think and Create]
+# Self - Assessment  
+## Now I can...  
+**Identify vocabulary about extreme weather.**  
+Lightning storm Dust storm Flooded street
+Dry cracked earth Forest fire Hot sun  
+* I got it [ ]
+* I’m not sure [ ]
+* I need help [ ]  
+**Say these sounds.**  
+A **vowel digraph** is when two vowels appear together and make just one sound.  
+**leaped** **flood** **boat**  
+* I got it [ ]
+* I’m not sure [ ]
+* I need help [ ]  
+**Talk about how to write fiction.**  
+**Fiction story** is making up a story that is **not real**.  
+* I got it [ ]
+* I’m not sure [ ]
+* I need help [ ]  
+<page_number>56</page_number>  
+<page_number>Review 1</page_number>
+
+---
+
+[Unit 1 > Let's Make a Flyer!]
+# Let's Make a Flyer!  
+**2** When you make a flyer, make sure to …
+
+## Tip!  
+**Remember...**  
+① A **main heading** is the big title.  
+② A **sub-heading** is the smaller title.  
+③ An **image** is a photo or drawing.  
+④ A **menu** attracts customers.  
+⑤ A **call to action** is an invitation.  
+**3** Make your flyer on the next page and then ask a classmate for their feedback. *Did they like it?*  
+| 1 star  | poor      |
+| ------- | --------- |
+| 2 stars | fair      |
+| 3 stars | good      |
+| 4 stars | very good |
+| 5 stars | excellent |  
+<page_number>21</page_number>  
+Unit 1
+
+---
+
+[Unit 1 > Lesson 3]
+# Pronunciation  
+**1 Read and learn.**  
+A **consonant cluster** is a sequence of two or more consonant sounds without vowels, such as **str-** in **str**ong or **bl-** in **bl**ack. They can appear at the beginning, middle, or end of words.  
+**Examples:** tree, branches, crocodiles, spring  
+**2 Listen, look, and circle the correct word.**  
+1. Plant, 2. Truck, 3. Drink, 4. Ink, 5. Tree, 6. Crops  
+**3 Choose a cluster from the box below and fill in the blanks.**  
+**bl - cr - pl - tr - dr**  
+__ink   __ack   __uck   __ant   __ops  
+**4 Read the text and circle the consonant clusters.**  
+Ahmed climbed the trunk and rested near the branches. He saw a small crocodile beside the stream, and big fish swam past swiftly. Laila smiled and drank from the spring, then watched birds perch near the bank.  
+<page_number>16</page_number>
+
+---
+
+[Unit 2 > Lesson 5: Think and Create]
+# Self - Assessment  
+## Now I can ...  
+A boy holding his head and a girl with a lungs diagram on her shirt  
+**Identify words about health.**  
+fit – mental health – stressed – lungs – muscles  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+A boy clapping his hands  
+**Say one-syllable words.**  
+BA-NA-NA  
+arm – jump – meet – bread – leaf – feed – pot – flag  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+An egg on a plate of rice  
+**Use a-an/some-any.**  
+- **Examples:**
+- She eats an egg in the morning.
+- Do you have any water?  
+* [ ] I got it
+* [ ] I’m not sure
+* [ ] I need help  
+<page_number>40</page_number>
+
+---
+
+[Unit 2 > Lesson 2: My Habits: Then and Now]
+4. What do you think about Adam's new health habits?  
+Question mark in a speech bubble  
+**6 Think and discuss.**  
+Illustration of a teacher  
+**Work with your classmate.**
+**Do you think it’s easy to change**
+**your habits? Why or why not?**  
+Students working together in a classroom  
+<page_number>29</page_number>  
+Lesson  
+Unit 2
+a
+
+# Language in use  
+## Using a/an/some/any  
+We use **(a)** before *singular countable nouns* starting with a consonant sound.
+**Example:** I eat a **b**anana every day.  
+We use **(an)** before *singular countable nouns* starting with a **vowel** sound.
+**Example:** She eats **an** **e**gg in the morning.  
+We use **(some)** with *plural countable nouns* or *uncountable nouns* in affirmative sentences.
+**Examples:** I have **some** apples. She drank **some** water.  
+We use **(any)** with *plural countable nouns* or *uncountable nouns* in negative sentences and questions.
+**Examples:** There aren't **any** apples left. Do you have **any** water?
+
+---
+
+[Unit 3 > Lesson 3]
+Hand holding signs with a green checkmark and a red cross  
+**6** 📖 **Complete the summary with the words in the box.**  
+**deep - well - home**  
+Once, there were two frogs who couldn’t live in a pond any longer. So, they decided to look for a new (1)      . After a long time, they saw a (2)      well. One of the frogs said, “This (3)      looks like a great place for us to live! But the other frog thought it wasn’t safe. So, they searched for a better home.  
+**7** 📖 **Read, think, and answer.**  
+1. Where was the pond?
+2. Where did the two frogs go to find a new home?
+3. Why did the two frogs decide not to live in the well?  
+Question mark in a speech bubble  
+**8 Discuss in groups.**  
+Illustration of a boy  
+If you were one of the two frogs, what would you do?
+Share a time when you thought carefully before making a decision.  
+<page_number>50</page_number>  
+Lesson 3  
+**Pronunciation**  
+**1** **Read and learn.**  
+A **vowel digraph** is when two vowels appear together and make just
+one sound.  
+**Examples:**
+**leap:** in "leap," the 'ea' makes the long 'e' sound.
+**flood:** In "flood," the 'oo' makes a short 'u' sound.
+**boat:** In "boat," the 'oa' makes a long 'o' sound.  
+**2** **Listen and circle the words with vowel digraphs.**  
+read   cup   thumb   book   hot   goat  
+feet         well   hear   foot   frog  
+**3** **Circle the vowel diagraph in the following sentences.**  
+**1.** I like to eat green peas.  
+**2.** We read two books last week.  
+**3.** The gazelle leaped over the small stream.  
+**4.** The heavy flood covered the roads.  
+**4** **Fill in the blanks.**  
+**meet - boat - weak - floods**  
+**1.** The      sailed across the lake.  
+**2.** It's nice to      my teacher at the break.  
+**3.** The      made the plants     .  
+<page_number>51</page_number>  
+Unit 3
+
+⚠️ PREVIOUSLY ASKED QUESTIONS (DO NOT REPEAT):
+  - "Identify the error in this sentence about Nile River life: 'The crocodiles is the kings of the Nile River.'..."
+  - "Which of the following is the correct spelling of the adverb of frequency that means 100% of the time?..."
+  - "Which of the following is the correct spelling of the insect found near the Nile River?..."
+  - "Which of the following is the correct spelling of the word for when a river overflows with too much water?..."
+  - "Which of the following is the correct spelling of the past simple form of the verb 'leap'?..."
+  - "Which of the following is the correct spelling of the word that describes someone who does not share and only thinks of themselves?..."
+  - "Which of the following is the correct spelling of the extreme weather event where there is no rain for a long time and the ground becomes dry?..."
+  - "What is the term for a group of two or more consonant sounds that come together without any vowels between them, such as 'tr-' in 'tree'?..."
+  - "Which of the following is the correct spelling of the word that starts with the consonant cluster 'dr' and means to take liquid into the mouth?..."
+  - "What does the word 'crocodile' mean?..."
+  - "Which of the following is the correct spelling of the river that is important for animals and people in Egypt?..."
+  - "According to the lesson, what does the phrase 'kings of the Nile River' mean when describing crocodiles?..."
+  - "What does the word 'energy' mean in the context of desert animals?..."
+  - "Complete the sentence: Small fish in the Nile River ________ water weeds to survive...."
+  - "What grammar term describes the word 'selfish' from the story of Tom and the tree?..."
+
+Generate COMPLETELY DIFFERENT questions with different numbers, names, and scenarios.
+

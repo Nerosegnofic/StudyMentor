@@ -15,7 +15,10 @@
       "Bash(firebase dataconnect:sql:migrate --help)",
       "Bash(cat dataconnect/dataconnect.yaml)",
       "Bash(cat ../dataconnect/dataconnect.yaml)",
-      "Bash(grep -l \"total_xp\\\\|mastery\" /d/GP/Graduation_Project/StudyMentor/app/lib/dataconnect_generated/*.dart)"
+      "Bash(grep -l \"total_xp\\\\|mastery\" /d/GP/Graduation_Project/StudyMentor/app/lib/dataconnect_generated/*.dart)",
+      "Bash(xargs grep -l \"notification.*icon\\\\|Notifications.*icon\\\\|badge\")",
+      "Read(//d/d/GP/Graduation_Project/StudyMentor/**)",
+      "Read(//d/d/GP/Graduation_Project/StudyMentor/ai_engine/app/core/**)"
     ]
   }
 }

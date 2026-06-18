@@ -61,9 +61,13 @@ class SubjectStatusCubit extends Cubit<SubjectStatusState> {
     }
     if (isClosed) return;
 
-    emit(SubjectStatusState(
+    final newState = SubjectStatusState(
       bySubjectId: {for (final s in statuses) s.subjectId: s},
-    ));
+    );
+    emit(newState);
+
+    // Nothing is ingesting — no point continuing to poll.
+    if (!newState.hasProcessing) stop();
   }
 
   @override

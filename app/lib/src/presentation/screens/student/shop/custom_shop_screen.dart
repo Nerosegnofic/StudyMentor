@@ -10,7 +10,6 @@ import '../../../../domain/models/avatar_item.dart';
 import '../../../../../core/avatar/fluttermojiController.dart';
 import '../../../widgets/avatar_widget.dart';
 import '../../../../../l10n/app_localizations.dart';
-import '../../../utils/error_localizer.dart';
 
 // ---------------------------------------------------------------------------
 // Study Mentor design-system tokens (Student app)

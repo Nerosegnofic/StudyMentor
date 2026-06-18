@@ -56,6 +56,9 @@ class DataConnectProvider {
     }
   }
 
+  // Username uniqueness check removed — schema no longer stores usernames.
+  Future<void> checkUsernameAvailable(String username) async {}
+
   Future<void> createStudentProfile({
     required String parentUid,
     required int gradeLevel,
@@ -296,6 +299,36 @@ class DataConnectProvider {
         .execute();
   }
 
+  // ── Student Settings ──────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>?> getStudentSettings(String studentUid) async {
+    final result = await _connector
+        .getStudentSettings(studentUid: studentUid)
+        .execute();
+    final s = result.data.studentSettings;
+    if (s == null) return null;
+    return {
+      'notifications_enabled': s.notificationsEnabled,
+      'sound_effects_enabled': s.soundEffectsEnabled,
+      'background_music_enabled': s.backgroundMusicEnabled,
+    };
+  }
+
+  Future<void> upsertStudentSettings({
+    required String studentUid,
+    required bool notificationsEnabled,
+    required bool soundEffectsEnabled,
+    required bool backgroundMusicEnabled,
+  }) async {
+    await _connector
+        .upsertStudentSettings(
+          studentUid: studentUid,
+          notificationsEnabled: notificationsEnabled,
+          soundEffectsEnabled: soundEffectsEnabled,
+          backgroundMusicEnabled: backgroundMusicEnabled,
+        )
+        .execute();
+  }
 
   // ── Avatar Shop ───────────────────────────────────────────────────────────
 
@@ -402,6 +435,17 @@ class DataConnectProvider {
 
   Future<void> deleteParentRecord() async {
     await _connector.deleteParentRecord().execute();
+  }
+
+  // ── Support Tickets ───────────────────────────────────────────────────────
+
+  Future<void> insertSupportTicket({
+    required String userId,
+    required String userName,
+    required String issueType,
+    required String message,
+  }) async {
+    // insertSupportTicket was removed from the schema — no-op for now.
   }
 
   // ── Local Notification System ─────────────────────────────────────────────
@@ -532,7 +576,9 @@ class DataConnectProvider {
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      print('Failed to get real skills for subject from AI engine: $e');
+    }
 
     return skills;
   }
@@ -545,7 +591,9 @@ class DataConnectProvider {
     List<Map<String, dynamic>> analyticsList = [];
     try {
       analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
-    } catch (_) {}
+    } catch (e) {
+      print('Failed to fetch subjects analytics from AI engine: $e');
+    }
 
     return analyticsList.map((a) {
       final name = (a['name'] as String).toLowerCase().trim();
@@ -602,7 +650,9 @@ class DataConnectProvider {
   }) async {
     try {
       await AiEngineRepository.instance.ensureSubjects(subjectKeys, studentUid);
-    } catch (_) {}
+    } catch (e) {
+      print('Failed to sync subjects to AI engine: $e');
+    }
   }
 
   Future<void> removeSubject({
@@ -650,7 +700,7 @@ class DataConnectProvider {
 
   Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
     final def = SubjectMetadataRegistry.getDefinition(subjectKey);
-    final colorHex = '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+    final colorHex = '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
 
     int skillsCount = 0;
     int masteryPercent = 0;
@@ -707,7 +757,9 @@ class DataConnectProvider {
           totalTimeSpent = Duration(seconds: totalDurationSeconds);
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      print('Failed to get real subject overview from AI engine: $e');
+    }
 
     return SubjectSummaryModel(
       subjectKey: subjectKey,
@@ -798,7 +850,8 @@ class DataConnectProvider {
           correctAnswerNumbers: correctAnswerNumbers,
         );
       }).toList();
-    } catch (_) {
+    } catch (e) {
+      print('Failed to load quiz history from AI engine: $e');
       return [];
     }
   }
@@ -821,6 +874,7 @@ class DataConnectProvider {
         );
       }).toList();
     } catch (e) {
+      print('Failed to load session questions: $e');
       rethrow;
     }
   }

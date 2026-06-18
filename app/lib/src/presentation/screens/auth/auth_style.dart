@@ -23,6 +23,10 @@ class AuthHeader extends StatelessWidget {
   final VoidCallback? onBack;
   final IconData logo;
 
+  /// Mascot image asset path shown in the logo circle. Defaults to idle.
+  /// Pass a different path (e.g. sad) for screens like forgot password.
+  final String mascotAsset;
+
   /// Whether the keyboard is open (header collapses). Callers must compute this
   /// from a context ABOVE the Scaffold — a Scaffold zeroes `viewInsets.bottom`
   /// for its body subtree, so reading it inside `AuthHeader` would never detect
@@ -34,6 +38,7 @@ class AuthHeader extends StatelessWidget {
     this.subtitle,
     this.onBack,
     this.logo = Icons.school_rounded,
+    this.mascotAsset = 'assets/mascot/idle.png',
     this.keyboardOpen,
   });
 
@@ -88,25 +93,11 @@ class AuthHeader extends StatelessWidget {
                         Alignment.centerLeft,
                         t,
                       )!,
-                      child: Container(
-                        width: logoSize,
-                        height: logoSize,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          logo,
-                          color: kAuthGreen,
-                          size: _lerp(38, 22, t),
-                        ),
+                      child: Image.asset(
+                        mascotAsset,
+                        width: logoSize * 1.3,
+                        height: logoSize * 1.3,
+                        fit: BoxFit.contain,
                       ),
                     ),
                     // Wordmark — stays horizontally centered; moves up to the
