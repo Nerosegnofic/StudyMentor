@@ -3337,6 +3337,54 @@ abstract class AppLocalizations {
   /// **'Upload failed. Please try again.'**
   String get errUploadFailed;
 
+  /// No description provided for @errSubjectStillProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'A document for this subject is still being prepared. Please wait until it finishes before uploading another.'**
+  String get errSubjectStillProcessing;
+
+  /// No description provided for @subjectPreparingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing your subject…'**
+  String get subjectPreparingLabel;
+
+  /// No description provided for @subjectStageParsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your document…'**
+  String get subjectStageParsing;
+
+  /// No description provided for @subjectStageAnalyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding topics…'**
+  String get subjectStageAnalyzing;
+
+  /// No description provided for @subjectStageBuildingSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Building your skill tree…'**
+  String get subjectStageBuildingSkills;
+
+  /// No description provided for @subjectPreparingPracticeDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing…'**
+  String get subjectPreparingPracticeDisabled;
+
+  /// No description provided for @subjectIngestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t process this document. Please try uploading it again.'**
+  String get subjectIngestFailed;
+
+  /// No description provided for @quizSubjectStillPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'This subject is still being prepared. Please try again in a moment.'**
+  String get quizSubjectStillPreparing;
+
   /// No description provided for @errDeleteAccountFailed.
   ///
   /// In en, this message translates to:

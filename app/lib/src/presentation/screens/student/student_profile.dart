@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
@@ -78,7 +79,11 @@ class _StudentProfileState extends State<StudentProfile> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    // Light (white) status-bar icons so they read over the green header that
+    // now extends up under the notification bar.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 32),
       child: Column(
         children: [
@@ -98,6 +103,7 @@ class _StudentProfileState extends State<StudentProfile> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -107,14 +113,18 @@ class _StudentProfileState extends State<StudentProfile> {
     final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 28, bottom: 32),
+      // Extend the green up under the status/notification bar (matches the
+      // home StudentTopBar). MediaQuery.padding.top is the status-bar inset.
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 28,
+        bottom: 32,
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [Color(0xFF43A047), _kGreen],
         ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: Stack(
         children: [

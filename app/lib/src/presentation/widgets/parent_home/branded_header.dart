@@ -30,14 +30,15 @@ class _BrandedHeaderState extends State<BrandedHeader> {
     context.read<NotificationsBloc>().add(LoadNotificationsRequested(widget.parentUid));
   }
 
-  void _showNotificationsSheet(BuildContext context, List<NotificationModel> notifications) {
+  void _showNotificationsSheet(BuildContext context) {
+    final bloc = context.read<NotificationsBloc>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _NotificationsSheet(
-        notifications: notifications,
-        parentUid: widget.parentUid,
+      builder: (ctx) => BlocProvider.value(
+        value: bloc,
+        child: _NotificationsSheet(parentUid: widget.parentUid),
       ),
     );
   }
@@ -122,7 +123,7 @@ class _BrandedHeaderState extends State<BrandedHeader> {
 
             // Right: Bell icon with red notification dot
             GestureDetector(
-              onTap: () => _showNotificationsSheet(context, notifications),
+              onTap: () => _showNotificationsSheet(context),
               child: SizedBox(
                 width: 50,
                 height: 50,
@@ -169,16 +170,23 @@ class _BrandedHeaderState extends State<BrandedHeader> {
 // ── Notifications Bottom Sheet ──────────────────────────────────────────────
 
 class _NotificationsSheet extends StatelessWidget {
-  final List<NotificationModel> notifications;
   final String parentUid;
 
   const _NotificationsSheet({
-    required this.notifications,
     required this.parentUid,
   });
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<NotificationsBloc, NotificationsState>(
+      builder: (context, state) {
+        final notifications = state is NotificationsLoaded ? state.notifications : <NotificationModel>[];
+        return _buildSheet(context, notifications);
+      },
+    );
+  }
+
+  Widget _buildSheet(BuildContext context, List<NotificationModel> notifications) {
     final loc = AppLocalizations.of(context);
     return Container(
       decoration: const BoxDecoration(

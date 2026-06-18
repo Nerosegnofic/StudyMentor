@@ -1,0 +1,199 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../domain/models/report_models.dart';
+
+/// "This week" card — a 7-day study-minutes bar chart, styled to match the
+/// parent report's `_DailyStudyPainter` (green rounded bars + value labels).
+class WeeklyStudyChart extends StatelessWidget {
+  final List<DailyStudyPoint> points;
+
+  const WeeklyStudyChart({super.key, required this.points});
+
+  static const Color _ink = Color(0xFF1F2937);
+
+  @override
+  Widget build(BuildContext context) {
+    final total = points.fold<int>(0, (s, e) => s + e.studyMinutes);
+    final hasData = points.isNotEmpty && total > 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'This week',
+                style: GoogleFonts.cairo(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: _ink,
+                ),
+              ),
+              Text(
+                '${_formatTotal(total)} total',
+                style: GoogleFonts.roboto(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          if (!hasData)
+            _placeholder()
+          else ...[
+            SizedBox(
+              height: 120,
+              child: CustomPaint(
+                size: Size.infinite,
+                painter: _BarsPainter(points),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: points
+                  .map(
+                    (p) => Expanded(
+                      child: Text(
+                        p.dayLabel,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.roboto(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Image.asset('assets/mascot/sad.png', width: 52, height: 52),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Text(
+                'No study time logged this week yet.',
+                style: GoogleFonts.roboto(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTotal(int minutes) {
+    if (minutes <= 0) return '0m';
+    if (minutes < 60) return '${minutes}m';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return m > 0 ? '${h}h ${m}m' : '${h}h';
+  }
+}
+
+class _BarsPainter extends CustomPainter {
+  final List<DailyStudyPoint> data;
+  _BarsPainter(this.data);
+
+  static const Color _green = Color(0xFF4CAF50);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+    final values = data.map((e) => e.studyMinutes).toList();
+    final maxVal = values.reduce((a, b) => a > b ? a : b).toDouble();
+    final scale = maxVal <= 0 ? 1.0 : maxVal;
+
+    final n = data.length;
+    final stepX = size.width / n;
+    final barWidth = (stepX * 0.5).clamp(6.0, 26.0);
+    const labelGap = 18.0;
+    final chartHeight = size.height - labelGap;
+
+    final paint = Paint()
+      ..color = _green
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < n; i++) {
+      final centerX = (i * stepX) + (stepX / 2);
+      final h = (values[i] / scale) * (chartHeight - 4);
+      final top = size.height - h;
+      final rect = Rect.fromLTWH(centerX - barWidth / 2, top, barWidth, h);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(5)),
+        paint,
+      );
+
+      if (values[i] > 0) {
+        final tp = TextPainter(
+          text: TextSpan(
+            text: _formatMinutes(values[i]),
+            style: GoogleFonts.roboto(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF374151),
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        tp.paint(canvas, Offset(centerX - tp.width / 2, top - tp.height - 2));
+      }
+    }
+  }
+
+  static String _formatMinutes(int minutes) {
+    if (minutes >= 60) {
+      final h = minutes ~/ 60;
+      final m = minutes % 60;
+      return m == 0 ? '${h}h' : '${h}h${m}m';
+    }
+    return '${minutes}m';
+  }
+
+  @override
+  bool shouldRepaint(_BarsPainter old) => old.data != data;
+}

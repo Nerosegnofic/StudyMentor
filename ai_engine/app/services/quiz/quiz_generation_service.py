@@ -12,9 +12,11 @@ from app.repositories import (
     upsert_student_subject_profile_last_quizzed,
     save_questions,
     get_recent_question_fingerprints,
+    subject_has_skills,
 )
 from app.services.quiz.subject_selector import get_priority_subject
 from app.services.quiz.builder import build_quiz_payload
+from app.services.quiz.length_selector import compute_adaptive_quiz_length
 from app.services.rag.retrieval import retrieve_context_for_quiz
 from app.services.rag.generation.context import GeneratorContext
 from app.services.rag.generation.gemini_strategy import GeminiStrategy
@@ -134,13 +136,24 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 0.5: Quiz Cache Check (Cross-Device Reuse)
     # ------------------------------------------------------------------ #
+    # The first already-warmed quiz is served as-is (with its original question
+    # count) even if the parent changed the count meanwhile; the new count takes
+    # effect on the next generated quiz. See get_active_quiz_session for details.
     active_session = get_active_quiz_session(db, student_uid, target_subject_id)
     if active_session:
         cached_questions = get_questions_for_session(db, active_session.session_id)
         if cached_questions and all(q.text_content is not None for q in cached_questions):
+            # Re-stamp the served session with the *consuming* request's context.
+            # A pre-warmed session is generated blindly (its context is a placeholder);
+            # the request that actually hands the quiz to the student decides whether it
+            # counts as VOLUNTARY or FORCED for grading. Grading reads this at submit time.
+            if active_session.quiz_context != request_body.quiz_context:
+                active_session.quiz_context = request_body.quiz_context
+                db.commit()
             print(
                 f"[QuizCache] Returning cached session {active_session.session_id} "
-                f"for student={student_uid}, subject_id={target_subject_id}",
+                f"for student={student_uid}, subject_id={target_subject_id} "
+                f"(context={request_body.quiz_context})",
                 flush=True,
             )
             question_schemas = [
@@ -159,11 +172,29 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 1+2: Build quiz payload via Ordered Frontier + SRS
     # ------------------------------------------------------------------ #
+    # When the parent chose "Auto", size the quiz adaptively from the student's active
+    # material and recent accuracy; otherwise honor the fixed count they picked.
+    effective_total = (
+        compute_adaptive_quiz_length(db, student_uid, target_subject_id, request_body.student_grade)
+        if request_body.auto_length
+        else request_body.total_questions
+    )
+
     payload = build_quiz_payload(
         db, student_uid, target_subject_id,
-        request_body.total_questions, request_body.student_grade
+        effective_total, request_body.student_grade
     )
     if not payload:
+        # No skills yet. If a document for this subject is still ingesting, this is a
+        # "not ready yet" condition, not a user error — return 409 so the client can show
+        # a friendly "still preparing" message. (The app gate is the primary defense;
+        # this is the backstop for a stale client.)
+        doc_counts = document_repo.get_subject_doc_status(db, target_subject_id)
+        if doc_counts.get("processing", 0) > 0:
+            raise HTTPException(
+                status_code=409,
+                detail="This subject is still being prepared. Please try again in a moment."
+            )
         raise HTTPException(
             status_code=400,
             detail="Could not allocate questions. No skills found for this subject."
@@ -186,7 +217,10 @@ def generate_quiz_for_student(
     # ------------------------------------------------------------------ #
     # Step 3: Create Quiz Session
     # ------------------------------------------------------------------ #
-    quiz_session = create_quiz_session(db, student_uid, target_subject_id, request_body.total_questions)
+    quiz_session = create_quiz_session(
+        db, student_uid, target_subject_id, effective_total,
+        quiz_context=request_body.quiz_context,
+    )
     upsert_student_subject_profile_last_quizzed(db, student_uid, target_subject_id)
 
     skills_used = get_skills_by_names(db, all_topics)
@@ -332,3 +366,44 @@ def generate_quiz_for_student(
         questions=return_questions,
         quiz_source=quiz_source,
     )
+
+
+def warm_first_quiz_for_subject(db: Session, student_uid: str, subject_id: int) -> None:
+    """
+    Best-effort pre-generation of a subject's FIRST quiz, so the student's first
+    "Practice" returns instantly as quiz_source="CACHED".
+
+    Invoked from the post-ingestion hook (`ingest_then_warm`) — the only place
+    guaranteed to run the moment a subject becomes quizzable, since the parent who
+    uploaded may have closed the app and the student app may not be open. Reuses
+    `generate_quiz_for_student` so the warmed (unsubmitted) session is exactly what the
+    cache-check path serves later; the VOLUNTARY/FORCED label is re-stamped when the
+    student actually starts the quiz, so the placeholder context here is harmless.
+
+    Guards (and never raises — a warm failure must not affect ingestion or status):
+      - only warm when skills exist (otherwise generation would 404/409 anyway),
+      - skip if an active unsubmitted session already exists (idempotent, no duplicates).
+    """
+    try:
+        if not subject_has_skills(db, subject_id):
+            return
+        if get_active_quiz_session(db, student_uid, subject_id):
+            print(
+                f"[QuizWarm] Skip subject_id={subject_id}: active session already exists.",
+                flush=True,
+            )
+            return
+
+        request = GenerateQuizRequest(
+            subject_id=subject_id,
+            quiz_context="VOLUNTARY",  # placeholder; re-stamped when the student starts it
+        )
+        generate_quiz_for_student(db=db, request_body=request, student_uid=student_uid)
+        print(
+            f"[QuizWarm] Pre-generated first quiz for student={student_uid}, "
+            f"subject_id={subject_id}.",
+            flush=True,
+        )
+    except Exception as e:
+        # Best-effort: log and move on. Ingestion (and the 'ready' status) must stand.
+        print(f"[QuizWarm] Warm failed for subject_id={subject_id}: {e}", flush=True)

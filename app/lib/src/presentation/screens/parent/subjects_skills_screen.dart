@@ -9,6 +9,8 @@ import 'parent_subject_detail_screen.dart';
 import '../../../bloc/subject/subject_bloc.dart';
 import '../../../bloc/subject/subject_event.dart';
 import '../../../bloc/subject/subject_state.dart';
+import '../../../bloc/subject_status/subject_status_cubit.dart';
+import '../../../data/catalog/document_models.dart';
 import '../student/student_documents.dart';
 import '../../../data/catalog/subject_metadata_registry.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -27,17 +29,27 @@ class SubjectsSkillsScreen extends StatefulWidget {
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
 
-  static const _kAiEngineBaseUrl = 'http://192.168.0.219:8000';
 
+  /// Child-scoped ingestion-status poll. The parent uploads on the child's behalf, so
+  /// this passes the child's uid to see THAT child's subjects (the endpoint falls back
+  /// to the JWT uid only when omitted). Drives the transient "Preparing…" banner.
+  late final SubjectStatusCubit _statusCubit;
 
   @override
   void initState() {
     super.initState();
     context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
+    _statusCubit = SubjectStatusCubit(studentUid: widget.student.uid)..start();
+  }
+
+  @override
+  void dispose() {
+    _statusCubit.close();
+    super.dispose();
   }
 
   void _openDocumentUpload(BuildContext context, List<String> existingKeys) {
-    final repo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
+    final repo = AiEngineRepository(baseUrl: AiEngineRepository.defaultBaseUrl);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -87,6 +99,12 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
             return Column(
               children: [
                 _buildHeader(context, existingKeys),
+                // Transient "preparing" banner — only present while ≥1 subject is still
+                // ingesting; absent (normal UI) otherwise. Cards themselves are unchanged.
+                BlocBuilder<SubjectStatusCubit, SubjectStatusState>(
+                  bloc: _statusCubit,
+                  builder: (context, st) => _buildPreparingBanner(context, st),
+                ),
                 Expanded(
                   child: subjects.isEmpty
                       ? _buildEmptyState(context)
@@ -193,6 +211,72 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
     );
   }
 
+  /// Maps an ingestion `stage` to a localized human label.
+  String _stageLabel(AppLocalizations loc, String? stage) {
+    switch (stage) {
+      case 'parsing':
+        return loc.subjectStageParsing;
+      case 'analyzing':
+        return loc.subjectStageAnalyzing;
+      case 'building_skills':
+        return loc.subjectStageBuildingSkills;
+      default:
+        return loc.subjectPreparingLabel;
+    }
+  }
+
+  /// Transient banner shown ONLY while ≥1 subject is still ingesting (or failed).
+  /// Returns an empty box (no space taken) otherwise, so the normal UI is unchanged
+  /// in the common all-ready case.
+  Widget _buildPreparingBanner(BuildContext context, SubjectStatusState st) {
+    final loc = AppLocalizations.of(context);
+    final processing = st.processing;
+    final failed = st.bySubjectId.values.where((s) => s.isFailed).toList();
+
+    if (processing.isEmpty && failed.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Prefer surfacing an in-progress subject; otherwise a failed one.
+    final bool isFailed = processing.isEmpty;
+    final SubjectStatus s = isFailed ? failed.first : processing.first;
+    final String message = isFailed
+        ? loc.subjectIngestFailed
+        : '${_stageLabel(loc, s.stage)} — ${s.subjectName}';
+
+    final Color bg = isFailed ? const Color(0xFFFFEBEE) : const Color(0xFFFFF8E1);
+    final Color fg = isFailed ? const Color(0xFFB71C1C) : const Color(0xFF8D6E00);
+
+    return Container(
+      width: double.infinity,
+      color: bg,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          if (isFailed)
+            Icon(Icons.error_outline_rounded, color: fg, size: 20)
+          else
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: fg),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.cairo(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: fg,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSubjectCard(BuildContext context, SubjectSummaryModel subject) {
     final loc = AppLocalizations.of(context);
     final title = subject.subjectKey[0].toUpperCase() + subject.subjectKey.substring(1);
@@ -205,7 +289,10 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
       color = Colors.blue;
     }
 
-    return GestureDetector(
+    return Opacity(
+      // Dim deselected subjects so the parent can see at a glance which are off-focus.
+      opacity: subject.isSelected ? 1.0 : 0.55,
+      child: GestureDetector(
       onTap: () {
         Navigator.push(
           context,
@@ -268,7 +355,26 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      Tooltip(
+                        message: subject.isSelected
+                            ? 'Focused — visible to your child'
+                            : 'Hidden from your child',
+                        child: Switch.adaptive(
+                          value: subject.isSelected,
+                          activeThumbColor: color,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onChanged: subject.subjectId == 0
+                              ? null
+                              : (v) => context.read<SubjectBloc>().add(
+                                    ToggleSubjectSelectionRequested(
+                                      studentUid: widget.student.uid,
+                                      subjectId: subject.subjectId,
+                                      isSelected: v,
+                                    ),
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       GestureDetector(
                         onTap: () => _showRemoveConfirmationDialog(context, subject),
                         child: Container(
@@ -358,10 +464,13 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
   Future<void> _showRemoveConfirmationDialog(BuildContext context, SubjectSummaryModel subject) async {
+    // Capture the bloc before the async gap so we don't touch `context` after awaiting.
+    final subjectBloc = context.read<SubjectBloc>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -387,7 +496,9 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  loc.removeSubjectConfirmMessage,
+                  subject.isGlobal
+                      ? "This clears your child's progress in this subject and moves it back to Add Subjects. The subject itself is kept."
+                      : "This permanently deletes the subject and all its data.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     color: const Color(0xFF64748B),
@@ -449,16 +560,24 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
       },
     );
 
-    if (confirmed != true) return;
-    if (!context.mounted) return;
-    context.read<SubjectBloc>().add(
-      RemoveSubjectRequested(studentUid: widget.student.uid, subjectKey: subject.subjectKey),
-    );
+    if (confirmed == true && mounted) {
+      if (subject.isGlobal) {
+        // Global: wipe the child's progress and return it to the catalog; keep the subject.
+        subjectBloc.add(
+          RemoveGlobalSubjectRequested(studentUid: widget.student.uid, subjectId: subject.subjectId),
+        );
+      } else {
+        // Private: hard-delete the subject and all its data.
+        subjectBloc.add(
+          RemoveSubjectRequested(studentUid: widget.student.uid, subjectKey: subject.subjectKey),
+        );
+      }
+    }
   }
 
   void _showAddSubjectModal(BuildContext context, List<String> existingKeys) {
-    context.read<SubjectBloc>().add(LoadAvailableSubjectsRequested());
-    final selectedKeys = <String>{};
+    context.read<SubjectBloc>().add(LoadAvailableSubjectsRequested(studentUid: widget.student.uid));
+    final selectedIds = <int>{};
     String searchQuery = '';
 
     showModalBottomSheet(
@@ -520,8 +639,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                           return const Center(child: CircularProgressIndicator());
                         }
                         if (state is AvailableSubjectsLoaded) {
-                          final subjects = state.subjects.where((s) => !existingKeys.contains(s.subjectKey)).toList();
-                          final filteredSubjects = subjects.where((s) {
+                          final filteredSubjects = state.subjects.where((s) {
                             final name = s.subjectKey.toLowerCase();
                             return name.startsWith(searchQuery.toLowerCase());
                           }).toList();
@@ -536,7 +654,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                             itemCount: filteredSubjects.length,
                             itemBuilder: (context, index) {
                               final subject = filteredSubjects[index];
-                              final isSelected = selectedKeys.contains(subject.subjectKey);
+                              final isSelected = selectedIds.contains(subject.subjectId);
                               Color color;
                               try {
                                 color = Color(int.parse(subject.colorHex.replaceFirst('#', '0xFF')));
@@ -547,9 +665,9 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                                 onTap: () {
                                   setModalState(() {
                                     if (isSelected) {
-                                      selectedKeys.remove(subject.subjectKey);
+                                      selectedIds.remove(subject.subjectId);
                                     } else {
-                                      selectedKeys.add(subject.subjectKey);
+                                      selectedIds.add(subject.subjectId);
                                     }
                                   });
                                 },
@@ -605,11 +723,11 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              if (selectedKeys.isNotEmpty) {
+                              if (selectedIds.isNotEmpty) {
                                 modalContext.read<SubjectBloc>().add(
-                                  AddSubjectsRequested(
+                                  SelectGlobalSubjectsRequested(
                                     studentUid: widget.student.uid,
-                                    selectedKeys: selectedKeys.toList(),
+                                    subjectIds: selectedIds.toList(),
                                   ),
                                 );
                                 Navigator.pop(modalContext);
@@ -622,7 +740,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                               elevation: 0,
                             ),
                             child: Text(
-                              loc.addSelectedCountButton(selectedKeys.length),
+                              "Add Selected (${selectedIds.length})",
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

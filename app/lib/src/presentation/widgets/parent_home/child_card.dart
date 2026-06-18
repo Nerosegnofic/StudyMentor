@@ -8,10 +8,11 @@ import '../../../../l10n/app_localizations.dart';
 
 class ChildCard extends StatefulWidget {
   final StudentModel student;
+  final int refreshKey;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
-  const ChildCard({super.key, required this.student, this.onTap, this.onDelete});
+  const ChildCard({super.key, required this.student, this.refreshKey = 0, this.onTap, this.onDelete});
 
   @override
   State<ChildCard> createState() => _ChildCardState();
@@ -40,6 +41,9 @@ class _ChildCardState extends State<ChildCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.student.isEmailVerified != widget.student.isEmailVerified) {
       _startPollingIfUnverified();
+    }
+    if (oldWidget.refreshKey != widget.refreshKey) {
+      _loadStats();
     }
   }
 

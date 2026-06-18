@@ -297,10 +297,20 @@ class RootPage extends StatelessWidget {
           if (state is AuthAuthenticated) {
             final role = state.user.role.toLowerCase();
             final fullName = state.user.fullName;
+            // Key by uid so a new login rebuilds the screen's State (re-running initState,
+            // which is what dispatches the data loads) instead of reusing a stale instance.
             if (role == 'parent') {
-              return ParentScreen(fullName: fullName, uid: state.user.uid);
+              return ParentScreen(
+                key: ValueKey(state.user.uid),
+                fullName: fullName,
+                uid: state.user.uid,
+              );
             } else {
-              return StudentScreen(fullName: fullName, uid: state.user.uid);
+              return StudentScreen(
+                key: ValueKey(state.user.uid),
+                fullName: fullName,
+                uid: state.user.uid,
+              );
             }
           }
           return const _BrandedSplash();

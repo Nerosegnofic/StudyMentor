@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import List, Optional
@@ -10,11 +11,20 @@ from app.repositories.subject_repo import delete_subject_cascade
 from app.repositories import (
     get_subject_mastery_hierarchy,
     get_subject_stats,
+    get_error_and_difficulty_breakdown,
+    get_mastery_history,
+    get_subject_by_id,
+    get_added_global_subject_ids,
+    get_active_subject_ids,
 )
+from app.repositories.analytics_repo import get_daily_snapshot_stats, get_weakest_subject
+from app.repositories.gamification_repo import get_or_create_student_gamification
 from app.services.evaluation.analytics_service import (
     enrich_hierarchy_with_status,
     get_overall_dashboard_stats,
 )
+from app.services.evaluation.insights import build_daily_summary
+from app.models.schemas import DailySummaryRequest
 from collections import defaultdict
 from app.models.domain import (
     Subject,
@@ -23,6 +33,7 @@ from app.models.domain import (
     Question,
     QuestionResponse,
     Skill,
+    MasterySnapshot,
 )
 from app.models.domain.student import StudentSubjectProfile, StudentSkillState
 from app.models.domain.gamification import (
@@ -39,7 +50,7 @@ router = APIRouter(prefix="/analytics", tags=["Analytics Dashboard"])
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/subjects")
-async def list_subjects_analytics(
+def list_subjects_analytics(
     student_uid: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),
@@ -61,10 +72,19 @@ async def list_subjects_analytics(
         for p in db.query(GardenPlant).filter_by(student_uid=target_uid).all()
     }
 
+    # Parent management list = owned subjects (all) + ADDED globals. Un-added globals live
+    # in the Add-Subjects catalog, not here. `is_selected` reflects the active set so a
+    # toggled-off (but still added) subject renders dimmed with its switch off.
+    added_global_ids = get_added_global_subject_ids(db, target_uid)
+    active_ids = get_active_subject_ids(db, target_uid)
+
     results = []
     for subj in subjects:
+        if subj.is_global and subj.subject_id not in added_global_ids:
+            continue  # available global → belongs in the catalog, not the parent's list
+
         stats = get_subject_stats(db, target_uid, subj.subject_id)
-        
+
         cached_mastery = plant_map.get(subj.subject_id)
         average_mastery = (cached_mastery / 100.0) if cached_mastery is not None else stats["average_mastery"]
 
@@ -76,6 +96,8 @@ async def list_subjects_analytics(
             "learning_velocity": stats["learning_velocity"],
             "total_skills": stats["total_skills"],
             "mastered_skills": stats["mastered_skills"],
+            "is_global": subj.is_global,
+            "is_selected": subj.subject_id in active_ids,
         })
     return results
 
@@ -85,7 +107,7 @@ async def list_subjects_analytics(
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/subjects/{subject_id}/mastery")
-async def get_subject_mastery_tree(
+def get_subject_mastery_tree(
     subject_id: int,
     student_uid: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -111,11 +133,57 @@ async def get_subject_mastery_tree(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# GET  /analytics/subjects/{id}/mastery-history — Daily mastery snapshots
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/subjects/{subject_id}/mastery-history")
+def get_subject_mastery_history(
+    subject_id: int,
+    days: int = Query(30, ge=2, le=365),
+    student_uid: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    """Returns ordered daily mastery snapshots (oldest first) for one subject."""
+    target_uid = student_uid if student_uid else current_user
+    if not get_subject_by_id(db, subject_id):
+        raise HTTPException(status_code=404, detail="Subject not found.")
+
+    return {
+        "subject_id": subject_id,
+        "history": get_mastery_history(db, target_uid, subject_id, days=days),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GET  /analytics/subjects/{id}/error-breakdown — Error types + difficulty accuracy
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/subjects/{subject_id}/error-breakdown")
+def get_subject_error_breakdown(
+    subject_id: int,
+    student_uid: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    """
+    Returns the careless / concept-gap / guessing error split and per-difficulty
+    accuracy for a student in a single subject.
+    """
+    target_uid = student_uid if student_uid else current_user
+    if not get_subject_by_id(db, subject_id):
+        raise HTTPException(status_code=404, detail="Subject not found.")
+
+    data = get_error_and_difficulty_breakdown(db, target_uid, subject_id)
+    return {"subject_id": subject_id, **data}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # GET  /analytics/subjects/{id}/history   — Paginated quiz history
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/subjects/{subject_id}/history")
-async def get_subject_quiz_history(
+def get_subject_quiz_history(
     subject_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=200),
@@ -211,7 +279,7 @@ async def get_subject_quiz_history(
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/overall")
-async def get_overall_analytics(
+def get_overall_analytics(
     db: Session = Depends(get_db),
     student_uid: str = Depends(get_current_user),
 ):
@@ -224,6 +292,56 @@ async def get_overall_analytics(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# POST /analytics/parent/daily-summary — Per-child daily summary for parent home
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.post("/parent/daily-summary")
+def parent_daily_summary(
+    body: DailySummaryRequest,
+    db: Session = Depends(get_db),
+    _caller: str = Depends(get_current_user),
+):
+    """
+    Build the parent-home AI Daily Summary: a household headline (with 2+ children)
+    plus one slide per child, generated fresh from each child's real data.
+    """
+    anchor = None
+    if body.client_local_date:
+        try:
+            anchor = datetime.strptime(body.client_local_date, "%Y-%m-%d").date()
+        except ValueError:
+            anchor = None
+    today = anchor or datetime.utcnow().date()
+
+    children_signals = []
+    for child in body.children:
+        snap = get_daily_snapshot_stats(db, child.uid, anchor)
+        gam = get_or_create_student_gamification(db, child.uid)
+
+        days_since_last_quiz = None
+        if gam.last_quiz_date:
+            last_q = gam.last_quiz_date
+            last_q = last_q.date() if hasattr(last_q, "date") else last_q
+            days_since_last_quiz = (today - last_q).days
+
+        children_signals.append({
+            "child_uid": child.uid,
+            "name": child.name,
+            "quizzes_today": snap["quizzes_today"],
+            "study_minutes_today": snap["study_minutes_today"],
+            "accuracy_today": snap["accuracy_today"],
+            "current_streak": gam.current_streak,
+            "days_since_last_quiz": days_since_last_quiz,
+            "weakest_subject": get_weakest_subject(db, child.uid),
+        })
+
+    return {
+        "slides": build_daily_summary(children_signals),
+        "generated_at": datetime.utcnow().isoformat(),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # POST /analytics/subjects/ensure  — Create Subject rows for assigned subjects
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -233,7 +351,7 @@ class _EnsureSubjectsBody(BaseModel):
 
 
 @router.post("/subjects/ensure")
-async def ensure_subjects(
+def ensure_subjects(
     body: _EnsureSubjectsBody,
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
@@ -262,7 +380,7 @@ async def ensure_subjects(
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.delete("/subjects/{subject_name}")
-async def delete_subject(
+def delete_subject(
     subject_name: str,
     student_uid: str = Query(...),
     db: Session = Depends(get_db),
@@ -285,15 +403,6 @@ async def delete_subject(
 
     subject_id = subject.subject_id
 
-    # Also delete GardenPlant rows scoped to this student (no FK cascade from Subject)
-    db.query(GardenPlant).filter(
-        GardenPlant.subject_id == subject_id,
-        GardenPlant.student_uid == student_uid,
-    ).delete()
-
-    # Full cascade: QuizSessions → Questions → Responses,
-    # StudentSubjectProfile, Skills → SkillStates, Documents,
-    # vector embeddings, debug artifacts.
     deleted = delete_subject_cascade(db, subject_id)
     if not deleted:
         raise HTTPException(status_code=500, detail="Failed to delete subject data.")
@@ -310,7 +419,7 @@ async def delete_subject(
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/sessions/{session_id}/questions")
-async def get_session_questions(
+def get_session_questions(
     session_id: str,
     student_uid: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -362,7 +471,7 @@ async def get_session_questions(
 
 
 @router.delete("/students/{student_uid}")
-async def delete_student_all_data(
+def delete_student_all_data(
     student_uid: str,
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
@@ -385,6 +494,7 @@ async def delete_student_all_data(
     # 3. Subject-linked rows (FK to subjects — must go before Subject deletion)
     db.query(StudentSubjectProfile).filter(StudentSubjectProfile.student_uid == student_uid).delete(synchronize_session=False)
     db.query(GardenPlant).filter(GardenPlant.student_uid == student_uid).delete(synchronize_session=False)
+    db.query(MasterySnapshot).filter(MasterySnapshot.student_uid == student_uid).delete(synchronize_session=False)
 
     # 4. Quiz sessions — load each so SQLAlchemy cascades to questions → responses
     for session in db.query(QuizSession).filter(QuizSession.student_uid == student_uid).all():

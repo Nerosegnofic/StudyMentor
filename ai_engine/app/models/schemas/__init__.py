@@ -6,13 +6,19 @@ from .quiz import (
     QuizSubmissionRequest,
     QuizSubmissionResponse,
 )
-from .document_schemas import DocumentUploadResponse
+from .document_schemas import (
+    DocumentUploadResponse,
+    SubjectStatus,
+    SubjectsStatusResponse,
+)
 from .analytics_schemas import (
     RefinedSkill,
     RefinedLesson,
     RefinedUnit,
     RefinedMasteryResponse,
     MasteryPointSchema,
+    DailySummaryChild,
+    DailySummaryRequest,
 )
 from .gamification_schemas import (
     GamificationProfileResponse,
@@ -33,11 +39,15 @@ __all__ = [
     "QuizSubmissionRequest",
     "QuizSubmissionResponse",
     "DocumentUploadResponse",
+    "SubjectStatus",
+    "SubjectsStatusResponse",
     "RefinedSkill",
     "RefinedLesson",
     "RefinedUnit",
     "RefinedMasteryResponse",
     "MasteryPointSchema",
+    "DailySummaryChild",
+    "DailySummaryRequest",
     "GamificationProfileResponse",
     "LevelSchema",
     "LevelsResponse",

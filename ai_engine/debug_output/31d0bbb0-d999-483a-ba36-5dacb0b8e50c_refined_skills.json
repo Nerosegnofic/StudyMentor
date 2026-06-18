@@ -1,0 +1,182 @@
+[
+    {
+        "unit": "Unit 1 Food, Nature, and Culture",
+        "lesson": "Lesson 1 Life Along The Nile",
+        "objectives": [
+            "Identifying vocabulary related to life in the Nile River",
+            "Answering comprehension questions about life in the Nile River"
+        ],
+        "skill_ids": [
+            "u1_l1_s1",
+            "u1_l1_s2"
+        ]
+    },
+    {
+        "unit": "Unit 1 Food, Nature, and Culture",
+        "lesson": "Lesson 2 Food in the Hot Desert",
+        "objectives": [
+            "Identifying vocabulary related to desert animals and their roles",
+            "Using adverbs of frequency to describe how often actions happen"
+        ],
+        "skill_ids": [
+            "u1_l2_s1",
+            "u1_l2_s2"
+        ]
+    },
+    {
+        "unit": "Unit 1 Food, Nature, and Culture",
+        "lesson": "Lesson 3 Story Time The Giving Tree",
+        "objectives": [
+            "Understanding vocabulary from a literary text",
+            "Identifying the moral and sequence of events in a story",
+            "Recognizing and pronouncing consonant clusters"
+        ],
+        "skill_ids": [
+            "u1_l3_s1",
+            "u1_l3_s2",
+            "u1_l3_s3"
+        ]
+    },
+    {
+        "unit": "Unit 1 Food, Nature, and Culture",
+        "lesson": "Lesson 4 Writing Let's Make a Recipe!",
+        "objectives": [
+            "Using sequence words to organize steps in a recipe",
+            "Writing a descriptive paragraph about a favorite food recipe"
+        ],
+        "skill_ids": [
+            "u1_l4_s1",
+            "u1_l4_s2"
+        ]
+    },
+    {
+        "unit": "Unit 1 Food, Nature, and Culture",
+        "lesson": "Lesson 5 Think and Create A Flyer",
+        "objectives": [
+            "Identifying the key elements of a promotional flyer",
+            "Designing and creating a restaurant flyer"
+        ],
+        "skill_ids": [
+            "u1_l5_s1",
+            "u1_l5_s2"
+        ]
+    },
+    {
+        "unit": "Unit 2 My Healthy Body",
+        "lesson": "Lesson 1 Sports for Better Health",
+        "objectives": [
+            "Identifying vocabulary related to physical and mental health",
+            "Understanding the benefits of sports and regular exercise"
+        ],
+        "skill_ids": [
+            "u2_l1_s1",
+            "u2_l1_s2"
+        ]
+    },
+    {
+        "unit": "Unit 2 My Healthy Body",
+        "lesson": "Lesson 2 My Habits: Then and Now",
+        "objectives": [
+            "Comparing past and present habits using descriptive text",
+            "Using determiners (a, an, some, any) with countable and uncountable nouns"
+        ],
+        "skill_ids": [
+            "u2_l2_s1",
+            "u2_l2_s2"
+        ]
+    },
+    {
+        "unit": "Unit 2 My Healthy Body",
+        "lesson": "Lesson 3 Heart and Blood",
+        "objectives": [
+            "Identifying vocabulary related to the circulatory system and body organs",
+            "Recognizing and pronouncing one-syllable words"
+        ],
+        "skill_ids": [
+            "u2_l3_s1",
+            "u2_l3_s2"
+        ]
+    },
+    {
+        "unit": "Unit 2 My Healthy Body",
+        "lesson": "Lesson 4 Writing Life Savers in Action",
+        "objectives": [
+            "Identifying vocabulary related to healthcare professions",
+            "Writing a non-fiction text about a healthcare worker using factual details"
+        ],
+        "skill_ids": [
+            "u2_l4_s1",
+            "u2_l4_s2"
+        ]
+    },
+    {
+        "unit": "Unit 2 My Healthy Body",
+        "lesson": "Lesson 5 Think and Create A Poster",
+        "objectives": [
+            "Identifying the elements of an effective educational poster",
+            "Creating a poster illustrating healthy habits"
+        ],
+        "skill_ids": [
+            "u2_l5_s1",
+            "u2_l5_s2"
+        ]
+    },
+    {
+        "unit": "Unit 3 When Nature Changes",
+        "lesson": "Lesson 1 Weather Wonders and Warnings!",
+        "objectives": [
+            "Identifying vocabulary related to extreme weather events",
+            "Understanding the impact of extreme weather and historical adaptation methods"
+        ],
+        "skill_ids": [
+            "u3_l1_s1",
+            "u3_l1_s2"
+        ]
+    },
+    {
+        "unit": "Unit 3 When Nature Changes",
+        "lesson": "Lesson 2 Language in use",
+        "objectives": [
+            "Using the past simple tense in affirmative, negative, and interrogative forms"
+        ],
+        "skill_ids": [
+            "u3_l2_s1"
+        ]
+    },
+    {
+        "unit": "Unit 3 When Nature Changes",
+        "lesson": "Lesson 3 Story Time The Two Frogs",
+        "objectives": [
+            "Understanding vocabulary from a fictional story",
+            "Identifying the moral and key elements of a story",
+            "Recognizing and pronouncing vowel digraphs"
+        ],
+        "skill_ids": [
+            "u3_l3_s1",
+            "u3_l3_s2",
+            "u3_l3_s3"
+        ]
+    },
+    {
+        "unit": "Unit 3 When Nature Changes",
+        "lesson": "Lesson 4 Writing Once Upon My Imagination",
+        "objectives": [
+            "Identifying the structural elements of a fiction story",
+            "Writing a short fictional story using imaginative details"
+        ],
+        "skill_ids": [
+            "u3_l4_s1",
+            "u3_l4_s2"
+        ]
+    },
+    {
+        "unit": "Unit 3 When Nature Changes",
+        "lesson": "Lesson 5 Think and Create A Collage",
+        "objectives": [
+            "Creating a visual collage representing different weather conditions"
+        ],
+        "skill_ids": [
+            "u3_l5_s1"
+        ]
+    }
+]

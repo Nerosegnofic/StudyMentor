@@ -8,6 +8,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
 
   ReportsBloc({required this.repository}) : super(const ReportsState()) {
     on<LoadWeeklyReportRequested>(_onLoadWeeklyReport);
+    on<LoadReportSubjectsRequested>(_onLoadReportSubjects);
     on<LoadSubjectMasteryRequested>(_onLoadSubjectMastery);
     on<LoadStudyHabitsRequested>(_onLoadStudyHabits);
   }
@@ -31,15 +32,53 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     }
   }
 
-  Future<void> _onLoadSubjectMastery(
-    LoadSubjectMasteryRequested event,
+  Future<void> _onLoadReportSubjects(
+    LoadReportSubjectsRequested event,
     Emitter<ReportsState> emit,
   ) async {
     emit(state.copyWith(isMasteryLoading: true, masteryError: null));
     try {
+      final subjects = await repository.getReportSubjects(event.studentUid);
+      if (subjects.isEmpty) {
+        emit(state.copyWith(
+          subjects: subjects,
+          isMasteryLoading: false,
+          masteryReport: null,
+        ));
+        return;
+      }
+      final first = subjects.first;
       final report = await repository.getSubjectMasteryReport(
         event.studentUid,
-        event.subjectKey,
+        first.id,
+      );
+      emit(state.copyWith(
+        subjects: subjects,
+        selectedSubjectId: first.id,
+        isMasteryLoading: false,
+        masteryReport: report,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        isMasteryLoading: false,
+        masteryError: 'Failed to load subjects: $e',
+      ));
+    }
+  }
+
+  Future<void> _onLoadSubjectMastery(
+    LoadSubjectMasteryRequested event,
+    Emitter<ReportsState> emit,
+  ) async {
+    emit(state.copyWith(
+      isMasteryLoading: true,
+      masteryError: null,
+      selectedSubjectId: event.subjectId,
+    ));
+    try {
+      final report = await repository.getSubjectMasteryReport(
+        event.studentUid,
+        event.subjectId,
       );
       emit(state.copyWith(
         isMasteryLoading: false,

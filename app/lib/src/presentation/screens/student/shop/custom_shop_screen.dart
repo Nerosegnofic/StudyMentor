@@ -19,8 +19,8 @@ const _kBg = Color(0xFFF5F7FA); // Soft Cloud scaffold
 const _kGreen = Color(0xFF4CAF50); // primary actions / active / equipped
 const _kAmberLight = Color(0xFFFFF8E1); // coin / price pill background
 const _kAmberDark = Color(0xFFF57F17); // coin / price text on light amber
-const _kBlue = Color(0xFF2196F3); // informational — level-lock badge
-const _kBlueLight = Color(0xFFE3F2FD); // level-lock badge background
+const _kLevelLock = Color(0xFF64748B); // slate — level-lock badge (neutral, not blue)
+const _kLevelLockBg = Color(0xFFEEF1F5); // level-lock badge background
 const _kInk = Color(0xFF1A1F3C); // heading text
 const _kMuted = Color(0xFF8B93A7); // secondary text
 const _kHairline = Color(0xFFE3E8EF); // neutral card border
@@ -96,7 +96,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
       _showInfoSnack(
         context,
         icon: Icons.lock_rounded,
-        color: _kBlue,
+        color: _kLevelLock,
         message: 'Reach Level ${item.unlockLevel} to unlock this item.',
       );
     } else if (state.coins < item.price) {
@@ -306,7 +306,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                   ),
                 ),
               ),
-            // Level lock → blue badge that shows the required level.
+            // Level lock → slate badge that shows the required level.
             if (isLevelLocked)
               Positioned(
                 top: 6,
@@ -315,20 +315,20 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: _kBlueLight,
+                    color: _kLevelLockBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.lock, size: 11, color: _kBlue),
+                      const Icon(Icons.lock, size: 11, color: _kLevelLock),
                       const SizedBox(width: 2),
                       Text(
                         'Lv ${item.unlockLevel}',
                         style: GoogleFonts.roboto(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: _kBlue,
+                          color: _kLevelLock,
                         ),
                       ),
                     ],

@@ -6,6 +6,8 @@ import '../catalog/document_models.dart';
 import '../../domain/models/garden_plant_model.dart';
 import '../../domain/models/skill_detail_model.dart';
 import '../../domain/models/report_models.dart';
+import '../../domain/models/ai_summary_model.dart';
+import '../../domain/models/student_model.dart';
 
 // ---------------------------------------------------------------------------
 // Quiz DTOs (mirrors ai_engine/app/models/schemas/quiz_schemas.py)
@@ -14,18 +16,30 @@ import '../../domain/models/report_models.dart';
 class GenerateQuizRequest {
   final int? subjectId;
   final int totalQuestions;
+
+  /// When true (parent picked "Auto"), the backend sizes the quiz adaptively and
+  /// [totalQuestions] is ignored — it's only a fallback for the fixed case.
+  final bool autoLength;
   final int studentGrade;
+
+  /// "VOLUNTARY" (student chose to practice) or "FORCED" (parent/system mandated).
+  /// Sent so the backend can label the session and grant the FORCED reward bonus.
+  final String quizContext;
 
   const GenerateQuizRequest({
     this.subjectId,
     required this.totalQuestions,
+    this.autoLength = false,
     this.studentGrade = 5,
+    this.quizContext = 'VOLUNTARY',
   });
 
   Map<String, dynamic> toJson() => {
         'subject_id': subjectId,
         'total_questions': totalQuestions,
+        'auto_length': autoLength,
         'student_grade': studentGrade,
+        'quiz_context': quizContext,
       };
 }
 
@@ -158,6 +172,15 @@ class QuizSubmissionResponse {
 // Repository
 // ---------------------------------------------------------------------------
 
+/// Thrown when an upload is rejected because a document for the same subject is
+/// still ingesting (server returns 409). The bloc maps this to a friendly
+/// "please wait" message.
+class SubjectStillProcessingException implements Exception {
+  const SubjectStillProcessingException();
+  @override
+  String toString() => 'SubjectStillProcessingException';
+}
+
 /// Centralised HTTP client for all AI Engine endpoints.
 ///
 /// Every method automatically attaches the Firebase JWT obtained from the
@@ -234,9 +257,32 @@ class AiEngineRepository {
       headers: headers,
       body: jsonEncode(request.toJson()),
     );
+    // 409 = subject's curriculum is still ingesting (the server backstop). Surface it
+    // typed so the bloc shows the friendly "still preparing" message.
+    if (response.statusCode == 409) {
+      throw const SubjectStillProcessingException();
+    }
     _assertSuccess(response, 'generateQuiz');
     return GenerateQuizResponse.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  /// Fire-and-forget pre-generation of the *next* quiz.
+  ///
+  /// Calling `/generate` proactively (typically right after a submit) makes the
+  /// AI engine create an unsubmitted session and persist its questions — that is
+  /// the engine's quiz cache. The next real `generateQuiz` for the same
+  /// `(student, subject)` then returns it instantly as `quiz_source="CACHED"`.
+  ///
+  /// The response is intentionally discarded and any error is swallowed: warming
+  /// is best-effort and must never surface to the user. If it's throttled or
+  /// fails, the next quiz simply generates live as before.
+  Future<void> prewarmNextQuiz(GenerateQuizRequest request) async {
+    try {
+      await generateQuiz(request);
+    } catch (_) {
+      // best-effort warming — ignore failures (rate limit, network, etc.)
+    }
   }
 
   /// `POST /quizzes/submit` — submits answers and updates BKT mastery.
@@ -320,6 +366,12 @@ class AiEngineRepository {
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
 
+    // 409 = a document for this subject is still ingesting (the server's concurrent-
+    // upload guard). Surface it as a typed exception so the bloc can show a friendly
+    // "still processing" message rather than a generic failure.
+    if (response.statusCode == 409) {
+      throw const SubjectStillProcessingException();
+    }
     if (response.statusCode != 200) {
       throw Exception(
           'uploadDocument failed [${response.statusCode}]: ${response.body}');
@@ -327,6 +379,27 @@ class AiEngineRepository {
 
     return DocumentUploadResponse.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  /// `GET /documents/subjects/status` — per-subject ingestion readiness for the
+  /// current student. Polled (only while something is processing) to drive the
+  /// "Preparing…" indicator, gate the Practice button, and detect the
+  /// processing→ready edge that triggers the first-quiz pre-warm.
+  /// [studentUid]: a PARENT passes the child's uid to see that child's subjects
+  /// (the parent uploads on the child's behalf); a student omits it and the
+  /// JWT uid is used server-side. Mirrors `getSubjectsAnalytics`.
+  Future<List<SubjectStatus>> getSubjectsStatus({String? studentUid}) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/documents/subjects/status').replace(
+      queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
+    );
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getSubjectsStatus');
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = (body['subjects'] as List? ?? const []);
+    return list
+        .map((e) => SubjectStatus.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // -------------------------------------------------------------------------
@@ -469,6 +542,45 @@ class AiEngineRepository {
     _assertSuccess(response, 'deleteSubject');
   }
 
+  /// `PATCH /subjects/{id}/selection` — select/deselect a subject for a student
+  /// (parent focus control). Deselected subjects are hidden from the student and
+  /// excluded from quizzes; the subject and its data are preserved either way.
+  Future<void> setSubjectSelection({
+    required int subjectId,
+    required String studentUid,
+    required bool isSelected,
+  }) async {
+    final headers = await _getJsonHeaders();
+    final response = await http.patch(
+      Uri.parse('$baseUrl/api/v1/subjects/$subjectId/selection'),
+      headers: headers,
+      body: jsonEncode({'student_uid': studentUid, 'is_selected': isSelected}),
+    );
+    _assertSuccess(response, 'setSubjectSelection');
+  }
+
+  /// `GET /subjects/available` — global subjects the parent hasn't yet added for this
+  /// student (the Add-Subjects catalog). Returns `[{subject_id, name, color_hex}]`.
+  Future<List<Map<String, dynamic>>> getAvailableGlobalSubjects(String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/subjects/available')
+        .replace(queryParameters: {'student_uid': studentUid});
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getAvailableGlobalSubjects');
+    final list = jsonDecode(response.body) as List;
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  /// `DELETE /subjects/{id}/student-data` — remove a GLOBAL subject from a child: wipes the
+  /// child's progress in it and returns it to the catalog, without deleting the shared subject.
+  Future<void> removeStudentSubjectData(int subjectId, String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/subjects/$subjectId/student-data')
+        .replace(queryParameters: {'student_uid': studentUid});
+    final response = await http.delete(uri, headers: headers);
+    _assertSuccess(response, 'removeStudentSubjectData');
+  }
+
   // -------------------------------------------------------------------------
   // Snapshot & reporting endpoints
   // -------------------------------------------------------------------------
@@ -483,11 +595,18 @@ class AiEngineRepository {
     final response = await http.get(uri, headers: headers);
     _assertSuccess(response, 'getDailySnapshot');
     final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final bySubjectRaw =
+        (data['questions_by_subject'] as List<dynamic>?) ?? const [];
     return DailyStudentSnapshotModel(
       studentUid: studentUid,
       quizzesCompletedToday: (data['quizzes_today'] as int?) ?? 0,
       totalStudyTimeToday: Duration(minutes: (data['study_time_minutes'] as int?) ?? 0),
       averageAccuracyToday: (data['accuracy_today'] as int?) ?? 0,
+      questionsToday: (data['questions_today'] as int?) ?? 0,
+      questionsBySubject: bySubjectRaw
+          .map((e) =>
+              SubjectQuestionCount.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -510,6 +629,26 @@ class AiEngineRepository {
       );
     }).toList();
 
+    final allocRaw = (data['subject_allocations'] as List<dynamic>?) ?? [];
+    final allocations = allocRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return SubjectTimeAllocation(
+        subjectKey: (m['subject_key'] as String?) ?? '',
+        percentage: (m['percentage'] as num?)?.toDouble() ?? 0.0,
+        colorHex: (m['color_hex'] as String?) ?? '#2196F3',
+      );
+    }).toList();
+
+    final alertsRaw = (data['alerts'] as List<dynamic>?) ?? [];
+    final alerts = alertsRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return AlertModel(
+        severity: (m['severity'] as String?) ?? 'info',
+        type: (m['type'] as String?) ?? '',
+        message: (m['message'] as String?) ?? '',
+      );
+    }).toList();
+
     return WeeklyReportModel(
       studentUid: studentUid,
       weekStartDate: DateTime.parse(data['week_start_date'] as String),
@@ -519,8 +658,236 @@ class AiEngineRepository {
       currentStreakDays: (data['current_streak_days'] as int?) ?? 0,
       longestStreakDays: (data['longest_streak_days'] as int?) ?? 0,
       accuracyTrend: trend,
-      subjectAllocations: const [],
-      aiInsightText: '',
+      subjectAllocations: allocations,
+      aiInsightText: (data['ai_insight_text'] as String?) ?? '',
+      voluntaryQuizzes: (data['voluntary_quizzes'] as int?) ?? 0,
+      forcedQuizzes: (data['forced_quizzes'] as int?) ?? 0,
+      guessingSessions: (data['guessing_sessions'] as int?) ?? 0,
+      accuracyDelta: (data['accuracy_delta'] as num?)?.toDouble(),
+      studyMinutesDelta: (data['study_minutes_delta'] as int?) ?? 0,
+      quizzesDelta: (data['quizzes_delta'] as int?) ?? 0,
+      alerts: alerts,
+    );
+  }
+
+  /// `GET /gamification/student/{uid}/study-habits` — real streaks + study-time
+  /// series (28-day heatmap + last 7 days) for the Habits tab.
+  Future<StudyHabitsReport> getStudyHabitsReport(String studentUid) async {
+    final headers = await _getJsonHeaders();
+    final now = DateTime.now();
+    final clientLocalDate = now.toIso8601String().split('T')[0];
+    final uri = Uri.parse(
+      '$baseUrl/api/v1/gamification/student/$studentUid/study-habits',
+    ).replace(queryParameters: {
+      'client_local_date': clientLocalDate,
+      'tz_offset_minutes': now.timeZoneOffset.inMinutes.toString(),
+    });
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getStudyHabitsReport');
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    final heatRaw = (data['consistency_heatmap'] as List<dynamic>?) ?? [];
+    final heatmap = heatRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return HeatmapDay(
+        date: DateTime.parse(m['date'] as String),
+        studyMinutes: (m['study_minutes'] as int?) ?? 0,
+      );
+    }).toList();
+
+    final dailyRaw = (data['daily_study'] as List<dynamic>?) ?? [];
+    final daily = dailyRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return DailyStudyPoint(
+        dayLabel: (m['day_label'] as String?) ?? '',
+        studyMinutes: (m['study_minutes'] as int?) ?? 0,
+      );
+    }).toList();
+
+    final todRaw = (data['time_of_day'] as List<dynamic>?) ?? [];
+    final timeOfDay = todRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return TimeOfDayPoint(
+        label: (m['label'] as String?) ?? '',
+        minutes: (m['minutes'] as int?) ?? 0,
+      );
+    }).toList();
+
+    return StudyHabitsReport(
+      studentUid: studentUid,
+      currentStreakDays: (data['current_streak_days'] as int?) ?? 0,
+      longestStreakDays: (data['longest_streak_days'] as int?) ?? 0,
+      consistencyHeatmap: heatmap,
+      dailyStudy: daily,
+      timeOfDay: timeOfDay,
+    );
+  }
+
+  /// Subjects available for the Mastery tab's chip row, with cached mastery.
+  /// Backed by `GET /analytics/subjects`.
+  Future<List<SubjectChipModel>> getReportSubjects(String studentUid) async {
+    final subjects = await getSubjectsAnalytics(studentUid: studentUid);
+    return subjects
+        .map((s) => SubjectChipModel(
+              id: s['subject_id'] as int,
+              name: (s['name'] as String?) ?? '',
+              masteryPercent: ((s['average_mastery'] as num?)?.toDouble() ?? 0.0) * 100.0,
+            ))
+        .toList();
+  }
+
+  /// Real subject mastery report built from `/analytics/subjects` (for the
+  /// subject's average mastery) and `/analytics/subjects/{id}/mastery` (for the
+  /// skill tree). Strong = mastery ≥ 75%; Needs-work = attempted but < 50%.
+  Future<SubjectMasteryReport> getSubjectMasteryReport(
+    String studentUid,
+    int subjectId,
+  ) async {
+    final results = await Future.wait([
+      getSubjectsAnalytics(studentUid: studentUid),
+      getSubjectMasteryTree(subjectId, studentUid: studentUid),
+      getSubjectErrorBreakdown(subjectId, studentUid: studentUid),
+      getSubjectMasteryHistory(subjectId, studentUid: studentUid),
+    ]);
+    final subjects = results[0] as List<Map<String, dynamic>>;
+    final tree = results[1] as Map<String, dynamic>;
+    final breakdown = results[2] as Map<String, dynamic>;
+    final historyData = results[3] as Map<String, dynamic>;
+
+    final meta = subjects.firstWhere(
+      (s) => s['subject_id'] == subjectId,
+      orElse: () => <String, dynamic>{},
+    );
+    final totalMastery = ((meta['average_mastery'] as num?)?.toDouble() ?? 0.0) * 100.0;
+    final subjectName =
+        (tree['subject_name'] as String?) ?? (meta['name'] as String?) ?? '';
+
+    final all = <MasterySkill>[];
+    for (final unit in (tree['units'] as List? ?? const [])) {
+      for (final lesson in ((unit as Map)['lessons'] as List? ?? const [])) {
+        for (final skill in ((lesson as Map)['skills'] as List? ?? const [])) {
+          final m = skill as Map<String, dynamic>;
+          all.add(MasterySkill(
+            name: (m['name'] as String?) ?? '',
+            masteryPercent: ((m['mastery'] as num?)?.toDouble() ?? 0.0) * 100.0,
+            attempts: (m['attempts'] as int?) ?? 0,
+          ));
+        }
+      }
+    }
+
+    final strong = all.where((s) => s.masteryPercent >= 75).toList()
+      ..sort((a, b) => b.masteryPercent.compareTo(a.masteryPercent));
+    final weak = all
+        .where((s) => s.attempts > 0 && s.masteryPercent < 50)
+        .toList()
+      ..sort((a, b) => a.masteryPercent.compareTo(b.masteryPercent));
+
+    // Error breakdown (only meaningful once the student has wrong answers).
+    final errRaw = (breakdown['error_breakdown'] as Map<String, dynamic>?) ?? {};
+    final totalErrors = (errRaw['total_errors'] as int?) ?? 0;
+    final errorAnalytics = totalErrors > 0
+        ? ErrorAnalyticModel(
+            carelessPercent: (errRaw['careless_percent'] as num?)?.toDouble() ?? 0.0,
+            conceptGapPercent: (errRaw['concept_gap_percent'] as num?)?.toDouble() ?? 0.0,
+            guessingPercent: (errRaw['guessing_percent'] as num?)?.toDouble() ?? 0.0,
+          )
+        : null;
+
+    final diffRaw = (breakdown['difficulty_accuracy'] as List<dynamic>?) ?? [];
+    final difficultyAccuracy = diffRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return DifficultyAccuracy(
+        difficulty: (m['difficulty'] as int?) ?? 0,
+        total: (m['total'] as int?) ?? 0,
+        accuracy: (m['accuracy'] as num?)?.toDouble() ?? 0.0,
+      );
+    }).toList();
+
+    final histRaw = (historyData['history'] as List<dynamic>?) ?? [];
+    final masteryHistory = histRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return MasteryHistoryPoint(
+        date: DateTime.parse(m['date'] as String),
+        mastery: (m['mastery'] as num?)?.toDouble() ?? 0.0,
+      );
+    }).toList();
+
+    return SubjectMasteryReport(
+      subjectKey: subjectName,
+      totalMasteryPercent: totalMastery,
+      masteryLabel: _masteryLabel(totalMastery),
+      strongSkills: strong.take(8).toList(),
+      weakSkills: weak.take(8).toList(),
+      errorAnalytics: errorAnalytics,
+      difficultyAccuracy: difficultyAccuracy,
+      masteryHistory: masteryHistory,
+    );
+  }
+
+  /// `GET /analytics/subjects/{id}/mastery-history` — daily mastery snapshots.
+  Future<Map<String, dynamic>> getSubjectMasteryHistory(int subjectId, {String? studentUid}) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectId/mastery-history')
+        .replace(queryParameters: studentUid != null ? {'student_uid': studentUid} : null);
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getSubjectMasteryHistory');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// `GET /analytics/subjects/{id}/error-breakdown` — careless/concept/guessing
+  /// split plus per-difficulty accuracy.
+  Future<Map<String, dynamic>> getSubjectErrorBreakdown(int subjectId, {String? studentUid}) async {
+    final headers = await _getJsonHeaders();
+    final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectId/error-breakdown')
+        .replace(queryParameters: studentUid != null ? {'student_uid': studentUid} : null);
+    final response = await http.get(uri, headers: headers);
+    _assertSuccess(response, 'getSubjectErrorBreakdown');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  static String _masteryLabel(double percent) {
+    if (percent >= 90) return 'Expert';
+    if (percent >= 75) return 'Proficient';
+    if (percent >= 50) return 'Developing';
+    if (percent > 0) return 'Beginner';
+    return 'Not Started';
+  }
+
+  /// `POST /analytics/parent/daily-summary` — per-child daily summary slides
+  /// (household headline + one slide per child) for the parent home page.
+  Future<AiSummaryModel> getAiSummary(List<StudentModel> children) async {
+    final headers = await _getJsonHeaders();
+    final clientLocalDate = DateTime.now().toIso8601String().split('T')[0];
+    final uri = Uri.parse('$baseUrl/api/v1/analytics/parent/daily-summary');
+    final response = await http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode({
+        'children':
+            children.map((s) => {'uid': s.uid, 'name': s.fullName}).toList(),
+        'client_local_date': clientLocalDate,
+      }),
+    );
+    _assertSuccess(response, 'getAiSummary');
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    final slidesRaw = (data['slides'] as List<dynamic>?) ?? [];
+    final slides = slidesRaw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return AiSummarySlide(
+        childUid: m['child_uid'] as String?,
+        text: (m['text'] as String?) ?? '',
+        severity: (m['severity'] as String?) ?? 'info',
+      );
+    }).toList();
+
+    return AiSummaryModel(
+      parentUid: '',
+      slides: slides,
+      generatedAt:
+          DateTime.tryParse((data['generated_at'] as String?) ?? '') ??
+              DateTime.now(),
     );
   }
 }

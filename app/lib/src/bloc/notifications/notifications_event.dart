@@ -16,6 +16,15 @@ class LoadNotificationsRequested extends NotificationsEvent {
   List<Object?> get props => [parentUid];
 }
 
+class LoadStudentNotificationsRequested extends NotificationsEvent {
+  final String studentUid;
+
+  const LoadStudentNotificationsRequested(this.studentUid);
+
+  @override
+  List<Object?> get props => [studentUid];
+}
+
 class MarkAllNotificationsReadRequested extends NotificationsEvent {
   final String parentUid;
 

@@ -12,7 +12,6 @@ class BKTEngine:
     """
     def __init__(self, config=None):
         self.cfg = config if config else BKTConfig()
-        self.SPAM_THRESHOLD = 3
 
     def _clamp(self, x: float) -> float:
         return min(self.cfg.max_prob, max(self.cfg.min_prob, x))
@@ -22,13 +21,13 @@ class BKTEngine:
         Adjusts guess and slip rates based on item difficulty and response time.
         """
         delta = difficulty - 3
-        guess = self.cfg.base_guess * math.exp(-0.40 * delta)
-        slip = self.cfg.base_slip * math.exp(+0.30 * delta)
+        guess = self.cfg.base_guess * math.exp(-self.cfg.difficulty_guess_sensitivity * delta)
+        slip = self.cfg.base_slip * math.exp(+self.cfg.difficulty_slip_sensitivity * delta)
 
-        if response_time < 30:
+        if response_time < self.cfg.rush_seconds:
             guess *= 0.7
             slip *= 1.5
-        elif response_time > 120:
+        elif response_time > self.cfg.slow_seconds:
             guess *= 1.3
             slip *= 0.8
 
@@ -73,34 +72,38 @@ class BKTEngine:
 
         old_mastery = skill_state.mastery_probability
         guess, slip = self._adjust_parameters(difficulty, response_time)
-        effective_quality = max(0.1, 1.0 - (hints_used * 0.3))
-        
-        trigger_punishment = False 
+        effective_quality = max(self.cfg.min_quality, 1.0 - (hints_used * self.cfg.hint_penalty))
+
+        trigger_punishment = False
         updated_spam_count = current_session_spam_count
-        MINIMUM_READ_TIME = 2.0 
-        
-        if response_time < MINIMUM_READ_TIME:
+
+        if response_time < self.cfg.min_read_seconds:
             updated_spam_count += 1
             effective_quality = 0.0
-            slip = 0.80 
-            
-            if updated_spam_count >= self.SPAM_THRESHOLD:
+            slip = 0.80
+
+            if updated_spam_count >= self.cfg.spam_threshold:
                 trigger_punishment = True
         else:
             updated_spam_count = 0
 
-        learn_rate = skill_state.skill.default_learn_rate if skill_state.skill else 0.05
+        learn_rate = skill_state.skill.default_learn_rate if skill_state.skill else self.cfg.default_learn_rate
 
+        # Apply only a fraction (mastery_step) of the Bayesian jump each question so
+        # mastery grows and declines gradually instead of swinging ±25-35 pts at once.
         updated = self._bayesian_update(old_mastery, correct, guess, slip, learn_rate)
-        new_mastery = old_mastery + effective_quality * (updated - old_mastery)
-        
+        new_mastery = old_mastery + effective_quality * self.cfg.mastery_step * (updated - old_mastery)
+
         skill_state.mastery_probability = self._clamp(new_mastery)
         skill_state.attempts += 1
         skill_state.last_practiced = datetime.utcnow()
 
-        # Require at least 6 answered questions before declaring a skill mastered,
-        # so a lucky streak of 5 correct answers doesn't trigger the mastered badge.
-        if skill_state.mastery_probability >= 0.95 and skill_state.attempts >= 6:
+        # Require a minimum number of answered questions before declaring a skill
+        # mastered, so a lucky streak doesn't trigger the mastered badge.
+        if (
+            skill_state.mastery_probability >= self.cfg.mastered_threshold
+            and skill_state.attempts >= self.cfg.mastered_min_attempts
+        ):
             skill_state.is_mastered = True
 
         return trigger_punishment, updated_spam_count

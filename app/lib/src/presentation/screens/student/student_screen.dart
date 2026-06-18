@@ -19,7 +19,7 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/avatar_config.dart';
-import '../../widgets/avatar_widget.dart';
+import '../../widgets/student_home/student_top_bar.dart';
 import '../../widgets/gamification/level_up_modal.dart';
 // LevelUpCelebrationScreen is exported from level_up_modal.dart
 import '../../widgets/gamification/streak_milestone_modal.dart';
@@ -39,10 +39,12 @@ import 'student_quiz.dart';
 import 'student_profile.dart';
 import 'shop/custom_shop_screen.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../bloc/notifications/notifications_bloc.dart';
+import '../../../bloc/notifications/notifications_event.dart';
+import '../../../bloc/notifications/notifications_state.dart';
+import '../../../domain/models/notification_model.dart';
+import '../../widgets/student_home/student_notifications_sheet.dart';
 
-/// Base URL for the AI Engine.
-/// Change to your machine's LAN IP when testing on a physical device.
-const _kAiEngineBaseUrl = 'http://192.168.0.219:8000';
 
 class StudentScreen extends StatefulWidget {
   final String fullName;
@@ -92,6 +94,10 @@ class _StudentScreenState extends State<StudentScreen>
   /// Parent-configured quiz question count — kept in sync when config loads.
   QuizCount _quizCount = const Auto();
 
+  /// Student's grade level (set by the parent) — used to size generated quizzes.
+  /// Null until loaded; falls back to 5 in the quiz request.
+  int? _studentGrade;
+
   /// Stable repository instance — created once in initState.
   late final AiEngineRepository _aiRepo;
 
@@ -109,12 +115,16 @@ class _StudentScreenState extends State<StudentScreen>
   late final GamificationBloc _gamificationBloc;
   late final MascotCubit _mascotCubit;
 
+  /// Lets the resume handler refresh the home screen's data (XP/streak/garden/
+  /// daily snapshot) by reusing StudentHome.refresh().
+  final _homeKey = GlobalKey<StudentHomeState>();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _aiRepo = AiEngineRepository(baseUrl: _kAiEngineBaseUrl);
+    _aiRepo = AiEngineRepository(baseUrl: AiEngineRepository.defaultBaseUrl);
 
     _shopBloc = ShopBloc();
     _gardenBloc = GardenBloc();
@@ -129,6 +139,13 @@ class _StudentScreenState extends State<StudentScreen>
     _initMascotService();
 
     _loadAvatar();
+    _loadGrade();
+
+    // Load this student's notifications into the shared NotificationsBloc so
+    // the header bell reflects unread state and the sheet has content.
+    context.read<NotificationsBloc>().add(
+          LoadStudentNotificationsRequested(widget.uid),
+        );
 
     // Sync the installed-app inventory on every login so DataConnect always
     // has an up-to-date list for this account. The repository's diff logic
@@ -231,9 +248,46 @@ class _StudentScreenState extends State<StudentScreen>
     } catch (_) {}
   }
 
+  Future<void> _loadGrade() async {
+    try {
+      final profile = await DataConnectProvider().getStudentProfile(widget.uid);
+      if (mounted) {
+        setState(() => _studentGrade = profile['grade_level'] as int?);
+      }
+    } catch (_) {}
+  }
+
+  /// Re-fetch the parent-configured quiz count so a change made while the student
+  /// app was backgrounded takes effect on the next forced quiz. (The voluntary path
+  /// already reloads config when the subject screen opens.) The count is also
+  /// enforced server-side: a pre-warmed quiz with a stale count is not reused — a
+  /// fresh quiz is generated for the new count instead.
+  Future<void> _refreshQuizCount() async {
+    try {
+      final repo = context.read<AuthBloc>().repository;
+      final config = (await repo.getAppConfigForStudent(widget.uid)).config;
+      if (mounted && config != null) {
+        setState(() => _quizCount = config.quizCount);
+      }
+    } catch (_) {}
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
+
+    // Pick up parent config changes (e.g. quiz count) made while backgrounded.
+    _refreshQuizCount();
+
+    // Reload home data (XP/streak/garden/daily snapshot) so the dashboard isn't
+    // stale after returning from background or from a quiz. Skipped while a quiz
+    // overlay is open to avoid churning state mid-quiz.
+    if (_permissionsGranted &&
+        !_initializing &&
+        !_checkingPermissions &&
+        !_quizIsOpen) {
+      _homeKey.currentState?.refresh();
+    }
 
     // Sync on resume only when the native side flags a package change.
     InstalledAppsService.instance.isInventoryDirty().then((dirty) {
@@ -369,10 +423,12 @@ class _StudentScreenState extends State<StudentScreen>
                 repository: _aiRepo,
                 studentId: widget.uid,
                 contextType: QuizContext.forced,
+                studentGrade: _studentGrade,
                 totalQuestions: switch (_quizCount) {
                   Auto() => 5,
                   Fixed(:final count) => count,
                 },
+                autoLength: _quizCount is Auto,
               ),
 
             ),
@@ -646,6 +702,7 @@ class _StudentScreenState extends State<StudentScreen>
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FA),
             body: SafeArea(
+              top: false,
               child: Column(
                 children: [
                   Builder(builder: (ctx) => _buildTopNav(ctx)),
@@ -653,7 +710,11 @@ class _StudentScreenState extends State<StudentScreen>
                     child: IndexedStack(
                       index: _selectedIndex,
                       children: [
-                        StudentHome(fullName: widget.fullName, uid: widget.uid),
+                        StudentHome(
+                          key: _homeKey,
+                          fullName: widget.fullName,
+                          uid: widget.uid,
+                        ),
                       ],
                     ),
                   ),
@@ -669,171 +730,76 @@ class _StudentScreenState extends State<StudentScreen>
   // ── Custom top navigation bar ─────────────────────────────────────────────
 
   Widget _buildTopNav(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              final shopBloc = context.read<ShopBloc>();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: shopBloc,
-                    child: Scaffold(
-                      body: SafeArea(
-                        child: StudentProfile(
-                          fullName: widget.fullName,
-                          uid: widget.uid,
-                        ),
-                      ),
-                    ),
+    return BlocBuilder<NotificationsBloc, NotificationsState>(
+      builder: (context, state) {
+        final notifications =
+            state is NotificationsLoaded ? state.notifications : <NotificationModel>[];
+        final hasUnread = notifications.any((n) => !n.isRead);
+        return StudentTopBar(
+          avatarConfig: _avatarConfig,
+          level: _level,
+          coins: _coins,
+          hasNotifications: hasUnread,
+          onAvatarTap: () {
+        final shopBloc = context.read<ShopBloc>();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: shopBloc,
+              child: Scaffold(
+                // top: false lets the profile's green header paint into the
+                // status/notification bar (the header owns the top inset).
+                body: SafeArea(
+                  top: false,
+                  child: StudentProfile(
+                    fullName: widget.fullName,
+                    uid: widget.uid,
                   ),
                 ),
-              ).then((_) {
-                if (mounted) _loadCoinsAndLevel();
-              });
-            },
-            child: Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF4CAF50), width: 2.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: AvatarWidget(config: _avatarConfig, size: 43.0),
               ),
             ),
           ),
-          const Spacer(),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FF),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE0E6FF)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star_rounded, color: Color(0xFF4A6CF7), size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      loc.levelShortLabel(_level),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1F3C),
-                      ),
-                    ),
-                  ],
-                ),
+        ).then((_) {
+          if (mounted) _loadCoinsAndLevel();
+        });
+      },
+      onCoinsTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<ShopBloc>(),
+              child: CustomShopScreen(
+                studentUid: widget.uid,
+                currentCoins: _coins,
+                currentLevel: _level,
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: context.read<ShopBloc>(),
-                        child: CustomShopScreen(
-                          studentUid: widget.uid,
-                          currentCoins: _coins,
-                          currentLevel: _level,
-                        ),
-                      ),
-                    ),
-                  ).then((_) {
-                    if (mounted) {
-                      _loadCoinsAndLevel();
-                      _loadAvatar();
-                    }
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFFFE082)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('🪙', style: TextStyle(fontSize: 12)),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatNum(_coins),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFF57F17),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(width: 6),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Color(0xFF757575),
-                  size: 24,
-                ),
-                onPressed: () {},
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ).then((_) {
+          if (mounted) {
+            _loadCoinsAndLevel();
+            _loadAvatar();
+          }
+        });
+      },
+          onNotificationsTap: () => _showNotificationsSheet(context),
+        );
+      },
     );
   }
 
-
-  String _formatNum(int n) {
-    if (n >= 1000) {
-      final s = n.toString();
-      final thousands = s.substring(0, s.length - 3);
-      final remainder = s.substring(s.length - 3);
-      return '$thousands,$remainder';
-    }
-    return '$n';
+  void _showNotificationsSheet(BuildContext context) {
+    final bloc = context.read<NotificationsBloc>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: bloc,
+        child: StudentNotificationsSheet(studentUid: widget.uid),
+      ),
+    );
   }
 }

@@ -8,6 +8,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
 
   NotificationsBloc({required this.repository}) : super(NotificationsInitial()) {
     on<LoadNotificationsRequested>(_onLoadNotifications);
+    on<LoadStudentNotificationsRequested>(_onLoadStudentNotifications);
     on<MarkAllNotificationsReadRequested>(_onMarkAllNotificationsRead);
   }
 
@@ -18,6 +19,19 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     emit(NotificationsLoading());
     try {
       final notifications = await repository.getNotificationsForParent(event.parentUid);
+      emit(NotificationsLoaded(notifications));
+    } catch (e) {
+      emit(NotificationsError('Failed to load notifications: $e'));
+    }
+  }
+
+  Future<void> _onLoadStudentNotifications(
+    LoadStudentNotificationsRequested event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    emit(NotificationsLoading());
+    try {
+      final notifications = await repository.getNotificationsForStudent(event.studentUid);
       emit(NotificationsLoaded(notifications));
     } catch (e) {
       emit(NotificationsError('Failed to load notifications: $e'));

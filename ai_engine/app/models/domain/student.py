@@ -27,5 +27,10 @@ class StudentSubjectProfile(Base):
     
     exam_date = Column(DateTime, nullable=True)
     last_quizzed_at = Column(DateTime, nullable=True)
-    
+
+    # Parent "focus" control: when False the subject is hidden from the student's garden
+    # and excluded from quizzes. Absence of a row means selected (default True), so
+    # existing data and global subjects stay visible until explicitly deselected.
+    is_selected = Column(Boolean, nullable=False, default=True, server_default="true")
+
     subject = relationship("Subject")

@@ -16,6 +16,7 @@ import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 // ---------------------------------------------------------------------------
 // Study Mentor design-system tokens (Student app)
@@ -64,7 +65,14 @@ class QuizOverlayPage extends StatelessWidget {
   final String studentId;
   final QuizContext contextType;
   final int totalQuestions;
+
+  /// When true (parent's "Auto" length), the backend sizes the quiz; [totalQuestions]
+  /// is only a fallback.
+  final bool autoLength;
   final int? subjectId;
+
+  /// The student's grade level (from their profile); null falls back to 5.
+  final int? studentGrade;
 
 
   const QuizOverlayPage({
@@ -73,7 +81,9 @@ class QuizOverlayPage extends StatelessWidget {
     required this.studentId,
     required this.contextType,
     this.totalQuestions = 5,
+    this.autoLength = false,
     this.subjectId,
+    this.studentGrade,
   });
 
   @override
@@ -91,7 +101,9 @@ class QuizOverlayPage extends StatelessWidget {
         studentId: studentId,
         contextType: contextType,
         totalQuestions: totalQuestions,
+        autoLength: autoLength,
         subjectId: subjectId,
+        studentGrade: studentGrade,
       ),
     );
   }
@@ -104,13 +116,17 @@ class _QuizOverlayScaffold extends StatefulWidget {
   final String studentId;
   final QuizContext contextType;
   final int totalQuestions;
+  final bool autoLength;
   final int? subjectId;
+  final int? studentGrade;
 
   const _QuizOverlayScaffold({
     required this.studentId,
     required this.contextType,
     required this.totalQuestions,
+    this.autoLength = false,
     this.subjectId,
+    this.studentGrade,
   });
 
 
@@ -228,7 +244,10 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
             if (state is QuizInitial) {
               return _AutoStartPanel(
                 totalQuestions: widget.totalQuestions,
+                autoLength: widget.autoLength,
                 subjectId: widget.subjectId,
+                studentGrade: widget.studentGrade,
+                contextType: widget.contextType,
               );
             }
             if (state is QuizLoading) {
@@ -258,11 +277,17 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
 class _AutoStartPanel extends StatelessWidget {
 
   final int totalQuestions;
+  final bool autoLength;
   final int? subjectId;
+  final int? studentGrade;
+  final QuizContext contextType;
 
   const _AutoStartPanel({
     required this.totalQuestions,
+    required this.contextType,
+    this.autoLength = false,
     this.subjectId,
+    this.studentGrade,
   });
 
 
@@ -307,7 +332,10 @@ class _AutoStartPanel extends StatelessWidget {
                 context.read<QuizBloc>().add(
                   GenerateQuizEvent(
                     totalQuestions: totalQuestions,
+                    autoLength: autoLength,
                     subjectId: subjectId,
+                    studentGrade: studentGrade ?? 5,
+                    quizContext: contextType,
                   ),
                 );
 
@@ -381,7 +409,8 @@ class StudentQuizScreen extends StatelessWidget {
 
   @override
 
-  Widget build(BuildContext context) => const _AutoStartPanel(totalQuestions: 5);
+  Widget build(BuildContext context) =>
+      const _AutoStartPanel(totalQuestions: 5, contextType: QuizContext.voluntary);
 
 }
 
@@ -739,6 +768,7 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final isCorrectSelection = selectedOption == question.correctAnswer;
 
     return SingleChildScrollView(
@@ -768,7 +798,7 @@ class _QuestionCard extends StatelessWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    _difficultyPill(AppLocalizations.of(context)),
+                    _difficultyPill(loc),
                     _skillChip(),
                   ],
                 ),

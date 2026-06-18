@@ -1,4 +1,5 @@
 import '../../data/repositories/ai_engine_repository.dart';
+import '../../domain/models/gamification_enums.dart';
 
 abstract class QuizEvent {}
 
@@ -8,12 +9,22 @@ abstract class QuizEvent {}
 class GenerateQuizEvent extends QuizEvent {
   final int? subjectId;
   final int totalQuestions;
+
+  /// When true, the backend computes the quiz length adaptively (parent's "Auto" choice).
+  final bool autoLength;
   final int studentGrade;
+
+  /// Whether this quiz was launched voluntarily or forced (mascot/focus-limit).
+  /// Threaded to the backend so forced quizzes earn their reward bonus, and reused
+  /// when pre-warming the next quiz.
+  final QuizContext quizContext;
 
   GenerateQuizEvent({
     this.subjectId,
     required this.totalQuestions,
+    this.autoLength = false,
     this.studentGrade = 5,
+    this.quizContext = QuizContext.voluntary,
   });
 }
 

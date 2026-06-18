@@ -32,7 +32,6 @@ class ReportsAnalysisScreen extends StatefulWidget {
 class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedSubject = 'Mathematics';
 
   @override
   void initState() {
@@ -42,11 +41,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
       LoadWeeklyReportRequested(studentUid: widget.student.uid),
     );
     context.read<ReportsBloc>().add(
-      LoadSubjectMasteryRequested(
-        studentUid: widget.student.uid,
-        subjectKey: 'math',
-      ),
-    ); // Mock key
+      LoadReportSubjectsRequested(studentUid: widget.student.uid),
+    );
     context.read<ReportsBloc>().add(
       LoadStudyHabitsRequested(studentUid: widget.student.uid),
     );
@@ -178,14 +174,28 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Metrics Row
-              Row(
-                children: [
+              // Needs Attention alerts
+              if (report.alerts.isNotEmpty) ...[
+                _buildAlertsCard(report.alerts),
+                const SizedBox(height: 16),
+              ],
+
+              // Metrics Row — IntrinsicHeight keeps all three cards the same
+              // height even when a metric has no delta (shorter content).
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Expanded(
                     child: _buildMetricCard(
                       loc.accuracyLabel,
                       "${report.overallAccuracyPercent.toInt()}%",
                       _kTeal,
+                      delta: (report.accuracyDelta != null &&
+                              report.accuracyDelta != 0)
+                          ? "${report.accuracyDelta! > 0 ? '+' : ''}${report.accuracyDelta!.toStringAsFixed(0)}%"
+                          : null,
+                      deltaUp: (report.accuracyDelta ?? 0) >= 0,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -194,6 +204,10 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       loc.metricQuizzesLabel,
                       "${report.totalQuizzes}",
                       _kPrimary,
+                      delta: report.quizzesDelta != 0
+                          ? "${report.quizzesDelta > 0 ? '+' : ''}${report.quizzesDelta}"
+                          : null,
+                      deltaUp: report.quizzesDelta >= 0,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -202,9 +216,14 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       loc.studyTimeLabel,
                       "${report.totalStudyTime.inHours}h ${report.totalStudyTime.inMinutes.remainder(60)}m",
                       _kAmber,
+                      delta: report.studyMinutesDelta != 0
+                          ? "${report.studyMinutesDelta > 0 ? '+' : ''}${report.studyMinutesDelta}m"
+                          : null,
+                      deltaUp: report.studyMinutesDelta >= 0,
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -278,9 +297,21 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               ),
               const SizedBox(height: 16),
 
+              // Time by Subject
+              if (report.subjectAllocations.isNotEmpty) ...[
+                _buildSubjectAllocationCard(report.subjectAllocations),
+                const SizedBox(height: 16),
+              ],
+
               // Streak Progress Card
               _buildStreakCard(report),
               const SizedBox(height: 16),
+
+              // Effort & Focus
+              if (report.voluntaryQuizzes + report.forcedQuizzes > 0) ...[
+                _buildEffortCard(report),
+                const SizedBox(height: 16),
+              ],
 
               // Smart Insights (auto-generated)
               Container(
@@ -313,8 +344,10 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      _generateInsight(report),
-                      style: GoogleFonts.cairo(
+                      report.aiInsightText.isNotEmpty
+                          ? report.aiInsightText
+                          : _generateInsight(report),
+                      style: GoogleFonts.roboto(
                         fontSize: 14,
                         height: 1.6,
                         color: _kSubText,
@@ -431,6 +464,125 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     );
   }
 
+  Widget _buildEffortCard(WeeklyReportModel report) {
+    final voluntary = report.voluntaryQuizzes;
+    final forced = report.forcedQuizzes;
+    final total = voluntary + forced;
+    final guessing = report.guessingSessions;
+    final voluntaryFraction = total > 0 ? voluntary / total : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Effort & Focus",
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _kDarkText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Where this week's quizzes came from",
+            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _effortStat(Icons.volunteer_activism_rounded, _kTeal,
+                    '$voluntary', 'Self-started'),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _effortStat(Icons.lock_open_rounded, _kAmber,
+                    '$forced', 'To unlock apps'),
+              ),
+            ],
+          ),
+          if (total > 0) ...[
+            const SizedBox(height: 20),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: voluntaryFraction,
+                minHeight: 8,
+                backgroundColor: _kAmber.withOpacity(0.25),
+                color: _kTeal,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${(voluntaryFraction * 100).toInt()}% of quizzes were self-started',
+              style: GoogleFonts.roboto(
+                fontSize: 12,
+                color: _kSubText,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          if (guessing > 0) ...[
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: _kRed, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    guessing == 1
+                        ? '1 quiz showed rapid guessing'
+                        : '$guessing quizzes showed rapid guessing',
+                    style: GoogleFonts.roboto(
+                      fontSize: 12,
+                      color: _kRed,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _effortStat(IconData icon, Color color, String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                value,
+                style: GoogleFonts.roboto(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: _kDarkText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: GoogleFonts.roboto(fontSize: 12, color: _kSubText)),
+        ],
+      ),
+    );
+  }
+
   String _generateInsight(WeeklyReportModel report) {
     final loc = AppLocalizations.of(context);
     final q = report.totalQuizzes;
@@ -455,11 +607,83 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     return loc.insightDefault(acc, q);
   }
 
-  Widget _buildMetricCard(String title, String value, Color color) {
+  Widget _buildAlertsCard(List<AlertModel> alerts) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _kRed.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kRed.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.notifications_active_rounded,
+                  color: _kRed, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                "Needs Attention",
+                style: GoogleFonts.cairo(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: _kDarkText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...alerts.map((a) {
+            final isHigh = a.severity == 'high';
+            final color = isHigh ? _kRed : _kAmber;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      isHigh
+                          ? Icons.error_rounded
+                          : Icons.warning_amber_rounded,
+                      color: color,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      a.message,
+                      style: GoogleFonts.roboto(
+                        fontSize: 13,
+                        height: 1.3,
+                        color: _kDarkText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(
+    String title,
+    String value,
+    Color color, {
+    String? delta,
+    bool deltaUp = true,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: _cardDecoration(),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             value,
@@ -475,6 +699,281 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
             textAlign: TextAlign.center,
           ),
+          if (delta != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  deltaUp
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
+                  size: 11,
+                  color: deltaUp ? _kTeal : _kRed,
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  delta,
+                  style: GoogleFonts.roboto(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: deltaUp ? _kTeal : _kRed,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubjectAllocationCard(List<SubjectTimeAllocation> allocations) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Time by Subject",
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _kDarkText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "How study time was split this week",
+            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+          ),
+          const SizedBox(height: 16),
+          ...allocations.map((a) {
+            final color = _hexToColor(a.colorHex);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          a.subjectKey,
+                          style: GoogleFonts.roboto(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: _kDarkText,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        "${a.percentage.toStringAsFixed(0)}%",
+                        style: GoogleFonts.roboto(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: _kDarkText,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (a.percentage / 100).clamp(0.0, 1.0),
+                      minHeight: 6,
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Color _hexToColor(String hex) {
+    var h = hex.replaceFirst('#', '').trim();
+    if (h.length == 6) h = 'FF$h';
+    final value = int.tryParse(h, radix: 16);
+    return value != null ? Color(value) : _kPrimary;
+  }
+
+  Widget _buildMasteryHistoryCard(List<MasteryHistoryPoint> history) {
+    final hasTrend = history.length >= 2;
+    final points = history
+        .map((h) => WeeklyAccuracyPoint(weekLabel: '', accuracy: h.mastery))
+        .toList();
+    final delta = hasTrend ? history.last.mastery - history.first.mastery : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Mastery Over Time",
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _kDarkText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            hasTrend
+                ? "Daily mastery over the last ${history.length} day${history.length == 1 ? '' : 's'}"
+                : "Mastery is recorded daily as quizzes are taken",
+            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+          ),
+          const SizedBox(height: 20),
+          if (hasTrend) ...[
+            SizedBox(
+              height: 140,
+              width: double.infinity,
+              child: CustomPaint(painter: _AccuracyTrendPainter(points)),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  delta >= 0
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
+                  color: delta >= 0 ? _kTeal : _kRed,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(1)}% over this period",
+                  style: GoogleFonts.roboto(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: delta >= 0 ? _kTeal : _kRed,
+                  ),
+                ),
+              ],
+            ),
+          ] else
+            SizedBox(
+              height: 90,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.show_chart_rounded,
+                        size: 36, color: _kSubText.withValues(alpha: 0.4)),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Not enough data yet",
+                      style: GoogleFonts.roboto(fontSize: 13, color: _kSubText),
+                    ),
+                    Text(
+                      "Check back after a few more study days",
+                      style: GoogleFonts.roboto(
+                        fontSize: 11,
+                        color: _kSubText.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDifficultyCard(List<DifficultyAccuracy> items) {
+    const labels = {
+      1: 'Very Easy',
+      2: 'Easy',
+      3: 'Medium',
+      4: 'Hard',
+      5: 'Very Hard',
+    };
+    final shown = items.where((d) => d.total > 0).toList();
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Accuracy by Difficulty",
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _kDarkText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "How performance holds up as questions get harder",
+            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+          ),
+          const SizedBox(height: 16),
+          ...shown.map((d) {
+            final acc = d.accuracy;
+            final color = acc >= 75 ? _kTeal : (acc >= 50 ? _kAmber : _kRed);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "${labels[d.difficulty] ?? 'Level ${d.difficulty}'} · ${d.total} Q",
+                          style: GoogleFonts.roboto(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: _kDarkText,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        "${acc.toInt()}%",
+                        style: GoogleFonts.roboto(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (acc / 100).clamp(0.0, 1.0),
+                      minHeight: 6,
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -483,15 +982,13 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   // ── Subject Mastery Tab ─────────────────────────────────────────────────────
 
   Widget _buildSubjectMasteryTab() {
-    final loc = AppLocalizations.of(context);
-    final subjects = ['math', 'science', 'english', 'history']; // Use keys
-
     return BlocBuilder<ReportsBloc, ReportsState>(
       builder: (context, state) {
-        if (state.isMasteryLoading) {
+        // First load (no chips yet): show spinner / error / empty for the whole tab.
+        if (state.isMasteryLoading && state.subjects.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (state.masteryError != null) {
+        if (state.masteryError != null && state.masteryReport == null) {
           return Center(
             child: Text(
               state.masteryError!,
@@ -499,34 +996,27 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             ),
           );
         }
+        if (state.subjects.isEmpty) {
+          return const Center(child: Text('No subjects to report on yet.'));
+        }
 
         final report = state.masteryReport;
-        if (report == null) {
-          return Center(child: Text(loc.noMasteryReportMessage));
-        }
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Total Mastery Card
-              _buildTotalMasteryCard(
-                report.totalMasteryPercent,
-                report.masteryLabel,
-              ),
-              const SizedBox(height: 16),
-
-              // Chips
+              // Subject chips (always visible once loaded)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: subjects.map((sub) {
-                    final isSelected = sub == _selectedSubject;
+                  children: state.subjects.map((sub) {
+                    final isSelected = sub.id == state.selectedSubjectId;
                     return Padding(
                       padding: const EdgeInsetsDirectional.only(end: 8.0),
                       child: ChoiceChip(
-                        label: Text(sub.toUpperCase()),
+                        label: Text(sub.name),
                         selected: isSelected,
                         selectedColor: _kPrimary,
                         labelStyle: GoogleFonts.cairo(
@@ -536,12 +1026,11 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                               : FontWeight.normal,
                         ),
                         onSelected: (val) {
-                          if (val && _selectedSubject != sub) {
-                            setState(() => _selectedSubject = sub);
+                          if (val && sub.id != state.selectedSubjectId) {
                             context.read<ReportsBloc>().add(
                               LoadSubjectMasteryRequested(
                                 studentUid: widget.student.uid,
-                                subjectKey: sub,
+                                subjectId: sub.id,
                               ),
                             );
                           }
@@ -551,100 +1040,127 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   }).toList(),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Mastery Circle
-              Center(
-                child: SizedBox(
-                  width: 160,
-                  height: 160,
-                  child: CustomPaint(
-                    painter: _MasteryCirclePainter(
-                      percentage: report.totalMasteryPercent / 100.0,
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "${report.totalMasteryPercent.toInt()}%",
-                            style: GoogleFonts.cairo(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: _kPrimary,
+              if (state.isMasteryLoading || report == null)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
+                // Total Mastery Card
+                _buildTotalMasteryCard(
+                  report.totalMasteryPercent,
+                  report.masteryLabel,
+                ),
+                const SizedBox(height: 24),
+
+                // Mastery Circle
+                Center(
+                  child: SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: CustomPaint(
+                      painter: _MasteryCirclePainter(
+                        percentage: report.totalMasteryPercent / 100.0,
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "${report.totalMasteryPercent.toInt()}%",
+                              style: GoogleFonts.roboto(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: _kPrimary,
+                              ),
                             ),
-                          ),
-                          Text(
-                            loc.masteredLabel,
-                            style: GoogleFonts.cairo(
-                              fontSize: 14,
-                              color: _kSubText,
+                            Text(
+                              "Mastered",
+                              style: GoogleFonts.roboto(
+                                fontSize: 14,
+                                color: _kSubText,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-              // Actionable Areas
-              Text(
-                loc.strongAreasTitle,
-                style: GoogleFonts.cairo(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _kDarkText,
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (report.strongSkills.isNotEmpty) ...[
-                ...report.strongSkills
-                    .map(
-                      (skill) => _buildSkillRow(
-                        skill.skillKey,
-                        skill.masteryPercent.toInt(),
-                        isStrong: true,
-                      ),
-                    ),
-              ] else ...[
+                // Mastery Over Time
+                _buildMasteryHistoryCard(report.masteryHistory),
+                const SizedBox(height: 24),
+
+                // Actionable Areas
                 Text(
-                  loc.noStrongAreasMessage,
-                  style: GoogleFonts.cairo(color: _kSubText),
+                  "🔥 Strong Areas",
+                  style: GoogleFonts.cairo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _kDarkText,
+                  ),
                 ),
-              ],
-
-              const SizedBox(height: 24),
-              Text(
-                loc.needsWorkAreasTitle,
-                style: GoogleFonts.cairo(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _kDarkText,
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (report.weakSkills.isNotEmpty) ...[
-                ...report.weakSkills
-                    .map(
-                      (skill) => _buildSkillRow(
-                        skill.skillKey,
-                        skill.masteryPercent.toInt(),
-                        isNeedsWork: true,
-                      ),
+                const SizedBox(height: 12),
+                if (report.strongSkills.isNotEmpty) ...[
+                  ...report.strongSkills.map(
+                    (skill) => _buildSkillRow(
+                      skill.name,
+                      skill.masteryPercent.toInt(),
+                      isStrong: true,
                     ),
-              ] else ...[
-                Text(
-                  loc.noWeakAreasMessage,
-                  style: GoogleFonts.cairo(color: _kSubText),
-                ),
-              ],
+                  ),
+                ] else ...[
+                  Text(
+                    "No strong areas identified yet.",
+                    style: GoogleFonts.roboto(color: _kSubText),
+                  ),
+                ],
 
-              const SizedBox(height: 24),
-              // Error Analytics
-              _buildErrorAnalyticsCard(report.errorAnalytics),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
+                Text(
+                  "⚠️ Needs Work",
+                  style: GoogleFonts.cairo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _kDarkText,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (report.weakSkills.isNotEmpty) ...[
+                  ...report.weakSkills.map(
+                    (skill) => _buildSkillRow(
+                      skill.name,
+                      skill.masteryPercent.toInt(),
+                      isNeedsWork: true,
+                    ),
+                  ),
+                ] else ...[
+                  Text(
+                    "No weak areas identified yet.",
+                    style: GoogleFonts.roboto(color: _kSubText),
+                  ),
+                ],
+
+                // Error Analytics — only when there are wrong answers to break down.
+                if (report.errorAnalytics != null) ...[
+                  const SizedBox(height: 24),
+                  _buildErrorAnalyticsCard(
+                    report.errorAnalytics!,
+                    report.subjectKey,
+                  ),
+                ],
+
+                // Accuracy by difficulty — only when there are answered questions.
+                if (report.difficultyAccuracy.any((d) => d.total > 0)) ...[
+                  const SizedBox(height: 24),
+                  _buildDifficultyCard(report.difficultyAccuracy),
+                ],
+                const SizedBox(height: 24),
+              ],
             ],
           ),
         );
@@ -722,7 +1238,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     );
   }
 
-  Widget _buildErrorAnalyticsCard(ErrorAnalyticModel analytics) {
+  Widget _buildErrorAnalyticsCard(ErrorAnalyticModel analytics, String subjectName) {
     final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
@@ -746,8 +1262,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           ),
           const SizedBox(height: 6),
           Text(
-            loc.commonMistakeTypesLabel(_selectedSubject),
-            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
+            "Common mistake types on $subjectName quizzes.",
+            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -757,21 +1273,21 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           ),
           const SizedBox(height: 20),
           _errorDetailItem(
-            _kRed.withValues(alpha: 0.8),
-            loc.carelessMistakesLabel(analytics.carelessPercent.toInt()),
-            loc.carelessMistakesDescription,
+            _kRed.withOpacity(0.8),
+            "Careless Mistakes (${analytics.carelessPercent.toInt()}%)",
+            "Knew the material but slipped on a quick answer",
           ),
           const SizedBox(height: 10),
           _errorDetailItem(
             _kAmber,
-            loc.conceptGapsLabel(analytics.conceptGapPercent.toInt()),
-            loc.conceptGapsDescription,
+            "Concept Gaps (${analytics.conceptGapPercent.toInt()}%)",
+            "Genuine difficulty with the underlying topic",
           ),
           const SizedBox(height: 10),
           _errorDetailItem(
             _kPrimary,
-            loc.timePressureLabel(analytics.timePressurePercent.toInt()),
-            loc.timePressureDescription,
+            "Guessing (${analytics.guessingPercent.toInt()}%)",
+            "Answered too fast to have thought it through",
           ),
         ],
       ),
@@ -999,7 +1515,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               _buildHeatmapCard(report),
               const SizedBox(height: 16),
 
-              // Correlation Chart
+              // Daily Study Time Chart
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: _cardDecoration(),
@@ -1007,7 +1523,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      loc.studyVsAppUsageTitle,
+                      "Daily Study Time",
                       style: GoogleFonts.cairo(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1016,41 +1532,128 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      loc.studyVsAppUsageSubtitle,
-                      style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
+                      "Active learning minutes over the last 7 days.",
+                      style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      height: 180,
-                      width: double.infinity,
-                      child: CustomPaint(
-                        painter: _CorrelationChartPainter(report.correlation),
+                    if (report.dailyStudy.any((d) => d.studyMinutes > 0)) ...[
+                      SizedBox(
+                        height: 180,
+                        width: double.infinity,
+                        child: CustomPaint(
+                          painter: _DailyStudyPainter(report.dailyStudy),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _legendItem(loc.studyTimeLabel, _kPrimary),
-                        const SizedBox(width: 24),
-                        _legendItem(loc.appUsageLegendLabel, _kRed.withValues(alpha: 0.6)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: report.correlation
-                          .map((c) => _chartLabel(c.dayLabel))
-                          .toList(),
-                    ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: report.dailyStudy
+                            .map((c) => _chartLabel(c.dayLabel))
+                            .toList(),
+                      ),
+                    ] else
+                      SizedBox(
+                        height: 100,
+                        child: Center(
+                          child: Text(
+                            "No study time recorded in the last 7 days",
+                            style: GoogleFonts.roboto(
+                              fontSize: 13,
+                              color: _kSubText,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              // When They Study (time-of-day distribution)
+              if (report.timeOfDay.any((t) => t.minutes > 0)) ...[
+                _buildTimeOfDayCard(report.timeOfDay),
+                const SizedBox(height: 16),
+              ],
+              const SizedBox(height: 8),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTimeOfDayCard(List<TimeOfDayPoint> points) {
+    final maxMinutes = points
+        .map((p) => p.minutes)
+        .fold<int>(0, (a, b) => a > b ? a : b);
+    final scale = maxMinutes <= 0 ? 1 : maxMinutes;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "When They Study",
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _kDarkText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Study time by part of the day (last 30 days)",
+            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+          ),
+          const SizedBox(height: 16),
+          ...points.map((p) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 78,
+                    child: Text(
+                      p.label,
+                      style: GoogleFonts.roboto(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: _kDarkText,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: (p.minutes / scale).clamp(0.0, 1.0),
+                        minHeight: 8,
+                        backgroundColor: const Color(0xFFE2E8F0),
+                        color: _kTeal,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 52,
+                    child: Text(
+                      _DailyStudyPainter._formatMinutes(p.minutes),
+                      textAlign: TextAlign.right,
+                      style: GoogleFonts.roboto(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _kSubText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -1216,23 +1819,6 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     );
   }
 
-  Widget _legendItem(String text, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(text, style: GoogleFonts.cairo(fontSize: 12, color: _kSubText)),
-      ],
-    );
-  }
-
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: _kWhite,
@@ -1392,7 +1978,7 @@ class _ErrorAnalyticsPainter extends CustomPainter {
 
     final w1 = size.width * (data.carelessPercent / 100.0);
     final w2 = size.width * (data.conceptGapPercent / 100.0);
-    final w3 = size.width * (data.timePressurePercent / 100.0);
+    final w3 = size.width * (data.guessingPercent / 100.0);
 
     final clipRRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, h),
@@ -1462,59 +2048,72 @@ class _ActivityHeatmapPainter extends CustomPainter {
   }
 }
 
-class _CorrelationChartPainter extends CustomPainter {
-  final List<StudyVsAppCorrelationPoint> data;
-  _CorrelationChartPainter(this.data);
+class _DailyStudyPainter extends CustomPainter {
+  final List<DailyStudyPoint> data;
+  _DailyStudyPainter(this.data);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final studyMins = data.map((e) => e.studyMinutes).toList();
-    final appMins = data.map((e) => e.appUsageMinutes).toList();
+    if (data.isEmpty) return;
+    final values = data.map((e) => e.studyMinutes).toList();
+    final maxVal = values.reduce((a, b) => a > b ? a : b).toDouble();
+    final scale = maxVal <= 0 ? 1.0 : maxVal;
 
-    final maxVal = 200.0;
+    final n = data.length;
+    final stepX = size.width / n;
+    final barWidth = (stepX * 0.5).clamp(6.0, 28.0);
+    // Reserve room at the top so the minute labels are always readable.
+    const labelGap = 18.0;
+    final chartHeight = size.height - labelGap;
 
-    final barWidth = 12.0;
-    final stepX = size.width / 7;
-
-    final studyPaint = Paint()
+    final paint = Paint()
       ..color = _kPrimary
       ..style = PaintingStyle.fill;
 
-    final appPaint = Paint()
-      ..color = _kRed.withValues(alpha: 0.6)
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < n; i++) {
       final centerX = (i * stepX) + (stepX / 2);
-
-      final studyH = (studyMins[i] / maxVal) * size.height;
-      final studyRect = Rect.fromLTWH(
-        centerX - barWidth - 2,
-        size.height - studyH,
+      final h = (values[i] / scale) * (chartHeight - 4);
+      final top = size.height - h;
+      final rect = Rect.fromLTWH(
+        centerX - barWidth / 2,
+        top,
         barWidth,
-        studyH,
+        h,
       );
       canvas.drawRRect(
-        RRect.fromRectAndRadius(studyRect, const Radius.circular(4)),
-        studyPaint,
+        RRect.fromRectAndRadius(rect, const Radius.circular(4)),
+        paint,
       );
 
-      final appH = (appMins[i] / maxVal) * size.height;
-      final appRect = Rect.fromLTWH(
-        centerX + 2,
-        size.height - appH,
-        barWidth,
-        appH,
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(appRect, const Radius.circular(4)),
-        appPaint,
-      );
+      // Value label above each bar so exact study time is readable.
+      if (values[i] > 0) {
+        final tp = TextPainter(
+          text: TextSpan(
+            text: _formatMinutes(values[i]),
+            style: GoogleFonts.roboto(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: _kDarkText,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        tp.paint(canvas, Offset(centerX - tp.width / 2, top - tp.height - 2));
+      }
     }
   }
 
+  static String _formatMinutes(int minutes) {
+    if (minutes >= 60) {
+      final h = minutes ~/ 60;
+      final m = minutes % 60;
+      return m == 0 ? '${h}h' : '${h}h ${m}m';
+    }
+    return '${minutes}m';
+  }
+
   @override
-  bool shouldRepaint(covariant _CorrelationChartPainter oldDelegate) {
+  bool shouldRepaint(covariant _DailyStudyPainter oldDelegate) {
     return oldDelegate.data != data;
   }
 }

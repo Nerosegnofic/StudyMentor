@@ -2,6 +2,7 @@ library dataconnect_generated;
 import 'package:firebase_data_connect/firebase_data_connect.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 part 'insert_user.dart';
 

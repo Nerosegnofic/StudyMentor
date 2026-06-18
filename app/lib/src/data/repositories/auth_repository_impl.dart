@@ -469,8 +469,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<List<SubjectSummaryModel>> getAvailableSubjects() {
-    return dataConnect.getAvailableSubjects();
+  Future<List<SubjectSummaryModel>> getAvailableSubjects(String studentUid) {
+    return dataConnect.getAvailableSubjects(studentUid);
   }
 
   @override
@@ -481,6 +481,16 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> removeSubject({required String studentUid, required String subjectKey}) {
     return dataConnect.removeSubject(studentUid: studentUid, subjectKey: subjectKey);
+  }
+
+  @override
+  Future<void> setSubjectSelection({required String studentUid, required int subjectId, required bool isSelected}) {
+    return dataConnect.setSubjectSelection(studentUid: studentUid, subjectId: subjectId, isSelected: isSelected);
+  }
+
+  @override
+  Future<void> removeStudentSubjectData({required String studentUid, required int subjectId}) {
+    return dataConnect.removeStudentSubjectData(studentUid: studentUid, subjectId: subjectId);
   }
 
   @override
@@ -523,13 +533,18 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, String subjectKey) {
-    return dataConnect.getSubjectMasteryReport(studentUid, subjectKey);
+  Future<List<SubjectChipModel>> getReportSubjects(String studentUid) {
+    return AiEngineRepository.instance.getReportSubjects(studentUid);
+  }
+
+  @override
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId) {
+    return AiEngineRepository.instance.getSubjectMasteryReport(studentUid, subjectId);
   }
 
   @override
   Future<StudyHabitsReport> getStudyHabitsReport(String studentUid) {
-    return dataConnect.getStudyHabitsReport(studentUid);
+    return AiEngineRepository.instance.getStudyHabitsReport(studentUid);
   }
 
   @override
@@ -538,13 +553,18 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<AiSummaryModel> getAiSummary(String parentUid) {
-    return dataConnect.getAiSummary(parentUid);
+  Future<AiSummaryModel> getAiSummary(List<StudentModel> children) {
+    return AiEngineRepository.instance.getAiSummary(children);
   }
 
   @override
   Future<List<NotificationModel>> getNotificationsForParent(String parentUid) {
     return dataConnect.getNotificationsForParent(parentUid);
+  }
+
+  @override
+  Future<List<NotificationModel>> getNotificationsForStudent(String studentUid) {
+    return dataConnect.getNotificationsForStudent(studentUid);
   }
 
   @override

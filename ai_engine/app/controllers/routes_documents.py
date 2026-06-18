@@ -1,10 +1,11 @@
 import hashlib
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Form, Depends
+from typing import Optional
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Form, Depends, Query
 from uuid import uuid4, UUID
 from sqlalchemy.orm import Session
 
-from app.models.schemas import DocumentUploadResponse
-from app.services.rag.ingestion import process_and_ingest_document, delete_debug_artifacts
+from app.models.schemas import DocumentUploadResponse, SubjectStatus, SubjectsStatusResponse
+from app.services.rag.ingestion import process_and_ingest_document, ingest_then_warm, delete_debug_artifacts
 from app.repositories.vector_repo import delete_vector_embeddings, check_student_owns_document
 from app.repositories.subject_repo import find_or_create_subject, get_or_create_global_subject
 from app.repositories import document_repo
@@ -87,6 +88,16 @@ async def upload_document(
                 flush=True,
             )
             document_repo.delete_document_row(db, existing_doc.document_id)
+        elif existing_doc.status == "failed":
+            # A previous ingestion of these exact bytes failed — let the student retry by
+            # clearing the failed row so the unique (owner, hash) constraint doesn't block
+            # the re-upload.
+            print(
+                f"[Upload] Re-uploading previously failed document "
+                f"{existing_doc.document_id}; clearing stale row.",
+                flush=True,
+            )
+            document_repo.delete_document_row(db, existing_doc.document_id)
         else:
             raise HTTPException(
                 status_code=409,
@@ -99,6 +110,18 @@ async def upload_document(
     owner_uid = student_uid or firebase_uid
     subject = find_or_create_subject(db, subject_name, owner_uid)
     resolved_subject_id = subject.subject_id
+
+    # Reject a second (different) upload for a subject whose first document is still
+    # ingesting. Two concurrent ingestions for the same subject would race on the skill
+    # save (save_skills_from_mastery_data); serializing at the door is the simplest fix.
+    if document_repo.has_processing_document(db, firebase_uid, resolved_subject_id):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "A document for this subject is still being processed. "
+                "Please wait until it finishes before uploading another."
+            ),
+        )
 
     document_id = uuid4()
 
@@ -116,8 +139,13 @@ async def upload_document(
     # Chunks must be tagged with the SAME owner the student retrieves with, otherwise
     # RAG retrieval for this private subject finds nothing (cross-student isolation
     # makes the owner's firebase_uid mandatory on every retrieval tier).
+    #
+    # ingest_then_warm runs the ingestion pipeline, then (on success only) pre-warms the
+    # subject's first quiz so the student's first "Practice" is instant — the server is
+    # the only place guaranteed to run at the "subject became ready" moment, since the
+    # PARENT uploads on the child's behalf and may close the app.
     background_tasks.add_task(
-        process_and_ingest_document,
+        ingest_then_warm,
         document_id=document_id,
         file_content=file_content,
         filename=file.filename,
@@ -191,6 +219,27 @@ async def upload_global_document(
         document_id=document_id,
         firebase_uid=None,
     )
+
+
+@router.get("/subjects/status", response_model=SubjectsStatusResponse)
+async def get_subjects_status(
+    student_uid: Optional[str] = Query(None),
+    firebase_uid: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Per-subject ingestion readiness, polled by the app to:
+      - show a "Preparing…" indicator (with a coarse `stage`) while a document ingests,
+      - gate the Practice button until the subject is quizzable (`has_skills`).
+
+    `student_uid` is optional: a PARENT passes the child's uid to see that child's
+    subjects (the parent uploads on the child's behalf); a student omits it and the JWT
+    uid is used. Same convention as `GET /analytics/subjects?student_uid=`. The query
+    work lives in `document_repo.get_subjects_ingestion_status`; this handler maps it.
+    """
+    target_uid = student_uid if student_uid else firebase_uid
+    rows = document_repo.get_subjects_ingestion_status(db, target_uid)
+    return SubjectsStatusResponse(subjects=[SubjectStatus(**row) for row in rows])
 
 
 @router.delete("/{document_id}")
