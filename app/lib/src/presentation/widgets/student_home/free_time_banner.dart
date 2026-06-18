@@ -59,14 +59,20 @@ class FreeTimeBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
+          Container(
             width: 40,
             height: 40,
-            child: Image.asset(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _amber.withValues(alpha: 0.20),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
               isLocked
-                  ? 'assets/mascot/sad.png'
-                  : 'assets/mascot/happy.png',
-              fit: BoxFit.contain,
+                  ? Icons.bedtime_rounded
+                  : Icons.card_giftcard_rounded,
+              color: const Color(0xFFF57F17),
+              size: 20,
             ),
           ),
           const SizedBox(width: 12),

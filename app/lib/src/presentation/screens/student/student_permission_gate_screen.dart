@@ -5,8 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../services/device_admin_service.dart';
 import '../../../services/permission_service.dart';
-import '../../../features/mascot/mascot_state.dart';
-import '../../../features/mascot/mascot_widget.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
@@ -325,10 +323,51 @@ class _PermissionGateScreenState extends State<PermissionGateScreen>
   // ── Permission icon ────────────────────────────────────────────────────────
 
   Widget _buildPermissionIcon(RequiredPermission permission) {
-    // The mascot (idle) now represents every permission step — replaces the
-    // previous per-permission colored icon circle.
-    return const Center(
-      child: MascotWidget(state: MascotState.idle, size: 120),
+    final (IconData icon, Color color) = switch (permission) {
+      RequiredPermission.systemAlertWindow => (
+        Icons.layers_outlined,
+        const Color(0xFF7C3AED),
+      ),
+      RequiredPermission.packageUsageStats => (
+        Icons.bar_chart_rounded,
+        const Color(0xFF0EA5E9),
+      ),
+      RequiredPermission.postNotifications => (
+        Icons.notifications_active_outlined,
+        const Color(0xFFF59E0B),
+      ),
+      RequiredPermission.accessibilityService => (
+        Icons.accessibility_new_rounded,
+        const Color(0xFF10B981),
+      ),
+      RequiredPermission.deviceAdmin => (
+        Icons.shield_outlined,
+        const Color(0xFFEF4444),
+      ),
+      RequiredPermission.batteryOptimization => (
+        Icons.battery_saver_outlined,
+        const Color(0xFF16A34A),
+      ),
+    };
+
+    return Center(
+      child: Container(
+        width: 96,
+        height: 96,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.25),
+              blurRadius: 24,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 44, color: color),
+      ),
     );
   }
 
