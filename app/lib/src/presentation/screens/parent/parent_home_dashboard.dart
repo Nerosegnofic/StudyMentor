@@ -14,6 +14,7 @@ import '../../widgets/parent_home/child_card.dart';
 import '../../widgets/parent_home/ai_summary_carousel.dart';
 import 'student_profile_dashboard.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class ParentHomeDashboard extends StatefulWidget {
   final String parentUid;
@@ -163,25 +164,52 @@ class ParentHomeDashboardState extends State<ParentHomeDashboard> {
                       ),
                     ),
 
-                    // Component 3 — Child Cards (real)
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final student = _realStudents[index];
-                          return ChildCard(
-                            student: student,
-                            refreshKey: _refreshKey,
-                            onTap: student.isEmailVerified
-                                ? () => _openConfig(student)
-                                : null,
-                            onDelete: student.isEmailVerified
-                                ? null
-                                : () => _confirmDeleteUnverified(student),
-                          );
-                        },
-                        childCount: _realStudents.length,
+                    // Component 3 — Child Cards or empty state
+                    if (state is StudentsLoaded && _realStudents.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 56),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.group_off_outlined,
+                                size: 64,
+                                color: const Color(0xFF2196F3).withValues(alpha: 0.35),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                AppLocalizations.of(context).noChildrenAddedYetTitle,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final student = _realStudents[index];
+                            return ChildCard(
+                              student: student,
+                              refreshKey: _refreshKey,
+                              onTap: student.isEmailVerified
+                                  ? () => _openConfig(student)
+                                  : null,
+                              onDelete: student.isEmailVerified
+                                  ? null
+                                  : () => _confirmDeleteUnverified(student),
+                            );
+                          },
+                          childCount: _realStudents.length,
+                        ),
                       ),
-                    ),
 
                     // Bottom spacer so FAB doesn't overlap last card
                     const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -265,7 +293,7 @@ class _UnverifiedStudentDeleteDialogState
           } else if (state is StudentDeleteError) {
             setState(() {
               _isLoading = false;
-              _errorText = state.message;
+              _errorText = localizeError(state.message, AppLocalizations.of(context));
             });
           }
         },

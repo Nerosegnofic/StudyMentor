@@ -750,11 +750,17 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const ParentPreferencesScreen(),
-          ),
-        ),
+        onPressed: () {
+          final theme = Theme.of(context);
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => Theme(
+                data: theme,
+                child: const ParentPreferencesScreen(),
+              ),
+            ),
+          );
+        },
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: const StadiumBorder(),
@@ -1089,7 +1095,7 @@ class _ParentDeletePasswordDialogState
           } else if (state is ParentProfileError) {
             setState(() {
               _isLoading = false;
-              _errorMessage = state.message;
+              _errorMessage = localizeError(state.message, AppLocalizations.of(context));
             });
           }
         },

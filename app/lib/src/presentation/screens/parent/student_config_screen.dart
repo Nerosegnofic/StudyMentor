@@ -20,6 +20,7 @@ import '../../../domain/models/student_model.dart';
 import '../../../domain/models/installed_app_model.dart';
 import 'parent_student_settings_screen.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class StudentConfigScreen extends StatefulWidget {
   final StudentModel student;
@@ -300,7 +301,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message),
+                  content: Text(localizeError(state.message, AppLocalizations.of(context))),
                   backgroundColor: Colors.red.shade700,
                 ),
               );
@@ -978,7 +979,7 @@ class _DeleteStudentDialogState extends State<_DeleteStudentDialog> {
               _isLoading = false;
               _serverError = isWrongPassword
                   ? loc.incorrectPasswordRetryMessage
-                  : state.message;
+                  : localizeError(state.message, AppLocalizations.of(context));
             });
           }
         },
@@ -1262,9 +1263,9 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                   color: Color(0xFF4A6CF7),
                 ),
                 const SizedBox(width: 6),
-                const Text(
-                  'Global Time Limits',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context).globalTimeLimitsLabel,
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF4A6CF7),
@@ -1272,10 +1273,7 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                 ),
                 const SizedBox(width: 4),
                 Tooltip(
-                  message:
-                      'These limits apply to all restricted apps. '
-                      'When a student reaches the usage limit on any restricted app, '
-                      'they must wait the cooldown period before using it again.',
+                  message: AppLocalizations.of(context).globalTimeLimitsTooltip,
                   child: Icon(
                     Icons.help_outline,
                     size: 13,
@@ -1297,7 +1295,7 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Usage Allowance',
+                  AppLocalizations.of(context).usageAllowanceLabel,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1313,7 +1311,7 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                 Expanded(
                   child: _TimeInput(
                     controller: _usageHoursCtl,
-                    suffix: 'hrs',
+                    suffix: AppLocalizations.of(context).hoursUnitLabel,
                     hint: '0 – 24',
                     errorText: _errors['usageHours'],
                     onChanged: _onUsageHoursChanged,
@@ -1323,7 +1321,7 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                 Expanded(
                   child: _TimeInput(
                     controller: _usageMinutesCtl,
-                    suffix: 'min',
+                    suffix: AppLocalizations.of(context).minuteUnitLabel,
                     hint: '0 – 59',
                     errorText: _errors['usageMinutes'],
                     onChanged: _onUsageMinutesChanged,
@@ -1358,7 +1356,7 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                 Expanded(
                   child: _TimeInput(
                     controller: _cooldownHoursCtl,
-                    suffix: 'hrs',
+                    suffix: AppLocalizations.of(context).hoursUnitLabel,
                     hint: '0 – 24',
                     errorText: _errors['cooldownHours'],
                     onChanged: _onCooldownHoursChanged,
@@ -1368,7 +1366,7 @@ class _GlobalTimingCardState extends State<_GlobalTimingCard> {
                 Expanded(
                   child: _TimeInput(
                     controller: _cooldownMinutesCtl,
-                    suffix: 'min',
+                    suffix: AppLocalizations.of(context).minuteUnitLabel,
                     hint: '0 – 59',
                     errorText: _errors['cooldownMinutes'],
                     onChanged: _onCooldownMinutesChanged,
@@ -2273,7 +2271,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
     );
     final hoursLabel = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Text(isArabic ? 'ساعة' : 'hr', style: labelStyle),
+      child: Text(AppLocalizations.of(context).hourUnitLabel, style: labelStyle),
     );
     final hoursPicker = Expanded(
       flex: 3,
@@ -2289,7 +2287,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
     );
     final minutesLabel = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Text(isArabic ? 'دقيقة' : 'min', style: labelStyle),
+      child: Text(AppLocalizations.of(context).minuteUnitLabel, style: labelStyle),
     );
     final minutesPicker = Expanded(
       flex: 3,

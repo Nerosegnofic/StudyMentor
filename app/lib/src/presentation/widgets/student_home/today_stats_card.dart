@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/report_models.dart';
 import 'questions_ring.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// The "Today" card: a subject-segmented questions ring (hero) plus a row of
 /// three profile-style icon-chip stats (Studied · Streak · Accuracy).
@@ -41,7 +42,7 @@ class TodayStatsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Today',
+            AppLocalizations.of(context).todayLabel,
             style: GoogleFonts.cairo(
               fontSize: 17,
               fontWeight: FontWeight.w800,
@@ -61,7 +62,7 @@ class TodayStatsCard extends StatelessWidget {
                   iconBg: const Color(0xFFE3F2FD),
                   iconColor: const Color(0xFF2196F3),
                   value: _formatStudyTime(studyTime),
-                  label: 'Studied',
+                  label: AppLocalizations.of(context).studiedLabel,
                 ),
               ),
               Expanded(
@@ -70,7 +71,7 @@ class TodayStatsCard extends StatelessWidget {
                   iconBg: const Color(0xFFFFEBEE),
                   iconColor: const Color(0xFFF44336),
                   value: '$streak',
-                  label: 'Day streak',
+                  label: AppLocalizations.of(context).dayStreakLabel,
                 ),
               ),
               Expanded(
@@ -79,7 +80,7 @@ class TodayStatsCard extends StatelessWidget {
                   iconBg: const Color(0xFFE8F5E9),
                   iconColor: const Color(0xFF43A047),
                   value: '$accuracyPercent%',
-                  label: 'Accuracy',
+                  label: AppLocalizations.of(context).accuracyLabel,
                 ),
               ),
             ],
@@ -118,7 +119,7 @@ class TodayStatsCard extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.roboto(fontSize: 11, color: Colors.grey.shade500),
+          style: GoogleFonts.cairo(fontSize: 11, color: Colors.grey.shade500),
         ),
       ],
     );

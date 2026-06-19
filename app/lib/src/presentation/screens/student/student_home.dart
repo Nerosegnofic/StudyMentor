@@ -16,7 +16,6 @@ import '../../../domain/models/report_models.dart';
 import '../../../services/installed_apps_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../domain/models/app_config_model.dart';
-import '../../../utils/student_rank_utils.dart';
 import '../../widgets/garden_subject_card.dart';
 import '../../widgets/student_home/mascot_hero.dart';
 import '../../widgets/student_home/rank_progress_card.dart';
@@ -163,7 +162,6 @@ class StudentHomeState extends State<StudentHome> {
   @override
   Widget build(BuildContext context) {
     final firstName = widget.fullName.split(' ').first;
-    final rankName = StudentRankUtils.rankFromLevel(_level);
     final activeRules = _appRules.where((r) => !r.isPaused).toList();
     final isResting = MascotOverlayService.instance.isBlocked;
 

@@ -657,7 +657,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (msg.contains('email-already-in-use')) {
       return 'That email address is already in use by another account.';
     }
-    return 'Update failed: $msg';
+    return 'Update failed. Please try again.';
   }
 
   /// Mapper for email verification errors. Distinct from [_mapException] so

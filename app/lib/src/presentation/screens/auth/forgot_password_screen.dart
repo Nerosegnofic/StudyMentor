@@ -23,7 +23,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     // Computed above the Scaffold so the keyboard is detected (a Scaffold zeroes
     // viewInsets.bottom for its body subtree).
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: kAuthBackground,
       body: BlocListener<AuthBloc, AuthState>(
@@ -36,13 +35,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Navigator.pop(context);
           }
           if (state is AuthError) {
-            setState(() => _error = state.message);
+            setState(() => _error = localizeError(state.message, AppLocalizations.of(context)));
           }
         },
         child: Column(
           children: [
             AuthHeader(
-              subtitle: "We'll email you a reset link",
+              subtitle: AppLocalizations.of(context).resetPasswordSubtitle,
               keyboardOpen: keyboardOpen,
               onBack: () => Navigator.of(context).maybePop(),
               mascotAsset: 'assets/mascot/sad.png',
@@ -61,14 +60,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           if (_error != null) setState(() => _error = null);
                         },
                         decoration: authInputDecoration(
-                          label: 'Email',
+                          label: AppLocalizations.of(context).fieldEmail,
                           icon: Icons.email_outlined,
                         ),
-                        validator: (v) => v!.contains('@') ? null : 'Please enter a valid email address.',
+                        validator: (v) => v!.contains('@') ? null : AppLocalizations.of(context).loginEmailValidator,
                       ),
                       SizedBox(height: 24),
                       authPrimaryButton(
-                        label: 'Send Reset Link',
+                        label: AppLocalizations.of(context).sendResetLinkButton,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
                             context.read<AuthBloc>().add(

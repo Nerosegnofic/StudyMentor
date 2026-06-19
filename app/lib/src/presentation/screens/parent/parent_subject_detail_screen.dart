@@ -13,6 +13,7 @@ import 'all_skills_screen.dart';
 import 'all_quizzes_screen.dart';
 import '../../../data/catalog/subject_metadata_registry.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 const int _kPreviewQuizCount = 10;
 
@@ -201,7 +202,7 @@ class _ParentSubjectDetailScreenState
             return const Center(child: CircularProgressIndicator());
           }
           if (state is SubjectDetailError) {
-            return Center(child: Text(state.message));
+            return Center(child: Text(localizeError(state.message, AppLocalizations.of(context))));
           }
           if (state is SubjectDetailLoaded) {
             return Column(

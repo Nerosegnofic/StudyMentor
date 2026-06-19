@@ -40,11 +40,9 @@ async def lifespan(app: FastAPI):
         finally:
             db.close()
         print("DEBUG: Lifespan startup sequence complete.")
-    except RuntimeError:
-        # Re-raise RuntimeErrors (e.g., Firebase init failure) so the server refuses to start
-        raise
     except Exception as e:
         print(f"CRITICAL: Lifespan startup failed: {e}")
+        raise RuntimeError("Startup aborted due to failed dependency initialization.") from e
 
     yield
 

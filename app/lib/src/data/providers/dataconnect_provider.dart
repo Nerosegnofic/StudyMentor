@@ -1,5 +1,8 @@
   // lib/src/data/providers/dataconnect_provider.dart
 
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_data_connect/firebase_data_connect.dart';
 import '../../../dataconnect_generated/generated.dart';
@@ -13,6 +16,8 @@ import '../../domain/models/subject_summary_model.dart';
 import '../../domain/models/quiz_attempt_model.dart';
 import '../../domain/models/question_detail_model.dart';
 import '../../domain/models/notification_model.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../services/notification_localizations.dart';
 import '../catalog/subject_metadata_registry.dart';
 import '../repositories/ai_engine_repository.dart';
 
@@ -299,37 +304,6 @@ class DataConnectProvider {
         .execute();
   }
 
-  // ── Student Settings ──────────────────────────────────────────────────────
-
-  Future<Map<String, dynamic>?> getStudentSettings(String studentUid) async {
-    final result = await _connector
-        .getStudentSettings(studentUid: studentUid)
-        .execute();
-    final s = result.data.studentSettings;
-    if (s == null) return null;
-    return {
-      'notifications_enabled': s.notificationsEnabled,
-      'sound_effects_enabled': s.soundEffectsEnabled,
-      'background_music_enabled': s.backgroundMusicEnabled,
-    };
-  }
-
-  Future<void> upsertStudentSettings({
-    required String studentUid,
-    required bool notificationsEnabled,
-    required bool soundEffectsEnabled,
-    required bool backgroundMusicEnabled,
-  }) async {
-    await _connector
-        .upsertStudentSettings(
-          studentUid: studentUid,
-          notificationsEnabled: notificationsEnabled,
-          soundEffectsEnabled: soundEffectsEnabled,
-          backgroundMusicEnabled: backgroundMusicEnabled,
-        )
-        .execute();
-  }
-
   // ── Avatar Shop ───────────────────────────────────────────────────────────
 
   Future<Set<String>> getStudentOwnedItems(String studentUid) async {
@@ -398,6 +372,21 @@ class DataConnectProvider {
         .execute();
   }
 
+  // ── Student Settings ──────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>?> getStudentSettings(String studentUid) async {
+    final result = await _connector
+        .getStudentSettings(studentUid: studentUid)
+        .execute();
+    final s = result.data.studentSettings;
+    if (s == null) return null;
+    return {
+      'notifications_enabled': s.notificationsEnabled,
+      'sound_effects_enabled': s.soundEffectsEnabled,
+      'background_music_enabled': s.backgroundMusicEnabled,
+    };
+  }
+
   // ── Student Account Deletion (parent-side) ────────────────────────────────
 
   Future<void> deleteStudentAllData(String studentUid) async {
@@ -450,6 +439,22 @@ class DataConnectProvider {
 
   // ── Local Notification System ─────────────────────────────────────────────
 
+  Future<void> insertStudentNotificationEvent({
+    required String studentUid,
+    required String eventType,
+    required String title,
+    required String body,
+  }) async {
+    await _connector
+        .insertStudentNotificationEvent(
+          studentUid: studentUid,
+          eventType: eventType,
+          title: title,
+          body: body,
+        )
+        .execute();
+  }
+
   Future<void> insertLocalNotificationEvent({
     required String fromStudentUid,
     required String toParentUid,
@@ -472,19 +477,32 @@ class DataConnectProvider {
         .execute();
   }
 
-  Future<void> upsertLocalNotificationPreference({
-    required String userUid,
-    required String category,
-    required bool enabled,
-    String? reminderTime,
-  }) async {
-    final builder = _connector.upsertLocalNotificationPreference(
-      userUid: userUid,
-      category: category,
-      enabled: enabled,
-    );
-    if (reminderTime != null) builder.reminderTime(reminderTime);
-    await builder.execute();
+  Future<void> markLocalNotificationEventsDispatched(List<String> eventIds) async {
+    await _connector
+        .markLocalNotificationEventsDispatched(eventIds: eventIds)
+        .execute();
+  }
+
+  Future<List<Map<String, dynamic>>> getUndispatchedLocalNotificationEvents(
+    String toParentUid,
+  ) async {
+    final result = await _connector
+        .getUndispatchedLocalNotificationEvents(toParentUid: toParentUid)
+        .execute();
+    return result.data.localNotificationEvents
+        .map(
+          (e) => {
+            'id': e.id,
+            'from_student_uid': e.fromStudentUid,
+            'event_type': e.eventType,
+            'payload': e.payload,
+            'created_at': DateTime.fromMillisecondsSinceEpoch(
+              e.createdAt.seconds * 1000,
+              isUtc: true,
+            ).toIso8601String(),
+          },
+        )
+        .toList();
   }
 
   Future<List<Map<String, dynamic>>> getUnreadLocalNotificationEvents(
@@ -508,6 +526,22 @@ class DataConnectProvider {
         )
         .toList();
   }
+
+  Future<void> upsertLocalNotificationPreference({
+    required String userUid,
+    required String category,
+    required bool enabled,
+    String? reminderTime,
+  }) async {
+    final builder = _connector.upsertLocalNotificationPreference(
+      userUid: userUid,
+      category: category,
+      enabled: enabled,
+    );
+    if (reminderTime != null) builder.reminderTime(reminderTime);
+    await builder.execute();
+  }
+
 
   Future<List<Map<String, dynamic>>> getLocalNotificationPreferences(
     String userUid,
@@ -577,7 +611,7 @@ class DataConnectProvider {
         }
       }
     } catch (e) {
-      print('Failed to get real skills for subject from AI engine: $e');
+      debugPrint('Failed to get real skills for subject from AI engine: $e');
     }
 
     return skills;
@@ -592,7 +626,7 @@ class DataConnectProvider {
     try {
       analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
     } catch (e) {
-      print('Failed to fetch subjects analytics from AI engine: $e');
+      debugPrint('Failed to fetch subjects analytics from AI engine: $e');
     }
 
     return analyticsList.map((a) {
@@ -604,7 +638,7 @@ class DataConnectProvider {
       return SubjectSummaryModel(
         subjectKey: def.key,
         subjectId: a['subject_id'] as int? ?? 0,
-        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        colorHex: '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: skillsCount,
         masteryPercent: masteryPercent,
         quizzesCompleted: 0,
@@ -623,7 +657,7 @@ class DataConnectProvider {
     try {
       available = await AiEngineRepository.instance.getAvailableGlobalSubjects(studentUid);
     } catch (e) {
-      print('Failed to fetch available global subjects from AI engine: $e');
+      debugPrint('Failed to fetch available global subjects from AI engine: $e');
     }
 
     return available.map((a) {
@@ -632,7 +666,7 @@ class DataConnectProvider {
       return SubjectSummaryModel(
         subjectKey: def.key,
         subjectId: a['subject_id'] as int? ?? 0,
-        colorHex: '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+        colorHex: '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: 0,
         masteryPercent: 0,
         quizzesCompleted: 0,
@@ -651,7 +685,7 @@ class DataConnectProvider {
     try {
       await AiEngineRepository.instance.ensureSubjects(subjectKeys, studentUid);
     } catch (e) {
-      print('Failed to sync subjects to AI engine: $e');
+      debugPrint('Failed to sync subjects to AI engine: $e');
     }
   }
 
@@ -662,7 +696,7 @@ class DataConnectProvider {
     try {
       await AiEngineRepository.instance.deleteSubject(subjectKey, studentUid);
     } catch (e) {
-      print('AI engine subject delete failed: $e');
+      debugPrint('AI engine subject delete failed: $e');
       rethrow;
     }
   }
@@ -679,7 +713,7 @@ class DataConnectProvider {
         isSelected: isSelected,
       );
     } catch (e) {
-      print('AI engine subject selection update failed: $e');
+      debugPrint('AI engine subject selection update failed: $e');
       rethrow;
     }
   }
@@ -693,14 +727,14 @@ class DataConnectProvider {
     try {
       await AiEngineRepository.instance.removeStudentSubjectData(subjectId, studentUid);
     } catch (e) {
-      print('AI engine remove student subject data failed: $e');
+      debugPrint('AI engine remove student subject data failed: $e');
       rethrow;
     }
   }
 
   Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
     final def = SubjectMetadataRegistry.getDefinition(subjectKey);
-    final colorHex = '#${def.primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
+    final colorHex = '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
 
     int skillsCount = 0;
     int masteryPercent = 0;
@@ -758,7 +792,7 @@ class DataConnectProvider {
         }
       }
     } catch (e) {
-      print('Failed to get real subject overview from AI engine: $e');
+      debugPrint('Failed to get real subject overview from AI engine: $e');
     }
 
     return SubjectSummaryModel(
@@ -851,7 +885,7 @@ class DataConnectProvider {
         );
       }).toList();
     } catch (e) {
-      print('Failed to load quiz history from AI engine: $e');
+      debugPrint('Failed to load quiz history from AI engine: $e');
       return [];
     }
   }
@@ -874,7 +908,7 @@ class DataConnectProvider {
         );
       }).toList();
     } catch (e) {
-      print('Failed to load session questions: $e');
+      debugPrint('Failed to load session questions: $e');
       rethrow;
     }
   }
@@ -954,78 +988,130 @@ class DataConnectProvider {
   Future<List<NotificationModel>> getNotificationsForParent(
     String parentUid,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    return [
-      NotificationModel(
-        id: 'n1',
+    final result = await _connector
+        .getAllLocalNotificationEventsForParent(toParentUid: parentUid)
+        .execute();
+    final loc = await NotificationLocalizations.current();
+    return result.data.localNotificationEvents.map((e) {
+      Map<String, dynamic> payload;
+      try {
+        payload = jsonDecode(e.payload) as Map<String, dynamic>;
+      } catch (_) {
+        payload = {};
+      }
+      final (title, subtitle) = _localizedTitleAndBody(loc, e.eventType, payload);
+      return NotificationModel(
+        id: e.id,
         parentUid: parentUid,
-        type: NotificationType.screenTimeUnlocked,
-        title: 'Screen Time Unlocked',
-        subtitle: 'Ahmed earned 15 mins for passing Mathematics.',
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-        isRead: false,
-      ),
-      NotificationModel(
-        id: 'n2',
-        parentUid: parentUid,
-        type: NotificationType.needsWork,
-        title: 'Needs Work: Fractions',
-        subtitle: 'Ahmed struggled with Fractions today. Review recommended.',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        isRead: true,
-      ),
-      NotificationModel(
-        id: 'n3',
-        parentUid: parentUid,
-        type: NotificationType.systemUpdate,
-        title: 'New Feature Available',
-        subtitle: 'You can now set custom cooldown periods.',
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        isRead: true,
-      ),
-    ];
+        studentUid: e.fromStudentUid,
+        type: _typeFromEventType(e.eventType),
+        title: title,
+        subtitle: subtitle,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          e.createdAt.seconds * 1000,
+          isUtc: true,
+        ),
+        isRead: e.isRead,
+      );
+    }).toList();
   }
 
   Future<List<NotificationModel>> getNotificationsForStudent(
     String studentUid,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    return [
-      NotificationModel(
-        id: 's1',
+    final result = await _connector
+        .getStudentNotificationEvents(studentUid: studentUid)
+        .execute();
+    return result.data.studentNotificationEvents.map((e) {
+      return NotificationModel(
+        id: e.id,
         parentUid: '',
         studentUid: studentUid,
-        type: NotificationType.streakAchieved,
-        title: '7-Day Streak! 🔥',
-        subtitle: 'You studied 7 days in a row. Keep the fire going!',
-        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-        isRead: false,
-      ),
-      NotificationModel(
-        id: 's2',
-        parentUid: '',
-        studentUid: studentUid,
-        type: NotificationType.needsWork,
-        title: 'Review: Fractions',
-        subtitle: 'A few fractions questions tripped you up. Try a review quiz!',
-        createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-        isRead: false,
-      ),
-      NotificationModel(
-        id: 's3',
-        parentUid: '',
-        studentUid: studentUid,
-        type: NotificationType.systemUpdate,
-        title: 'New Avatar Items',
-        subtitle: 'Fresh items just landed in the shop. Go check them out!',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        isRead: true,
-      ),
-    ];
+        type: _typeFromEventType(e.eventType),
+        title: e.title,
+        subtitle: e.body,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          e.createdAt.seconds * 1000,
+          isUtc: true,
+        ),
+        isRead: e.isRead,
+      );
+    }).toList();
   }
 
   Future<void> markAllNotificationsRead(String parentUid) async {
-    await Future.delayed(const Duration(milliseconds: 200));
+    await _connector
+        .markAllParentNotificationsRead(toParentUid: parentUid)
+        .execute();
+  }
+
+  Future<void> markAllStudentNotificationsRead(String studentUid) async {
+    await _connector
+        .markAllStudentNotificationsRead(studentUid: studentUid)
+        .execute();
+  }
+
+  Future<void> toggleParentNotificationRead(String id, {required bool isRead}) async {
+    await _connector
+        .toggleLocalNotificationEventRead(id: id, isRead: isRead)
+        .execute();
+  }
+
+  Future<void> toggleStudentNotificationRead(String id, {required bool isRead}) async {
+    await _connector
+        .toggleStudentNotificationEventRead(id: id, isRead: isRead)
+        .execute();
+  }
+
+  Future<void> deleteParentNotification(String id) async {
+    await _connector.deleteLocalNotificationEvent(id: id).execute();
+  }
+
+  Future<void> deleteStudentNotification(String id) async {
+    await _connector.deleteStudentNotificationEvent(id: id).execute();
+  }
+
+  // ── Notification helpers ──────────────────────────────────────────────────
+
+  static NotificationType _typeFromEventType(String eventType) {
+    switch (eventType) {
+      case 'LEVEL_UP':
+        return NotificationType.screenTimeUnlocked;
+      case 'STREAK_MILESTONE':
+      case 'NEAR_MILESTONE':
+      case 'BADGE_EARNED':
+        return NotificationType.streakAchieved;
+      case 'STREAK_BROKEN':
+        return NotificationType.needsWork;
+      default:
+        return NotificationType.systemUpdate;
+    }
+  }
+
+  // Mirrors ParentNotificationPollService._localizedTitleAndBody.
+  static (String, String) _localizedTitleAndBody(
+    AppLocalizations loc,
+    String eventType,
+    Map<String, dynamic> payload,
+  ) {
+    switch (eventType) {
+      case 'LEVEL_UP':
+        final studentName = payload['studentName'] as String? ?? '';
+        final level = int.tryParse(payload['level'] as String? ?? '') ?? 0;
+        return (loc.notifParentLevelUpTitle(studentName, level), loc.notifParentLevelUpBody);
+      case 'STREAK_BROKEN':
+        final studentName = payload['studentName'] as String? ?? '';
+        final prev = int.tryParse(payload['previousStreak'] as String? ?? '') ?? 0;
+        return (loc.notifParentStreakBrokenTitle(studentName), loc.notifParentStreakBrokenBody(prev));
+      case 'STREAK_MILESTONE':
+        final studentName = payload['studentName'] as String? ?? '';
+        final days = int.tryParse(payload['streakDays'] as String? ?? '') ?? 0;
+        return (loc.notifParentStreakMilestoneTitle(studentName, days), loc.notifParentStreakMilestoneBody);
+      default:
+        final title = payload['title'] as String? ?? eventType;
+        final body = payload['body'] as String? ?? '';
+        return (title, body);
+    }
   }
 
   Future<UserModel> updateProfile({

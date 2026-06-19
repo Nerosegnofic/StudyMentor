@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/app_config_model.dart';
 import 'app_icon_bubble.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Compact "watched apps" entry (settings-row style) that opens a bottom sheet
 /// listing every monitored app with a Ready / Resting status chip.
@@ -39,14 +40,15 @@ class MonitoredAppsCard extends StatelessWidget {
           ),
         ],
       ),
-      child: apps.isEmpty ? _emptyRow() : _entryRow(context, apps),
+      child: apps.isEmpty ? _emptyRow(context) : _entryRow(context, apps),
     );
   }
 
   Widget _entryRow(BuildContext context, List<AppRuleModel> apps) {
+    final loc = AppLocalizations.of(context);
     final subtitle = isResting
-        ? 'Resting now · tap to see all'
-        : '${apps.length} ${apps.length == 1 ? 'app' : 'apps'} · tap to see all';
+        ? loc.restingNowSubtitle
+        : loc.appsCountSubtitle(apps.length);
 
     return InkWell(
       onTap: () => _showAllApps(context, apps),
@@ -70,8 +72,8 @@ class MonitoredAppsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Apps your parent watches',
-                    style: GoogleFonts.roboto(
+                    loc.appsParentWatchesTitle,
+                    style: GoogleFonts.cairo(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                       color: _ink,
@@ -80,7 +82,7 @@ class MonitoredAppsCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.cairo(
                       fontSize: 12,
                       color: isResting ? _amberInk : Colors.grey.shade500,
                       fontWeight: isResting ? FontWeight.w600 : FontWeight.w400,
@@ -97,7 +99,7 @@ class MonitoredAppsCard extends StatelessWidget {
     );
   }
 
-  Widget _emptyRow() {
+  Widget _emptyRow(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       child: Row(
@@ -115,8 +117,8 @@ class MonitoredAppsCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'No apps are being watched right now 🎉',
-              style: GoogleFonts.roboto(
+              AppLocalizations.of(context).noAppsWatchedMessage,
+              style: GoogleFonts.cairo(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: Colors.grey.shade600,
@@ -159,7 +161,7 @@ class MonitoredAppsCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
                   child: Text(
-                    'Apps your parent watches',
+                    AppLocalizations.of(ctx).appsParentWatchesTitle,
                     style: GoogleFonts.cairo(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -173,7 +175,7 @@ class MonitoredAppsCard extends StatelessWidget {
                     shrinkWrap: true,
                     itemCount: apps.length,
                     separatorBuilder: (_, index) => const SizedBox(height: 4),
-                    itemBuilder: (_, i) => _appRow(apps[i]),
+                    itemBuilder: (innerCtx, i) => _appRow(innerCtx, apps[i]),
                   ),
                 ),
               ],
@@ -184,7 +186,7 @@ class MonitoredAppsCard extends StatelessWidget {
     );
   }
 
-  Widget _appRow(AppRuleModel rule) {
+  Widget _appRow(BuildContext context, AppRuleModel rule) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Row(
@@ -201,7 +203,7 @@ class MonitoredAppsCard extends StatelessWidget {
               rule.appLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
                 color: _ink,
@@ -209,16 +211,17 @@ class MonitoredAppsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          _statusChip(),
+          _statusChip(context),
         ],
       ),
     );
   }
 
-  Widget _statusChip() {
+  Widget _statusChip(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final bg = isResting ? const Color(0xFFFFF8E1) : const Color(0xFFE8F5E9);
     final fg = isResting ? _amberInk : const Color(0xFF43A047);
-    final label = isResting ? 'Resting' : 'Ready';
+    final label = isResting ? loc.restingStatusLabel : loc.readyStatusLabel;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
@@ -227,7 +230,7 @@ class MonitoredAppsCard extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.roboto(
+        style: GoogleFonts.cairo(
           fontSize: 12,
           fontWeight: FontWeight.w700,
           color: fg,

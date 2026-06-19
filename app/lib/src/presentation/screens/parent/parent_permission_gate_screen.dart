@@ -1,4 +1,4 @@
-// lib/src/presentation/screens/parent/parent_permission_gate_screen.dart
+﻿// lib/src/presentation/screens/parent/parent_permission_gate_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -209,7 +209,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                         Text(
                           permission.parentRationale(loc),
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.cairo(
                             fontSize: 15,
                             color: Colors.grey.shade600,
                             height: 1.55,
@@ -238,7 +238,6 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Header with progress indicator ────────────────────────────────────────
 
   Widget _buildHeader(int step, int total) {
-    final loc = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -267,7 +266,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Step $step of $total',
+                  AppLocalizations.of(context).stepOfTotalLabel(step, total),
                   style: GoogleFonts.cairo(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -289,8 +288,8 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
                 ),
                 icon: const Icon(Icons.logout_rounded, size: 14),
                 label: Text(
-                  'Log out',
-                  style: GoogleFonts.roboto(
+                  AppLocalizations.of(context).logOutButton,
+                  style: GoogleFonts.cairo(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -387,7 +386,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 fontSize: 13,
                 color: textColor,
                 height: 1.5,
@@ -402,7 +401,9 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
   // ── Action button ──────────────────────────────────────────────────────────
 
   Widget _buildActionButton() {
-    final label = _currentGranted ? 'Continue' : 'Open Settings';
+    final label = _currentGranted
+        ? AppLocalizations.of(context).continueButton
+        : AppLocalizations.of(context).openSettingsButton;
 
     return SizedBox(
       width: double.infinity,
@@ -456,7 +457,7 @@ class _ParentPermissionGateScreenState extends State<ParentPermissionGateScreen>
     return Text(
       hint,
       textAlign: TextAlign.center,
-      style: GoogleFonts.roboto(
+      style: GoogleFonts.cairo(
         fontSize: 12,
         color: Colors.grey.shade500,
         height: 1.5,

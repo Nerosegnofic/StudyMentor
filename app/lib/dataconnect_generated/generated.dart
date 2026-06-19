@@ -52,6 +52,22 @@ part 'insert_local_notification_event.dart';
 
 part 'mark_local_notification_events_read.dart';
 
+part 'mark_local_notification_events_dispatched.dart';
+
+part 'toggle_local_notification_event_read.dart';
+
+part 'delete_local_notification_event.dart';
+
+part 'mark_all_parent_notifications_read.dart';
+
+part 'insert_student_notification_event.dart';
+
+part 'toggle_student_notification_event_read.dart';
+
+part 'delete_student_notification_event.dart';
+
+part 'mark_all_student_notifications_read.dart';
+
 part 'upsert_local_notification_preference.dart';
 
 part 'delete_local_notification_preferences_for_user.dart';
@@ -77,6 +93,12 @@ part 'get_student_avatar.dart';
 part 'get_app_config_for_student.dart';
 
 part 'get_unread_local_notification_events.dart';
+
+part 'get_undispatched_local_notification_events.dart';
+
+part 'get_all_local_notification_events_for_parent.dart';
+
+part 'get_student_notification_events.dart';
 
 part 'get_local_notification_preferences.dart';
 
@@ -282,6 +304,46 @@ class ExampleConnector {
   }
   
   
+  MarkLocalNotificationEventsDispatchedVariablesBuilder markLocalNotificationEventsDispatched ({required List<String> eventIds, }) {
+    return MarkLocalNotificationEventsDispatchedVariablesBuilder(dataConnect, eventIds: eventIds,);
+  }
+  
+  
+  ToggleLocalNotificationEventReadVariablesBuilder toggleLocalNotificationEventRead ({required String id, required bool isRead, }) {
+    return ToggleLocalNotificationEventReadVariablesBuilder(dataConnect, id: id,isRead: isRead,);
+  }
+  
+  
+  DeleteLocalNotificationEventVariablesBuilder deleteLocalNotificationEvent ({required String id, }) {
+    return DeleteLocalNotificationEventVariablesBuilder(dataConnect, id: id,);
+  }
+  
+  
+  MarkAllParentNotificationsReadVariablesBuilder markAllParentNotificationsRead ({required String toParentUid, }) {
+    return MarkAllParentNotificationsReadVariablesBuilder(dataConnect, toParentUid: toParentUid,);
+  }
+  
+  
+  InsertStudentNotificationEventVariablesBuilder insertStudentNotificationEvent ({required String studentUid, required String eventType, required String title, required String body, }) {
+    return InsertStudentNotificationEventVariablesBuilder(dataConnect, studentUid: studentUid,eventType: eventType,title: title,body: body,);
+  }
+  
+  
+  ToggleStudentNotificationEventReadVariablesBuilder toggleStudentNotificationEventRead ({required String id, required bool isRead, }) {
+    return ToggleStudentNotificationEventReadVariablesBuilder(dataConnect, id: id,isRead: isRead,);
+  }
+  
+  
+  DeleteStudentNotificationEventVariablesBuilder deleteStudentNotificationEvent ({required String id, }) {
+    return DeleteStudentNotificationEventVariablesBuilder(dataConnect, id: id,);
+  }
+  
+  
+  MarkAllStudentNotificationsReadVariablesBuilder markAllStudentNotificationsRead ({required String studentUid, }) {
+    return MarkAllStudentNotificationsReadVariablesBuilder(dataConnect, studentUid: studentUid,);
+  }
+  
+  
   UpsertLocalNotificationPreferenceVariablesBuilder upsertLocalNotificationPreference ({required String userUid, required String category, required bool enabled, }) {
     return UpsertLocalNotificationPreferenceVariablesBuilder(dataConnect, userUid: userUid,category: category,enabled: enabled,);
   }
@@ -344,6 +406,21 @@ class ExampleConnector {
   
   GetUnreadLocalNotificationEventsVariablesBuilder getUnreadLocalNotificationEvents ({required String toParentUid, }) {
     return GetUnreadLocalNotificationEventsVariablesBuilder(dataConnect, toParentUid: toParentUid,);
+  }
+  
+  
+  GetUndispatchedLocalNotificationEventsVariablesBuilder getUndispatchedLocalNotificationEvents ({required String toParentUid, }) {
+    return GetUndispatchedLocalNotificationEventsVariablesBuilder(dataConnect, toParentUid: toParentUid,);
+  }
+  
+  
+  GetAllLocalNotificationEventsForParentVariablesBuilder getAllLocalNotificationEventsForParent ({required String toParentUid, }) {
+    return GetAllLocalNotificationEventsForParentVariablesBuilder(dataConnect, toParentUid: toParentUid,);
+  }
+  
+  
+  GetStudentNotificationEventsVariablesBuilder getStudentNotificationEvents ({required String studentUid, }) {
+    return GetStudentNotificationEventsVariablesBuilder(dataConnect, studentUid: studentUid,);
   }
   
   

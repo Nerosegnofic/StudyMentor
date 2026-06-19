@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Amber reward banner showing the free app-time the student has earned so far
 /// today — the cumulative monitored-app usage across all cooldown windows
@@ -33,19 +34,20 @@ class FreeTimeBanner extends StatelessWidget {
     final hasEarned = earned >= 60;
     final formatted = _formatMinutes(earned);
 
+    final loc = AppLocalizations.of(context);
     final String headline;
     final String subtitle;
     if (isLocked) {
-      headline = 'Apps are resting right now';
+      headline = loc.appsRestingTitle;
       subtitle = hasEarned
-          ? "You've earned $formatted of free time today. Finish your quiz to unlock more."
-          : 'Finish your quiz to unlock your apps.';
+          ? loc.earnedFreeTimeLockedSubtitle(formatted)
+          : loc.finishQuizUnlockApps;
     } else if (hasEarned) {
-      headline = "You've earned $formatted of free time today";
-      subtitle = 'Your apps are unlocked — enjoy your free time.';
+      headline = loc.earnedFreeTimeUnlockedTitle(formatted);
+      subtitle = loc.appsUnlockedEnjoySubtitle;
     } else {
-      headline = 'Your apps are unlocked';
-      subtitle = 'Enjoy your free time.';
+      headline = loc.appsUnlockedTitle;
+      subtitle = loc.enjoyFreeTimeSubtitle;
     }
 
     return Container(
@@ -92,7 +94,7 @@ class FreeTimeBanner extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     fontSize: 12,
                     color: _amberInk.withValues(alpha: 0.75),
                     height: 1.3,

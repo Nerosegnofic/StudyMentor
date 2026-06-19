@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/quiz/quiz_bloc.dart';
@@ -16,7 +16,6 @@ import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../utils/error_localizer.dart';
 
 // ---------------------------------------------------------------------------
 // Study Mentor design-system tokens (Student app)
@@ -150,7 +149,7 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          'Study Quiz',
+          loc.studyQuizTitle,
           style: GoogleFonts.cairo(
             fontWeight: FontWeight.w800,
             color: _kInk,
@@ -300,14 +299,14 @@ class _AutoStartPanel extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const MascotWithBubble(
+            MascotWithBubble(
               state: MascotState.idle,
-              message: 'Ready to practice?',
+              message: loc.readyToPracticeMessage,
               mascotSize: 90,
             ),
             const SizedBox(height: 24),
             Text(
-              'Time to Practice!',
+              loc.timeToPracticeTitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.cairo(
                 fontSize: 26,
@@ -318,9 +317,9 @@ class _AutoStartPanel extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Your focus time is up. Let\'s do a quick quiz to keep your brain sharp!',
+              loc.quizPromptMessage,
               textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.cairo(
                 fontSize: 15,
                 color: _kMuted,
                 height: 1.5,
@@ -350,8 +349,8 @@ class _AutoStartPanel extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'Start Quiz',
-                style: GoogleFonts.roboto(
+                loc.startQuizButton,
+                style: GoogleFonts.cairo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
@@ -359,8 +358,8 @@ class _AutoStartPanel extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Tailored to your current level',
-              style: GoogleFonts.roboto(
+              loc.tailoredToLevelMessage,
+              style: GoogleFonts.cairo(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
                 color: _kMuted,
@@ -377,7 +376,7 @@ class _AutoStartPanel extends StatelessWidget {
               label: Text(
                 'Redirect to student home\n(FOR TESTING PURPOSES ONLY. DO NOT SHIP TO PRODUCTION!)',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   fontSize: 11,
                   color: const Color(0xFFE53935),
                   fontWeight: FontWeight.w600,
@@ -408,10 +407,8 @@ class StudentQuizScreen extends StatelessWidget {
   const StudentQuizScreen({super.key});
 
   @override
-
   Widget build(BuildContext context) =>
       const _AutoStartPanel(totalQuestions: 5, contextType: QuizContext.voluntary);
-
 }
 
 // ---------------------------------------------------------------------------
@@ -562,7 +559,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Hint $hintNumber',
+                              loc.hintNumberTitle(hintNumber),
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -606,8 +603,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                     ),
                   ),
                   child: Text(
-                    'Got it',
-                    style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+                    loc.gotItButton,
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -649,8 +646,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Question ${_currentIndex + 1} of $total',
-                    style: GoogleFonts.roboto(
+                    loc.questionOfTotalLabel(_currentIndex + 1, total),
+                    style: GoogleFonts.cairo(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                       color: _kMuted,
@@ -659,8 +656,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                 ],
               ),
               Text(
-                '${answered.length} answered',
-                style: GoogleFonts.roboto(fontSize: 13, color: _kMuted),
+                loc.answeredCountLabel(answered.length),
+                style: GoogleFonts.cairo(fontSize: 13, color: _kMuted),
               ),
             ],
           ),
@@ -689,18 +686,19 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final hintsExhausted = _hintsUsed >= _currentQuestion.hints.length;
 
     final String label;
     final VoidCallback? onPrimary;
     if (!_revealed) {
-      label = 'Submit';
+      label = loc.submitButton;
       onPrimary = _selectedOption != null ? () => _submitAnswer(context) : null;
     } else if (_isLastQuestion) {
-      label = 'Finish';
+      label = loc.finishButton;
       onPrimary = () => _advance(context);
     } else {
-      label = 'Next';
+      label = loc.nextButton;
       onPrimary = () => _advance(context);
     }
 
@@ -714,8 +712,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                 : () => _showHint(context),
             icon: const Icon(Icons.lightbulb_outline, size: 18),
             label: Text(
-              'Hint ($_hintsUsed)',
-              style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+              loc.hintCountLabel(_hintsUsed),
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: _kAmber,
@@ -744,7 +742,7 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
             ),
             child: Text(
               label,
-              style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -847,7 +845,7 @@ class _QuestionCard extends StatelessWidget {
       ),
       child: Text(
         _difficultyLabel(loc, question.difficulty),
-        style: GoogleFonts.roboto(
+        style: GoogleFonts.cairo(
           fontSize: 11,
           fontWeight: FontWeight.w700,
           color: color,
@@ -1031,6 +1029,7 @@ class _SolutionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final accent = isCorrect ? _kGreen : _kAmber;
     final bg = isCorrect ? _kGreenLight : _kAmberLight;
     final mascotEmotion = isCorrect ? MascotState.happy : MascotState.sad;
@@ -1061,8 +1060,8 @@ class _SolutionCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isCorrect ? 'Correct!' : 'Solution',
-                      style: GoogleFonts.roboto(
+                      isCorrect ? loc.correctExclamationLabel : loc.solutionLabel,
+                      style: GoogleFonts.cairo(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: accent,
@@ -1073,8 +1072,8 @@ class _SolutionCard extends StatelessWidget {
                 if (!isCorrect) ...[
                   const SizedBox(height: 12),
                   Text(
-                    'Correct answer',
-                    style: GoogleFonts.roboto(
+                    loc.correctAnswerLabel,
+                    style: GoogleFonts.cairo(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: _kMuted,
@@ -1170,8 +1169,8 @@ class _ResultsView extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${state.result.totalQuestions} questions',
-            style: GoogleFonts.roboto(fontSize: 14, color: _kMuted),
+            loc.questionsCountLabel(state.result.totalQuestions),
+            style: GoogleFonts.cairo(fontSize: 14, color: _kMuted),
           ),
           const SizedBox(height: 24),
           Container(
@@ -1206,8 +1205,8 @@ class _ResultsView extends StatelessWidget {
             },
             icon: const Icon(Icons.check_circle_outline),
             label: Text(
-              'Done',
-              style: GoogleFonts.roboto(
+              loc.doneButton,
+              style: GoogleFonts.cairo(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -1230,8 +1229,8 @@ class _ResultsView extends StatelessWidget {
             },
             icon: const Icon(Icons.refresh_rounded),
             label: Text(
-              'Take Another Quiz',
-              style: GoogleFonts.roboto(
+              loc.takeAnotherQuizButton,
+              style: GoogleFonts.cairo(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -1282,7 +1281,6 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -1290,7 +1288,7 @@ class _ErrorView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Something went wrong',
+              AppLocalizations.of(context).somethingWentWrongTitle,
               style: GoogleFonts.cairo(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -1316,8 +1314,8 @@ class _ErrorView extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'Try Again',
-                style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+                AppLocalizations.of(context).tryAgainButton,
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
               ),
             ),
           ],

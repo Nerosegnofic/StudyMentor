@@ -107,6 +107,21 @@ type LocalNotificationEvent @table(name: "local_notification_events", key: ["id"
   # JSON string: { "title": "...", "body": "...", "screen": "...", "childId": "..." }
   payload: String! @col(dataType: "text")
   createdAt: Timestamp! @default(expr: "request.time")
+  # isDispatched: true once the 15-min poll has sent the OS notification (dedup boundary).
+  # isRead: true only when the parent explicitly marks it read in the notification bell UI.
+  isDispatched: Boolean! @default(expr: "false")
+  isRead: Boolean! @default(expr: "false")
+}
+
+# In-app notification events for the student's notification bell.
+# Written by the student device when gamification events fire.
+type StudentNotificationEvent @table(name: "student_notification_events", key: ["id"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  studentUid: String! @col(dataType: "varchar(128)")
+  eventType: String! @col(dataType: "varchar(50)")
+  title: String! @col(dataType: "varchar(255)")
+  body: String! @col(dataType: "text")
+  createdAt: Timestamp! @default(expr: "request.time")
   isRead: Boolean! @default(expr: "false")
 }
 

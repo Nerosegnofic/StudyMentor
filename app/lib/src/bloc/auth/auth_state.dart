@@ -160,7 +160,7 @@ class InstalledAppsLoaded extends AuthState {
 }
 
 /// Emitted when a parent-triggered refresh is in flight.
-/// Distinct from [LegacyAppConfigLoading] â€” does not wipe the existing rules
+/// Distinct from [LegacyAppConfigLoading] â€" does not wipe the existing rules
 /// from the screen while the new data loads.
 class LegacyStudentDataRefreshing extends AuthState {}
 

@@ -19,12 +19,6 @@
   "preferencesSection": "التفضيلات",
   "accountSection": "الحساب",
   "aboutSection": "حول",
-  "pushNotificationsTitle": "الإشعارات",
-  "pushNotificationsSubtitle": "تلقي تذكيرات وتحديثات الدراسة",
-  "soundEffectsTitle": "المؤثرات الصوتية",
-  "soundEffectsSubtitle": "أصوات الأزرار والتفاعلات",
-  "backgroundMusicTitle": "الموسيقى الخلفية",
-  "backgroundMusicSubtitle": "تشغيل الموسيقى أثناء الدراسة",
   "usageTimerNotificationTitle": "إشعار مؤقت الاستخدام",
   "usageTimerNotificationSubtitle": "إظهار إشعار يعرض العد التنازلي للوقت المتبقي من استخدام التطبيق",
   "cooldownTimerNotificationTitle": "إشعار مؤقت الاستراحة",
@@ -750,5 +744,161 @@
   "errStudentInvalidEmail": "صيغة البريد الإلكتروني غير صحيحة.",
   "errUnexpected": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
   "shopItemPurchasedMessage": "تمت عملية الشراء بنجاح! 🎉",
-  "errPurchaseFailed": "فشلت عملية الشراء. يرجى المحاولة مرة أخرى."
+  "errPurchaseFailed": "فشلت عملية الشراء. يرجى المحاولة مرة أخرى.",
+  "errCouldNotLoadProfile": "تعذر تحميل ملفك الشخصي. يرجى المحاولة مرة أخرى.",
+  "errInvalidParentCredentials": "بيانات اعتماد الوالد غير صالحة. تم رفض تسجيل الخروج.",
+
+  "confirmEmailSubtitle": "خطوة أخيرة",
+  "createParentAccountSubtitle": "أنشئ حساب ولي أمر",
+  "resetPasswordSubtitle": "سنرسل إليك رابط إعادة التعيين",
+
+  "todayLabel": "اليوم",
+  "studiedLabel": "درست",
+
+  "effortFocusTitle": "الجهد والتركيز",
+  "effortFocusSubtitle": "مصدر اختبارات هذا الأسبوع",
+  "selfStartedLabel": "بمبادرة ذاتية",
+  "toUnlockAppsLabel": "لفتح التطبيقات",
+  "percentSelfStartedMessage": "{percent}٪ من الاختبارات كانت بمبادرة ذاتية",
+  "@percentSelfStartedMessage": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "noSubjectsReportMessage": "لا توجد مواد للإبلاغ عنها حتى الآن.",
+  "quizzesGuessingMessage": "{count, plural, =1{اختبار واحد أظهر تخمينًا سريعًا} other{{count} اختبارات أظهرت تخمينًا سريعًا}}",
+  "@quizzesGuessingMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "restingStatusLabel": "راحة",
+  "readyStatusLabel": "متاح",
+
+  "markAsUnreadTooltip": "وضع علامة غير مقروء",
+  "markAsReadTooltip": "وضع علامة مقروء",
+
+  "noActivitySummarizeMessage": "لا يوجد نشاط للتلخيص حتى الآن.",
+
+  "motivationLevel1": "أنتَ بذرة — كل خبير كان مبتدئًا يومًا ما! 🌱",
+  "motivationLevel2": "أنتَ شتلة — تنمو بسرعة، واصل! 🌿",
+  "motivationLevel3": "أنتَ مستكشف — الفضول هو قوتك الخارقة! 🔍",
+  "motivationLevel4": "أنتَ عقل فضولي — الأسئلة الرائعة تقود إلى إجابات رائعة! 💡",
+  "motivationLevel5": "أنتَ عالم — عملك الجاد يظهر جليًا! 📚",
+  "motivationLevel6": "أنتَ منجز — تجعلها تبدو سهلة! ⭐",
+  "motivationLevel7": "أنتَ بطل — تُلهم كل من حولك! 🏆",
+  "motivationLevel8": "أنتَ حكيم — حكمتك تميزك! 🦉",
+  "motivationLevel9": "أنتَ نجم ساطع — تنير الطريق للآخرين! ✨",
+  "motivationLevel10": "أنتَ محترف — قمة التميز! 🌟",
+  "motivationDefault": "واصل التعلم — أنتَ رائع! 🚀",
+
+  "hourUnitLabel": "ساعة",
+  "hoursUnitLabel": "ساعات",
+  "minuteUnitLabel": "دقيقة",
+
+  "appsParentWatchesTitle": "التطبيقات التي يراقبها والدك",
+  "restingNowSubtitle": "في وضع الراحة · اضغط لرؤية الكل",
+  "appsCountSubtitle": "{count, plural, =1{تطبيق واحد · اضغط لرؤية الكل} other{{count} تطبيقات · اضغط لرؤية الكل}}",
+  "@appsCountSubtitle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noAppsWatchedMessage": "لا توجد تطبيقات خاضعة للمراقبة الآن 🎉",
+
+  "globalTimeLimitsLabel": "الحدود الزمنية العامة",
+  "globalTimeLimitsTooltip": "تنطبق هذه الحدود على جميع التطبيقات المقيدة. عندما يصل الطالب إلى حد الاستخدام في أي تطبيق مقيد، يجب أن ينتظر فترة الراحة قبل استخدامه مجددًا.",
+  "usageAllowanceLabel": "وقت الاستخدام المسموح",
+
+  "readyToPracticeMessage": "هل أنت جاهز للتدريب؟",
+  "gotItButton": "فهمت",
+  "finishButton": "إنهاء",
+  "correctExclamationLabel": "صحيح!",
+  "solutionLabel": "الحل",
+  "correctAnswerLabel": "الإجابة الصحيحة",
+  "reachLevelToUnlockMessage": "أوصل إلى المستوى {level} لفتح هذا العنصر.",
+  "@reachLevelToUnlockMessage": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "coinPriceLabel": "{price} عملة",
+  "@coinPriceLabel": {
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "balanceAfterLabel": "الرصيد بعد: {balance} 🪙",
+  "@balanceAfterLabel": {
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+  "appsRestingTitle": "التطبيقات في وضع الراحة الآن",
+  "earnedFreeTimeLockedSubtitle": "لقد أقلت {time} من الوقت الحر اليوم. أكمل اختبارك لفتح المزيد.",
+  "@earnedFreeTimeLockedSubtitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "finishQuizUnlockApps": "أكمل اختبارك لفتح تطبيقاتك.",
+  "earnedFreeTimeUnlockedTitle": "لقد أقلت {time} من الوقت الحر اليوم",
+  "@earnedFreeTimeUnlockedTitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "appsUnlockedEnjoySubtitle": "تطبيقاتك مفتوحة — استمتع بوقتك الحر.",
+  "appsUnlockedTitle": "تطبيقاتك مفتوحة",
+  "enjoyFreeTimeSubtitle": "استمتع بوقتك الحر.",
+  "timeToRestTitle": "وقت الراحة",
+  "screenTimeTitle": "وقت الشاشة",
+  "limitRestSummaryLabel": "الحد {limit}   ·   الراحة {rest}",
+  "@limitRestSummaryLabel": {
+    "placeholders": {
+      "limit": {"type": "String"},
+      "rest": {"type": "String"}
+    }
+  },
+  "minLeftLabel": "د. متبقية",
+  "secLeftLabel": "ث. متبقية",
+  "restingLabel": "راحة",
+  "noTimeLimitMessage": "لا يوجد حد للوقت — استمتع بالتعلم!",
+  "questionsTodayLabel": "أسئلة اليوم",
+  "noQuestionsYetMessage": "لا أسئلة اليوم حتى الآن — لنبدأ! 🌱",
+  "topRankLabel": "أعلى مستوى",
+  "nextRankLabel": "التالي: {rank}",
+  "@nextRankLabel": {
+    "placeholders": {
+      "rank": {"type": "String"}
+    }
+  },
+  "reachedTopMessage": "وصلت إلى القمة — رائع!",
+  "xpProgressLabel": "{current} / {max} نقطة",
+  "@xpProgressLabel": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "totalSuffixLabel": "المجموع {time}",
+  "@totalSuffixLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "noStudyTimeWeekMessage": "لم يتم تسجيل وقت دراسة هذا الأسبوع حتى الآن.",
+  "mascotIdleMessage": "ماذا سنتعلم اليوم؟",
+  "mascotHappyMessage": "أحسنت! استمر!",
+  "mascotThinkingMessage": "لحظة…",
+  "mascotSadMessage": "لا تقلق — دعنا نحاول مجددًا!",
+  "mascotCelebrationMessage": "عمل رائع! 🌟",
+
+  "mascotHiGreeting": "مرحبًا، {name}! 👋",
+  "@mascotHiGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  }
 }

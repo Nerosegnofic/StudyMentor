@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
+import '../../../bloc/locale/locale_cubit.dart';
 import 'auth_style.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
+import '../../widgets/language_picker_dialog.dart';
+import '../../../utils/app_version.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -51,97 +57,137 @@ class _LoginScreenState extends State<LoginScreen> {
             if (state is AuthError) {
               if (ModalRoute.of(context)?.isCurrent ?? false) {
                 _passCtl.clear();
-                setState(() => _error = state.message);
+                setState(() => _error = localizeError(state.message, AppLocalizations.of(context)));
               }
             }
           },
           builder: (context, state) {
             final loading = state is AuthLoading;
-            return Column(
+            final loc = AppLocalizations.of(context);
+            return Stack(
               children: [
-                AuthHeader(
-                  keyboardOpen: keyboardOpen,
-                  onBack: canGoBack
-                      ? () => Navigator.of(context).maybePop()
-                      : null,
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          authErrorBanner(_error),
-                          TextFormField(
-                            controller: _emailCtl,
-                            onChanged: (_) {
-                              if (_error != null) {
-                                setState(() => _error = null);
-                              }
-                            },
-                            decoration: authInputDecoration(
-                              label: 'Email',
-                              icon: Icons.email_outlined,
-                            ),
-                            validator: (v) =>
-                                v!.contains('@') ? null : 'Please enter a valid email address.',
-                          ),
-                          const SizedBox(height: 14),
-                          TextFormField(
-                            controller: _passCtl,
-                            onChanged: (_) {
-                              if (_error != null) {
-                                setState(() => _error = null);
-                              }
-                            },
-                            decoration: authInputDecoration(
-                              label: 'Password',
-                              icon: Icons.lock_outline,
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                  color: Colors.grey.shade500,
+                Column(
+                  children: [
+                    AuthHeader(
+                      keyboardOpen: keyboardOpen,
+                      onBack: canGoBack
+                          ? () => Navigator.of(context).maybePop()
+                          : null,
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              authErrorBanner(_error),
+                              TextFormField(
+                                controller: _emailCtl,
+                                onChanged: (_) {
+                                  if (_error != null) {
+                                    setState(() => _error = null);
+                                  }
+                                },
+                                decoration: authInputDecoration(
+                                  label: loc.fieldEmail,
+                                  icon: Icons.email_outlined,
                                 ),
-                                onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
+                                validator: (v) =>
+                                    v!.contains('@') ? null : loc.loginEmailValidator,
+                              ),
+                              const SizedBox(height: 14),
+                              TextFormField(
+                                controller: _passCtl,
+                                onChanged: (_) {
+                                  if (_error != null) {
+                                    setState(() => _error = null);
+                                  }
+                                },
+                                decoration: authInputDecoration(
+                                  label: loc.fieldPassword,
+                                  icon: Icons.lock_outline,
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                    onPressed: () => setState(
+                                      () => _obscurePassword = !_obscurePassword,
+                                    ),
+                                  ),
+                                ),
+                                obscureText: _obscurePassword,
+                                validator: (v) => v!.isNotEmpty ? null : loc.validatorPasswordRequired,
+                              ),
+                              const SizedBox(height: 24),
+                              authPrimaryButton(
+                                label: loc.signInTitle,
+                                loading: loading,
+                                onPressed: () {
+                                  if (_formKey.currentState!.validate()) {
+                                    context.read<AuthBloc>().add(
+                                      LoginRequested(
+                                        email: _emailCtl.text.trim(),
+                                        password: _passCtl.text.trim(),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              authTextLink(
+                                text: loc.registerPromptButton,
+                                onPressed: () =>
+                                    Navigator.pushNamed(context, '/register'),
+                              ),
+                              authTextLink(
+                                text: loc.forgotPasswordButton,
+                                onPressed: () => Navigator.pushNamed(
+                                  context,
+                                  '/forgot-password',
                                 ),
                               ),
-                            ),
-                            obscureText: _obscurePassword,
-                            validator: (v) => v!.isNotEmpty ? null : 'Password is required.',
+                            ],
                           ),
-                          const SizedBox(height: 24),
-                          authPrimaryButton(
-                            label: 'Sign In',
-                            loading: loading,
-                            onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                context.read<AuthBloc>().add(
-                                  LoginRequested(
-                                    email: _emailCtl.text.trim(),
-                                    password: _passCtl.text.trim(),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 4),
-                          authTextLink(
-                            text: 'Not registered yet? Register as a Parent',
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/register'),
-                          ),
-                          authTextLink(
-                            text: 'Forgot Password?',
-                            onPressed: () => Navigator.pushNamed(
-                              context,
-                              '/forgot-password',
-                            ),
-                          ),
-                        ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Positioned(
+                  bottom: 16,
+                  left: 16,
+                  child: Text(
+                    appVersion,
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 8,
+                  right: 12,
+                  child: BlocBuilder<LocaleCubit, Locale>(
+                    builder: (context, locale) => TextButton.icon(
+                      onPressed: () => showLanguagePickerDialog(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: kAuthGreen,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.language_rounded, size: 16),
+                      label: Text(
+                        locale.languageCode == 'ar' ? 'العربية' : 'English',
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),

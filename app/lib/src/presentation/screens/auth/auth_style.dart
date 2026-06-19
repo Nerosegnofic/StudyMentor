@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ── Study Mentor shared auth style (pre-role brand: Primary Green) ────────────
 //
@@ -109,7 +110,7 @@ class AuthHeader extends StatelessWidget {
                         t,
                       )!,
                       child: Text(
-                        'Study Mentor',
+                        AppLocalizations.of(context).appTitle,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.cairo(
                           fontSize: _lerp(24, 22, t),
@@ -127,7 +128,7 @@ class AuthHeader extends StatelessWidget {
                           child: Text(
                             subtitle!,
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.roboto(
+                            style: GoogleFonts.cairo(
                               fontSize: 14,
                               color: Colors.white.withValues(alpha: 0.9),
                             ),
@@ -155,7 +156,7 @@ class AuthHeader extends StatelessWidget {
                         icon: const Icon(Icons.arrow_back_ios_new, size: 18),
                         color: Colors.white,
                         onPressed: onBack,
-                        tooltip: 'Back',
+                        tooltip: AppLocalizations.of(context).backTooltip,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -196,7 +197,7 @@ Widget authErrorBanner(String? message) {
                 Expanded(
                   child: Text(
                     message,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.cairo(
                       fontSize: 13,
                       height: 1.4,
                       color: const Color(0xFFB71C1C),
@@ -226,10 +227,10 @@ InputDecoration authInputDecoration({
   return InputDecoration(
     labelText: label,
     hintText: hintText,
-    labelStyle: GoogleFonts.roboto(color: Colors.grey.shade600),
-    hintStyle: GoogleFonts.roboto(color: Colors.grey.shade400),
+    labelStyle: GoogleFonts.cairo(color: Colors.grey.shade600),
+    hintStyle: GoogleFonts.cairo(color: Colors.grey.shade400),
     errorText: errorText,
-    errorStyle: GoogleFonts.roboto(),
+    errorStyle: GoogleFonts.cairo(),
     prefixIcon: Icon(icon, color: Colors.grey.shade500),
     suffixIcon: suffixIcon,
     filled: true,
@@ -320,7 +321,7 @@ Widget authTextLink({
     child: Text(
       text,
       textAlign: TextAlign.center,
-      style: GoogleFonts.roboto(
+      style: GoogleFonts.cairo(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         color: color ?? kAuthGreen,

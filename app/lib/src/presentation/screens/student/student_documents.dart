@@ -323,7 +323,7 @@ class _StudentDocumentUploadScreenState
                     border: Border.all(color: const Color(0xFFEA4335)),
                   ),
                   child: Text(
-                    state.message,
+                    localizeError(state.message, AppLocalizations.of(context)),
                     style: GoogleFonts.cairo(
                       color: const Color(0xFFB71C1C),
                       fontSize: 13,

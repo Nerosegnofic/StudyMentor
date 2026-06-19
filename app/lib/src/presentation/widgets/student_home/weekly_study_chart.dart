@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/report_models.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// "This week" card — a 7-day study-minutes bar chart, styled to match the
 /// parent report's `_DailyStudyPainter` (green rounded bars + value labels).
@@ -13,6 +14,7 @@ class WeeklyStudyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final total = points.fold<int>(0, (s, e) => s + e.studyMinutes);
     final hasData = points.isNotEmpty && total > 0;
 
@@ -37,7 +39,7 @@ class WeeklyStudyChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'This week',
+                loc.thisWeekLabel,
                 style: GoogleFonts.cairo(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -45,8 +47,8 @@ class WeeklyStudyChart extends StatelessWidget {
                 ),
               ),
               Text(
-                '${_formatTotal(total)} total',
-                style: GoogleFonts.roboto(
+                loc.totalSuffixLabel(_formatTotal(total)),
+                style: GoogleFonts.cairo(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey.shade500,
@@ -56,7 +58,7 @@ class WeeklyStudyChart extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           if (!hasData)
-            _placeholder()
+            _placeholder(loc)
           else ...[
             SizedBox(
               height: 120,
@@ -73,7 +75,7 @@ class WeeklyStudyChart extends StatelessWidget {
                       child: Text(
                         p.dayLabel,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: Colors.grey.shade500,
@@ -89,13 +91,13 @@ class WeeklyStudyChart extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() {
+  Widget _placeholder(AppLocalizations loc) {
     return SizedBox(
       height: 90,
       child: Center(
         child: Text(
-          'No study time logged this week yet.',
-          style: GoogleFonts.roboto(fontSize: 13, color: Colors.grey.shade500),
+          loc.noStudyTimeWeekMessage,
+          style: GoogleFonts.cairo(fontSize: 13, color: Colors.grey.shade500),
         ),
       ),
     );
@@ -147,7 +149,7 @@ class _BarsPainter extends CustomPainter {
         final tp = TextPainter(
           text: TextSpan(
             text: _formatMinutes(values[i]),
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.cairo(
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF374151),

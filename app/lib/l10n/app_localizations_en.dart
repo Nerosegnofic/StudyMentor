@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'StudyMentor';
+  String get appTitle => 'Study Mentor';
 
   @override
   String get languageSettingTitle => 'Language';
@@ -61,24 +61,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutSection => 'About';
-
-  @override
-  String get pushNotificationsTitle => 'Push Notifications';
-
-  @override
-  String get pushNotificationsSubtitle => 'Receive study reminders and updates';
-
-  @override
-  String get soundEffectsTitle => 'Sound Effects';
-
-  @override
-  String get soundEffectsSubtitle => 'Button clicks and interactions';
-
-  @override
-  String get backgroundMusicTitle => 'Background Music';
-
-  @override
-  String get backgroundMusicSubtitle => 'Play music while studying';
 
   @override
   String get usageTimerNotificationTitle => 'Usage Timer Notification';
@@ -1996,4 +1978,288 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errPurchaseFailed => 'Purchase failed. Please try again.';
+
+  @override
+  String get errCouldNotLoadProfile =>
+      'Could not load your profile. Please try again.';
+
+  @override
+  String get errInvalidParentCredentials =>
+      'Invalid parent credentials. Logout denied.';
+
+  @override
+  String get confirmEmailSubtitle => 'One last step';
+
+  @override
+  String get createParentAccountSubtitle => 'Create your parent account';
+
+  @override
+  String get resetPasswordSubtitle => 'We\'ll email you a reset link';
+
+  @override
+  String get todayLabel => 'Today';
+
+  @override
+  String get studiedLabel => 'Studied';
+
+  @override
+  String get effortFocusTitle => 'Effort & Focus';
+
+  @override
+  String get effortFocusSubtitle => 'Where this week\'s quizzes came from';
+
+  @override
+  String get selfStartedLabel => 'Self-started';
+
+  @override
+  String get toUnlockAppsLabel => 'To unlock apps';
+
+  @override
+  String percentSelfStartedMessage(int percent) {
+    return '$percent% of quizzes were self-started';
+  }
+
+  @override
+  String get noSubjectsReportMessage => 'No subjects to report on yet.';
+
+  @override
+  String quizzesGuessingMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count quizzes showed rapid guessing',
+      one: '1 quiz showed rapid guessing',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restingStatusLabel => 'Resting';
+
+  @override
+  String get readyStatusLabel => 'Ready';
+
+  @override
+  String get markAsUnreadTooltip => 'Mark as unread';
+
+  @override
+  String get markAsReadTooltip => 'Mark as read';
+
+  @override
+  String get noActivitySummarizeMessage => 'No activity to summarize yet.';
+
+  @override
+  String get motivationLevel1 =>
+      'You\'re a Seedling — every expert was once a beginner! 🌱';
+
+  @override
+  String get motivationLevel2 =>
+      'You\'re a Sprout — you\'re growing fast, keep it up! 🌿';
+
+  @override
+  String get motivationLevel3 =>
+      'You\'re an Explorer — curiosity is your superpower! 🔍';
+
+  @override
+  String get motivationLevel4 =>
+      'You\'re a Curious Mind — great questions lead to great answers! 💡';
+
+  @override
+  String get motivationLevel5 =>
+      'You\'re a Scholar — your hard work is really showing! 📚';
+
+  @override
+  String get motivationLevel6 =>
+      'You\'re an Achiever — you make it look easy! ⭐';
+
+  @override
+  String get motivationLevel7 =>
+      'You\'re a Champion — you inspire everyone around you! 🏆';
+
+  @override
+  String get motivationLevel8 =>
+      'You\'re a Sage — your wisdom sets you apart! 🦉';
+
+  @override
+  String get motivationLevel9 =>
+      'You\'re a Luminary — you light the way for others! ✨';
+
+  @override
+  String get motivationLevel10 =>
+      'You\'re a Master — the pinnacle of excellence! 🌟';
+
+  @override
+  String get motivationDefault => 'Keep learning — you\'re doing amazing! 🚀';
+
+  @override
+  String get hourUnitLabel => 'hr';
+
+  @override
+  String get hoursUnitLabel => 'hrs';
+
+  @override
+  String get minuteUnitLabel => 'min';
+
+  @override
+  String get appsParentWatchesTitle => 'Apps your parent watches';
+
+  @override
+  String get restingNowSubtitle => 'Resting now · tap to see all';
+
+  @override
+  String appsCountSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count apps · tap to see all',
+      one: '1 app · tap to see all',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noAppsWatchedMessage => 'No apps are being watched right now 🎉';
+
+  @override
+  String get globalTimeLimitsLabel => 'Global Time Limits';
+
+  @override
+  String get globalTimeLimitsTooltip =>
+      'These limits apply to all restricted apps. When a student reaches the usage limit on any restricted app, they must wait the cooldown period before using it again.';
+
+  @override
+  String get usageAllowanceLabel => 'Usage Allowance';
+
+  @override
+  String get readyToPracticeMessage => 'Ready to practice?';
+
+  @override
+  String get gotItButton => 'Got it';
+
+  @override
+  String get finishButton => 'Finish';
+
+  @override
+  String get correctExclamationLabel => 'Correct!';
+
+  @override
+  String get solutionLabel => 'Solution';
+
+  @override
+  String get correctAnswerLabel => 'Correct answer';
+
+  @override
+  String reachLevelToUnlockMessage(int level) {
+    return 'Reach Level $level to unlock this item.';
+  }
+
+  @override
+  String coinPriceLabel(int price) {
+    return '$price coins';
+  }
+
+  @override
+  String balanceAfterLabel(int balance) {
+    return 'Balance after: $balance 🪙';
+  }
+
+  @override
+  String get appsRestingTitle => 'Apps are resting right now';
+
+  @override
+  String earnedFreeTimeLockedSubtitle(String time) {
+    return 'You\'ve earned $time of free time today. Finish your quiz to unlock more.';
+  }
+
+  @override
+  String get finishQuizUnlockApps => 'Finish your quiz to unlock your apps.';
+
+  @override
+  String earnedFreeTimeUnlockedTitle(String time) {
+    return 'You\'ve earned $time of free time today';
+  }
+
+  @override
+  String get appsUnlockedEnjoySubtitle =>
+      'Your apps are unlocked — enjoy your free time.';
+
+  @override
+  String get appsUnlockedTitle => 'Your apps are unlocked';
+
+  @override
+  String get enjoyFreeTimeSubtitle => 'Enjoy your free time.';
+
+  @override
+  String get timeToRestTitle => 'Time to rest';
+
+  @override
+  String get screenTimeTitle => 'Screen time';
+
+  @override
+  String limitRestSummaryLabel(String limit, String rest) {
+    return 'Limit $limit   ·   Rest $rest';
+  }
+
+  @override
+  String get minLeftLabel => 'min left';
+
+  @override
+  String get secLeftLabel => 'sec left';
+
+  @override
+  String get restingLabel => 'resting';
+
+  @override
+  String get noTimeLimitMessage => 'No time limit set — enjoy learning!';
+
+  @override
+  String get questionsTodayLabel => 'questions today';
+
+  @override
+  String get noQuestionsYetMessage =>
+      'No questions yet today — let\'s start! 🌱';
+
+  @override
+  String get topRankLabel => 'Top rank';
+
+  @override
+  String nextRankLabel(String rank) {
+    return 'Next: $rank';
+  }
+
+  @override
+  String get reachedTopMessage => 'You reached the top — amazing!';
+
+  @override
+  String xpProgressLabel(int current, int max) {
+    return '$current / $max XP';
+  }
+
+  @override
+  String totalSuffixLabel(String time) {
+    return '$time total';
+  }
+
+  @override
+  String get noStudyTimeWeekMessage => 'No study time logged this week yet.';
+
+  @override
+  String get mascotIdleMessage => 'What shall we learn today?';
+
+  @override
+  String get mascotHappyMessage => 'Great job! Keep it up!';
+
+  @override
+  String get mascotThinkingMessage => 'One moment…';
+
+  @override
+  String get mascotSadMessage => 'Don\'t worry — let\'s try again!';
+
+  @override
+  String get mascotCelebrationMessage => 'Amazing work! 🌟';
+
+  @override
+  String mascotHiGreeting(String name) {
+    return 'Hi, $name! 👋';
+  }
 }

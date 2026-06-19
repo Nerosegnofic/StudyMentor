@@ -97,9 +97,16 @@ abstract class AuthRepository {
   
   // Dashboard additions
   Future<AiSummaryModel> getAiSummary(List<StudentModel> children);
+
+  // ── Notifications ──────────────────────────────────────────────────────────
   Future<List<NotificationModel>> getNotificationsForParent(String parentUid);
   Future<List<NotificationModel>> getNotificationsForStudent(String studentUid);
   Future<void> markAllNotificationsRead(String parentUid);
+  Future<void> markAllStudentNotificationsRead(String studentUid);
+  Future<void> toggleParentNotificationRead(String id, {required bool isRead});
+  Future<void> toggleStudentNotificationRead(String id, {required bool isRead});
+  Future<void> deleteParentNotification(String id);
+  Future<void> deleteStudentNotification(String id);
 
   // ── Profile management ──────────────────────────────────────────────────
   Future<UserModel> updateProfile({

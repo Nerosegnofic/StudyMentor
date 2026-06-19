@@ -188,6 +188,10 @@ class StreakReminderService {
           'studentName': studentName,
           'previousStreak': '$lastKnownStreak',
         },
+        // STREAK_BROKEN goes only to the parent; the student sees the OS
+        // reminder notification instead, so we pass empty strings here.
+        studentTitle: '',
+        studentBody: '',
       );
     }
 

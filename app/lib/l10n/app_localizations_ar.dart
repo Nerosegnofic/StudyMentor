@@ -63,24 +63,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aboutSection => 'حول';
 
   @override
-  String get pushNotificationsTitle => 'الإشعارات';
-
-  @override
-  String get pushNotificationsSubtitle => 'تلقي تذكيرات وتحديثات الدراسة';
-
-  @override
-  String get soundEffectsTitle => 'المؤثرات الصوتية';
-
-  @override
-  String get soundEffectsSubtitle => 'أصوات الأزرار والتفاعلات';
-
-  @override
-  String get backgroundMusicTitle => 'الموسيقى الخلفية';
-
-  @override
-  String get backgroundMusicSubtitle => 'تشغيل الموسيقى أثناء الدراسة';
-
-  @override
   String get usageTimerNotificationTitle => 'إشعار مؤقت الاستخدام';
 
   @override
@@ -1984,4 +1966,279 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get errPurchaseFailed => 'فشلت عملية الشراء. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get errCouldNotLoadProfile =>
+      'تعذر تحميل ملفك الشخصي. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get errInvalidParentCredentials =>
+      'بيانات اعتماد الوالد غير صالحة. تم رفض تسجيل الخروج.';
+
+  @override
+  String get confirmEmailSubtitle => 'خطوة أخيرة';
+
+  @override
+  String get createParentAccountSubtitle => 'أنشئ حساب ولي أمر';
+
+  @override
+  String get resetPasswordSubtitle => 'سنرسل إليك رابط إعادة التعيين';
+
+  @override
+  String get todayLabel => 'اليوم';
+
+  @override
+  String get studiedLabel => 'درست';
+
+  @override
+  String get effortFocusTitle => 'الجهد والتركيز';
+
+  @override
+  String get effortFocusSubtitle => 'مصدر اختبارات هذا الأسبوع';
+
+  @override
+  String get selfStartedLabel => 'بمبادرة ذاتية';
+
+  @override
+  String get toUnlockAppsLabel => 'لفتح التطبيقات';
+
+  @override
+  String percentSelfStartedMessage(int percent) {
+    return '$percent٪ من الاختبارات كانت بمبادرة ذاتية';
+  }
+
+  @override
+  String get noSubjectsReportMessage => 'لا توجد مواد للإبلاغ عنها حتى الآن.';
+
+  @override
+  String quizzesGuessingMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اختبارات أظهرت تخمينًا سريعًا',
+      one: 'اختبار واحد أظهر تخمينًا سريعًا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restingStatusLabel => 'راحة';
+
+  @override
+  String get readyStatusLabel => 'متاح';
+
+  @override
+  String get markAsUnreadTooltip => 'وضع علامة غير مقروء';
+
+  @override
+  String get markAsReadTooltip => 'وضع علامة مقروء';
+
+  @override
+  String get noActivitySummarizeMessage => 'لا يوجد نشاط للتلخيص حتى الآن.';
+
+  @override
+  String get motivationLevel1 => 'أنتَ بذرة — كل خبير كان مبتدئًا يومًا ما! 🌱';
+
+  @override
+  String get motivationLevel2 => 'أنتَ شتلة — تنمو بسرعة، واصل! 🌿';
+
+  @override
+  String get motivationLevel3 => 'أنتَ مستكشف — الفضول هو قوتك الخارقة! 🔍';
+
+  @override
+  String get motivationLevel4 =>
+      'أنتَ عقل فضولي — الأسئلة الرائعة تقود إلى إجابات رائعة! 💡';
+
+  @override
+  String get motivationLevel5 => 'أنتَ عالم — عملك الجاد يظهر جليًا! 📚';
+
+  @override
+  String get motivationLevel6 => 'أنتَ منجز — تجعلها تبدو سهلة! ⭐';
+
+  @override
+  String get motivationLevel7 => 'أنتَ بطل — تُلهم كل من حولك! 🏆';
+
+  @override
+  String get motivationLevel8 => 'أنتَ حكيم — حكمتك تميزك! 🦉';
+
+  @override
+  String get motivationLevel9 => 'أنتَ نجم ساطع — تنير الطريق للآخرين! ✨';
+
+  @override
+  String get motivationLevel10 => 'أنتَ محترف — قمة التميز! 🌟';
+
+  @override
+  String get motivationDefault => 'واصل التعلم — أنتَ رائع! 🚀';
+
+  @override
+  String get hourUnitLabel => 'ساعة';
+
+  @override
+  String get hoursUnitLabel => 'ساعات';
+
+  @override
+  String get minuteUnitLabel => 'دقيقة';
+
+  @override
+  String get appsParentWatchesTitle => 'التطبيقات التي يراقبها والدك';
+
+  @override
+  String get restingNowSubtitle => 'في وضع الراحة · اضغط لرؤية الكل';
+
+  @override
+  String appsCountSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تطبيقات · اضغط لرؤية الكل',
+      one: 'تطبيق واحد · اضغط لرؤية الكل',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noAppsWatchedMessage => 'لا توجد تطبيقات خاضعة للمراقبة الآن 🎉';
+
+  @override
+  String get globalTimeLimitsLabel => 'الحدود الزمنية العامة';
+
+  @override
+  String get globalTimeLimitsTooltip =>
+      'تنطبق هذه الحدود على جميع التطبيقات المقيدة. عندما يصل الطالب إلى حد الاستخدام في أي تطبيق مقيد، يجب أن ينتظر فترة الراحة قبل استخدامه مجددًا.';
+
+  @override
+  String get usageAllowanceLabel => 'وقت الاستخدام المسموح';
+
+  @override
+  String get readyToPracticeMessage => 'هل أنت جاهز للتدريب؟';
+
+  @override
+  String get gotItButton => 'فهمت';
+
+  @override
+  String get finishButton => 'إنهاء';
+
+  @override
+  String get correctExclamationLabel => 'صحيح!';
+
+  @override
+  String get solutionLabel => 'الحل';
+
+  @override
+  String get correctAnswerLabel => 'الإجابة الصحيحة';
+
+  @override
+  String reachLevelToUnlockMessage(int level) {
+    return 'أوصل إلى المستوى $level لفتح هذا العنصر.';
+  }
+
+  @override
+  String coinPriceLabel(int price) {
+    return '$price عملة';
+  }
+
+  @override
+  String balanceAfterLabel(int balance) {
+    return 'الرصيد بعد: $balance 🪙';
+  }
+
+  @override
+  String get appsRestingTitle => 'التطبيقات في وضع الراحة الآن';
+
+  @override
+  String earnedFreeTimeLockedSubtitle(String time) {
+    return 'لقد أقلت $time من الوقت الحر اليوم. أكمل اختبارك لفتح المزيد.';
+  }
+
+  @override
+  String get finishQuizUnlockApps => 'أكمل اختبارك لفتح تطبيقاتك.';
+
+  @override
+  String earnedFreeTimeUnlockedTitle(String time) {
+    return 'لقد أقلت $time من الوقت الحر اليوم';
+  }
+
+  @override
+  String get appsUnlockedEnjoySubtitle =>
+      'تطبيقاتك مفتوحة — استمتع بوقتك الحر.';
+
+  @override
+  String get appsUnlockedTitle => 'تطبيقاتك مفتوحة';
+
+  @override
+  String get enjoyFreeTimeSubtitle => 'استمتع بوقتك الحر.';
+
+  @override
+  String get timeToRestTitle => 'وقت الراحة';
+
+  @override
+  String get screenTimeTitle => 'وقت الشاشة';
+
+  @override
+  String limitRestSummaryLabel(String limit, String rest) {
+    return 'الحد $limit   ·   الراحة $rest';
+  }
+
+  @override
+  String get minLeftLabel => 'د. متبقية';
+
+  @override
+  String get secLeftLabel => 'ث. متبقية';
+
+  @override
+  String get restingLabel => 'راحة';
+
+  @override
+  String get noTimeLimitMessage => 'لا يوجد حد للوقت — استمتع بالتعلم!';
+
+  @override
+  String get questionsTodayLabel => 'أسئلة اليوم';
+
+  @override
+  String get noQuestionsYetMessage => 'لا أسئلة اليوم حتى الآن — لنبدأ! 🌱';
+
+  @override
+  String get topRankLabel => 'أعلى مستوى';
+
+  @override
+  String nextRankLabel(String rank) {
+    return 'التالي: $rank';
+  }
+
+  @override
+  String get reachedTopMessage => 'وصلت إلى القمة — رائع!';
+
+  @override
+  String xpProgressLabel(int current, int max) {
+    return '$current / $max نقطة';
+  }
+
+  @override
+  String totalSuffixLabel(String time) {
+    return 'المجموع $time';
+  }
+
+  @override
+  String get noStudyTimeWeekMessage =>
+      'لم يتم تسجيل وقت دراسة هذا الأسبوع حتى الآن.';
+
+  @override
+  String get mascotIdleMessage => 'ماذا سنتعلم اليوم؟';
+
+  @override
+  String get mascotHappyMessage => 'أحسنت! استمر!';
+
+  @override
+  String get mascotThinkingMessage => 'لحظة…';
+
+  @override
+  String get mascotSadMessage => 'لا تقلق — دعنا نحاول مجددًا!';
+
+  @override
+  String get mascotCelebrationMessage => 'عمل رائع! 🌟';
+
+  @override
+  String mascotHiGreeting(String name) {
+    return 'مرحبًا، $name! 👋';
+  }
 }

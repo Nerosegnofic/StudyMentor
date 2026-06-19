@@ -9,7 +9,12 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   NotificationsBloc({required this.repository}) : super(NotificationsInitial()) {
     on<LoadNotificationsRequested>(_onLoadNotifications);
     on<LoadStudentNotificationsRequested>(_onLoadStudentNotifications);
-    on<MarkAllNotificationsReadRequested>(_onMarkAllNotificationsRead);
+    on<MarkAllNotificationsReadRequested>(_onMarkAllParentRead);
+    on<MarkAllStudentNotificationsReadRequested>(_onMarkAllStudentRead);
+    on<ToggleParentNotificationReadRequested>(_onToggleParentRead);
+    on<ToggleStudentNotificationReadRequested>(_onToggleStudentRead);
+    on<DeleteParentNotificationRequested>(_onDeleteParent);
+    on<DeleteStudentNotificationRequested>(_onDeleteStudent);
   }
 
   Future<void> _onLoadNotifications(
@@ -38,22 +43,95 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     }
   }
 
-  Future<void> _onMarkAllNotificationsRead(
+  Future<void> _onMarkAllParentRead(
     MarkAllNotificationsReadRequested event,
     Emitter<NotificationsState> emit,
   ) async {
-    if (state is NotificationsLoaded) {
-      final currentState = state as NotificationsLoaded;
-      try {
-        await repository.markAllNotificationsRead(event.parentUid);
-        final updatedList = currentState.notifications.map((n) {
-          return n.copyWith(isRead: true);
-        }).toList();
-        emit(NotificationsLoaded(updatedList));
-      } catch (e) {
-        // Fallback to error or retain state, but for this demo just show error
-        emit(NotificationsError('Failed to mark all as read: $e'));
-      }
+    if (state is! NotificationsLoaded) return;
+    final current = (state as NotificationsLoaded).notifications;
+    // Optimistic update — flip isRead immediately.
+    emit(NotificationsLoaded(current.map((n) => n.copyWith(isRead: true)).toList()));
+    try {
+      await repository.markAllNotificationsRead(event.parentUid);
+    } catch (_) {
+      // Revert on failure.
+      emit(NotificationsLoaded(current));
+    }
+  }
+
+  Future<void> _onMarkAllStudentRead(
+    MarkAllStudentNotificationsReadRequested event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    if (state is! NotificationsLoaded) return;
+    final current = (state as NotificationsLoaded).notifications;
+    emit(NotificationsLoaded(current.map((n) => n.copyWith(isRead: true)).toList()));
+    try {
+      await repository.markAllStudentNotificationsRead(event.studentUid);
+    } catch (_) {
+      emit(NotificationsLoaded(current));
+    }
+  }
+
+  Future<void> _onToggleParentRead(
+    ToggleParentNotificationReadRequested event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    if (state is! NotificationsLoaded) return;
+    final current = (state as NotificationsLoaded).notifications;
+    // Optimistic update.
+    emit(NotificationsLoaded(current.map((n) {
+      return n.id == event.id ? n.copyWith(isRead: event.isRead) : n;
+    }).toList()));
+    try {
+      await repository.toggleParentNotificationRead(event.id, isRead: event.isRead);
+    } catch (_) {
+      emit(NotificationsLoaded(current));
+    }
+  }
+
+  Future<void> _onToggleStudentRead(
+    ToggleStudentNotificationReadRequested event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    if (state is! NotificationsLoaded) return;
+    final current = (state as NotificationsLoaded).notifications;
+    emit(NotificationsLoaded(current.map((n) {
+      return n.id == event.id ? n.copyWith(isRead: event.isRead) : n;
+    }).toList()));
+    try {
+      await repository.toggleStudentNotificationRead(event.id, isRead: event.isRead);
+    } catch (_) {
+      emit(NotificationsLoaded(current));
+    }
+  }
+
+  Future<void> _onDeleteParent(
+    DeleteParentNotificationRequested event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    if (state is! NotificationsLoaded) return;
+    final current = (state as NotificationsLoaded).notifications;
+    // Optimistic removal.
+    emit(NotificationsLoaded(current.where((n) => n.id != event.id).toList()));
+    try {
+      await repository.deleteParentNotification(event.id);
+    } catch (_) {
+      emit(NotificationsLoaded(current));
+    }
+  }
+
+  Future<void> _onDeleteStudent(
+    DeleteStudentNotificationRequested event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    if (state is! NotificationsLoaded) return;
+    final current = (state as NotificationsLoaded).notifications;
+    emit(NotificationsLoaded(current.where((n) => n.id != event.id).toList()));
+    try {
+      await repository.deleteStudentNotification(event.id);
+    } catch (_) {
+      emit(NotificationsLoaded(current));
     }
   }
 }

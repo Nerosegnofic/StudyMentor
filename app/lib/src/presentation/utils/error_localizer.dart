@@ -61,6 +61,12 @@ String localizeError(String message, AppLocalizations loc) {
       return loc.errStudentInvalidEmail;
     case 'An unexpected error occurred. Please try again.':
       return loc.errUnexpected;
+    case 'Could not load your profile. Please try again.':
+      return loc.errCouldNotLoadProfile;
+    case 'Invalid parent credentials. Logout denied.':
+      return loc.errInvalidParentCredentials;
+    case 'Invalid credentials':
+      return loc.errWrongCurrentPassword;
     default:
       return message;
   }

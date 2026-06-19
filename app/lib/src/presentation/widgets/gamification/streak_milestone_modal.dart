@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
@@ -71,18 +71,18 @@ class _StreakMilestoneModalState extends State<StreakMilestoneModal>
     super.dispose();
   }
 
-  String _getMilestoneName(int days) {
+  String _getMilestoneName(AppLocalizations loc, int days) {
     switch (days) {
       case 3:
-        return 'On a Roll!';
+        return loc.streakMilestoneOnARoll;
       case 7:
-        return 'Week Warrior!';
+        return loc.streakMilestoneWeekWarrior;
       case 14:
-        return 'Fortnight Focus!';
+        return loc.streakMilestoneFortnightFocus;
       case 30:
-        return 'Monthly Master!';
+        return loc.streakMilestoneMonthlyMaster;
       default:
-        return 'Streak Milestone!';
+        return loc.streakMilestoneGeneric;
     }
   }
 
@@ -129,7 +129,7 @@ class _StreakMilestoneModalState extends State<StreakMilestoneModal>
 
             // ── Milestone name ───────────────────────────────────────
             Text(
-              _getMilestoneName(widget.milestoneDays),
+              _getMilestoneName(loc, widget.milestoneDays),
               style: GoogleFonts.cairo(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -141,8 +141,8 @@ class _StreakMilestoneModalState extends State<StreakMilestoneModal>
 
             // ── Description ──────────────────────────────────────────
             Text(
-              'You hit a ${widget.milestoneDays}-day learning streak!\nKeep it up!',
-              style: GoogleFonts.roboto(
+              loc.streakMilestoneDescriptionMessage(widget.milestoneDays),
+              style: GoogleFonts.cairo(
                 fontSize: 15,
                 color: _kMuted,
                 height: 1.5,
@@ -166,8 +166,8 @@ class _StreakMilestoneModalState extends State<StreakMilestoneModal>
                   const Text('🪙', style: TextStyle(fontSize: 22)),
                   const SizedBox(width: 10),
                   Text(
-                    '+${widget.coinReward} Coins',
-                    style: GoogleFonts.roboto(
+                    loc.coinsRewardLabel(widget.coinReward),
+                    style: GoogleFonts.cairo(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: _kAmberDark,
@@ -193,8 +193,8 @@ class _StreakMilestoneModalState extends State<StreakMilestoneModal>
                   ),
                 ),
                 child: Text(
-                  'Awesome!',
-                  style: GoogleFonts.roboto(
+                  loc.awesomeButton,
+                  style: GoogleFonts.cairo(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),

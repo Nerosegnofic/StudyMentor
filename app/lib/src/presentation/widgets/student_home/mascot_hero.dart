@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Hero greeting card: a speech bubble (with the student's RankName-based
 /// motivational message) sitting above a reserved 120×120 mascot slot.
@@ -43,7 +44,7 @@ class MascotHero extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _speechBubble(),
+          _speechBubble(context),
           // Downward tail pointing at the mascot.
           CustomPaint(
             size: const Size(20, 9),
@@ -56,7 +57,8 @@ class MascotHero extends StatelessWidget {
     );
   }
 
-  Widget _speechBubble() {
+  Widget _speechBubble(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -68,7 +70,7 @@ class MascotHero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'Hi, $firstName! 👋',
+            loc.mascotHiGreeting(firstName),
             textAlign: TextAlign.center,
             style: GoogleFonts.cairo(
               fontSize: 18,
@@ -78,9 +80,9 @@ class MascotHero extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            _motivation(level),
+            _motivation(loc, level),
             textAlign: TextAlign.center,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.cairo(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF4CAF50),
@@ -106,30 +108,30 @@ class MascotHero extends StatelessWidget {
   }
 
   /// Returns a level-specific encouraging message (levels 1–10).
-  String _motivation(int lvl) {
+  String _motivation(AppLocalizations loc, int lvl) {
     switch (lvl) {
       case 1:
-        return "You're a Seedling — every expert was once a beginner! 🌱";
+        return loc.motivationLevel1;
       case 2:
-        return "You're a Sprout — you're growing fast, keep it up! 🌿";
+        return loc.motivationLevel2;
       case 3:
-        return "You're an Explorer — curiosity is your superpower! 🔍";
+        return loc.motivationLevel3;
       case 4:
-        return "You're a Curious Mind — great questions lead to great answers! 💡";
+        return loc.motivationLevel4;
       case 5:
-        return "You're a Scholar — your hard work is really showing! 📚";
+        return loc.motivationLevel5;
       case 6:
-        return "You're an Achiever — you make it look easy! ⭐";
+        return loc.motivationLevel6;
       case 7:
-        return "You're a Champion — you inspire everyone around you! 🏆";
+        return loc.motivationLevel7;
       case 8:
-        return "You're a Sage — your wisdom sets you apart! 🦉";
+        return loc.motivationLevel8;
       case 9:
-        return "You're a Luminary — you light the way for others! ✨";
+        return loc.motivationLevel9;
       case 10:
-        return "You're a Master — the pinnacle of excellence! 🌟";
+        return loc.motivationLevel10;
       default:
-        return "Keep learning — you're doing amazing! 🚀";
+        return loc.motivationDefault;
     }
   }
 }

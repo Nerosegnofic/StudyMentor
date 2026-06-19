@@ -66,27 +66,27 @@ class StudentLocalNotificationHandler {
   // ── Cross-device event writes ───────────────────────────────────────────────
 
   /// Writes a cross-device `LocalNotificationEvent` so the parent learns
-  /// about [eventType] within 15 minutes via the parent's polling
-  /// WorkManager task.
+  /// about [eventType] within 15 minutes, AND a `StudentNotificationEvent`
+  /// so the student sees the notification in their in-app bell.
   ///
-  /// Called immediately after the local notification fires — the local
-  /// notification and this write are part of the same "celebration moment"
-  /// for the student, but they are independent operations: a failure here
-  /// must never affect the student's own notification or the calling flow.
-  ///
-  /// On failure (no network, timeout) the write is enqueued as a
-  /// [OneTimeWorkRequest] tagged [kStudentEventWriteTaskTag] with a
-  /// [NetworkType.connected] constraint, so it retries as soon as
-  /// connectivity is restored.
+  /// Both writes are fire-and-forget; failures are swallowed so they never
+  /// affect the student's celebration or the calling flow.
   static Future<void> writeNotificationEvent({
     required String fromStudentUid,
     required String toParentUid,
     required String eventType,
     required Map<String, dynamic> payload,
+    // Pre-localized strings for the student's in-app bell (required so we
+    // can store them in StudentNotificationEvent without a BuildContext).
+    required String studentTitle,
+    required String studentBody,
   }) async {
     final payloadJson = jsonEncode(payload);
+    final provider = DataConnectProvider();
+
+    // Write parent cross-device event.
     try {
-      await DataConnectProvider().insertLocalNotificationEvent(
+      await provider.insertLocalNotificationEvent(
         fromStudentUid: fromStudentUid,
         toParentUid: toParentUid,
         eventType: eventType,
@@ -107,10 +107,39 @@ class StudentLocalNotificationHandler {
           },
         );
       } catch (_) {
-        // If even enqueuing the retry fails, drop silently — a notification
-        // failure must never crash the calling flow.
+        // If even enqueuing the retry fails, drop silently.
       }
     }
+
+    // Write student in-app notification record only when a title was provided
+    // (best-effort, no retry needed — the OS notification already fired).
+    if (studentTitle.isNotEmpty) {
+      try {
+        await provider.insertStudentNotificationEvent(
+          studentUid: fromStudentUid,
+          eventType: eventType,
+          title: studentTitle,
+          body: studentBody,
+        );
+      } catch (_) {}
+    }
+  }
+
+  /// Writes only a student in-app notification (no parent cross-device event).
+  static Future<void> writeStudentOnlyEvent({
+    required String studentUid,
+    required String eventType,
+    required String title,
+    required String body,
+  }) async {
+    try {
+      await DataConnectProvider().insertStudentNotificationEvent(
+        studentUid: studentUid,
+        eventType: eventType,
+        title: title,
+        body: body,
+      );
+    } catch (_) {}
   }
 
   /// The parent's uid for [studentUid], cached in [SharedPreferences] by
@@ -143,14 +172,16 @@ class StudentLocalNotificationHandler {
     if (!_claimEvent('LEVEL_UP_$newLevel')) return;
 
     final studentUid = FirebaseAuth.instance.currentUser?.uid;
+    final loc = await NotificationLocalizations.current();
+    final studentTitle = loc.notifLevelUpTitle(newLevel);
+    final studentBody = loc.notifLevelUpBody;
 
     try {
-      final loc = await NotificationLocalizations.current();
       await LocalNotificationService.instance.show(
         id: kNotifIdLevelUp,
         channelId: kChannelChildMilestones,
-        title: loc.notifLevelUpTitle(newLevel),
-        body: loc.notifLevelUpBody,
+        title: studentTitle,
+        body: studentBody,
         payload: studentUid != null ? 'STUDENT_PROFILE:$studentUid' : null,
       );
     } catch (_) {
@@ -173,6 +204,8 @@ class StudentLocalNotificationHandler {
         'studentName': studentName,
         'level': '$newLevel',
       },
+      studentTitle: studentTitle,
+      studentBody: studentBody,
     );
   }
 
@@ -195,13 +228,16 @@ class StudentLocalNotificationHandler {
     );
     if (!_claimEvent('STREAK_MILESTONE_$currentStreak')) return;
 
+    final loc = await NotificationLocalizations.current();
+    final studentTitle = loc.notifStreakMilestoneTitle(currentStreak);
+    final studentBody = loc.notifStreakMilestoneBody(currentStreak);
+
     try {
-      final loc = await NotificationLocalizations.current();
       await LocalNotificationService.instance.show(
         id: kNotifIdStreakMilestone,
         channelId: kChannelChildMilestones,
-        title: loc.notifStreakMilestoneTitle(currentStreak),
-        body: loc.notifStreakMilestoneBody(currentStreak),
+        title: studentTitle,
+        body: studentBody,
       );
     } catch (_) {
       // Swallow — notification failure must not interrupt the quiz result flow.
@@ -223,6 +259,8 @@ class StudentLocalNotificationHandler {
         'studentName': studentName,
         'streakDays': '$currentStreak',
       },
+      studentTitle: studentTitle,
+      studentBody: studentBody,
     );
   }
 
@@ -248,19 +286,29 @@ class StudentLocalNotificationHandler {
 
     // The milestone the student is one day away from.
     final nextMilestone = currentStreak + 1;
+    final loc = await NotificationLocalizations.current();
+    final title = loc.notifNearMilestoneTitle;
+    final body = loc.notifNearMilestoneBody(nextMilestone);
 
     try {
-      final loc = await NotificationLocalizations.current();
       await LocalNotificationService.instance.show(
         id: kNotifIdNearMilestone,
         channelId: kChannelChildStreak,
-        title: loc.notifNearMilestoneTitle,
-        body: loc.notifNearMilestoneBody(nextMilestone),
+        title: title,
+        body: body,
       );
     } catch (_) {
       // Swallow — notification failure must not interrupt the quiz result flow.
     }
 
-    // Near-milestone is student-only — no parent cross-device event needed.
+    // Near-milestone is student-only — write to the student bell, no parent event.
+    final studentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (studentUid == null) return;
+    await writeStudentOnlyEvent(
+      studentUid: studentUid,
+      eventType: 'NEAR_MILESTONE',
+      title: title,
+      body: body,
+    );
   }
 }

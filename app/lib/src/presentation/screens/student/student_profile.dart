@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -164,7 +164,6 @@ class _StudentProfileState extends State<StudentProfile> {
   }
 
   Widget _buildAvatarWithBadge() {
-    final loc = AppLocalizations.of(context);
     // GestureDetector wraps the whole Stack so the edit-icon and level-badge
     // containers (which are rendered on top) don't silently absorb the tap.
     return GestureDetector(
@@ -241,7 +240,7 @@ class _StudentProfileState extends State<StudentProfile> {
                         ),
                       )
                     : Text(
-                        'Level $_level',
+                        AppLocalizations.of(context).levelLabel(_level),
                         style: GoogleFonts.cairo(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -303,7 +302,7 @@ class _StudentProfileState extends State<StudentProfile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'My Progress',
+            AppLocalizations.of(context).myProgressTitle,
             style: GoogleFonts.cairo(
               fontSize: 17,
               fontWeight: FontWeight.w800,
@@ -380,8 +379,8 @@ class _StudentProfileState extends State<StudentProfile> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'coins available',
-                            style: GoogleFonts.roboto(
+                            AppLocalizations.of(context).coinsAvailableLabel,
+                            style: GoogleFonts.cairo(
                               fontSize: 13,
                               color: Colors.amber[800],
                             ),
@@ -423,7 +422,7 @@ class _StudentProfileState extends State<StudentProfile> {
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.roboto(fontSize: 11, color: Colors.grey.shade500),
+          style: GoogleFonts.cairo(fontSize: 11, color: Colors.grey.shade500),
         ),
       ],
     );
@@ -432,14 +431,13 @@ class _StudentProfileState extends State<StudentProfile> {
   // ── Settings section ──────────────────────────────────────────────────────
 
   Widget _buildSettingsSection() {
-    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
-            'Settings',
+            AppLocalizations.of(context).studentSettingsTitle,
             style: GoogleFonts.cairo(
               fontSize: 17,
               fontWeight: FontWeight.w800,
@@ -463,8 +461,8 @@ class _StudentProfileState extends State<StudentProfile> {
             icon: Icons.settings_outlined,
             iconBg: _kGreen.withValues(alpha: 0.12),
             iconColor: _kGreen,
-            title: 'App Settings',
-            subtitle: 'Notifications, Sound',
+            title: AppLocalizations.of(context).appSettingsTitle,
+            subtitle: AppLocalizations.of(context).appSettingsSubtitle,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -508,7 +506,7 @@ class _StudentProfileState extends State<StudentProfile> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.cairo(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                       color: _kInk,
@@ -517,7 +515,7 @@ class _StudentProfileState extends State<StudentProfile> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.cairo(
                       fontSize: 12,
                       color: Colors.grey.shade500,
                     ),
@@ -535,7 +533,6 @@ class _StudentProfileState extends State<StudentProfile> {
   // ── Log Out button ────────────────────────────────────────────────────────
 
   Widget _buildLogoutButton() {
-    final loc = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
@@ -544,7 +541,7 @@ class _StudentProfileState extends State<StudentProfile> {
         ),
         icon: const Icon(Icons.logout, size: 18),
         label: Text(
-          'Log Out',
+          AppLocalizations.of(context).logOutButton,
           style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w700),
         ),
         style: OutlinedButton.styleFrom(

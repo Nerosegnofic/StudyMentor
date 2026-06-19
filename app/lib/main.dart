@@ -7,8 +7,11 @@ import 'package:workmanager/workmanager.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
+import 'src/utils/app_version.dart';
 import 'src/bloc/auth/auth_bloc.dart';
 import 'src/bloc/auth/auth_event.dart';
 import 'src/bloc/auth/auth_state.dart';
@@ -118,14 +121,33 @@ void callbackDispatcher() {
   });
 }
 
+// ── Role-scoped themes ────────────────────────────────────────────────────────
+// Parent surfaces use blue (0xFF2196F3); student surfaces use green (0xFF4CAF50).
+// These are applied as Theme wrappers around the top-level role screens so that
+// all descendant widgets — including dialogs and dropdown menus — inherit the
+// right primary color instead of Flutter's default purple.
+ThemeData _buildRoleTheme(Color seedColor) => ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
+      textTheme: GoogleFonts.cairoTextTheme(),
+      primaryTextTheme: GoogleFonts.cairoTextTheme(),
+    );
+
+final _parentThemeData =
+    _buildRoleTheme(const Color(0xFF2196F3)); // parent blue
+final _studentThemeData =
+    _buildRoleTheme(const Color(0xFF4CAF50)); // student green
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  final packageInfo = await PackageInfo.fromPlatform();
+  appVersion = 'v${packageInfo.version}';
+
   await LocalNotificationService.instance.init();
 
-  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
+  await Workmanager().initialize(callbackDispatcher);
 
   await Workmanager().registerPeriodicTask(
     _kSyncTaskName,
@@ -199,10 +221,7 @@ class StudyMentorApp extends StatelessWidget {
           builder: (context, locale) => MaterialApp(
           title: 'StudyMentor',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            textTheme: GoogleFonts.cairoTextTheme(),
-            primaryTextTheme: GoogleFonts.cairoTextTheme(),
-          ),
+          theme: _studentThemeData, // auth screens: green default matches the auth brand
           locale: locale,
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -220,9 +239,12 @@ class StudyMentorApp extends StatelessWidget {
             '/parent': (context) {
               final state = context.read<AuthBloc>().state;
               if (state is AuthAuthenticated) {
-                return ParentScreen(
-                  fullName: state.user.fullName,
-                  uid: state.user.uid,
+                return Theme(
+                  data: _parentThemeData,
+                  child: ParentScreen(
+                    fullName: state.user.fullName,
+                    uid: state.user.uid,
+                  ),
                 );
               }
               return const LoginScreen();
@@ -230,9 +252,12 @@ class StudyMentorApp extends StatelessWidget {
             '/student': (context) {
               final state = context.read<AuthBloc>().state;
               if (state is AuthAuthenticated) {
-                return StudentScreen(
-                  fullName: state.user.fullName,
-                  uid: state.user.uid,
+                return Theme(
+                  data: _studentThemeData,
+                  child: StudentScreen(
+                    fullName: state.user.fullName,
+                    uid: state.user.uid,
+                  ),
                 );
               }
               return const LoginScreen();
@@ -300,16 +325,22 @@ class RootPage extends StatelessWidget {
             // Key by uid so a new login rebuilds the screen's State (re-running initState,
             // which is what dispatches the data loads) instead of reusing a stale instance.
             if (role == 'parent') {
-              return ParentScreen(
-                key: ValueKey(state.user.uid),
-                fullName: fullName,
-                uid: state.user.uid,
+              return Theme(
+                data: _parentThemeData,
+                child: ParentScreen(
+                  key: ValueKey(state.user.uid),
+                  fullName: fullName,
+                  uid: state.user.uid,
+                ),
               );
             } else {
-              return StudentScreen(
-                key: ValueKey(state.user.uid),
-                fullName: fullName,
-                uid: state.user.uid,
+              return Theme(
+                data: _studentThemeData,
+                child: StudentScreen(
+                  key: ValueKey(state.user.uid),
+                  fullName: fullName,
+                  uid: state.user.uid,
+                ),
               );
             }
           }

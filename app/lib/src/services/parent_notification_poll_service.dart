@@ -69,7 +69,7 @@ class ParentNotificationPollService {
       if (parentUid == null) return;
 
       final provider = DataConnectProvider();
-      final events = await provider.getUnreadLocalNotificationEvents(
+      final events = await provider.getUndispatchedLocalNotificationEvents(
         parentUid,
       );
 
@@ -77,7 +77,9 @@ class ParentNotificationPollService {
         final fetchedEventIds = events
             .map((event) => event['id'] as String)
             .toList();
-        await provider.markLocalNotificationEventsRead(fetchedEventIds);
+        // Mark as dispatched (OS notification sent), NOT as read.
+        // isRead is only set by the parent explicitly in the notification bell UI.
+        await provider.markLocalNotificationEventsDispatched(fetchedEventIds);
 
         await LocalNotificationService.instance.init();
         final loc = await NotificationLocalizations.current();

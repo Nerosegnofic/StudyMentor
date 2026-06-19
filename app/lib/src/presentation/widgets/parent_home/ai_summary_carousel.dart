@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +7,7 @@ import '../../../bloc/ai_summary/ai_summary_event.dart';
 import '../../../bloc/ai_summary/ai_summary_state.dart';
 import '../../../domain/models/ai_summary_model.dart';
 import '../../../domain/models/student_model.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class AiSummaryCarousel extends StatefulWidget {
   final List<StudentModel> students;
@@ -132,17 +133,18 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
           );
         }
 
+        final loc = AppLocalizations.of(context);
         List<AiSummarySlide> slides;
         if (state is AiSummaryLoaded) {
           slides = state.summary.slides;
         } else {
-          slides = const [
-            AiSummarySlide(text: "AI Summary not available.", severity: 'info'),
+          slides = [
+            AiSummarySlide(text: loc.aiSummaryNotAvailableMessage, severity: 'info'),
           ];
         }
         if (slides.isEmpty) {
-          slides = const [
-            AiSummarySlide(text: "No activity to summarize yet.", severity: 'info'),
+          slides = [
+            AiSummarySlide(text: loc.noActivitySummarizeMessage, severity: 'info'),
           ];
         }
         _syncToSlides(slides);
@@ -172,7 +174,7 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
               Row(
                 children: [
                   Text(
-                    '✨ AI Daily Summary',
+                    loc.aiDailySummaryTitle,
                     style: GoogleFonts.cairo(
                       color: const Color(0xFF2196F3),
                       fontWeight: FontWeight.bold,
@@ -188,8 +190,8 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Smart Insights',
-                      style: GoogleFonts.roboto(
+                      loc.smartInsightsLabel,
+                      style: GoogleFonts.cairo(
                         color: const Color(0xFF2196F3),
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -230,7 +232,7 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 slide.text,
-                                style: GoogleFonts.roboto(
+                                style: GoogleFonts.cairo(
                                   color: const Color(0xFF475569),
                                   fontSize: 14,
                                   height: 1.45,
