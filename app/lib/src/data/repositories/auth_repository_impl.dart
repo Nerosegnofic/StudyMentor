@@ -571,4 +571,29 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> markAllNotificationsRead(String parentUid) {
     return dataConnect.markAllNotificationsRead(parentUid);
   }
+
+  @override
+  Future<void> markAllStudentNotificationsRead(String studentUid) {
+    return dataConnect.markAllStudentNotificationsRead(studentUid);
+  }
+
+  @override
+  Future<void> toggleParentNotificationRead(String id, {required bool isRead}) {
+    return dataConnect.toggleParentNotificationRead(id, isRead: isRead);
+  }
+
+  @override
+  Future<void> toggleStudentNotificationRead(String id, {required bool isRead}) {
+    return dataConnect.toggleStudentNotificationRead(id, isRead: isRead);
+  }
+
+  @override
+  Future<void> deleteParentNotification(String id) {
+    return dataConnect.deleteParentNotification(id);
+  }
+
+  @override
+  Future<void> deleteStudentNotification(String id) {
+    return dataConnect.deleteStudentNotification(id);
+  }
 }

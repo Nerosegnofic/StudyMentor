@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
@@ -38,7 +40,6 @@ import 'student_home.dart';
 import 'student_quiz.dart';
 import 'student_profile.dart';
 import 'shop/custom_shop_screen.dart';
-import '../../../../l10n/app_localizations.dart';
 import '../../../bloc/notifications/notifications_bloc.dart';
 import '../../../bloc/notifications/notifications_event.dart';
 import '../../../bloc/notifications/notifications_state.dart';
@@ -58,7 +59,7 @@ class StudentScreen extends StatefulWidget {
 
 class _StudentScreenState extends State<StudentScreen>
     with WidgetsBindingObserver {
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
   int _coins = 0;
   int _xp = 0;
   int _level = 1;
@@ -474,14 +475,14 @@ class _StudentScreenState extends State<StudentScreen>
           ),
         ).then((_) {
           // After level-up dismisses, show streak milestone if any.
-          if (milestoneHit != null && mounted) {
-            StreakMilestoneModal.show(
-              context,
-              milestoneDays: milestoneHit,
-              coinReward: 20,
-              currentStreak: currentStreak,
-            );
-          }
+          if (milestoneHit == null) return;
+          if (!context.mounted) return;
+          StreakMilestoneModal.show(
+            context,
+            milestoneDays: milestoneHit,
+            coinReward: 20,
+            currentStreak: currentStreak,
+          );
         });
       });
     } else if (milestoneHit != null) {
@@ -579,7 +580,7 @@ class _StudentScreenState extends State<StudentScreen>
               const MascotWidget(state: MascotState.idle, size: 140),
               const SizedBox(height: 16),
               Text(
-                'StudyMentor',
+                AppLocalizations.of(context).appTitle,
                 style: GoogleFonts.cairo(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -639,7 +640,9 @@ class _StudentScreenState extends State<StudentScreen>
                   _showVerificationDialog();
                 }
                 if (state is ParentVerificationFailed) {
-                  _updateDialogWithError(state.message);
+                  _updateDialogWithError(
+                    localizeError(state.message, AppLocalizations.of(context)),
+                  );
                 }
                 if (state is AuthUnauthenticated) {
                   Navigator.of(context)

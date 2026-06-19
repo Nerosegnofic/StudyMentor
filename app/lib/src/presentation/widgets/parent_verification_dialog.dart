@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -102,7 +102,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Parent Verification Required',
+              loc.parentVerificationRequiredTitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.cairo(
                 fontSize: 19,
@@ -119,9 +119,9 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'To log out, please enter your parent\'s credentials.',
+                  loc.logoutParentCredentialsMessage,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     fontSize: 14,
                     color: Colors.grey.shade600,
                     height: 1.4,
@@ -131,9 +131,9 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                 TextFormField(
                   controller: _emailCtl,
                   enabled: !widget.isLoading,
-                  style: GoogleFonts.roboto(fontSize: 14, color: _kInk),
+                  style: GoogleFonts.cairo(fontSize: 14, color: _kInk),
                   decoration: _fieldDecoration(
-                    label: 'Parent\'s Email',
+                    label: loc.parentEmailLabel,
                     icon: Icons.email_outlined,
                   ),
                   keyboardType: TextInputType.emailAddress,
@@ -145,7 +145,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                 TextFormField(
                   controller: _passwordCtl,
                   enabled: !widget.isLoading,
-                  style: GoogleFonts.roboto(fontSize: 14, color: _kInk),
+                  style: GoogleFonts.cairo(fontSize: 14, color: _kInk),
                   // Clear the server error as soon as the user starts
                   // correcting their password, matching the behaviour of
                   // _ParentDeletePasswordDialog and the other dialogs.
@@ -155,7 +155,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                     }
                   },
                   decoration: _fieldDecoration(
-                    label: 'Parent\'s Password',
+                    label: loc.parentPasswordLabel,
                     icon: Icons.lock_outline,
                     // Inline field-level error shown in red beneath the field.
                     errorText: _serverError,
@@ -196,7 +196,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
               foregroundColor: Colors.grey.shade600,
             ),
             child: Text(
-              'Cancel',
+              loc.commonCancel,
               style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
             ),
           ),
@@ -226,7 +226,7 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
                     ),
                   )
                 : Text(
-                    'Verify & Log Out',
+                    loc.verifyAndLogOutButton,
                     style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
                   ),
           ),
@@ -244,11 +244,11 @@ class _ParentVerificationDialogState extends State<ParentVerificationDialog> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.roboto(color: Colors.grey.shade600),
+      labelStyle: GoogleFonts.cairo(color: Colors.grey.shade600),
       prefixIcon: Icon(icon, color: Colors.grey.shade500),
       suffixIcon: suffixIcon,
       errorText: errorText,
-      errorStyle: GoogleFonts.roboto(),
+      errorStyle: GoogleFonts.cairo(),
       filled: true,
       fillColor: const Color(0xFFF5F7FA),
       enabledBorder: OutlineInputBorder(

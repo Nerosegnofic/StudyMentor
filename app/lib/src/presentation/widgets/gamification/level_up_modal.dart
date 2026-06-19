@@ -1,16 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/gamification_models.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
 import '../../../../l10n/app_localizations.dart';
-
 // ---------------------------------------------------------------------------
 // Design-system tokens (mirrored from student_quiz / shop screens)
 // ---------------------------------------------------------------------------
-const _kBg = Color(0xFFF5F7FA);
-const _kGreen = Color(0xFF4CAF50);
-const _kInk = Color(0xFF1A1F3C);
 const _kBlue = Color(0xFF2196F3);
 const _kBlueLight = Color(0xFFE3F2FD);
 const _kGold = Color(0xFFFFD54F);
@@ -33,9 +29,9 @@ class LevelUpCelebrationScreen extends StatefulWidget {
       PageRouteBuilder<void>(
         opaque: false,
         barrierDismissible: false,
-        pageBuilder: (_, __, ___) =>
+        pageBuilder: (_, _, _) =>
             LevelUpCelebrationScreen(newLevel: newLevel),
-        transitionsBuilder: (_, anim, __, child) {
+        transitionsBuilder: (_, anim, _, child) {
           return FadeTransition(opacity: anim, child: child);
         },
         transitionDuration: const Duration(milliseconds: 350),
@@ -97,7 +93,7 @@ class _LevelUpCelebrationScreenState extends State<LevelUpCelebrationScreen>
               // ── Animated glow ring + level number ────────────────────
               AnimatedBuilder(
                 animation: _ctrl,
-                builder: (_, __) => Transform.scale(
+                builder: (_, _) => Transform.scale(
                   scale: 0.5 + 0.5 * _scale.value, // 0.5 → 1.0
                   child: Opacity(
                     opacity: _fade.value,
@@ -111,7 +107,7 @@ class _LevelUpCelebrationScreenState extends State<LevelUpCelebrationScreen>
               FadeTransition(
                 opacity: _fade,
                 child: Text(
-                  '🎉 Level Up!',
+                  AppLocalizations.of(context).levelUpTitle,
                   style: GoogleFonts.cairo(
                     fontSize: 34,
                     fontWeight: FontWeight.w900,
@@ -153,9 +149,9 @@ class _LevelUpCelebrationScreenState extends State<LevelUpCelebrationScreen>
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
-                    'You reached Level ${widget.newLevel.levelNumber}!\nKeep studying to grow even stronger! 🌱',
+                    AppLocalizations.of(context).levelUpSubtitleMessage(widget.newLevel.levelNumber),
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.cairo(
                       fontSize: 15,
                       color: Colors.white.withValues(alpha: 0.80),
                       height: 1.6,
@@ -183,8 +179,8 @@ class _LevelUpCelebrationScreenState extends State<LevelUpCelebrationScreen>
                       ),
                     ),
                     child: Text(
-                      'Awesome!',
-                      style: GoogleFonts.roboto(
+                      AppLocalizations.of(context).awesomeButton,
+                      style: GoogleFonts.cairo(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),

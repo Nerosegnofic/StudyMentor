@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
@@ -47,13 +47,12 @@ class ConfirmEmailScreen extends StatelessWidget {
         },
         builder: (context, state) {
           final isLoading = state is AuthLoading;
-          final loc = AppLocalizations.of(context);
           return Scaffold(
             backgroundColor: kAuthBackground,
             body: Column(
               children: [
                 // No back affordance — back is blocked on this screen.
-                const AuthHeader(subtitle: 'One last step'),
+                AuthHeader(subtitle: AppLocalizations.of(context).confirmEmailSubtitle),
                 Expanded(
                   child: isLoading
                       ? const Center(
@@ -80,9 +79,9 @@ class ConfirmEmailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 24),
                                 Text(
-                                  'Please check your inbox and verify your email to continue.',
+                                  AppLocalizations.of(context).confirmEmailInstructions,
                                   textAlign: TextAlign.center,
-                                  style: GoogleFonts.roboto(
+                                  style: GoogleFonts.cairo(
                                     fontSize: 15,
                                     color: Colors.grey.shade600,
                                     height: 1.5,
@@ -90,21 +89,21 @@ class ConfirmEmailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 32),
                                 authPrimaryButton(
-                                  label: 'Send Email Verification Link',
+                                  label: AppLocalizations.of(context).sendEmailVerificationButton,
                                   onPressed: () => context.read<AuthBloc>().add(
                                     SendEmailVerificationRequested(),
                                   ),
                                 ),
                                 const SizedBox(height: 12),
                                 authSecondaryButton(
-                                  label: "I've Verified My Email",
+                                  label: AppLocalizations.of(context).emailVerifiedButton,
                                   onPressed: () => context.read<AuthBloc>().add(
                                     CheckEmailVerificationRequested(),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 authTextLink(
-                                  text: 'Log Out',
+                                  text: AppLocalizations.of(context).logOutButton,
                                   color: Colors.grey.shade600,
                                   onPressed: () => context
                                       .read<AuthBloc>()

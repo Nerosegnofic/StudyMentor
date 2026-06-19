@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "studymentor-2026-service"
+location: "me-west1"
+schemas:
+  - source: "../app/dataconnect/schema"
+    datasource:
+      postgresql:
+        database: "studymentor-2026-database"
+        cloudSql:
+          instanceId: "studymentor-2026-instance"
+          schemaValidation: "COMPATIBLE"
+connectorDirs: ["../app/dataconnect/example"]

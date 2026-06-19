@@ -8,20 +8,15 @@ import '../../../bloc/notifications/notifications_event.dart';
 import '../../../bloc/notifications/notifications_state.dart';
 import '../../../domain/models/notification_model.dart';
 
-/// Student notifications bottom sheet — mirrors the parent's notifications
-/// sheet ([_NotificationsSheet] in `parent_home/branded_header.dart`) but is
-/// re-themed to the student palette: the "Mark All As Read" action uses
-/// Primary Green (`0xFF4CAF50`) instead of the parent's Secondary Blue.
+/// Student notifications bottom sheet.
 ///
-/// Sources its rows live from [NotificationsBloc] so that marking all as read
-/// re-renders the open sheet immediately.
+/// Sources rows live from [NotificationsBloc]. Each row has a toggle-read
+/// button and a delete button that dispatch optimistic BLoC events.
 class StudentNotificationsSheet extends StatelessWidget {
-  /// The student's uid — passed through [MarkAllNotificationsReadRequested].
   final String studentUid;
 
   const StudentNotificationsSheet({super.key, required this.studentUid});
 
-  // Student palette.
   static const Color _green = Color(0xFF4CAF50);
 
   @override
@@ -76,7 +71,7 @@ class StudentNotificationsSheet extends StatelessWidget {
                     onPressed: () {
                       context
                           .read<NotificationsBloc>()
-                          .add(MarkAllNotificationsReadRequested(studentUid));
+                          .add(MarkAllStudentNotificationsReadRequested(studentUid));
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
@@ -160,7 +155,6 @@ class StudentNotificationsSheet extends StatelessWidget {
                     break;
                 }
 
-                // Simple relative-time formatter (mirrors the parent sheet).
                 final diff = DateTime.now().difference(notif.createdAt);
                 String timeStr;
                 if (diff.inMinutes < 60) {
@@ -179,6 +173,19 @@ class StudentNotificationsSheet extends StatelessWidget {
                   subtitle: notif.subtitle,
                   time: timeStr,
                   isRead: notif.isRead,
+                  onToggleRead: () {
+                    context.read<NotificationsBloc>().add(
+                          ToggleStudentNotificationReadRequested(
+                            notif.id,
+                            isRead: !notif.isRead,
+                          ),
+                        );
+                  },
+                  onDelete: () {
+                    context.read<NotificationsBloc>().add(
+                          DeleteStudentNotificationRequested(notif.id),
+                        );
+                  },
                 );
               }),
             ],
@@ -198,6 +205,8 @@ class _NotificationItem extends StatelessWidget {
   final String subtitle;
   final String time;
   final bool isRead;
+  final VoidCallback onToggleRead;
+  final VoidCallback onDelete;
 
   const _NotificationItem({
     required this.iconBg,
@@ -207,12 +216,14 @@ class _NotificationItem extends StatelessWidget {
     required this.subtitle,
     required this.time,
     required this.isRead,
+    required this.onToggleRead,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(24, 12, 8, 12),
       decoration: BoxDecoration(
         color: isRead ? Colors.white : const Color(0xFFF8FAFC),
         border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
@@ -229,7 +240,7 @@ class _NotificationItem extends StatelessWidget {
             ),
             child: Icon(icon, color: iconColor, size: 20),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,10 +250,10 @@ class _NotificationItem extends StatelessWidget {
                   style: GoogleFonts.cairo(
                     color: const Color(0xFF1E293B),
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: isRead ? FontWeight.w500 : FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: GoogleFonts.cairo(
@@ -250,17 +261,41 @@ class _NotificationItem extends StatelessWidget {
                     fontSize: 12,
                   ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  time,
+                  style: GoogleFonts.cairo(
+                    color: const Color(0xFF94A3B8),
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          Text(
-            time,
-            style: GoogleFonts.cairo(
-              color: const Color(0xFF94A3B8),
-              fontSize: 10,
+          // Toggle read/unread
+          IconButton(
+            icon: Icon(
+              isRead ? Icons.mark_email_unread_outlined : Icons.mark_email_read_outlined,
+              size: 18,
             ),
+            color: const Color(0xFF94A3B8),
+            tooltip: isRead
+                ? AppLocalizations.of(context).markAsUnreadTooltip
+                : AppLocalizations.of(context).markAsReadTooltip,
+            onPressed: onToggleRead,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
           ),
+          // Delete
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            color: const Color(0xFFE53935),
+            tooltip: AppLocalizations.of(context).commonDelete,
+            onPressed: onDelete,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 4),
         ],
       ),
     );

@@ -9,42 +9,46 @@ import '../../../l10n/app_localizations.dart';
 Future<void> showLanguagePickerDialog(BuildContext context) {
   final loc = AppLocalizations.of(context);
   final cubit = context.read<LocaleCubit>();
+  final themeData = Theme.of(context);
 
   return showDialog<void>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(loc.languageDialogTitle),
-      content: BlocBuilder<LocaleCubit, Locale>(
-        bloc: cubit,
-        builder: (context, currentLocale) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _LanguageOption(
-              label: loc.languageEnglish,
-              selected: currentLocale.languageCode == 'en',
-              onTap: () {
-                cubit.setLocale(const Locale('en'));
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            _LanguageOption(
-              label: loc.languageArabic,
-              selected: currentLocale.languageCode == 'ar',
-              onTap: () {
-                cubit.setLocale(const Locale('ar'));
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-          ],
+    builder: (dialogContext) => Theme(
+      data: themeData,
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(loc.languageDialogTitle),
+        content: BlocBuilder<LocaleCubit, Locale>(
+          bloc: cubit,
+          builder: (context, currentLocale) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _LanguageOption(
+                label: loc.languageEnglish,
+                selected: currentLocale.languageCode == 'en',
+                onTap: () {
+                  cubit.setLocale(const Locale('en'));
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              _LanguageOption(
+                label: loc.languageArabic,
+                selected: currentLocale.languageCode == 'ar',
+                onTap: () {
+                  cubit.setLocale(const Locale('ar'));
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(loc.commonCancel),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: Text(loc.commonCancel),
-        ),
-      ],
     ),
   );
 }
@@ -65,7 +69,7 @@ class _LanguageOption extends StatelessWidget {
     return ListTile(
       title: Text(label),
       trailing: selected
-          ? const Icon(Icons.check, color: Color(0xFF4A6CF7))
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
           : null,
       onTap: onTap,
     );

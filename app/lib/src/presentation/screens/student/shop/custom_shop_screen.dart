@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -10,6 +10,7 @@ import '../../../../domain/models/avatar_item.dart';
 import '../../../../../core/avatar/fluttermojiController.dart';
 import '../../../widgets/avatar_widget.dart';
 import '../../../../../l10n/app_localizations.dart';
+import '../../../utils/error_localizer.dart';
 
 // ---------------------------------------------------------------------------
 // Study Mentor design-system tokens (Student app)
@@ -83,7 +84,6 @@ class _CustomShopScreenState extends State<CustomShopScreen>
 
   void _handleItemTap(
       BuildContext context, ShopLoaded state, AvatarItem item, bool isOwned, bool meetsLevel) {
-    final loc = AppLocalizations.of(context);
     if (isOwned) {
       context.read<ShopBloc>().add(
             EquipItemToggled(
@@ -97,15 +97,14 @@ class _CustomShopScreenState extends State<CustomShopScreen>
         context,
         icon: Icons.lock_rounded,
         color: _kLevelLock,
-        message: 'Reach Level ${item.unlockLevel} to unlock this item.',
+        message: AppLocalizations.of(context).reachLevelToUnlockMessage(item.unlockLevel),
       );
     } else if (state.coins < item.price) {
       _showInfoSnack(
         context,
         icon: Icons.monetization_on_rounded,
         color: _kAmberDark,
-        message:
-            'Not enough coins — you need ${item.price - state.coins} more.',
+        message: AppLocalizations.of(context).notEnoughCoinsMessage(item.price - state.coins),
       );
     } else {
       // Block opening a second purchase dialog while one is already processing.
@@ -118,7 +117,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             borderRadius: BorderRadius.circular(20),
           ),
           title: Text(
-            'Buy ${item.name}?',
+            AppLocalizations.of(context).buyItemTitle(item.name),
             style: GoogleFonts.cairo(
               fontWeight: FontWeight.w700,
               color: _kInk,
@@ -141,8 +140,8 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                     const Text('🪙', style: TextStyle(fontSize: 20)),
                     const SizedBox(width: 8),
                     Text(
-                      '${item.price} coins',
-                      style: GoogleFonts.roboto(
+                      AppLocalizations.of(context).coinPriceLabel(item.price),
+                      style: GoogleFonts.cairo(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: _kAmberDark,
@@ -153,8 +152,8 @@ class _CustomShopScreenState extends State<CustomShopScreen>
               ),
               const SizedBox(height: 10),
               Text(
-                'Balance after: ${state.coins - item.price} 🪙',
-                style: GoogleFonts.roboto(fontSize: 13, color: _kMuted),
+                AppLocalizations.of(context).balanceAfterLabel(state.coins - item.price),
+                style: GoogleFonts.cairo(fontSize: 13, color: _kMuted),
               ),
             ],
           ),
@@ -163,8 +162,8 @@ class _CustomShopScreenState extends State<CustomShopScreen>
               onPressed: () => Navigator.pop(dialogCtx),
               style: TextButton.styleFrom(foregroundColor: _kMuted),
               child: Text(
-                'Cancel',
-                style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                AppLocalizations.of(context).commonCancel,
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
               ),
             ),
             ElevatedButton(
@@ -187,8 +186,8 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                 ),
               ),
               child: Text(
-                'Buy',
-                style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+                AppLocalizations.of(context).buyButton,
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -221,7 +220,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
               Expanded(
                 child: Text(
                   message,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
@@ -298,7 +297,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                   ),
                   child: Text(
                     '🪙 ${item.price}',
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.cairo(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: priceFg,
@@ -324,8 +323,8 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                       const Icon(Icons.lock, size: 11, color: _kLevelLock),
                       const SizedBox(width: 2),
                       Text(
-                        'Lv ${item.unlockLevel}',
-                        style: GoogleFonts.roboto(
+                        AppLocalizations.of(context).levelShortLabel(item.unlockLevel),
+                        style: GoogleFonts.cairo(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: _kLevelLock,
@@ -391,8 +390,8 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             backgroundColor: _kBg,
             body: Center(
               child: Text(
-                state.message,
-                style: GoogleFonts.roboto(color: _kMuted),
+                localizeError(state.message, AppLocalizations.of(context)),
+                style: GoogleFonts.cairo(color: _kMuted),
               ),
             ),
           );
@@ -406,7 +405,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             backgroundColor: Colors.white,
             elevation: 0,
             title: Text(
-              'Avatar Shop',
+              AppLocalizations.of(context).avatarShopTitle,
               style: GoogleFonts.cairo(
                 color: _kInk,
                 fontWeight: FontWeight.w800,
@@ -427,7 +426,7 @@ class _CustomShopScreenState extends State<CustomShopScreen>
                     const SizedBox(width: 4),
                     Text(
                       '${loadedState.coins}',
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         color: _kAmberDark,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -443,9 +442,9 @@ class _CustomShopScreenState extends State<CustomShopScreen>
               labelColor: _kGreen,
               unselectedLabelColor: _kMuted,
               indicatorColor: _kGreen,
-              labelStyle: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+              labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.w700),
               unselectedLabelStyle:
-                  GoogleFonts.roboto(fontWeight: FontWeight.w500),
+                  GoogleFonts.cairo(fontWeight: FontWeight.w500),
               tabs: ItemCategory.values.map((cat) {
                 return Tab(text: _categoryLabel(loc, cat));
               }).toList(),
@@ -496,8 +495,8 @@ class _CustomShopScreenState extends State<CustomShopScreen>
             foregroundColor: Colors.white,
             icon: const Icon(Icons.check),
             label: Text(
-              'Done',
-              style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+              AppLocalizations.of(context).doneButton,
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
             ),
           ),
         );

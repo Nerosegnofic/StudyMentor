@@ -249,6 +249,83 @@ mutation MarkLocalNotificationEventsRead(
   )
 }
 
+# Marks events as dispatched (OS notification sent). Used by the 15-min poll so
+# isRead remains untouched and reflects only the parent's explicit UI action.
+mutation MarkLocalNotificationEventsDispatched(
+  $eventIds: [UUID!]!
+) @auth(level: USER, insecureReason: "Poll service marks events it has already dispatched as OS notifications.") {
+  localNotificationEvent_updateMany(
+    where: { id: { in: $eventIds } }
+    data: { isDispatched: true }
+  )
+}
+
+mutation ToggleLocalNotificationEventRead(
+  $id: UUID!
+  $isRead: Boolean!
+) @auth(level: USER, insecureReason: "Parent toggles read state on their own events.") {
+  localNotificationEvent_update(
+    id: $id
+    data: { isRead: $isRead }
+  )
+}
+
+mutation DeleteLocalNotificationEvent(
+  $id: UUID!
+) @auth(level: USER, insecureReason: "Parent deletes their own notification.") {
+  localNotificationEvent_delete(id: $id)
+}
+
+mutation MarkAllParentNotificationsRead(
+  $toParentUid: String!
+) @auth(level: USER, insecureReason: "Parent marks all their own events as read.") {
+  localNotificationEvent_updateMany(
+    where: { toParentUid: { eq: $toParentUid } }
+    data: { isRead: true }
+  )
+}
+
+# ── Student Notification Events ───────────────────────────────────────────────
+
+mutation InsertStudentNotificationEvent(
+  $studentUid: String!
+  $eventType: String!
+  $title: String!
+  $body: String!
+) @auth(level: USER, insecureReason: "Student writes their own in-app notification record.") {
+  studentNotificationEvent_insert(data: {
+    studentUid: $studentUid
+    eventType: $eventType
+    title: $title
+    body: $body
+  })
+}
+
+mutation ToggleStudentNotificationEventRead(
+  $id: UUID!
+  $isRead: Boolean!
+) @auth(level: USER, insecureReason: "Student toggles read state on their own events.") {
+  studentNotificationEvent_update(
+    id: $id
+    data: { isRead: $isRead }
+  )
+}
+
+mutation DeleteStudentNotificationEvent(
+  $id: UUID!
+) @auth(level: USER, insecureReason: "Student deletes their own notification.") {
+  studentNotificationEvent_delete(id: $id)
+}
+
+mutation MarkAllStudentNotificationsRead(
+  $studentUid: String!
+) @auth(level: USER, insecureReason: "Student marks all their own events as read.") {
+  studentNotificationEvent_updateMany(
+    where: { studentUid: { eq: $studentUid } }
+    data: { isRead: true }
+  )
+}
+
 mutation UpsertLocalNotificationPreference(
   $userUid: String!
   $category: String!

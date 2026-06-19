@@ -116,7 +116,6 @@ class SubjectMetadataRegistry {
     final String name = _toTitleCase(keyLower);
     final String emoji = _fallbackEmojis[hash % _fallbackEmojis.length];
     
-    // TODO: Override this with advanced Garden Logic on merge.
     final String defaultPlantType = _fallbackPlantTypes[hash % _fallbackPlantTypes.length];
     
     final palette = _fallbackPalettes[hash % _fallbackPalettes.length];

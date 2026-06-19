@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
@@ -347,7 +347,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       report.aiInsightText.isNotEmpty
                           ? report.aiInsightText
                           : _generateInsight(report),
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         fontSize: 14,
                         height: 1.6,
                         color: _kSubText,
@@ -465,6 +465,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   }
 
   Widget _buildEffortCard(WeeklyReportModel report) {
+    final loc = AppLocalizations.of(context);
     final voluntary = report.voluntaryQuizzes;
     final forced = report.forcedQuizzes;
     final total = voluntary + forced;
@@ -478,7 +479,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Effort & Focus",
+            loc.effortFocusTitle,
             style: GoogleFonts.cairo(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -487,20 +488,20 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            "Where this week's quizzes came from",
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            loc.effortFocusSubtitle,
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
                 child: _effortStat(Icons.volunteer_activism_rounded, _kTeal,
-                    '$voluntary', 'Self-started'),
+                    '$voluntary', loc.selfStartedLabel),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _effortStat(Icons.lock_open_rounded, _kAmber,
-                    '$forced', 'To unlock apps'),
+                    '$forced', loc.toUnlockAppsLabel),
               ),
             ],
           ),
@@ -511,14 +512,14 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               child: LinearProgressIndicator(
                 value: voluntaryFraction,
                 minHeight: 8,
-                backgroundColor: _kAmber.withOpacity(0.25),
+                backgroundColor: _kAmber.withValues(alpha: 0.25),
                 color: _kTeal,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '${(voluntaryFraction * 100).toInt()}% of quizzes were self-started',
-              style: GoogleFonts.roboto(
+              loc.percentSelfStartedMessage((voluntaryFraction * 100).toInt()),
+              style: GoogleFonts.cairo(
                 fontSize: 12,
                 color: _kSubText,
                 fontWeight: FontWeight.w500,
@@ -534,10 +535,8 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    guessing == 1
-                        ? '1 quiz showed rapid guessing'
-                        : '$guessing quizzes showed rapid guessing',
-                    style: GoogleFonts.roboto(
+                    loc.quizzesGuessingMessage(guessing),
+                    style: GoogleFonts.cairo(
                       fontSize: 12,
                       color: _kRed,
                       fontWeight: FontWeight.w500,
@@ -556,7 +555,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -568,7 +567,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
               const SizedBox(width: 8),
               Text(
                 value,
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: _kDarkText,
@@ -577,7 +576,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             ],
           ),
           const SizedBox(height: 4),
-          Text(label, style: GoogleFonts.roboto(fontSize: 12, color: _kSubText)),
+          Text(label, style: GoogleFonts.cairo(fontSize: 12, color: _kSubText)),
         ],
       ),
     );
@@ -611,9 +610,9 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kRed.withOpacity(0.05),
+        color: _kRed.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kRed.withOpacity(0.15)),
+        border: Border.all(color: _kRed.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,7 +655,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   Expanded(
                     child: Text(
                       a.message,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         fontSize: 13,
                         height: 1.3,
                         color: _kDarkText,
@@ -714,7 +713,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 const SizedBox(width: 2),
                 Text(
                   delta,
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: deltaUp ? _kTeal : _kRed,
@@ -746,7 +745,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           const SizedBox(height: 4),
           Text(
             "How study time was split this week",
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 16),
           ...allocations.map((a) {
@@ -770,7 +769,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       Expanded(
                         child: Text(
                           a.subjectKey,
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.cairo(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             color: _kDarkText,
@@ -780,7 +779,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       ),
                       Text(
                         "${a.percentage.toStringAsFixed(0)}%",
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: _kDarkText,
@@ -840,7 +839,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             hasTrend
                 ? "Daily mastery over the last ${history.length} day${history.length == 1 ? '' : 's'}"
                 : "Mastery is recorded daily as quizzes are taken",
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 20),
           if (hasTrend) ...[
@@ -862,7 +861,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 const SizedBox(width: 6),
                 Text(
                   "${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(1)}% over this period",
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.cairo(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: delta >= 0 ? _kTeal : _kRed,
@@ -882,11 +881,11 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     const SizedBox(height: 8),
                     Text(
                       "Not enough data yet",
-                      style: GoogleFonts.roboto(fontSize: 13, color: _kSubText),
+                      style: GoogleFonts.cairo(fontSize: 13, color: _kSubText),
                     ),
                     Text(
                       "Check back after a few more study days",
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         fontSize: 11,
                         color: _kSubText.withValues(alpha: 0.7),
                       ),
@@ -927,7 +926,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           const SizedBox(height: 4),
           Text(
             "How performance holds up as questions get harder",
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 16),
           ...shown.map((d) {
@@ -943,7 +942,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       Expanded(
                         child: Text(
                           "${labels[d.difficulty] ?? 'Level ${d.difficulty}'} · ${d.total} Q",
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.cairo(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             color: _kDarkText,
@@ -952,7 +951,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       ),
                       Text(
                         "${acc.toInt()}%",
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.cairo(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: color,
@@ -997,7 +996,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           );
         }
         if (state.subjects.isEmpty) {
-          return const Center(child: Text('No subjects to report on yet.'));
+          return Center(child: Text(AppLocalizations.of(context).noSubjectsReportMessage));
         }
 
         final report = state.masteryReport;
@@ -1070,7 +1069,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                           children: [
                             Text(
                               "${report.totalMasteryPercent.toInt()}%",
-                              style: GoogleFonts.roboto(
+                              style: GoogleFonts.cairo(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
                                 color: _kPrimary,
@@ -1078,7 +1077,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                             ),
                             Text(
                               "Mastered",
-                              style: GoogleFonts.roboto(
+                              style: GoogleFonts.cairo(
                                 fontSize: 14,
                                 color: _kSubText,
                               ),
@@ -1116,7 +1115,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 ] else ...[
                   Text(
                     "No strong areas identified yet.",
-                    style: GoogleFonts.roboto(color: _kSubText),
+                    style: GoogleFonts.cairo(color: _kSubText),
                   ),
                 ],
 
@@ -1141,7 +1140,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                 ] else ...[
                   Text(
                     "No weak areas identified yet.",
-                    style: GoogleFonts.roboto(color: _kSubText),
+                    style: GoogleFonts.cairo(color: _kSubText),
                   ),
                 ],
 
@@ -1263,7 +1262,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           const SizedBox(height: 6),
           Text(
             "Common mistake types on $subjectName quizzes.",
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -1273,7 +1272,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           ),
           const SizedBox(height: 20),
           _errorDetailItem(
-            _kRed.withOpacity(0.8),
+            _kRed.withValues(alpha: 0.8),
             "Careless Mistakes (${analytics.carelessPercent.toInt()}%)",
             "Knew the material but slipped on a quick answer",
           ),
@@ -1533,7 +1532,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     const SizedBox(height: 8),
                     Text(
                       "Active learning minutes over the last 7 days.",
-                      style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+                      style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
                     ),
                     const SizedBox(height: 24),
                     if (report.dailyStudy.any((d) => d.studyMinutes > 0)) ...[
@@ -1557,7 +1556,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                         child: Center(
                           child: Text(
                             "No study time recorded in the last 7 days",
-                            style: GoogleFonts.roboto(
+                            style: GoogleFonts.cairo(
                               fontSize: 13,
                               color: _kSubText,
                             ),
@@ -1605,7 +1604,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           const SizedBox(height: 4),
           Text(
             "Study time by part of the day (last 30 days)",
-            style: GoogleFonts.roboto(fontSize: 12, color: _kSubText),
+            style: GoogleFonts.cairo(fontSize: 12, color: _kSubText),
           ),
           const SizedBox(height: 16),
           ...points.map((p) {
@@ -1617,7 +1616,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     width: 78,
                     child: Text(
                       p.label,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: _kDarkText,
@@ -1641,7 +1640,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                     child: Text(
                       _DailyStudyPainter._formatMinutes(p.minutes),
                       textAlign: TextAlign.right,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.cairo(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: _kSubText,
@@ -2090,7 +2089,7 @@ class _DailyStudyPainter extends CustomPainter {
         final tp = TextPainter(
           text: TextSpan(
             text: _formatMinutes(values[i]),
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.cairo(
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: _kDarkText,

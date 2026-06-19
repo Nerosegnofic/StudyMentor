@@ -1,8 +1,9 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// A single circular "time ring" that unifies screen-time and cooldown.
 ///
@@ -30,8 +31,10 @@ class ScreenTimeRing extends StatelessWidget {
     final cooldownTotal =
         (config.cooldownHours * 3600) + (config.cooldownMinutes * 60);
 
+    final loc = AppLocalizations.of(context);
+
     if (usageLimit <= 0) {
-      return _shell(child: _noLimit());
+      return _shell(child: _noLimit(loc));
     }
 
     final bool resting = svc.isBlocked;
@@ -45,12 +48,12 @@ class ScreenTimeRing extends StatelessWidget {
           ? ((cooldownTotal - remaining) / cooldownTotal).clamp(0.0, 1.0)
           : 0.0;
       color = _amber;
-      title = 'Time to rest';
+      title = loc.timeToRestTitle;
     } else {
       final used = svc.totalUsageSeconds.clamp(0, usageLimit);
       fraction = (used / usageLimit).clamp(0.0, 1.0);
       color = fraction < 0.6 ? _green : (fraction < 0.85 ? _amber : _red);
-      title = 'Screen time';
+      title = loc.screenTimeTitle;
     }
 
     return _shell(
@@ -75,15 +78,18 @@ class ScreenTimeRing extends StatelessWidget {
               painter: _RingPainter(fraction: fraction, color: color),
               child: Center(
                 child: resting
-                    ? _restingCenter(svc.remainingSeconds, color)
-                    : _usageCenter(usageLimit, svc.totalUsageSeconds, color),
+                    ? _restingCenter(loc, svc.remainingSeconds, color)
+                    : _usageCenter(loc, usageLimit, svc.totalUsageSeconds, color),
               ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Limit ${_dur(config.usageHours, config.usageMinutes)}   ·   Rest ${_dur(config.cooldownHours, config.cooldownMinutes)}',
-            style: GoogleFonts.roboto(
+            loc.limitRestSummaryLabel(
+              _dur(config.usageHours, config.usageMinutes),
+              _dur(config.cooldownHours, config.cooldownMinutes),
+            ),
+            style: GoogleFonts.cairo(
               fontSize: 11,
               fontWeight: FontWeight.w500,
               color: Colors.grey.shade500,
@@ -94,16 +100,16 @@ class ScreenTimeRing extends StatelessWidget {
     );
   }
 
-  Widget _usageCenter(int limit, int used, Color color) {
+  Widget _usageCenter(AppLocalizations loc, int limit, int used, Color color) {
     final remaining = (limit - used).clamp(0, limit);
     final String big;
     final String small;
     if (remaining >= 60) {
       big = '${(remaining / 60).ceil()}';
-      small = 'min left';
+      small = loc.minLeftLabel;
     } else {
       big = '$remaining';
-      small = 'sec left';
+      small = loc.secLeftLabel;
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -120,7 +126,7 @@ class ScreenTimeRing extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           small,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: Colors.grey.shade500,
@@ -130,7 +136,7 @@ class ScreenTimeRing extends StatelessWidget {
     );
   }
 
-  Widget _restingCenter(int remainingSeconds, Color color) {
+  Widget _restingCenter(AppLocalizations loc, int remainingSeconds, Color color) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -147,8 +153,8 @@ class ScreenTimeRing extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          'resting',
-          style: GoogleFonts.roboto(
+          loc.restingLabel,
+          style: GoogleFonts.cairo(
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: Colors.grey.shade500,
@@ -177,12 +183,12 @@ class ScreenTimeRing extends StatelessWidget {
     );
   }
 
-  Widget _noLimit() {
+  Widget _noLimit(AppLocalizations loc) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Screen time',
+          loc.screenTimeTitle,
           style: GoogleFonts.cairo(
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -206,8 +212,8 @@ class ScreenTimeRing extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                'No time limit set — enjoy learning!',
-                style: GoogleFonts.roboto(
+                loc.noTimeLimitMessage,
+                style: GoogleFonts.cairo(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: Colors.grey.shade600,

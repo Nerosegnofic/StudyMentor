@@ -1,17 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'mascot_state.dart';
 import 'mascot_widget.dart';
+import '../../../l10n/app_localizations.dart';
 
-/// Default contextual message per [MascotState], used whenever
-/// [MascotWithBubble.message] is not supplied explicitly.
-const Map<MascotState, String> kMascotDefaultMessages = {
-  MascotState.idle: 'What shall we learn today?',
-  MascotState.happy: 'Great job! Keep it up!',
-  MascotState.thinking: 'One moment…',
-  MascotState.sad: "Don't worry — let's try again!",
-  MascotState.celebration: 'Amazing work! 🌟',
+Map<MascotState, String> _mascotDefaultMessages(AppLocalizations loc) => {
+  MascotState.idle: loc.mascotIdleMessage,
+  MascotState.happy: loc.mascotHappyMessage,
+  MascotState.thinking: loc.mascotThinkingMessage,
+  MascotState.sad: loc.mascotSadMessage,
+  MascotState.celebration: loc.mascotCelebrationMessage,
 };
 
 /// Speech-bubble color theme per [MascotState] — follows the Study Mentor
@@ -84,7 +83,7 @@ class MascotWithBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = _kBubbleThemes[state] ?? _greenTheme;
-    final text = message ?? kMascotDefaultMessages[state] ?? '';
+    final text = message ?? _mascotDefaultMessages(AppLocalizations.of(context))[state] ?? '';
 
     final mascot = !showLoadingSpinner
         ? MascotWidget(state: state, size: mascotSize)
@@ -137,7 +136,7 @@ class MascotWithBubble extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.start,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             fontSize: 13,
             color: theme.text,
             height: 1.45,

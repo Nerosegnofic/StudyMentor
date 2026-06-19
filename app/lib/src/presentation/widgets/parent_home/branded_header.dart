@@ -83,9 +83,13 @@ class _BrandedHeaderState extends State<BrandedHeader> {
             // Left: Circular profile avatar (50x50px)
             GestureDetector(
               onTap: () {
+                final theme = Theme.of(context);
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => const ParentAccountScreen(),
+                    builder: (_) => Theme(
+                      data: theme,
+                      child: const ParentAccountScreen(),
+                    ),
                   ),
                 );
               },
@@ -110,9 +114,9 @@ class _BrandedHeaderState extends State<BrandedHeader> {
               ),
             ),
 
-            // Center: "Study Mentor" — Cairo Bold, white, 24px
+            // Center: app title — Cairo Bold, white, 24px
             Text(
-              'Study Mentor',
+              AppLocalizations.of(context).appTitle,
               style: GoogleFonts.cairo(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -172,15 +176,14 @@ class _BrandedHeaderState extends State<BrandedHeader> {
 class _NotificationsSheet extends StatelessWidget {
   final String parentUid;
 
-  const _NotificationsSheet({
-    required this.parentUid,
-  });
+  const _NotificationsSheet({required this.parentUid});
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NotificationsBloc, NotificationsState>(
       builder: (context, state) {
-        final notifications = state is NotificationsLoaded ? state.notifications : <NotificationModel>[];
+        final notifications =
+            state is NotificationsLoaded ? state.notifications : <NotificationModel>[];
         return _buildSheet(context, notifications);
       },
     );
@@ -225,7 +228,9 @@ class _NotificationsSheet extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      context.read<NotificationsBloc>().add(MarkAllNotificationsReadRequested(parentUid));
+                      context
+                          .read<NotificationsBloc>()
+                          .add(MarkAllNotificationsReadRequested(parentUid));
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
@@ -309,7 +314,6 @@ class _NotificationsSheet extends StatelessWidget {
                     break;
                 }
 
-                // Simple time formatter
                 final diff = DateTime.now().difference(notif.createdAt);
                 String timeStr;
                 if (diff.inMinutes < 60) {
@@ -328,6 +332,19 @@ class _NotificationsSheet extends StatelessWidget {
                   subtitle: notif.subtitle,
                   time: timeStr,
                   isRead: notif.isRead,
+                  onToggleRead: () {
+                    context.read<NotificationsBloc>().add(
+                          ToggleParentNotificationReadRequested(
+                            notif.id,
+                            isRead: !notif.isRead,
+                          ),
+                        );
+                  },
+                  onDelete: () {
+                    context.read<NotificationsBloc>().add(
+                          DeleteParentNotificationRequested(notif.id),
+                        );
+                  },
                 );
               }),
             ],
@@ -347,6 +364,8 @@ class _NotificationItem extends StatelessWidget {
   final String subtitle;
   final String time;
   final bool isRead;
+  final VoidCallback onToggleRead;
+  final VoidCallback onDelete;
 
   const _NotificationItem({
     required this.iconBg,
@@ -356,12 +375,14 @@ class _NotificationItem extends StatelessWidget {
     required this.subtitle,
     required this.time,
     required this.isRead,
+    required this.onToggleRead,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(24, 12, 8, 12),
       decoration: BoxDecoration(
         color: isRead ? Colors.white : const Color(0xFFF8FAFC),
         border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
@@ -378,7 +399,7 @@ class _NotificationItem extends StatelessWidget {
             ),
             child: Icon(icon, color: iconColor, size: 20),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,10 +409,10 @@ class _NotificationItem extends StatelessWidget {
                   style: GoogleFonts.cairo(
                     color: const Color(0xFF1E293B),
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: isRead ? FontWeight.w500 : FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: GoogleFonts.cairo(
@@ -399,17 +420,41 @@ class _NotificationItem extends StatelessWidget {
                     fontSize: 12,
                   ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  time,
+                  style: GoogleFonts.cairo(
+                    color: const Color(0xFF94A3B8),
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          Text(
-            time,
-            style: GoogleFonts.cairo(
-              color: const Color(0xFF94A3B8),
-              fontSize: 10,
+          // Toggle read/unread
+          IconButton(
+            icon: Icon(
+              isRead ? Icons.mark_email_unread_outlined : Icons.mark_email_read_outlined,
+              size: 18,
             ),
+            color: const Color(0xFF94A3B8),
+            tooltip: isRead
+                ? AppLocalizations.of(context).markAsUnreadTooltip
+                : AppLocalizations.of(context).markAsReadTooltip,
+            onPressed: onToggleRead,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
           ),
+          // Delete
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            color: const Color(0xFFE53935),
+            tooltip: AppLocalizations.of(context).commonDelete,
+            onPressed: onDelete,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 4),
         ],
       ),
     );

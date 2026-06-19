@@ -55,10 +55,14 @@ class _ParentScreenState extends State<ParentScreen>
   }
 
   Future<void> _openAddStudentScreen() async {
+    final theme = Theme.of(context);
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AddStudentScreen(parentUid: widget.uid),
+        builder: (_) => Theme(
+          data: theme,
+          child: AddStudentScreen(parentUid: widget.uid),
+        ),
       ),
     );
     if (mounted) {

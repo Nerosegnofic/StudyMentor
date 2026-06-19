@@ -6,6 +6,8 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
 import 'auth_style.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 class ParentRegisterScreen extends StatefulWidget {
   const ParentRegisterScreen({super.key});
@@ -49,16 +51,17 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
             if (ModalRoute.of(context)?.isCurrent ?? false) {
               _passCtl.clear();
               _confirmCtl.clear();
-              setState(() => _error = state.message);
+              setState(() => _error = localizeError(state.message, AppLocalizations.of(context)));
             }
           }
         },
         builder: (context, state) {
           final loading = state is AuthLoading;
+          final loc = AppLocalizations.of(context);
           return Column(
             children: [
               AuthHeader(
-                subtitle: 'Create your parent account',
+                subtitle: loc.createParentAccountSubtitle,
                 keyboardOpen: keyboardOpen,
                 onBack: () => Navigator.of(context).maybePop(),
               ),
@@ -73,27 +76,27 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                         controller: _fullNameCtl,
                         onChanged: (_) => _clearError(),
                         decoration: authInputDecoration(
-                          label: 'Full Name',
+                          label: loc.fieldFullName,
                           icon: Icons.person_outline,
                         ),
-                        validator: (v) => v!.isEmpty ? 'Full name is required.' : null,
+                        validator: (v) => v!.isEmpty ? loc.validatorFullNameRequired : null,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _emailCtl,
                         onChanged: (_) => _clearError(),
                         decoration: authInputDecoration(
-                          label: 'Email',
+                          label: loc.fieldEmail,
                           icon: Icons.email_outlined,
                         ),
-                        validator: (v) => v!.contains('@') ? null : 'Please enter a valid email address.',
+                        validator: (v) => v!.contains('@') ? null : loc.loginEmailValidator,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _passCtl,
                         onChanged: (_) => _clearError(),
                         decoration: authInputDecoration(
-                          label: 'Password',
+                          label: loc.fieldPassword,
                           icon: Icons.lock_outline,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -108,14 +111,14 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                           ),
                         ),
                         obscureText: _obscurePassword,
-                        validator: (v) => v!.length >= 6 ? null : 'Password must be at least 6 characters.',
+                        validator: (v) => v!.length >= 6 ? null : loc.validatorPasswordMinLength,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _confirmCtl,
                         onChanged: (_) => _clearError(),
                         decoration: authInputDecoration(
-                          label: 'Confirm Password',
+                          label: loc.fieldConfirmPassword,
                           icon: Icons.lock_outline,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -131,11 +134,11 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                         ),
                         obscureText: _obscureConfirm,
                         validator: (v) =>
-                            v == _passCtl.text ? null : 'Passwords do not match',
+                            v == _passCtl.text ? null : loc.validatorPasswordsDoNotMatch,
                       ),
                       const SizedBox(height: 24),
                       authPrimaryButton(
-                        label: 'Register',
+                        label: loc.registerButton,
                         loading: loading,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
@@ -151,7 +154,7 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                       ),
                       const SizedBox(height: 4),
                       authTextLink(
-                        text: 'Already registered? Sign In',
+                        text: loc.alreadyRegisteredButton,
                         onPressed: () =>
                             Navigator.pushReplacementNamed(context, '/login'),
                       ),

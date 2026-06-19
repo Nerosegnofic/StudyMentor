@@ -1,8 +1,9 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/catalog/subject_metadata_registry.dart';
 import '../../../domain/models/report_models.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// A segmented donut of today's answered questions, one colored arc per
 /// subject, with the total in the center and a small legend below.
@@ -55,8 +56,8 @@ class QuestionsRing extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'questions today',
-                    style: GoogleFonts.roboto(
+                    AppLocalizations.of(context).questionsTodayLabel,
+                    style: GoogleFonts.cairo(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade500,
@@ -71,8 +72,8 @@ class QuestionsRing extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 10),
             child: Text(
-              'No questions yet today — let\'s start! 🌱',
-              style: GoogleFonts.roboto(
+              AppLocalizations.of(context).noQuestionsYetMessage,
+              style: GoogleFonts.cairo(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: Colors.grey.shade500,
@@ -108,7 +109,7 @@ class QuestionsRing extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           '${s.subjectName}  ${s.questions}',
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.cairo(
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF374151),

@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// The application title
   ///
   /// In en, this message translates to:
-  /// **'StudyMentor'**
+  /// **'Study Mentor'**
   String get appTitle;
 
   /// No description provided for @languageSettingTitle.
@@ -205,42 +205,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About'**
   String get aboutSection;
-
-  /// No description provided for @pushNotificationsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Push Notifications'**
-  String get pushNotificationsTitle;
-
-  /// No description provided for @pushNotificationsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Receive study reminders and updates'**
-  String get pushNotificationsSubtitle;
-
-  /// No description provided for @soundEffectsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sound Effects'**
-  String get soundEffectsTitle;
-
-  /// No description provided for @soundEffectsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Button clicks and interactions'**
-  String get soundEffectsSubtitle;
-
-  /// No description provided for @backgroundMusicTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Background Music'**
-  String get backgroundMusicTitle;
-
-  /// No description provided for @backgroundMusicSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Play music while studying'**
-  String get backgroundMusicSubtitle;
 
   /// No description provided for @usageTimerNotificationTitle.
   ///
@@ -3432,6 +3396,468 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Purchase failed. Please try again.'**
   String get errPurchaseFailed;
+
+  /// No description provided for @errCouldNotLoadProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your profile. Please try again.'**
+  String get errCouldNotLoadProfile;
+
+  /// No description provided for @errInvalidParentCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid parent credentials. Logout denied.'**
+  String get errInvalidParentCredentials;
+
+  /// No description provided for @confirmEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One last step'**
+  String get confirmEmailSubtitle;
+
+  /// No description provided for @createParentAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your parent account'**
+  String get createParentAccountSubtitle;
+
+  /// No description provided for @resetPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll email you a reset link'**
+  String get resetPasswordSubtitle;
+
+  /// No description provided for @todayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayLabel;
+
+  /// No description provided for @studiedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Studied'**
+  String get studiedLabel;
+
+  /// No description provided for @effortFocusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Effort & Focus'**
+  String get effortFocusTitle;
+
+  /// No description provided for @effortFocusSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where this week\'s quizzes came from'**
+  String get effortFocusSubtitle;
+
+  /// No description provided for @selfStartedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-started'**
+  String get selfStartedLabel;
+
+  /// No description provided for @toUnlockAppsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To unlock apps'**
+  String get toUnlockAppsLabel;
+
+  /// No description provided for @percentSelfStartedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of quizzes were self-started'**
+  String percentSelfStartedMessage(int percent);
+
+  /// No description provided for @noSubjectsReportMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No subjects to report on yet.'**
+  String get noSubjectsReportMessage;
+
+  /// No description provided for @quizzesGuessingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 quiz showed rapid guessing} other{{count} quizzes showed rapid guessing}}'**
+  String quizzesGuessingMessage(int count);
+
+  /// No description provided for @restingStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resting'**
+  String get restingStatusLabel;
+
+  /// No description provided for @readyStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get readyStatusLabel;
+
+  /// No description provided for @markAsUnreadTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as unread'**
+  String get markAsUnreadTooltip;
+
+  /// No description provided for @markAsReadTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as read'**
+  String get markAsReadTooltip;
+
+  /// No description provided for @noActivitySummarizeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity to summarize yet.'**
+  String get noActivitySummarizeMessage;
+
+  /// No description provided for @motivationLevel1.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Seedling — every expert was once a beginner! 🌱'**
+  String get motivationLevel1;
+
+  /// No description provided for @motivationLevel2.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Sprout — you\'re growing fast, keep it up! 🌿'**
+  String get motivationLevel2;
+
+  /// No description provided for @motivationLevel3.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re an Explorer — curiosity is your superpower! 🔍'**
+  String get motivationLevel3;
+
+  /// No description provided for @motivationLevel4.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Curious Mind — great questions lead to great answers! 💡'**
+  String get motivationLevel4;
+
+  /// No description provided for @motivationLevel5.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Scholar — your hard work is really showing! 📚'**
+  String get motivationLevel5;
+
+  /// No description provided for @motivationLevel6.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re an Achiever — you make it look easy! ⭐'**
+  String get motivationLevel6;
+
+  /// No description provided for @motivationLevel7.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Champion — you inspire everyone around you! 🏆'**
+  String get motivationLevel7;
+
+  /// No description provided for @motivationLevel8.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Sage — your wisdom sets you apart! 🦉'**
+  String get motivationLevel8;
+
+  /// No description provided for @motivationLevel9.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Luminary — you light the way for others! ✨'**
+  String get motivationLevel9;
+
+  /// No description provided for @motivationLevel10.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Master — the pinnacle of excellence! 🌟'**
+  String get motivationLevel10;
+
+  /// No description provided for @motivationDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep learning — you\'re doing amazing! 🚀'**
+  String get motivationDefault;
+
+  /// No description provided for @hourUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'hr'**
+  String get hourUnitLabel;
+
+  /// No description provided for @hoursUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'hrs'**
+  String get hoursUnitLabel;
+
+  /// No description provided for @minuteUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get minuteUnitLabel;
+
+  /// No description provided for @appsParentWatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps your parent watches'**
+  String get appsParentWatchesTitle;
+
+  /// No description provided for @restingNowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Resting now · tap to see all'**
+  String get restingNowSubtitle;
+
+  /// No description provided for @appsCountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 app · tap to see all} other{{count} apps · tap to see all}}'**
+  String appsCountSubtitle(int count);
+
+  /// No description provided for @noAppsWatchedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No apps are being watched right now 🎉'**
+  String get noAppsWatchedMessage;
+
+  /// No description provided for @globalTimeLimitsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Time Limits'**
+  String get globalTimeLimitsLabel;
+
+  /// No description provided for @globalTimeLimitsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'These limits apply to all restricted apps. When a student reaches the usage limit on any restricted app, they must wait the cooldown period before using it again.'**
+  String get globalTimeLimitsTooltip;
+
+  /// No description provided for @usageAllowanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage Allowance'**
+  String get usageAllowanceLabel;
+
+  /// No description provided for @readyToPracticeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to practice?'**
+  String get readyToPracticeMessage;
+
+  /// No description provided for @gotItButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get gotItButton;
+
+  /// No description provided for @finishButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get finishButton;
+
+  /// No description provided for @correctExclamationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct!'**
+  String get correctExclamationLabel;
+
+  /// No description provided for @solutionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Solution'**
+  String get solutionLabel;
+
+  /// No description provided for @correctAnswerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct answer'**
+  String get correctAnswerLabel;
+
+  /// No description provided for @reachLevelToUnlockMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach Level {level} to unlock this item.'**
+  String reachLevelToUnlockMessage(int level);
+
+  /// No description provided for @coinPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} coins'**
+  String coinPriceLabel(int price);
+
+  /// No description provided for @balanceAfterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance after: {balance} 🪙'**
+  String balanceAfterLabel(int balance);
+
+  /// No description provided for @appsRestingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps are resting right now'**
+  String get appsRestingTitle;
+
+  /// No description provided for @earnedFreeTimeLockedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve earned {time} of free time today. Finish your quiz to unlock more.'**
+  String earnedFreeTimeLockedSubtitle(String time);
+
+  /// No description provided for @finishQuizUnlockApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish your quiz to unlock your apps.'**
+  String get finishQuizUnlockApps;
+
+  /// No description provided for @earnedFreeTimeUnlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve earned {time} of free time today'**
+  String earnedFreeTimeUnlockedTitle(String time);
+
+  /// No description provided for @appsUnlockedEnjoySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your apps are unlocked — enjoy your free time.'**
+  String get appsUnlockedEnjoySubtitle;
+
+  /// No description provided for @appsUnlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your apps are unlocked'**
+  String get appsUnlockedTitle;
+
+  /// No description provided for @enjoyFreeTimeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoy your free time.'**
+  String get enjoyFreeTimeSubtitle;
+
+  /// No description provided for @timeToRestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to rest'**
+  String get timeToRestTitle;
+
+  /// No description provided for @screenTimeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen time'**
+  String get screenTimeTitle;
+
+  /// No description provided for @limitRestSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit {limit}   ·   Rest {rest}'**
+  String limitRestSummaryLabel(String limit, String rest);
+
+  /// No description provided for @minLeftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'min left'**
+  String get minLeftLabel;
+
+  /// No description provided for @secLeftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'sec left'**
+  String get secLeftLabel;
+
+  /// No description provided for @restingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'resting'**
+  String get restingLabel;
+
+  /// No description provided for @noTimeLimitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No time limit set — enjoy learning!'**
+  String get noTimeLimitMessage;
+
+  /// No description provided for @questionsTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'questions today'**
+  String get questionsTodayLabel;
+
+  /// No description provided for @noQuestionsYetMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No questions yet today — let\'s start! 🌱'**
+  String get noQuestionsYetMessage;
+
+  /// No description provided for @topRankLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Top rank'**
+  String get topRankLabel;
+
+  /// No description provided for @nextRankLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {rank}'**
+  String nextRankLabel(String rank);
+
+  /// No description provided for @reachedTopMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You reached the top — amazing!'**
+  String get reachedTopMessage;
+
+  /// No description provided for @xpProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {max} XP'**
+  String xpProgressLabel(int current, int max);
+
+  /// No description provided for @totalSuffixLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} total'**
+  String totalSuffixLabel(String time);
+
+  /// No description provided for @noStudyTimeWeekMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No study time logged this week yet.'**
+  String get noStudyTimeWeekMessage;
+
+  /// No description provided for @mascotIdleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'What shall we learn today?'**
+  String get mascotIdleMessage;
+
+  /// No description provided for @mascotHappyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Great job! Keep it up!'**
+  String get mascotHappyMessage;
+
+  /// No description provided for @mascotThinkingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'One moment…'**
+  String get mascotThinkingMessage;
+
+  /// No description provided for @mascotSadMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t worry — let\'s try again!'**
+  String get mascotSadMessage;
+
+  /// No description provided for @mascotCelebrationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Amazing work! 🌟'**
+  String get mascotCelebrationMessage;
+
+  /// No description provided for @mascotHiGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, {name}! 👋'**
+  String mascotHiGreeting(String name);
 }
 
 class _AppLocalizationsDelegate

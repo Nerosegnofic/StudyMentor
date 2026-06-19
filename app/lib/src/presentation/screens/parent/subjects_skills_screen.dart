@@ -14,6 +14,7 @@ import '../../../data/catalog/document_models.dart';
 import '../student/student_documents.dart';
 import '../../../data/catalog/subject_metadata_registry.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../utils/error_localizer.dart';
 
 // SubjectData removed, using SubjectSummaryModel directly
 
@@ -103,7 +104,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (state is SubjectsError) {
-              return Center(child: Text(state.message));
+              return Center(child: Text(localizeError(state.message, AppLocalizations.of(context))));
             }
             final subjects = state is SubjectsLoaded ? state.subjects : <SubjectSummaryModel>[];
             final existingKeys = subjects.map((s) => s.subjectKey).toList();

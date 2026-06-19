@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/avatar_config.dart';
 import '../avatar_widget.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Student full-screen top bar — a flat green gradient band matching the
 /// profile/settings headers (no BottomNavigationBar per the design system).
@@ -53,7 +54,7 @@ class StudentTopBar extends StatelessWidget {
         children: [
           _avatarButton(),
           const Spacer(),
-          _levelPill(),
+          _levelPill(context),
           const SizedBox(width: 8),
           _shopButton(),
           const SizedBox(width: 12),
@@ -83,7 +84,7 @@ class StudentTopBar extends StatelessWidget {
     );
   }
 
-  Widget _levelPill() {
+  Widget _levelPill(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
@@ -97,7 +98,7 @@ class StudentTopBar extends StatelessWidget {
           const Icon(Icons.star_rounded, color: _amber, size: 16),
           const SizedBox(width: 4),
           Text(
-            'Lv. $level',
+            AppLocalizations.of(context).levelShortLabel(level),
             style: GoogleFonts.cairo(
               fontSize: 12,
               fontWeight: FontWeight.w800,

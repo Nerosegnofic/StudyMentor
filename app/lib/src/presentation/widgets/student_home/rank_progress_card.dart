@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/constants/gamification_levels.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// White card showing progress from the current RankName toward the next one,
 /// with the XP bar. Matches the profile/settings card vibe (Material icons,
@@ -21,6 +22,7 @@ class RankProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final levelIdx =
         (currentLevel - 1).clamp(0, kGamificationLevels.length - 1);
     final currentModel = kGamificationLevels[levelIdx];
@@ -69,8 +71,8 @@ class RankProgressCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      isMax ? 'Top rank' : 'Next: ${nextModel!.levelName}',
-                      style: GoogleFonts.roboto(
+                      isMax ? loc.topRankLabel : loc.nextRankLabel(nextModel!.levelName),
+                      style: GoogleFonts.cairo(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey.shade500,
@@ -88,7 +90,7 @@ class RankProgressCard extends StatelessWidget {
                   border: Border.all(color: const Color(0xFFFFE082)),
                 ),
                 child: Text(
-                  'Lv. $currentLevel',
+                  loc.levelShortLabel(currentLevel),
                   style: GoogleFonts.cairo(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -112,8 +114,8 @@ class RankProgressCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              isMax ? 'You reached the top — amazing!' : '$xpTotal / $upper XP',
-              style: GoogleFonts.roboto(
+              isMax ? loc.reachedTopMessage : loc.xpProgressLabel(xpTotal, upper),
+              style: GoogleFonts.cairo(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade500,

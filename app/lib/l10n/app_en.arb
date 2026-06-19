@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "StudyMentor",
+  "appTitle": "Study Mentor",
   "@appTitle": {
     "description": "The application title"
   },
@@ -22,12 +22,6 @@
   "preferencesSection": "Preferences",
   "accountSection": "Account",
   "aboutSection": "About",
-  "pushNotificationsTitle": "Push Notifications",
-  "pushNotificationsSubtitle": "Receive study reminders and updates",
-  "soundEffectsTitle": "Sound Effects",
-  "soundEffectsSubtitle": "Button clicks and interactions",
-  "backgroundMusicTitle": "Background Music",
-  "backgroundMusicSubtitle": "Play music while studying",
   "usageTimerNotificationTitle": "Usage Timer Notification",
   "usageTimerNotificationSubtitle": "Show a notification counting down your remaining app time",
   "cooldownTimerNotificationTitle": "Cooldown Timer Notification",
@@ -1051,5 +1045,161 @@
   "errStudentInvalidEmail": "The email address is badly formatted.",
   "errUnexpected": "An unexpected error occurred. Please try again.",
   "shopItemPurchasedMessage": "Purchase successful! 🎉",
-  "errPurchaseFailed": "Purchase failed. Please try again."
+  "errPurchaseFailed": "Purchase failed. Please try again.",
+  "errCouldNotLoadProfile": "Could not load your profile. Please try again.",
+  "errInvalidParentCredentials": "Invalid parent credentials. Logout denied.",
+
+  "confirmEmailSubtitle": "One last step",
+  "createParentAccountSubtitle": "Create your parent account",
+  "resetPasswordSubtitle": "We'll email you a reset link",
+
+  "todayLabel": "Today",
+  "studiedLabel": "Studied",
+
+  "effortFocusTitle": "Effort & Focus",
+  "effortFocusSubtitle": "Where this week's quizzes came from",
+  "selfStartedLabel": "Self-started",
+  "toUnlockAppsLabel": "To unlock apps",
+  "percentSelfStartedMessage": "{percent}% of quizzes were self-started",
+  "@percentSelfStartedMessage": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "noSubjectsReportMessage": "No subjects to report on yet.",
+  "quizzesGuessingMessage": "{count, plural, =1{1 quiz showed rapid guessing} other{{count} quizzes showed rapid guessing}}",
+  "@quizzesGuessingMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "restingStatusLabel": "Resting",
+  "readyStatusLabel": "Ready",
+
+  "markAsUnreadTooltip": "Mark as unread",
+  "markAsReadTooltip": "Mark as read",
+
+  "noActivitySummarizeMessage": "No activity to summarize yet.",
+
+  "motivationLevel1": "You're a Seedling — every expert was once a beginner! 🌱",
+  "motivationLevel2": "You're a Sprout — you're growing fast, keep it up! 🌿",
+  "motivationLevel3": "You're an Explorer — curiosity is your superpower! 🔍",
+  "motivationLevel4": "You're a Curious Mind — great questions lead to great answers! 💡",
+  "motivationLevel5": "You're a Scholar — your hard work is really showing! 📚",
+  "motivationLevel6": "You're an Achiever — you make it look easy! ⭐",
+  "motivationLevel7": "You're a Champion — you inspire everyone around you! 🏆",
+  "motivationLevel8": "You're a Sage — your wisdom sets you apart! 🦉",
+  "motivationLevel9": "You're a Luminary — you light the way for others! ✨",
+  "motivationLevel10": "You're a Master — the pinnacle of excellence! 🌟",
+  "motivationDefault": "Keep learning — you're doing amazing! 🚀",
+
+  "hourUnitLabel": "hr",
+  "hoursUnitLabel": "hrs",
+  "minuteUnitLabel": "min",
+
+  "appsParentWatchesTitle": "Apps your parent watches",
+  "restingNowSubtitle": "Resting now · tap to see all",
+  "appsCountSubtitle": "{count, plural, =1{1 app · tap to see all} other{{count} apps · tap to see all}}",
+  "@appsCountSubtitle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noAppsWatchedMessage": "No apps are being watched right now 🎉",
+
+  "globalTimeLimitsLabel": "Global Time Limits",
+  "globalTimeLimitsTooltip": "These limits apply to all restricted apps. When a student reaches the usage limit on any restricted app, they must wait the cooldown period before using it again.",
+  "usageAllowanceLabel": "Usage Allowance",
+
+  "readyToPracticeMessage": "Ready to practice?",
+  "gotItButton": "Got it",
+  "finishButton": "Finish",
+  "correctExclamationLabel": "Correct!",
+  "solutionLabel": "Solution",
+  "correctAnswerLabel": "Correct answer",
+  "reachLevelToUnlockMessage": "Reach Level {level} to unlock this item.",
+  "@reachLevelToUnlockMessage": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "coinPriceLabel": "{price} coins",
+  "@coinPriceLabel": {
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "balanceAfterLabel": "Balance after: {balance} 🪙",
+  "@balanceAfterLabel": {
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+  "appsRestingTitle": "Apps are resting right now",
+  "earnedFreeTimeLockedSubtitle": "You've earned {time} of free time today. Finish your quiz to unlock more.",
+  "@earnedFreeTimeLockedSubtitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "finishQuizUnlockApps": "Finish your quiz to unlock your apps.",
+  "earnedFreeTimeUnlockedTitle": "You've earned {time} of free time today",
+  "@earnedFreeTimeUnlockedTitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "appsUnlockedEnjoySubtitle": "Your apps are unlocked — enjoy your free time.",
+  "appsUnlockedTitle": "Your apps are unlocked",
+  "enjoyFreeTimeSubtitle": "Enjoy your free time.",
+  "timeToRestTitle": "Time to rest",
+  "screenTimeTitle": "Screen time",
+  "limitRestSummaryLabel": "Limit {limit}   ·   Rest {rest}",
+  "@limitRestSummaryLabel": {
+    "placeholders": {
+      "limit": {"type": "String"},
+      "rest": {"type": "String"}
+    }
+  },
+  "minLeftLabel": "min left",
+  "secLeftLabel": "sec left",
+  "restingLabel": "resting",
+  "noTimeLimitMessage": "No time limit set — enjoy learning!",
+  "questionsTodayLabel": "questions today",
+  "noQuestionsYetMessage": "No questions yet today — let's start! 🌱",
+  "topRankLabel": "Top rank",
+  "nextRankLabel": "Next: {rank}",
+  "@nextRankLabel": {
+    "placeholders": {
+      "rank": {"type": "String"}
+    }
+  },
+  "reachedTopMessage": "You reached the top — amazing!",
+  "xpProgressLabel": "{current} / {max} XP",
+  "@xpProgressLabel": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "totalSuffixLabel": "{time} total",
+  "@totalSuffixLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "noStudyTimeWeekMessage": "No study time logged this week yet.",
+  "mascotIdleMessage": "What shall we learn today?",
+  "mascotHappyMessage": "Great job! Keep it up!",
+  "mascotThinkingMessage": "One moment…",
+  "mascotSadMessage": "Don't worry — let's try again!",
+  "mascotCelebrationMessage": "Amazing work! 🌟",
+
+  "mascotHiGreeting": "Hi, {name}! 👋",
+  "@mascotHiGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  }
 }

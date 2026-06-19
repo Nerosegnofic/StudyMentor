@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../features/mascot/mascot_state.dart';
 import '../../features/mascot/mascot_widget.dart';
-import '../../../l10n/app_localizations.dart';
 
 // Design-system tokens (mirrored from student_quiz.dart).
 const _kGreen = Color(0xFF2E7D32);
@@ -13,7 +12,6 @@ class RewardToast {
 
   /// Shows a brief floating SnackBar announcing the XP and Coins just earned.
   static void show(BuildContext context, int xp, int coins) {
-    final loc = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -26,7 +24,7 @@ class RewardToast {
               const SizedBox(width: 10),
               Text(
                 '+$xp XP',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                   color: Colors.white,
@@ -37,7 +35,7 @@ class RewardToast {
               const SizedBox(width: 4),
               Text(
                 '+$coins Coins',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.cairo(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                   color: Colors.white,
