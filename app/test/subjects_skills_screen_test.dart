@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:studymentor/l10n/app_localizations.dart';
 import 'package:studymentor/src/bloc/subject/subject_bloc.dart';
+import 'package:studymentor/src/bloc/subject_status/subject_status_cubit.dart';
+import 'package:studymentor/src/data/repositories/ai_engine_repository.dart';
 import 'package:studymentor/src/domain/models/student_model.dart';
 import 'package:studymentor/src/domain/models/subject_summary_model.dart';
 import 'package:studymentor/src/domain/repositories/auth_repository.dart';
 import 'package:studymentor/src/presentation/screens/parent/subjects_skills_screen.dart';
+
+class MockAiEngineRepository extends Mock implements AiEngineRepository {}
 
 class FakeAuthRepository implements AuthRepository {
   final List<SubjectSummaryModel> subjects = [
@@ -68,12 +75,28 @@ void main() {
     final fakeRepo = FakeAuthRepository();
     final fakeBloc = SubjectBloc(authRepository: fakeRepo);
 
+    // Inject a no-op AiEngineRepository so SubjectStatusCubit never touches Firebase.
+    final mockAiRepo = MockAiEngineRepository();
+    when(() => mockAiRepo.getSubjectsStatus(studentUid: any(named: 'studentUid')))
+        .thenAnswer((_) async => []);
+    final statusCubit = SubjectStatusCubit(
+      studentUid: student.uid,
+      repository: mockAiRepo,
+      pollInterval: const Duration(days: 1),
+    );
+
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<SubjectBloc>.value(
             value: fakeBloc,
-            child: SubjectsSkillsScreen(student: student),
+            child: SubjectsSkillsScreen(student: student, statusCubit: statusCubit),
           ),
         ),
       ),
@@ -100,7 +123,7 @@ void main() {
     // Verify styled deletion confirmation dialog is shown
     expect(find.text('Remove mathematics?'), findsOneWidget);
     expect(
-      find.text('Are you sure you want to stop tracking this subject? This will remove it from your dashboard.'),
+      find.text('This permanently deletes the subject and all its data.'),
       findsOneWidget,
     );
 
@@ -126,5 +149,7 @@ void main() {
     expect(find.text('Mathematics'), findsNothing);
     expect(find.text('Science'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
+
+    await statusCubit.close();
   });
 }

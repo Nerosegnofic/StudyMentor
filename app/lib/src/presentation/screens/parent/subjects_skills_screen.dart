@@ -21,30 +21,39 @@ import '../../../../l10n/app_localizations.dart';
 class SubjectsSkillsScreen extends StatefulWidget {
   final StudentModel student;
 
-  const SubjectsSkillsScreen({super.key, required this.student});
+  /// Optional override for testing — avoids the Firebase singleton inside
+  /// [SubjectStatusCubit]'s default constructor.
+  final SubjectStatusCubit? statusCubit;
+
+  const SubjectsSkillsScreen({super.key, required this.student, this.statusCubit});
 
   @override
   State<SubjectsSkillsScreen> createState() => _SubjectsSkillsScreenState();
 }
 
 class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
-
-
   /// Child-scoped ingestion-status poll. The parent uploads on the child's behalf, so
   /// this passes the child's uid to see THAT child's subjects (the endpoint falls back
   /// to the JWT uid only when omitted). Drives the transient "Preparing…" banner.
   late final SubjectStatusCubit _statusCubit;
+  late final bool _ownsCubit;
 
   @override
   void initState() {
     super.initState();
     context.read<SubjectBloc>().add(LoadSubjectsRequested(studentUid: widget.student.uid));
-    _statusCubit = SubjectStatusCubit(studentUid: widget.student.uid)..start();
+    if (widget.statusCubit != null) {
+      _statusCubit = widget.statusCubit!;
+      _ownsCubit = false;
+    } else {
+      _statusCubit = SubjectStatusCubit(studentUid: widget.student.uid)..start();
+      _ownsCubit = true;
+    }
   }
 
   @override
   void dispose() {
-    _statusCubit.close();
+    if (_ownsCubit) _statusCubit.close();
     super.dispose();
   }
 

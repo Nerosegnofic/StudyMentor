@@ -29,15 +29,16 @@ class SubjectDetailScreen extends StatefulWidget {
   final String subjectName;
   final double masteryPercent;
 
+  /// Optional override — injected in tests to avoid the Firebase singleton.
+  final AiEngineRepository? repository;
 
   const SubjectDetailScreen({
     super.key,
     required this.studentUid,
-
     required this.subjectId,
     required this.subjectName,
     required this.masteryPercent,
-
+    this.repository,
   });
 
   @override
@@ -45,6 +46,7 @@ class SubjectDetailScreen extends StatefulWidget {
 }
 
 class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
+  late AiEngineRepository _repo;
   late Future<List<SkillDetailModel>> _skillsFuture;
   StudentConfigModel _config = const StudentConfigModel();
   late double _masteryPercent;
@@ -66,8 +68,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _repo = widget.repository ?? AiEngineRepository.instance;
     _masteryPercent = widget.masteryPercent;
-    _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
+    _skillsFuture = _repo.getSubjectSkills(widget.subjectId);
     _loadConfig();
     _loadGrade();
     _loadSubjectState();
@@ -82,7 +85,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   Future<void> _loadSubjectState() async {
     try {
       // Student side → no studentUid (the JWT uid is the student).
-      final statuses = await AiEngineRepository.instance.getSubjectsStatus();
+      final statuses = await _repo.getSubjectsStatus();
       if (!mounted) return;
       final match = statuses.where((s) => s.subjectId == widget.subjectId);
       final newState = match.isEmpty ? null : match.first.state;
@@ -136,7 +139,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           if (plant != null && mounted) {
             setState(() {
               _masteryPercent = plant.masteryPercent;
-              _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
+              _skillsFuture = _repo.getSubjectSkills(widget.subjectId);
             });
           }
         }
@@ -329,7 +332,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                                 BlocProvider.value(value: gardenBloc),
                               ],
                               child: QuizOverlayPage(
-                                repository: AiEngineRepository.instance,
+                                repository: _repo,
                                 studentId: widget.studentUid,
                                 contextType: QuizContext.voluntary,
                                 subjectId: widget.subjectId,
@@ -346,7 +349,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         );
                         if (mounted) {
                           setState(() {
-                            _skillsFuture = AiEngineRepository.instance.getSubjectSkills(widget.subjectId);
+                            _skillsFuture = _repo.getSubjectSkills(widget.subjectId);
                           });
                         }
                       },

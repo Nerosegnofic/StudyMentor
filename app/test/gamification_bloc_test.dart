@@ -1,21 +1,65 @@
 // test/gamification_bloc_test.dart
 //
-// Unit tests for Sprint 1.3 GamificationBloc.
+// Unit tests for GamificationBloc — uses a MockAiEngineRepository injected
+// into GamificationRepositoryImpl so Firebase is never touched.
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:studymentor/src/domain/models/gamification_enums.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:studymentor/src/bloc/gamification/gamification_bloc.dart';
 import 'package:studymentor/src/bloc/gamification/gamification_event.dart';
 import 'package:studymentor/src/bloc/gamification/gamification_state.dart';
+import 'package:studymentor/src/data/repositories/ai_engine_repository.dart';
 import 'package:studymentor/src/data/repositories/gamification_repository_impl.dart';
+import 'package:studymentor/src/domain/models/gamification_enums.dart';
+
+class MockAiEngineRepository extends Mock implements AiEngineRepository {}
 
 void main() {
+  late MockAiEngineRepository mockApi;
   late GamificationRepositoryImpl repository;
   late GamificationBloc bloc;
 
   setUp(() {
-    repository = GamificationRepositoryImpl();
+    mockApi = MockAiEngineRepository();
+
+    // Default: return an empty profile for any student.
+    when(() => mockApi.getGamificationProfile(any()))
+        .thenAnswer((_) async => {
+              'xp_total': 0,
+              'coins_total': 0,
+              'current_level': 1,
+              'current_streak': 0,
+              'longest_streak': 0,
+            });
+
+    // Default: no daily login reward.
+    when(() => mockApi.checkDailyLogin(any()))
+        .thenAnswer((_) async => {'awarded': false});
+
+    // 'existing-student' already has XP from a previous quiz.
+    when(() => mockApi.getGamificationProfile('existing-student'))
+        .thenAnswer((_) async => {
+              'xp_total': 50,
+              'coins_total': 5,
+              'current_level': 1,
+              'current_streak': 0,
+              'longest_streak': 0,
+            });
+
+    // First daily login of the day for 'daily-student-1'.
+    when(() => mockApi.checkDailyLogin('daily-student-1'))
+        .thenAnswer((_) async => {'awarded': true, 'coins_earned': 3});
+    when(() => mockApi.getGamificationProfile('daily-student-1'))
+        .thenAnswer((_) async => {
+              'xp_total': 0,
+              'coins_total': 3,
+              'current_level': 1,
+              'current_streak': 0,
+              'longest_streak': 0,
+            });
+
+    repository = GamificationRepositoryImpl(api: mockApi);
     bloc = GamificationBloc(repository: repository);
   });
 
@@ -49,7 +93,7 @@ void main() {
       build: () => GamificationBloc(repository: repository),
       seed: () => GamificationInitial(),
       setUp: () async {
-        // Pre-populate the store
+        // Pre-populate the store — applyQuizRewards re-fetches from the API.
         await repository.applyQuizRewards(
           studentId: 'existing-student',
           score: 5,

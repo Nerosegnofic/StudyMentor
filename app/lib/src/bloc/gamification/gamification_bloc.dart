@@ -78,23 +78,27 @@ class GamificationBloc extends Bloc<GamificationEvent, GamificationState> {
         );
 
         // Fire notifications after the state is emitted so the UI animation
-        // and the notification land at the same time.
-        if (leveledUpTo != null) {
-          await StudentLocalNotificationHandler.instance.handleLevelUp(
-            leveledUpTo,
-          );
-        }
-
-        if (rewards['streak_incremented'] == true) {
-          final streak = updated.currentStreak;
-          if (_kStreakMilestones.contains(streak)) {
-            await StudentLocalNotificationHandler.instance
-                .handleStreakMilestone(streak);
-          } else if (_kNearMilestones.contains(streak)) {
-            await StudentLocalNotificationHandler.instance.handleNearMilestone(
-              streak,
+        // and the notification land at the same time. Errors here must never
+        // interrupt the quiz result flow — they are best-effort side effects.
+        try {
+          if (leveledUpTo != null) {
+            await StudentLocalNotificationHandler.instance.handleLevelUp(
+              leveledUpTo,
             );
           }
+
+          if (rewards['streak_incremented'] == true) {
+            final streak = updated.currentStreak;
+            if (_kStreakMilestones.contains(streak)) {
+              await StudentLocalNotificationHandler.instance
+                  .handleStreakMilestone(streak);
+            } else if (_kNearMilestones.contains(streak)) {
+              await StudentLocalNotificationHandler.instance
+                  .handleNearMilestone(streak);
+            }
+          }
+        } catch (_) {
+          // Notification failure must not surface to the user.
         }
 
         emit(GamificationLoaded(updated));
