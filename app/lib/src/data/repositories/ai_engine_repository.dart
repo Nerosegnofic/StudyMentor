@@ -210,11 +210,14 @@ class AiEngineRepository {
 
   final String baseUrl;
   final FirebaseAuth _auth;
+  final http.Client _client;
 
   AiEngineRepository({
     required this.baseUrl,
     FirebaseAuth? auth,
-  }) : _auth = auth ?? FirebaseAuth.instance;
+    http.Client? client,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _client = client ?? http.Client();
 
   // -------------------------------------------------------------------------
   // Internal helpers
@@ -252,7 +255,7 @@ class AiEngineRepository {
   /// `POST /quizzes/generate` — generates an adaptive quiz.
   Future<GenerateQuizResponse> generateQuiz(GenerateQuizRequest request) async {
     final headers = await _getJsonHeaders();
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$baseUrl/api/v1/quizzes/generate'),
       headers: headers,
       body: jsonEncode(request.toJson()),
@@ -288,7 +291,7 @@ class AiEngineRepository {
   /// `POST /quizzes/submit` — submits answers and updates BKT mastery.
   Future<QuizSubmissionResponse> submitQuiz(QuizSubmissionRequest request) async {
     final headers = await _getJsonHeaders();
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$baseUrl/api/v1/quizzes/submit'),
       headers: headers,
       body: jsonEncode(request.toJson()),
@@ -305,7 +308,7 @@ class AiEngineRepository {
   /// `GET /garden` — returns all subjects for the student with mastery snapshots.
   Future<List<GardenPlantModel>> getGarden() async {
     final headers = await _getJsonHeaders();
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/api/v1/garden'),
       headers: headers,
     );
@@ -319,7 +322,7 @@ class AiEngineRepository {
   /// `GET /garden/{subjectId}/skills` — flat skill list with mastery for the detail screen.
   Future<List<SkillDetailModel>> getSubjectSkills(int subjectId) async {
     final headers = await _getJsonHeaders();
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/api/v1/garden/$subjectId/skills'),
       headers: headers,
     );
@@ -393,7 +396,7 @@ class AiEngineRepository {
     final uri = Uri.parse('$baseUrl/api/v1/documents/subjects/status').replace(
       queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
     );
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getSubjectsStatus');
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     final list = (body['subjects'] as List? ?? const []);
@@ -409,7 +412,7 @@ class AiEngineRepository {
   /// `GET /gamification/student/{uid}/profile` — fetch XP, coins, level.
   Future<Map<String, dynamic>> getGamificationProfile(String studentUid) async {
     final headers = await _getJsonHeaders();
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/api/v1/gamification/student/$studentUid/profile'),
       headers: headers,
     );
@@ -421,7 +424,7 @@ class AiEngineRepository {
   Future<Map<String, dynamic>> checkDailyLogin(String studentUid) async {
     final headers = await _getJsonHeaders();
     final clientLocalDate = DateTime.now().toIso8601String().split('T')[0];
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$baseUrl/api/v1/gamification/student/$studentUid/daily-login'),
       headers: headers,
       body: jsonEncode({'client_local_date': clientLocalDate}),
@@ -433,7 +436,7 @@ class AiEngineRepository {
   /// `POST /gamification/student/{uid}/spend-coins` — deduct coins.
   Future<int> spendCoins(String studentUid, int amount, String reason) async {
     final headers = await _getJsonHeaders();
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$baseUrl/api/v1/gamification/student/$studentUid/spend-coins'),
       headers: headers,
       body: jsonEncode({'amount': amount, 'reason': reason}),
@@ -446,7 +449,7 @@ class AiEngineRepository {
   /// `GET /gamification/levels` — fetch static level definitions.
   Future<List<Map<String, dynamic>>> getLevels() async {
     final headers = await _getJsonHeaders();
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/api/v1/gamification/levels'),
       headers: headers,
     );
@@ -462,7 +465,7 @@ class AiEngineRepository {
   /// `POST /analytics/subjects/ensure` — create Subject rows for assigned subjects
   Future<void> ensureSubjects(List<String> subjectNames, String studentUid) async {
     final headers = await _getJsonHeaders();
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$baseUrl/api/v1/analytics/subjects/ensure'),
       headers: headers,
       body: jsonEncode({'student_uid': studentUid, 'subject_names': subjectNames}),
@@ -476,7 +479,7 @@ class AiEngineRepository {
     final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects').replace(
       queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
     );
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getSubjectsAnalytics');
     final list = jsonDecode(response.body) as List;
     return list.cast<Map<String, dynamic>>();
@@ -488,7 +491,7 @@ class AiEngineRepository {
     final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectId/mastery').replace(
       queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
     );
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getSubjectMasteryTree');
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -506,7 +509,7 @@ class AiEngineRepository {
     final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectId/history').replace(
       queryParameters: queryParams,
     );
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getSubjectQuizHistory');
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -517,7 +520,7 @@ class AiEngineRepository {
     final uri = Uri.parse('$baseUrl/api/v1/analytics/sessions/$sessionId/questions').replace(
       queryParameters: studentUid != null ? {'student_uid': studentUid} : null,
     );
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getSessionQuestions');
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -526,7 +529,7 @@ class AiEngineRepository {
   /// Called during student account deletion; uses the parent's JWT for auth.
   Future<void> deleteStudentAllData(String studentUid) async {
     final headers = await _getJsonHeaders();
-    final response = await http.delete(
+    final response = await _client.delete(
       Uri.parse('$baseUrl/api/v1/analytics/students/$studentUid'),
       headers: headers,
     );
@@ -538,7 +541,7 @@ class AiEngineRepository {
     final headers = await _getJsonHeaders();
     final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectName')
         .replace(queryParameters: {'student_uid': studentUid});
-    final response = await http.delete(uri, headers: headers);
+    final response = await _client.delete(uri, headers: headers);
     _assertSuccess(response, 'deleteSubject');
   }
 
@@ -565,7 +568,7 @@ class AiEngineRepository {
     final headers = await _getJsonHeaders();
     final uri = Uri.parse('$baseUrl/api/v1/subjects/available')
         .replace(queryParameters: {'student_uid': studentUid});
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getAvailableGlobalSubjects');
     final list = jsonDecode(response.body) as List;
     return list.cast<Map<String, dynamic>>();
@@ -577,7 +580,7 @@ class AiEngineRepository {
     final headers = await _getJsonHeaders();
     final uri = Uri.parse('$baseUrl/api/v1/subjects/$subjectId/student-data')
         .replace(queryParameters: {'student_uid': studentUid});
-    final response = await http.delete(uri, headers: headers);
+    final response = await _client.delete(uri, headers: headers);
     _assertSuccess(response, 'removeStudentSubjectData');
   }
 
@@ -592,7 +595,7 @@ class AiEngineRepository {
     final uri = Uri.parse(
       '$baseUrl/api/v1/gamification/student/$studentUid/daily-snapshot',
     ).replace(queryParameters: {'client_local_date': clientLocalDate});
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getDailySnapshot');
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final bySubjectRaw =
@@ -616,7 +619,7 @@ class AiEngineRepository {
     final uri = Uri.parse(
       '$baseUrl/api/v1/gamification/student/$studentUid/weekly-report',
     );
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getWeeklyReport');
     final data = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -682,7 +685,7 @@ class AiEngineRepository {
       'client_local_date': clientLocalDate,
       'tz_offset_minutes': now.timeZoneOffset.inMinutes.toString(),
     });
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getStudyHabitsReport');
     final data = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -830,7 +833,7 @@ class AiEngineRepository {
     final headers = await _getJsonHeaders();
     final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectId/mastery-history')
         .replace(queryParameters: studentUid != null ? {'student_uid': studentUid} : null);
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getSubjectMasteryHistory');
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -841,7 +844,7 @@ class AiEngineRepository {
     final headers = await _getJsonHeaders();
     final uri = Uri.parse('$baseUrl/api/v1/analytics/subjects/$subjectId/error-breakdown')
         .replace(queryParameters: studentUid != null ? {'student_uid': studentUid} : null);
-    final response = await http.get(uri, headers: headers);
+    final response = await _client.get(uri, headers: headers);
     _assertSuccess(response, 'getSubjectErrorBreakdown');
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -860,7 +863,7 @@ class AiEngineRepository {
     final headers = await _getJsonHeaders();
     final clientLocalDate = DateTime.now().toIso8601String().split('T')[0];
     final uri = Uri.parse('$baseUrl/api/v1/analytics/parent/daily-summary');
-    final response = await http.post(
+    final response = await _client.post(
       uri,
       headers: headers,
       body: jsonEncode({
