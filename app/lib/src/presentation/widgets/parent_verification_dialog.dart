@@ -2,7 +2,7 @@
 import 'package:google_fonts/google_fonts.dart';
 import '../../../l10n/app_localizations.dart';
 
-// ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
+// ── StudyMentor design tokens (Student app: gamified & immersive) ────────────
 const Color _kGreen = Color(0xFF4CAF50); // Primary Green
 const Color _kInk = Color(0xFF1F2937); // Title ink
 const Color _kRed = Color(0xFFEF5350); // Destructive (log out)

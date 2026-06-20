@@ -2071,13 +2071,43 @@ class AppLocalizationsAr extends AppLocalizations {
   String get motivationDefault => 'واصل التعلم — أنتَ رائع! 🚀';
 
   @override
-  String get hourUnitLabel => 'ساعة';
+  String get rankLevel1 => 'بذرة';
 
   @override
-  String get hoursUnitLabel => 'ساعات';
+  String get rankLevel2 => 'شتلة';
 
   @override
-  String get minuteUnitLabel => 'دقيقة';
+  String get rankLevel3 => 'مستكشف';
+
+  @override
+  String get rankLevel4 => 'عقل فضولي';
+
+  @override
+  String get rankLevel5 => 'عالم';
+
+  @override
+  String get rankLevel6 => 'منجز';
+
+  @override
+  String get rankLevel7 => 'بطل';
+
+  @override
+  String get rankLevel8 => 'حكيم';
+
+  @override
+  String get rankLevel9 => 'نجم ساطع';
+
+  @override
+  String get rankLevel10 => 'محترف';
+
+  @override
+  String get hourUnitLabel => 'س';
+
+  @override
+  String get hoursUnitLabel => 'س';
+
+  @override
+  String get minuteUnitLabel => 'د';
 
   @override
   String get appsParentWatchesTitle => 'التطبيقات التي يراقبها والدك';

@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// The application title
   ///
   /// In en, this message translates to:
-  /// **'Study Mentor'**
+  /// **'StudyMentor'**
   String get appTitle;
 
   /// No description provided for @languageSettingTitle.
@@ -3576,6 +3576,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep learning — you\'re doing amazing! 🚀'**
   String get motivationDefault;
+
+  /// No description provided for @rankLevel1.
+  ///
+  /// In en, this message translates to:
+  /// **'Seedling'**
+  String get rankLevel1;
+
+  /// No description provided for @rankLevel2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sprout'**
+  String get rankLevel2;
+
+  /// No description provided for @rankLevel3.
+  ///
+  /// In en, this message translates to:
+  /// **'Explorer'**
+  String get rankLevel3;
+
+  /// No description provided for @rankLevel4.
+  ///
+  /// In en, this message translates to:
+  /// **'Curious Mind'**
+  String get rankLevel4;
+
+  /// No description provided for @rankLevel5.
+  ///
+  /// In en, this message translates to:
+  /// **'Scholar'**
+  String get rankLevel5;
+
+  /// No description provided for @rankLevel6.
+  ///
+  /// In en, this message translates to:
+  /// **'Achiever'**
+  String get rankLevel6;
+
+  /// No description provided for @rankLevel7.
+  ///
+  /// In en, this message translates to:
+  /// **'Champion'**
+  String get rankLevel7;
+
+  /// No description provided for @rankLevel8.
+  ///
+  /// In en, this message translates to:
+  /// **'Sage'**
+  String get rankLevel8;
+
+  /// No description provided for @rankLevel9.
+  ///
+  /// In en, this message translates to:
+  /// **'Luminary'**
+  String get rankLevel9;
+
+  /// No description provided for @rankLevel10.
+  ///
+  /// In en, this message translates to:
+  /// **'Master'**
+  String get rankLevel10;
 
   /// No description provided for @hourUnitLabel.
   ///

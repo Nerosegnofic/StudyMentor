@@ -793,9 +793,20 @@
   "motivationLevel10": "أنتَ محترف — قمة التميز! 🌟",
   "motivationDefault": "واصل التعلم — أنتَ رائع! 🚀",
 
-  "hourUnitLabel": "ساعة",
-  "hoursUnitLabel": "ساعات",
-  "minuteUnitLabel": "دقيقة",
+  "rankLevel1": "بذرة",
+  "rankLevel2": "شتلة",
+  "rankLevel3": "مستكشف",
+  "rankLevel4": "عقل فضولي",
+  "rankLevel5": "عالم",
+  "rankLevel6": "منجز",
+  "rankLevel7": "بطل",
+  "rankLevel8": "حكيم",
+  "rankLevel9": "نجم ساطع",
+  "rankLevel10": "محترف",
+
+  "hourUnitLabel": "س",
+  "hoursUnitLabel": "س",
+  "minuteUnitLabel": "د",
 
   "appsParentWatchesTitle": "التطبيقات التي يراقبها والدك",
   "restingNowSubtitle": "في وضع الراحة · اضغط لرؤية الكل",

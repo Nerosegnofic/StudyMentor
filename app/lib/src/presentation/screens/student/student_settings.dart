@@ -5,7 +5,7 @@ import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../widgets/language_picker_dialog.dart';
 import '../../../../l10n/app_localizations.dart';
 
-// ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
+// ── StudyMentor design tokens (Student app: gamified & immersive) ────────────
 const Color _kBackground = Color(0xFFF5F7FA); // Soft Cloud
 const Color _kGreen = Color(0xFF4CAF50); // Primary Green
 const Color _kInk = Color(0xFF1F2937); // Title ink

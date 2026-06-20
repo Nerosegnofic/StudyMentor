@@ -14,7 +14,7 @@ import '../../../../l10n/app_localizations.dart';
 import 'shop/custom_shop_screen.dart';
 import 'student_settings.dart';
 
-// ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
+// ── StudyMentor design tokens (Student app: gamified & immersive) ────────────
 const Color _kGreen = Color(0xFF4CAF50); // Primary Green
 const Color _kAmber = Color(0xFFFFC107); // Accent Amber
 const Color _kInk = Color(0xFF1F2937); // Title ink
@@ -37,8 +37,6 @@ class _StudentProfileState extends State<StudentProfile> {
   int _totalQuestionsAnswered = 0;
   AvatarConfig _avatarConfig = AvatarConfig.defaults;
   int _level = 1;
-  String _rank = 'Seedling';
-
   @override
   void initState() {
     super.initState();
@@ -65,7 +63,6 @@ class _StudentProfileState extends State<StudentProfile> {
           _currentStreak = (gamification['current_streak'] as int?) ?? 0;
           _totalQuestionsAnswered = (gamification['total_questions_answered'] as int?) ?? 0;
           _level = (gamification['current_level'] as int?) ?? StudentRankUtils.levelFromXp(_totalXp);
-          _rank = (gamification['level_name'] as String?) ?? StudentRankUtils.rankFromLevel(_level);
           if (avatarMap != null) {
             _avatarConfig = AvatarConfig.fromMap(avatarMap);
           }
@@ -269,7 +266,7 @@ class _StudentProfileState extends State<StudentProfile> {
           const Icon(Icons.bolt, color: Color(0xFF8D6E00), size: 15),
           const SizedBox(width: 4),
           Text(
-            _loading ? '…' : _rank,
+            _loading ? '…' : StudentRankUtils.localizedRankName(AppLocalizations.of(context), _level),
             style: GoogleFonts.cairo(
               fontSize: 13,
               fontWeight: FontWeight.w700,

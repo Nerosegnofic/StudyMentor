@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Study Mentor';
+  String get appTitle => 'StudyMentor';
 
   @override
   String get languageSettingTitle => 'Language';
@@ -2090,6 +2090,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get motivationDefault => 'Keep learning — you\'re doing amazing! 🚀';
+
+  @override
+  String get rankLevel1 => 'Seedling';
+
+  @override
+  String get rankLevel2 => 'Sprout';
+
+  @override
+  String get rankLevel3 => 'Explorer';
+
+  @override
+  String get rankLevel4 => 'Curious Mind';
+
+  @override
+  String get rankLevel5 => 'Scholar';
+
+  @override
+  String get rankLevel6 => 'Achiever';
+
+  @override
+  String get rankLevel7 => 'Champion';
+
+  @override
+  String get rankLevel8 => 'Sage';
+
+  @override
+  String get rankLevel9 => 'Luminary';
+
+  @override
+  String get rankLevel10 => 'Master';
 
   @override
   String get hourUnitLabel => 'hr';

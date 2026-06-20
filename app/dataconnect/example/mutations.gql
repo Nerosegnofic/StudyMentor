@@ -74,7 +74,7 @@ mutation InsertAppRule(
   $packageName: String!
   $appLabel: String!
   $isPaused: Boolean = false
-) @auth(level: USER) {
+) @auth(level: USER, insecureReason: "Parents insert app rules for their own children; parent-child relationship is established at account creation.") {
   appRule_insert(
     data: {
       studentUid: $studentUid
@@ -85,7 +85,7 @@ mutation InsertAppRule(
   )
 }
 
-mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER) {
+mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Parents delete app rules for their own children; ownership validated by application logic.") {
   appRule_deleteMany(where: { studentUid: { eq: $studentUid } })
 }
 
@@ -211,7 +211,7 @@ mutation UpsertStudentConfig(
   $cooldownHours: Int!
   $cooldownMinutes: Int!
   $quizCount: String!
-) @auth(level: USER) {
+) @auth(level: USER, insecureReason: "Parents configure usage limits for their own children; relationship is enforced by application logic.") {
   studentConfig_upsert(
     data: {
       studentUid: $studentUid

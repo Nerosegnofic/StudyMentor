@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../services/permission_service.dart';
 import '../../../../l10n/app_localizations.dart';
 
-// ── Study Mentor design tokens (Parent app: administrative & clean) ───────────
+// ── StudyMentor design tokens (Parent app: administrative & clean) ───────────
 const Color _kBackground = Color(0xFFF5F7FA); // Soft Cloud
 const Color _kBlue = Color(0xFF2196F3); // Secondary Blue
 const Color _kInk = Color(0xFF1F2937); // Title ink

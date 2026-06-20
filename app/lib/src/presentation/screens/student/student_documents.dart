@@ -311,25 +311,6 @@ class _StudentDocumentUploadScreenState
                 ),
               ),
 
-              const SizedBox(height: 12),
-
-              // Error banner if previous attempt failed
-              if (state is DocumentUploadError)
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEBEE),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFEA4335)),
-                  ),
-                  child: Text(
-                    localizeError(state.message, AppLocalizations.of(context)),
-                    style: GoogleFonts.cairo(
-                      color: const Color(0xFFB71C1C),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
             ],
           ),
         );
