@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "architect-review": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/architect-review/SKILL.md",
+      "computedHash": "8f4c53993a32f9e757e60172fc2f13a9baa93d7a4ae5e9c1c3a2fa2a63d047f5"
+    },
     "developing-genkit-dart": {
       "source": "firebase/agent-skills",
       "sourceType": "github",
