@@ -15,10 +15,6 @@ const String kQuizSubjectStillPreparingError =
 class QuizBloc extends Bloc<QuizEvent, QuizState> {
   final AiEngineRepository repository;
 
-  /// The request used for the current quiz, replayed after submit to pre-warm
-  /// the next one (same subject / count / grade / context).
-  GenerateQuizRequest? _lastRequest;
-
   QuizBloc({required this.repository}) : super(QuizInitial()) {
     on<GenerateQuizEvent>(_onGenerate);
     on<AnswerQuestionEvent>(_onAnswer);
@@ -42,7 +38,6 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       quizContext:
           event.quizContext == QuizContext.forced ? 'FORCED' : 'VOLUNTARY',
     );
-    _lastRequest = request;
     try {
       // Transparently fast when a pre-warmed session exists (quiz_source="CACHED").
       final response = await repository.generateQuiz(request);
@@ -83,13 +78,11 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
         answers: current.currentAnswers,
       ));
 
-      // Pre-warm the next quiz for the same subject/params so the next start is
-      // instant. Fire-and-forget — the engine creates an unsubmitted session that
-      // a later /generate returns as CACHED. Never blocks or surfaces an error.
-      final lastRequest = _lastRequest;
-      if (lastRequest != null) {
-        unawaited(repository.prewarmNextQuiz(lastRequest));
-      }
+      // Pre-warm a cached quiz for EVERY active subject so the next start is
+      // instant for any subject (this refills the just-consumed one too). The engine
+      // is idempotent, so already-warm subjects are skipped. Fire-and-forget — never
+      // blocks or surfaces an error.
+      unawaited(repository.warmAllQuizzes());
     } catch (e) {
       emit(QuizError(e.toString()));
     }

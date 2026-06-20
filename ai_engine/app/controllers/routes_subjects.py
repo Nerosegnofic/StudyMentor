@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -89,6 +89,7 @@ class _SubjectSelectionBody(BaseModel):
 async def set_subject_selection_endpoint(
     subject_id: int,
     body: _SubjectSelectionBody,
+    background_tasks: BackgroundTasks,
     firebase_uid: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -100,12 +101,29 @@ async def set_subject_selection_endpoint(
     specific subjects alike (the flag is per-student, stored on StudentSubjectProfile).
     Re-selecting restores it. Uses the access check (not the quizzable check) so a
     currently-deselected subject is still reachable to turn back on.
+
+    On SELECT (is_selected=true) we pre-warm the subject's first quiz in the background:
+    a newly-added GLOBAL becomes quizzable immediately (its curriculum was ingested by the
+    admin long ago — no ingestion runs for this student), so without this the student's
+    first quiz on it would be a cold generation instead of CACHED. Warming only the
+    just-selected subject is enough: its id is known here. Deselect skips warming (the
+    subject is now excluded from quizzes). Best-effort and idempotent — the warm opens its
+    own session and never raises.
     """
     subject = get_accessible_subject(db, subject_id, body.student_uid)
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found.")
 
     set_subject_selection(db, body.student_uid, subject_id, body.is_selected)
+
+    if body.is_selected:
+        # Lazy import to avoid a circular import (the quiz layer imports repositories
+        # that would otherwise pull controllers in at module-load time).
+        from app.services.quiz.quiz_generation_service import warm_first_quiz_for_subject
+        background_tasks.add_task(
+            warm_first_quiz_for_subject, body.student_uid, subject_id
+        )
+
     return {"subject_id": subject_id, "is_selected": body.is_selected}
 
 

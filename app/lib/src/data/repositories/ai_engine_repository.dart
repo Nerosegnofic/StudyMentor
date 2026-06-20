@@ -200,7 +200,7 @@ class AiEngineRepository {
   ///
   /// Change this single constant when switching environments.
 
-  static const String defaultBaseUrl = 'http://192.168.100.2:8000';
+  static const String defaultBaseUrl = 'http://10.75.0.3:8000';
 
   /// Lazy singleton — created on first access, reused everywhere.
   static final AiEngineRepository instance = AiEngineRepository(
@@ -284,6 +284,31 @@ class AiEngineRepository {
       await generateQuiz(request);
     } catch (_) {
       // best-effort warming — ignore failures (rate limit, network, etc.)
+    }
+  }
+
+  /// `POST /quizzes/warm` — fire-and-forget pre-generation of a cached quiz for
+  /// EVERY active subject.
+  ///
+  /// Unlike [prewarmNextQuiz] (which warms only one subject via `/generate`), this
+  /// tells the engine to top up the cache for all of the student's active subjects,
+  /// so the next `generateQuiz` for ANY subject — voluntary or forced — returns
+  /// instantly as `quiz_source="CACHED"`. The engine is idempotent: subjects that
+  /// already have a cached quiz are skipped, so this is cheap once caches are full.
+  ///
+  /// Called right after a successful submit (refills the just-consumed subject) and
+  /// on app foreground / dashboard load (fills subjects that went cold via ingestion
+  /// while the app was closed). The response is discarded and any error is swallowed —
+  /// warming is best-effort and must never surface to the user.
+  Future<void> warmAllQuizzes() async {
+    try {
+      final headers = await _getJsonHeaders();
+      await _client.post(
+        Uri.parse('$baseUrl/api/v1/quizzes/warm'),
+        headers: headers,
+      );
+    } catch (_) {
+      // best-effort warming — ignore failures (network, auth refresh, etc.)
     }
   }
 
