@@ -97,7 +97,7 @@ class Settings(BaseSettings):
 
     # --- Skill Selection (Ordered Frontier + SRS) ---
     # Mastery probability needed to move a skill from the frontier into the mastered/SRS zone.
-    SKILL_UNLOCK_THRESHOLD: float = 0.70
+    SKILL_UNLOCK_THRESHOLD: float = 0.85
     # Grade → number of unmastered skills active in the frontier at once.
     SKILL_FRONTIER_WINDOW_BY_GRADE: dict = {
         1: 2, 2: 2, 3: 3, 4: 3, 5: 4, 6: 4,

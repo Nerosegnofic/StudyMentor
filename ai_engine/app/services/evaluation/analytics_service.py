@@ -74,7 +74,10 @@ def compute_mastery_trend(current_mastery: float, previous_mastery: float | None
     """
     if previous_mastery is None:
         return "stable"
-    delta = current_mastery - previous_mastery
+    # Round to tame float-subtraction noise so an exact ±0.02 delta lands on the
+    # band boundary as intended (e.g. 0.52 - 0.50 is 0.020000000000000018 in raw
+    # float, which would otherwise read as "improving").
+    delta = round(current_mastery - previous_mastery, 6)
     if delta > 0.02:
         return "improving"
     if delta < -0.02:

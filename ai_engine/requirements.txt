@@ -21,3 +21,8 @@ firebase-admin
 slowapi>=0.1.9      # Per-UID rate limiting on quiz generation endpoint
 tenacity>=8.2.0     # Exponential backoff retries on LLM generation calls
 apscheduler>=3.10.0 # Daily scheduled data retention purge
+
+# Testing dependencies
+pytest>=8.0.0       # Test runner
+pytest-cov>=5.0.0   # Coverage reporting (pytest --cov=app)
+httpx>=0.27.0       # Required by FastAPI's TestClient for API tests
