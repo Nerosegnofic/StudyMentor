@@ -225,7 +225,7 @@ class _NotificationItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 8, 12),
       decoration: BoxDecoration(
-        color: isRead ? Colors.white : const Color(0xFFF8FAFC),
+        color: isRead ? Colors.white : const Color(0xFFE8F5E9),
         border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
       ),
       child: Row(

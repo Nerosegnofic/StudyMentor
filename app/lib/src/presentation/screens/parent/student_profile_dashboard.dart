@@ -329,11 +329,11 @@ class _QuickStatsGrid extends StatelessWidget {
   final StudentModel student;
   const _QuickStatsGrid({required this.student});
 
-  String _formatDuration(Duration d) {
+  String _formatDuration(Duration d, AppLocalizations loc) {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
-    if (h > 0) return '${h}h ${m}m';
-    return '${m}m';
+    if (h > 0) return '$h${loc.hourUnitLabel} $m${loc.minuteUnitLabel}';
+    return '$m${loc.minuteUnitLabel}';
   }
 
   @override
@@ -367,7 +367,7 @@ class _QuickStatsGrid extends StatelessWidget {
                   child: _StatCard(
                     icon: Icons.schedule_rounded,
                     color: const Color(0xFF8B5CF6),
-                    value: v(report != null ? _formatDuration(report.totalStudyTime) : null),
+                    value: v(report != null ? _formatDuration(report.totalStudyTime, loc) : null),
                     label: loc.studyTimeLabel,
                     sublabel: loc.thisWeekSublabel,
                     isLoading: isLoading,

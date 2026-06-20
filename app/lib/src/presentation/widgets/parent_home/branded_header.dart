@@ -32,6 +32,7 @@ class _BrandedHeaderState extends State<BrandedHeader> {
 
   void _showNotificationsSheet(BuildContext context) {
     final bloc = context.read<NotificationsBloc>();
+    bloc.add(RefreshParentNotificationsRequested(widget.parentUid));
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -384,7 +385,7 @@ class _NotificationItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 8, 12),
       decoration: BoxDecoration(
-        color: isRead ? Colors.white : const Color(0xFFF8FAFC),
+        color: isRead ? Colors.white : const Color(0xFFE3F2FD),
         border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
       ),
       child: Row(

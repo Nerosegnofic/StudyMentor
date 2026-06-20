@@ -13,7 +13,7 @@ Map<MascotState, String> _mascotDefaultMessages(AppLocalizations loc) => {
   MascotState.celebration: loc.mascotCelebrationMessage,
 };
 
-/// Speech-bubble color theme per [MascotState] — follows the Study Mentor
+/// Speech-bubble color theme per [MascotState] — follows the StudyMentor
 /// design system: Primary Green for positive/growth states, Accent Amber
 /// for gentle caution (sad), Secondary Blue for informational (thinking).
 class _BubbleTheme {
@@ -75,7 +75,7 @@ class MascotWithBubble extends StatelessWidget {
     super.key,
     required this.state,
     this.message,
-    this.mascotSize = 72,
+    this.mascotSize = 96,
     this.side = MascotBubbleSide.left,
     this.showLoadingSpinner = false,
   });
@@ -84,6 +84,15 @@ class MascotWithBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = _kBubbleThemes[state] ?? _greenTheme;
     final text = message ?? _mascotDefaultMessages(AppLocalizations.of(context))[state] ?? '';
+
+    // In RTL layouts Flutter reverses the Row visually (mascot ends up on the
+    // right), so flip the sharp corner to match the mascot's new position.
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final effectiveSide = isRtl
+        ? (side == MascotBubbleSide.left
+            ? MascotBubbleSide.right
+            : MascotBubbleSide.left)
+        : side;
 
     final mascot = !showLoadingSpinner
         ? MascotWidget(state: state, size: mascotSize)
@@ -120,7 +129,7 @@ class MascotWithBubble extends StatelessWidget {
           color: theme.background,
           // Sharp corner on the side facing the mascot mimics a speech-
           // bubble tail without needing a custom painter.
-          borderRadius: side == MascotBubbleSide.left
+          borderRadius: effectiveSide == MascotBubbleSide.left
               ? const BorderRadius.only(
                   topRight: Radius.circular(16),
                   bottomLeft: Radius.circular(16),

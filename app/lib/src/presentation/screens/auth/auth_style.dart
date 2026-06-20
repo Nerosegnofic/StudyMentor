@@ -2,7 +2,7 @@
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../l10n/app_localizations.dart';
 
-// ── Study Mentor shared auth style (pre-role brand: Primary Green) ────────────
+// ── StudyMentor shared auth style (pre-role brand: Primary Green) ────────────
 //
 // Login / Register / Forgot Password / Confirm Email are shown before the app
 // knows whether the user is a parent or a student, so they share one neutral
@@ -13,7 +13,7 @@ const Color kAuthGreenDark = Color(0xFF43A047); // gradient top
 const Color kAuthInk = Color(0xFF1F2937); // title ink
 const Color kAuthRed = Color(0xFFEF5350); // error / destructive
 
-/// Flat green brand header with a logo badge + "Study Mentor" wordmark.
+/// Flat green brand header with a logo badge + "StudyMentor" wordmark.
 ///
 /// When the keyboard opens it collapses with a "slide & shrink" animation: the
 /// logo glides from center-top to the left, the wordmark scales down and slides

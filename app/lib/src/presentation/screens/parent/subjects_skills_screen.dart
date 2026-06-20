@@ -753,7 +753,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
                               elevation: 0,
                             ),
                             child: Text(
-                              "Add Selected (${selectedIds.length})",
+                              AppLocalizations.of(context).addSelectedCountButton(selectedIds.length),
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

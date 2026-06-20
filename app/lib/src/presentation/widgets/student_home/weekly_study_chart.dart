@@ -47,7 +47,7 @@ class WeeklyStudyChart extends StatelessWidget {
                 ),
               ),
               Text(
-                loc.totalSuffixLabel(_formatTotal(total)),
+                loc.totalSuffixLabel(_formatTotal(total, loc)),
                 style: GoogleFonts.cairo(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -103,12 +103,14 @@ class WeeklyStudyChart extends StatelessWidget {
     );
   }
 
-  String _formatTotal(int minutes) {
-    if (minutes <= 0) return '0m';
-    if (minutes < 60) return '${minutes}m';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return m > 0 ? '${h}h ${m}m' : '${h}h';
+  String _formatTotal(int minutes, AppLocalizations loc) {
+    final h = loc.hourUnitLabel;
+    final m = loc.minuteUnitLabel;
+    if (minutes <= 0) return '0$m';
+    if (minutes < 60) return '$minutes$m';
+    final hrs = minutes ~/ 60;
+    final rem = minutes % 60;
+    return rem > 0 ? '$hrs$h $rem$m' : '$hrs$h';
   }
 }
 
@@ -162,11 +164,11 @@ class _BarsPainter extends CustomPainter {
     }
   }
 
-  static String _formatMinutes(int minutes) {
+  String _formatMinutes(int minutes) {
     if (minutes >= 60) {
       final h = minutes ~/ 60;
       final m = minutes % 60;
-      return m == 0 ? '${h}h' : '${h}h${m}m';
+      return m == 0 ? '${h}h' : '${h}h ${m}m';
     }
     return '${minutes}m';
   }

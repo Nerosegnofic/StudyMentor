@@ -13,7 +13,7 @@ import '../../../../../l10n/app_localizations.dart';
 import '../../../utils/error_localizer.dart';
 
 // ---------------------------------------------------------------------------
-// Study Mentor design-system tokens (Student app)
+// StudyMentor design-system tokens (Student app)
 // ---------------------------------------------------------------------------
 // File-local, mirroring the convention used in student_quiz.dart.
 const _kBg = Color(0xFFF5F7FA); // Soft Cloud scaffold

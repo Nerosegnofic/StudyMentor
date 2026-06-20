@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/constants/gamification_levels.dart';
+import '../../../utils/student_rank_utils.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// White card showing progress from the current RankName toward the next one,
@@ -63,7 +64,7 @@ class RankProgressCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      currentModel.levelName,
+                      StudentRankUtils.localizedRankName(loc, currentLevel),
                       style: GoogleFonts.cairo(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -71,7 +72,7 @@ class RankProgressCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      isMax ? loc.topRankLabel : loc.nextRankLabel(nextModel!.levelName),
+                      isMax ? loc.topRankLabel : loc.nextRankLabel(StudentRankUtils.localizedRankName(loc, currentLevel + 1)),
                       style: GoogleFonts.cairo(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,

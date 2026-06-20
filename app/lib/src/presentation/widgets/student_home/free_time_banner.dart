@@ -32,9 +32,8 @@ class FreeTimeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final earned = earnedSeconds < 0 ? 0 : earnedSeconds;
     final hasEarned = earned >= 60;
-    final formatted = _formatMinutes(earned);
-
     final loc = AppLocalizations.of(context);
+    final formatted = _formatMinutes(earned, loc);
     final String headline;
     final String subtitle;
     if (isLocked) {
@@ -108,13 +107,14 @@ class FreeTimeBanner extends StatelessWidget {
     );
   }
 
-  /// Whole-minute formatting: 0 → "0 min", 65*60 → "1h 5m".
-  String _formatMinutes(int seconds) {
+  String _formatMinutes(int seconds, AppLocalizations loc) {
+    final min = loc.minuteUnitLabel;
+    final hr = loc.hourUnitLabel;
     final m = seconds ~/ 60;
-    if (m <= 0) return '0 min';
-    if (m < 60) return '$m min';
+    if (m <= 0) return '0 $min';
+    if (m < 60) return '$m $min';
     final h = m ~/ 60;
     final rem = m % 60;
-    return rem > 0 ? '${h}h ${rem}m' : '${h}h';
+    return rem > 0 ? '$h$hr $rem$min' : '$h$hr';
   }
 }

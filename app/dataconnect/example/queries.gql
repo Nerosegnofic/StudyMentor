@@ -1,4 +1,4 @@
-query GetUserByUid($uid: String!) @auth(level: USER) {
+query GetUserByUid($uid: String!) @auth(level: USER, insecureReason: "Users look up their own profile or parents look up their children's user records; access scoped by application logic.") {
   user(key: { uid: $uid }) {
     uid
     email
@@ -9,7 +9,7 @@ query GetUserByUid($uid: String!) @auth(level: USER) {
   }
 }
 
-query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
+query GetStudentsByParent($parentUid: String!) @auth(level: USER, insecureReason: "Parents fetch their own children; parentUid is validated against the caller's identity at the application layer.") {
   students(where: { parent: { uid: { eq: $parentUid } } }) {
     uid
     user {
@@ -24,7 +24,7 @@ query GetStudentsByParent($parentUid: String!) @auth(level: USER) {
   }
 }
 
-query GetStudentWithParent($uid: String!) @auth(level: USER) {
+query GetStudentWithParent($uid: String!) @auth(level: USER, insecureReason: "Used to verify the parent-student relationship; students access their own parent info or parents verify their own children.") {
   student(key: { uid: $uid }) {
     uid
     parent {
@@ -102,7 +102,7 @@ query GetStudentAvatar($studentUid: String!) @auth(level: USER, insecureReason: 
 
 # ── App rules ─────────────────────────────────────────────────────────────────
 
-query GetAppConfigForStudent($studentUid: String!) @auth(level: USER) {
+query GetAppConfigForStudent($studentUid: String!) @auth(level: USER, insecureReason: "Students read their own config; parents read their children's config. Ownership enforced by application logic.") {
   studentConfig(key: { studentUid: $studentUid }) {
     usageHours
     usageMinutes

@@ -1540,7 +1540,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                         height: 180,
                         width: double.infinity,
                         child: CustomPaint(
-                          painter: _DailyStudyPainter(report.dailyStudy),
+                          painter: _DailyStudyPainter(report.dailyStudy, hLabel: loc.hourUnitLabel, mLabel: loc.minuteUnitLabel),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1583,6 +1583,7 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
   }
 
   Widget _buildTimeOfDayCard(List<TimeOfDayPoint> points) {
+    final loc = AppLocalizations.of(context);
     final maxMinutes = points
         .map((p) => p.minutes)
         .fold<int>(0, (a, b) => a > b ? a : b);
@@ -1638,7 +1639,11 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                   SizedBox(
                     width: 52,
                     child: Text(
-                      _DailyStudyPainter._formatMinutes(p.minutes),
+                      p.minutes >= 60
+                          ? (p.minutes % 60 == 0
+                              ? '${p.minutes ~/ 60}${loc.hourUnitLabel}'
+                              : '${p.minutes ~/ 60}${loc.hourUnitLabel} ${p.minutes % 60}${loc.minuteUnitLabel}')
+                          : '${p.minutes}${loc.minuteUnitLabel}',
                       textAlign: TextAlign.right,
                       style: GoogleFonts.cairo(
                         fontSize: 12,
@@ -2049,7 +2054,9 @@ class _ActivityHeatmapPainter extends CustomPainter {
 
 class _DailyStudyPainter extends CustomPainter {
   final List<DailyStudyPoint> data;
-  _DailyStudyPainter(this.data);
+  final String hLabel;
+  final String mLabel;
+  _DailyStudyPainter(this.data, {required this.hLabel, required this.mLabel});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -2102,17 +2109,17 @@ class _DailyStudyPainter extends CustomPainter {
     }
   }
 
-  static String _formatMinutes(int minutes) {
+  String _formatMinutes(int minutes) {
     if (minutes >= 60) {
       final h = minutes ~/ 60;
       final m = minutes % 60;
-      return m == 0 ? '${h}h' : '${h}h ${m}m';
+      return m == 0 ? '$h$hLabel' : '$h$hLabel $m$mLabel';
     }
-    return '${minutes}m';
+    return '$minutes$mLabel';
   }
 
   @override
   bool shouldRepaint(covariant _DailyStudyPainter oldDelegate) {
-    return oldDelegate.data != data;
+    return oldDelegate.data != data || oldDelegate.hLabel != hLabel || oldDelegate.mLabel != mLabel;
   }
 }

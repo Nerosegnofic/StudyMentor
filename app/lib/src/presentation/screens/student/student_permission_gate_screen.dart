@@ -7,7 +7,7 @@ import '../../../services/device_admin_service.dart';
 import '../../../services/permission_service.dart';
 import '../../../../l10n/app_localizations.dart';
 
-// ── Study Mentor design tokens (Student app: gamified & immersive) ────────────
+// ── StudyMentor design tokens (Student app: gamified & immersive) ────────────
 const Color _kBackground = Color(0xFFF5F7FA); // Soft Cloud
 const Color _kGreen = Color(0xFF4CAF50); // Primary Green
 const Color _kAmber = Color(0xFFFFC107); // Accent Amber

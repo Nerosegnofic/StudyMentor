@@ -352,7 +352,7 @@ class RootPage extends StatelessWidget {
 }
 
 /// Branded loading/splash screen shown while auth state resolves — replaces
-/// the generic purple [CircularProgressIndicator] with the Study Mentor
+/// the generic purple [CircularProgressIndicator] with the StudyMentor
 /// mascot + wordmark, per the design system (Soft Cloud background, Cairo
 /// bold heading, dark ink text).
 class _BrandedSplash extends StatelessWidget {

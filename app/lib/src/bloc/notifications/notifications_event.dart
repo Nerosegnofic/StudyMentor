@@ -27,6 +27,26 @@ class LoadStudentNotificationsRequested extends NotificationsEvent {
   List<Object?> get props => [studentUid];
 }
 
+// ── Silent refresh (no loading state emitted — keeps current list visible) ──
+
+class RefreshParentNotificationsRequested extends NotificationsEvent {
+  final String parentUid;
+
+  const RefreshParentNotificationsRequested(this.parentUid);
+
+  @override
+  List<Object?> get props => [parentUid];
+}
+
+class RefreshStudentNotificationsRequested extends NotificationsEvent {
+  final String studentUid;
+
+  const RefreshStudentNotificationsRequested(this.studentUid);
+
+  @override
+  List<Object?> get props => [studentUid];
+}
+
 // ── Mark all read ────────────────────────────────────────────────────────────
 
 class MarkAllNotificationsReadRequested extends NotificationsEvent {

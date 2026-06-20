@@ -795,6 +795,7 @@ class _StudentScreenState extends State<StudentScreen>
 
   void _showNotificationsSheet(BuildContext context) {
     final bloc = context.read<NotificationsBloc>();
+    bloc.add(RefreshStudentNotificationsRequested(widget.uid));
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

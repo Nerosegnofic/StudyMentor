@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Study Mentor",
+  "appTitle": "StudyMentor",
   "@appTitle": {
     "description": "The application title"
   },
@@ -1093,6 +1093,17 @@
   "motivationLevel9": "You're a Luminary — you light the way for others! ✨",
   "motivationLevel10": "You're a Master — the pinnacle of excellence! 🌟",
   "motivationDefault": "Keep learning — you're doing amazing! 🚀",
+
+  "rankLevel1": "Seedling",
+  "rankLevel2": "Sprout",
+  "rankLevel3": "Explorer",
+  "rankLevel4": "Curious Mind",
+  "rankLevel5": "Scholar",
+  "rankLevel6": "Achiever",
+  "rankLevel7": "Champion",
+  "rankLevel8": "Sage",
+  "rankLevel9": "Luminary",
+  "rankLevel10": "Master",
 
   "hourUnitLabel": "hr",
   "hoursUnitLabel": "hrs",

@@ -164,8 +164,19 @@ class ParentHomeDashboardState extends State<ParentHomeDashboard> {
                       ),
                     ),
 
-                    // Component 3 — Child Cards or empty state
-                    if (state is StudentsLoaded && _realStudents.isEmpty)
+                    // Component 3 — Child Cards, loading, or empty state
+                    if (state is StudentsLoading || state is StudentsInitial)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 56),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF2196F3),
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (state is StudentsLoaded && _realStudents.isEmpty)
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 56),

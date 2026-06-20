@@ -18,7 +18,7 @@ import '../../../features/mascot/mascot_with_bubble.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
-// Study Mentor design-system tokens (Student app)
+// StudyMentor design-system tokens (Student app)
 // ---------------------------------------------------------------------------
 // Kept file-local to mirror the existing convention in subject_detail_screen.dart
 // (which defines `_kGreen` / `_kGreenLight`). Reference these instead of inline hex.
@@ -299,11 +299,7 @@ class _AutoStartPanel extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            MascotWithBubble(
-              state: MascotState.idle,
-              message: loc.readyToPracticeMessage,
-              mascotSize: 90,
-            ),
+            MascotWidget(state: MascotState.idle, size: 120),
             const SizedBox(height: 24),
             Text(
               loc.timeToPracticeTitle,

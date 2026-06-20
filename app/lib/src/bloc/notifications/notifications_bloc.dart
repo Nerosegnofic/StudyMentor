@@ -9,6 +9,8 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   NotificationsBloc({required this.repository}) : super(NotificationsInitial()) {
     on<LoadNotificationsRequested>(_onLoadNotifications);
     on<LoadStudentNotificationsRequested>(_onLoadStudentNotifications);
+    on<RefreshParentNotificationsRequested>(_onRefreshParentNotifications);
+    on<RefreshStudentNotificationsRequested>(_onRefreshStudentNotifications);
     on<MarkAllNotificationsReadRequested>(_onMarkAllParentRead);
     on<MarkAllStudentNotificationsReadRequested>(_onMarkAllStudentRead);
     on<ToggleParentNotificationReadRequested>(_onToggleParentRead);
@@ -40,6 +42,30 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
       emit(NotificationsLoaded(notifications));
     } catch (e) {
       emit(NotificationsError('Failed to load notifications: $e'));
+    }
+  }
+
+  Future<void> _onRefreshParentNotifications(
+    RefreshParentNotificationsRequested event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    try {
+      final notifications = await repository.getNotificationsForParent(event.parentUid);
+      emit(NotificationsLoaded(notifications));
+    } catch (_) {
+      // Keep current state on failure — silent refresh never clears the list.
+    }
+  }
+
+  Future<void> _onRefreshStudentNotifications(
+    RefreshStudentNotificationsRequested event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    try {
+      final notifications = await repository.getNotificationsForStudent(event.studentUid);
+      emit(NotificationsLoaded(notifications));
+    } catch (_) {
+      // Keep current state on failure — silent refresh never clears the list.
     }
   }
 
