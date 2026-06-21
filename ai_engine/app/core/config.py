@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     # - "embed-multilingual-light-v3.0" (Faster, smaller dimensions)
     COHERE_EMBEDDING_MODEL: str = "embed-multilingual-v3.0"
 
+    # Skill de-duplication (post-extraction safety net): cosine-similarity threshold
+    # above which two skills WITHIN THE SAME LESSON are treated as near-duplicates and
+    # merged into one. 0.88 is conservative (high precision — merges only true
+    # near-duplicates); lower it to merge more aggressively. Per-lesson only, so a skill
+    # that legitimately recurs across lessons is never collapsed.
+    SKILL_DEDUP_SIMILARITY_THRESHOLD: float = 0.88
+
     # --- Guardrail Configuration ---
     # File Upload
     MAX_UPLOAD_SIZE_MB: int = 50

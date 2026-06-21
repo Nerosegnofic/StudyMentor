@@ -11,6 +11,7 @@ from app.repositories.vector_repo import save_chunks_to_pgvector
 from app.repositories import save_skills_from_mastery_data, document_repo
 from app.services.rag.processors.objective_extractor import extract_all_objectives
 from app.services.rag.processors.mastery_refiner import extract_skills_with_llm, refine_mastery_points
+from app.services.rag.processors.skill_deduplicator import deduplicate_skills_within_lessons
 from app.services.rag.processors.language_detector import (
     detect_language,
     dominant_language,
@@ -118,6 +119,13 @@ def process_and_ingest_document(
                     refine_mastery_points(raw_mastery_data, cleaned_text)
                     if raw_mastery_data else []
                 )
+
+            # Deterministic safety net: merge near-duplicate skills WITHIN each lesson
+            # (embedding-based). Catches over-splitting the LLM consolidation prompt
+            # missed. Best-effort — returns the input unchanged if Cohere is unavailable.
+            # Runs before chunk skill-tagging and the DB save so both see the same set.
+            if final_mastery_data:
+                final_mastery_data = deduplicate_skills_within_lessons(final_mastery_data)
 
             # Persist the content-classified subject (a hint; used downstream alongside
             # the parent's label). Only the primary LLM path produces it.
