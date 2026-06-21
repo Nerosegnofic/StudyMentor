@@ -48,7 +48,9 @@ class Settings(BaseSettings):
     # above which two skills WITHIN THE SAME LESSON are treated as near-duplicates and
     # merged into one. 0.88 is conservative (high precision — merges only true
     # near-duplicates); lower it to merge more aggressively. Per-lesson only, so a skill
-    # that legitimately recurs across lessons is never collapsed.
+    # that legitimately recurs across lessons is never collapsed. The extraction prompt
+    # (which merges same-operation/different-representation skills) is the primary defense;
+    # this threshold is the deterministic backstop.
     SKILL_DEDUP_SIMILARITY_THRESHOLD: float = 0.88
 
     # Skill-count drift warning: log a [SkillDrift] warning when any single lesson

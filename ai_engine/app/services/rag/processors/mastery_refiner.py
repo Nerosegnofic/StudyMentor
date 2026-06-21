@@ -122,6 +122,11 @@ RULES:
    the SAME act on the SAME content (e.g. read X / write X / order X), MERGE them
    into one skill. When genuinely unsure whether two objectives are the same skill,
    PREFER TO MERGE. Do not turn each micro-step of one procedure into its own skill.
+   The METHOD or REPRESENTATION used to perform a skill is NOT itself a separate
+   skill: if two objectives perform the SAME operation on the SAME content and differ
+   only in tool/representation (e.g. with grids vs a place-value table, by experiment
+   vs by diagram, orally vs in writing), MERGE them. (A genuinely different OPERATION
+   — e.g. multiply vs divide — stays separate.)
 
    COVERAGE GUARDRAIL — do NOT over-merge. Keep objectives that test DIFFERENT
    competencies or skill strands as SEPARATE skills. A lesson may legitimately have
@@ -129,6 +134,19 @@ RULES:
    covering reading comprehension AND grammar AND spelling AND handwriting keeps all
    four as separate skills). Never drop a distinct skill just to reduce the count.
    There is NO fixed number of skills per lesson — let the content decide.
+   COMPLETENESS bias: when in doubt about whether something is a distinct skill, KEEP
+   IT. It is worse to omit a testable skill than to include a slightly narrow one.
+   In particular, these are SEPARATE skills, not to be folded away:
+     • a representation/modeling skill stated as its own objective (e.g. "representing
+       decimals with models", "drawing a diagram of the cell") is distinct from the
+       computation/identification skill it supports — keep both;
+     • closely-related operations the lesson lists separately (e.g. comparing AND
+       ordering, rounding AND a named strategy like the number-line/midpoint method)
+       are distinct skills — keep each.
+   (This does NOT contradict the CONSOLIDATION BIAS above: merge only when two
+   objectives are the SAME operation differing only in tool/representation; keep them
+   separate when they are different operations OR when a representation/strategy is
+   itself a stated learning objective.)
 
    This merge/keep rule is IDENTICAL for every subject. Examples (each shows BOTH a
    MERGE and a KEEP-SEPARATE case for the same subject):
@@ -187,6 +205,11 @@ RULES:
    the SAME act on the SAME content (e.g. read X / write X / order X), MERGE them
    into one skill. When genuinely unsure whether two objectives are the same skill,
    PREFER TO MERGE. Do not turn each micro-step of one procedure into its own skill.
+   The METHOD or REPRESENTATION used to perform a skill is NOT itself a separate
+   skill: if two objectives perform the SAME operation on the SAME content and differ
+   only in tool/representation (e.g. with grids vs a place-value table, by experiment
+   vs by diagram, orally vs in writing), MERGE them. (A genuinely different OPERATION
+   — e.g. multiply vs divide — stays separate.)
 
    COVERAGE GUARDRAIL — do NOT over-merge. Keep objectives that test DIFFERENT
    competencies or skill strands as SEPARATE skills. A lesson may legitimately have
@@ -194,6 +217,19 @@ RULES:
    covering reading comprehension AND grammar AND spelling AND handwriting keeps all
    four as separate skills). Never drop a distinct skill just to reduce the count.
    There is NO fixed number of skills per lesson — let the content decide.
+   COMPLETENESS bias: when in doubt about whether something is a distinct skill, KEEP
+   IT. It is worse to omit a testable skill than to include a slightly narrow one.
+   In particular, these are SEPARATE skills, not to be folded away:
+     • a representation/modeling skill stated as its own objective (e.g. "representing
+       decimals with models", "drawing a diagram of the cell") is distinct from the
+       computation/identification skill it supports — keep both;
+     • closely-related operations the lesson lists separately (e.g. comparing AND
+       ordering, rounding AND a named strategy like the number-line/midpoint method)
+       are distinct skills — keep each.
+   (This does NOT contradict the CONSOLIDATION BIAS above: merge only when two
+   objectives are the SAME operation differing only in tool/representation; keep them
+   separate when they are different operations OR when a representation/strategy is
+   itself a stated learning objective.)
 
    This merge/keep rule is IDENTICAL for every subject. Examples (each shows BOTH a
    MERGE and a KEEP-SEPARATE case for the same subject):
