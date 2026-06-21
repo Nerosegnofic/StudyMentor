@@ -52,9 +52,9 @@ random.seed(42)
 
 # ── Test students (email → profile) ──────────────────────────────────────────
 STUDENTS = [
-    {"email": "aa7482944@gmail.com", "label": "Ali", "profile": "high"},
-    {"email": "aa3771090@gmail.com", "label": "Sara", "profile": "struggling"},
-    {"email": "at.here99125@gmail.com", "label": "Omar", "profile": "inactive"},
+    {"email": "sabry109192@gmail.com", "label": "Ali", "profile": "high"},
+    {"email": "sabry108182@gmail.com", "label": "Sara", "profile": "struggling"},
+    {"email": "sabry108183@gmail.com", "label": "Omar", "profile": "inactive"},
 ]
 
 # ── Curriculum template (subject name, color, units → lessons → skills) ───────

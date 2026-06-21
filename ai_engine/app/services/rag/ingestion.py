@@ -194,13 +194,15 @@ def ingest_then_warm(
 ) -> None:
     """
     Background-task entrypoint: run the ingestion pipeline, then — only on success —
-    pre-warm the subject's first quiz.
+    pre-warm the just-ingested subject's first quiz.
 
     This keeps `process_and_ingest_document` single-responsibility (PDF → curriculum +
     skills): it is run untouched, and the "after a subject becomes ready" hook lives
-    here in the orchestrator. The warm runs in its OWN short-lived session (ingestion
-    closes its own session before returning) and is best-effort — `warm_first_quiz_for_subject`
-    never raises. If ingestion fails it raises, so the warm is naturally skipped.
+    here in the orchestrator. We warm ONLY the subject that just became ready — its
+    subject_id is known, so there's no need to fan out to other subjects (those are
+    already warm, or get warmed by their own trigger). `warm_first_quiz_for_subject`
+    opens/closes its own short-lived session (the request session is gone by now) and is
+    best-effort — it never raises. If ingestion fails it raises, so the warm is skipped.
     """
     process_and_ingest_document(
         document_id=document_id,
@@ -215,11 +217,7 @@ def ingest_then_warm(
     # would otherwise pull this module in at import time).
     from app.services.quiz.quiz_generation_service import warm_first_quiz_for_subject
 
-    db = SessionLocal()
-    try:
-        warm_first_quiz_for_subject(db, firebase_uid, subject_id)
-    finally:
-        db.close()
+    warm_first_quiz_for_subject(firebase_uid, subject_id)
 
 
 def delete_debug_artifacts(document_id: UUID) -> None:

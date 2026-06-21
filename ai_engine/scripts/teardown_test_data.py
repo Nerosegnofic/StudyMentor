@@ -34,9 +34,9 @@ from app.models.domain import (
 )
 
 EMAILS = [
-    "aa7482944@gmail.com",
-    "aa3771090@gmail.com",
-    "at.here99125@gmail.com",
+    "sabry109192@gmail.com",
+    "sabry108182@gmail.com",
+    "sabry108183@gmail.com",
 ]
 
 

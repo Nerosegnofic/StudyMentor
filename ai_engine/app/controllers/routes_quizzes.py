@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
@@ -13,7 +13,10 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.auth import get_current_user
 
-from app.services.quiz.quiz_generation_service import generate_quiz_for_student
+from app.services.quiz.quiz_generation_service import (
+    generate_quiz_for_student,
+    warm_all_subjects_for_student,
+)
 from app.services.quiz.quiz_submission_service import process_quiz_submission
 
 router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
@@ -61,3 +64,29 @@ async def submit_quiz(
         request=request,
         student_uid=student_uid,
     )
+
+
+@router.post("/warm", status_code=status.HTTP_202_ACCEPTED)
+async def warm_quizzes(
+    db: Session = Depends(get_db),
+    student_uid: str = Depends(get_current_user),
+):
+    """
+    Top up the quiz cache for EVERY active subject so any later /generate (voluntary or
+    forced, any subject) returns instantly as quiz_source="CACHED".
+
+    Side-effect-only — returns no quiz payload — and deliberately NOT under the per-UID
+    generate rate limit: warming may need to fill several subjects and must not consume the
+    student's generate budget. The client fires this and forgets (after a successful submit,
+    and on app foreground / dashboard load), so it never blocks the UI. Idempotent: subjects
+    that already have a cached quiz are skipped with a sub-millisecond existence check.
+
+    Like generation/submission, the warm is synchronous and I/O-heavy, so run it in the
+    threadpool to keep the event loop free.
+    """
+    await run_in_threadpool(
+        warm_all_subjects_for_student,
+        db=db,
+        student_uid=student_uid,
+    )
+    return {"status": "warming"}

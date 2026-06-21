@@ -288,6 +288,12 @@ class _StudentScreenState extends State<StudentScreen>
         !_checkingPermissions &&
         !_quizIsOpen) {
       _homeKey.currentState?.refresh();
+
+      // Top up the quiz cache for every active subject so the next start is
+      // instant for any subject — catches subjects that went cold via ingestion
+      // while the app was backgrounded. Fire-and-forget and idempotent (already-warm
+      // subjects are cheap no-ops server-side).
+      unawaited(_aiRepo.warmAllQuizzes());
     }
 
     // Sync on resume only when the native side flags a package change.
@@ -388,6 +394,13 @@ class _StudentScreenState extends State<StudentScreen>
         '(quiz dismissed for this cooldown).',
       );
     }
+
+    // Top up the quiz cache for every active subject on dashboard load so the
+    // first start is instant for any subject — including ones the student has
+    // never quizzed (warmed before first request rather than cold-starting).
+    // Fire-and-forget and idempotent server-side, so repeated _onShellReady calls
+    // are cheap no-ops once caches are full.
+    unawaited(_aiRepo.warmAllQuizzes());
   }
 
   void _openQuizOverlay() {

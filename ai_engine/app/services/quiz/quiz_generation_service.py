@@ -1,6 +1,9 @@
+from typing import Optional
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.database import SessionLocal
 from app.models.schemas import GenerateQuizRequest, GenerateQuizResponse, QuestionSchema
 from app.models.domain import Question
 from app.repositories import (
@@ -13,6 +16,7 @@ from app.repositories import (
     save_questions,
     get_recent_question_fingerprints,
     subject_has_skills,
+    get_active_subjects,
 )
 from app.services.quiz.subject_selector import get_priority_subject
 from app.services.quiz.builder import build_quiz_payload
@@ -368,22 +372,32 @@ def generate_quiz_for_student(
     )
 
 
-def warm_first_quiz_for_subject(db: Session, student_uid: str, subject_id: int) -> None:
+def warm_first_quiz_for_subject(
+    student_uid: str, subject_id: int, db: Optional[Session] = None
+) -> None:
     """
     Best-effort pre-generation of a subject's FIRST quiz, so the student's first
     "Practice" returns instantly as quiz_source="CACHED".
 
-    Invoked from the post-ingestion hook (`ingest_then_warm`) — the only place
-    guaranteed to run the moment a subject becomes quizzable, since the parent who
-    uploaded may have closed the app and the student app may not be open. Reuses
+    Invoked the moment a subject becomes quizzable — from the post-ingestion hook
+    (`ingest_then_warm`) and when a parent selects/adds a global subject — since the
+    parent acts on the child's behalf and the student app may not be open. Reuses
     `generate_quiz_for_student` so the warmed (unsubmitted) session is exactly what the
     cache-check path serves later; the VOLUNTARY/FORCED label is re-stamped when the
     student actually starts the quiz, so the placeholder context here is harmless.
 
-    Guards (and never raises — a warm failure must not affect ingestion or status):
+    Session: pass an existing `db` to reuse it (e.g. from `warm_all_subjects_for_student`,
+    which loops over subjects with a single session). Omit it and this opens/closes its
+    OWN short-lived SessionLocal — the form FastAPI background tasks need, since the
+    request-scoped session is already closed by the time the task runs.
+
+    Guards (and never raises — a warm failure must not affect ingestion, selection, or status):
       - only warm when skills exist (otherwise generation would 404/409 anyway),
       - skip if an active unsubmitted session already exists (idempotent, no duplicates).
     """
+    owns_session = db is None
+    if owns_session:
+        db = SessionLocal()
     try:
         if not subject_has_skills(db, subject_id):
             return
@@ -405,5 +419,28 @@ def warm_first_quiz_for_subject(db: Session, student_uid: str, subject_id: int) 
             flush=True,
         )
     except Exception as e:
-        # Best-effort: log and move on. Ingestion (and the 'ready' status) must stand.
+        # Best-effort: log and move on. Ingestion/selection (and the 'ready' status) must stand.
         print(f"[QuizWarm] Warm failed for subject_id={subject_id}: {e}", flush=True)
+    finally:
+        if owns_session:
+            db.close()
+
+
+def warm_all_subjects_for_student(db: Session, student_uid: str) -> None:
+    """
+    Ensure EVERY active subject for the student has a ready cached quiz, so any
+    subsequent generation (voluntary or forced, any subject) returns instantly as
+    quiz_source="CACHED".
+
+    "Warm all" is really "top up whatever caches are empty": warm_first_quiz_for_subject
+    is idempotent and does a no-LLM early return when an active session already exists, so
+    in steady state this is N indexed existence checks and zero LLM calls — only a subject
+    whose cache is empty (newly-ingested, or just-consumed-and-submitted) triggers a
+    generation. Sequential by design; the common case is at most one empty subject.
+
+    Best-effort and never raises: get_active_subjects scopes to the student's quizzable set
+    (selected globals + private-minus-deselected), and per-subject warming swallows its own
+    failures, so one bad subject won't stop the rest.
+    """
+    for subject in get_active_subjects(db, student_uid):
+        warm_first_quiz_for_subject(student_uid, subject.subject_id, db=db)
