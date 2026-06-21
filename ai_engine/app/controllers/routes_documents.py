@@ -70,10 +70,17 @@ async def upload_document(
     """
     file_content = await _read_validated_pdf(file)
 
-    # Reject an exact re-upload of the same file by this student (file-level dedup).
+    # Owner is the student the document is FOR. A parent uploads on a child's behalf, so
+    # the document, its subject, and its chunks must all belong to student_uid when
+    # provided; fall back to the uploader's own UID (a student uploading for themselves).
+    # Resolved up front so dedup is scoped per-CHILD — re-uploading the same file for a
+    # DIFFERENT child must be allowed, only a re-upload for the SAME child is a duplicate.
+    owner_uid = student_uid or firebase_uid
+
+    # Reject an exact re-upload of the same file for this student (file-level dedup).
     # Done up front so we never pay for a redundant parse/embedding pass.
     content_hash = hashlib.sha256(file_content).hexdigest()
-    existing_doc = document_repo.find_duplicate(db, firebase_uid, content_hash)
+    existing_doc = document_repo.find_duplicate(db, owner_uid, content_hash)
     if existing_doc:
         # If the document's subject was deleted (orphaned row from a failed cascade),
         # auto-clean the stale record and proceed with the fresh upload.
@@ -104,17 +111,15 @@ async def upload_document(
                 detail="This document has already been uploaded.",
             )
 
-    # Owner is the student the document is FOR. A parent uploads on a child's behalf,
-    # so the subject must belong to student_uid when provided; fall back to the
-    # uploader's own UID (a student uploading for themselves).
-    owner_uid = student_uid or firebase_uid
     subject = find_or_create_subject(db, subject_name, owner_uid)
     resolved_subject_id = subject.subject_id
 
     # Reject a second (different) upload for a subject whose first document is still
     # ingesting. Two concurrent ingestions for the same subject would race on the skill
     # save (save_skills_from_mastery_data); serializing at the door is the simplest fix.
-    if document_repo.has_processing_document(db, firebase_uid, resolved_subject_id):
+    # Scoped per-child via owner_uid so one child's in-flight ingest doesn't block a
+    # different child's upload for the same-named subject.
+    if document_repo.has_processing_document(db, owner_uid, resolved_subject_id):
         raise HTTPException(
             status_code=409,
             detail=(
@@ -130,7 +135,7 @@ async def upload_document(
     document_repo.create_document(
         db,
         document_id=document_id,
-        firebase_uid=firebase_uid,
+        firebase_uid=owner_uid,
         subject_id=resolved_subject_id,
         filename=file.filename,
         content_hash=content_hash,
@@ -157,7 +162,7 @@ async def upload_document(
     return DocumentUploadResponse(
         status="Processing started in background",
         document_id=document_id,
-        firebase_uid=firebase_uid,
+        firebase_uid=owner_uid,
     )
 
 
