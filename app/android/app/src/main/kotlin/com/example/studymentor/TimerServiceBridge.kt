@@ -51,6 +51,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
             val alertSecs     = intent.getIntExtra(UsageTimerService.EXTRA_THRESHOLD_ALERT, -1)
             val limitReached  = intent.getBooleanExtra("limit_reached", false)
             val monitoredInFg = intent.getBooleanExtra(UsageTimerService.EXTRA_MONITORED_IN_FG, false)
+            val unblocked     = intent.getBooleanExtra(UsageTimerService.EXTRA_UNBLOCKED, false)
 
             // Prefer the live bound service value; fall back to prefs using the
             // active UID so we always read the correct per-student key.
@@ -63,6 +64,9 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
             mainHandler.post {
                 if (limitReached) {
                     channel?.invokeMethod("onLimitReached", null)
+                }
+                if (unblocked) {
+                    channel?.invokeMethod("onUnblocked", null)
                 }
                 if (alertSecs >= 0) {
                     channel?.invokeMethod(

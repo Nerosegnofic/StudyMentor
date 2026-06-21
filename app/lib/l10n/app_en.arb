@@ -1148,25 +1148,25 @@
     }
   },
   "appsRestingTitle": "Apps are resting right now",
-  "earnedFreeTimeLockedSubtitle": "You've earned {time} of free time today. Finish your quiz to unlock more.",
+  "earnedFreeTimeLockedSubtitle": "You've banked {time} — it unlocks after cooldown.",
   "@earnedFreeTimeLockedSubtitle": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "finishQuizUnlockApps": "Finish your quiz to unlock your apps.",
-  "earnedFreeTimeUnlockedTitle": "You've earned {time} of free time today",
+  "finishQuizUnlockApps": "Complete a quiz to bank free time for after cooldown.",
+  "earnedFreeTimeUnlockedTitle": "You have {time} of free time left",
   "@earnedFreeTimeUnlockedTitle": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "appsUnlockedEnjoySubtitle": "Your apps are unlocked — enjoy your free time.",
+  "appsUnlockedEnjoySubtitle": "Complete more quizzes to earn extra time.",
   "appsUnlockedTitle": "Your apps are unlocked",
-  "enjoyFreeTimeSubtitle": "Enjoy your free time.",
+  "enjoyFreeTimeSubtitle": "Complete a quiz to earn more time.",
   "timeToRestTitle": "Time to rest",
   "screenTimeTitle": "Screen time",
-  "limitRestSummaryLabel": "Limit {limit}   ·   Rest {rest}",
+  "limitRestSummaryLabel": "Earn {limit} per quiz   ·   Rest {rest}",
   "@limitRestSummaryLabel": {
     "placeholders": {
       "limit": {"type": "String"},
@@ -1177,6 +1177,15 @@
   "secLeftLabel": "sec left",
   "restingLabel": "resting",
   "noTimeLimitMessage": "No time limit set — enjoy learning!",
+  "doQuizToUnlockTitle": "Complete a quiz to unlock your apps!",
+  "perQuizRewardSubtitle": "Each quiz earns you {time} of free time.",
+  "@perQuizRewardSubtitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "doQuizNowLabel": "Do a quiz!",
+  "rewardTimeZeroError": "Reward time must be at least 1 minute.",
   "questionsTodayLabel": "questions today",
   "noQuestionsYetMessage": "No questions yet today — let's start! 🌱",
   "topRankLabel": "Top rank",

@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="accessibility_service_description">StudyMentor monitors app usage to help students manage screen time</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_cooldown_title">Cooldown — apps locked</string>
+    <string name="notif_time_remaining">Time remaining</string>
+    <string name="notif_running">StudyMentor is running…</string>
+
+    <!-- Usage threshold alerts -->
+    <string name="notif_usage_5min_title">5 minutes left ⏳</string>
+    <string name="notif_usage_5min_body">You have 5 minutes of free time left.</string>
+    <string name="notif_usage_1min_title">1 minute left ⚠️</string>
+    <string name="notif_usage_1min_body">Only 1 minute of free time remaining.</string>
+    <string name="notif_usage_10sec_title">10 seconds left 🚨</string>
+    <string name="notif_usage_10sec_body">Your free time is almost up!</string>
+
+    <!-- Cooldown threshold alerts -->
+    <string name="notif_cooldown_5min_title">5 minutes until apps unlock ⏳</string>
+    <string name="notif_cooldown_5min_body">Your cooldown ends in 5 minutes — get ready to study!</string>
+    <string name="notif_cooldown_1min_title">1 minute until apps unlock ⚠️</string>
+    <string name="notif_cooldown_1min_body">Almost there — apps will unlock in 1 minute.</string>
+    <string name="notif_cooldown_10sec_title">Apps unlocking soon 🎉</string>
+    <string name="notif_cooldown_10sec_body">Your cooldown is ending in 10 seconds!</string>
 </resources>

@@ -3760,25 +3760,25 @@ abstract class AppLocalizations {
   /// No description provided for @earnedFreeTimeLockedSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve earned {time} of free time today. Finish your quiz to unlock more.'**
+  /// **'You\'ve banked {time} — it unlocks after cooldown.'**
   String earnedFreeTimeLockedSubtitle(String time);
 
   /// No description provided for @finishQuizUnlockApps.
   ///
   /// In en, this message translates to:
-  /// **'Finish your quiz to unlock your apps.'**
+  /// **'Complete a quiz to bank free time for after cooldown.'**
   String get finishQuizUnlockApps;
 
   /// No description provided for @earnedFreeTimeUnlockedTitle.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve earned {time} of free time today'**
+  /// **'You have {time} of free time left'**
   String earnedFreeTimeUnlockedTitle(String time);
 
   /// No description provided for @appsUnlockedEnjoySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Your apps are unlocked — enjoy your free time.'**
+  /// **'Complete more quizzes to earn extra time.'**
   String get appsUnlockedEnjoySubtitle;
 
   /// No description provided for @appsUnlockedTitle.
@@ -3790,7 +3790,7 @@ abstract class AppLocalizations {
   /// No description provided for @enjoyFreeTimeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enjoy your free time.'**
+  /// **'Complete a quiz to earn more time.'**
   String get enjoyFreeTimeSubtitle;
 
   /// No description provided for @timeToRestTitle.
@@ -3808,7 +3808,7 @@ abstract class AppLocalizations {
   /// No description provided for @limitRestSummaryLabel.
   ///
   /// In en, this message translates to:
-  /// **'Limit {limit}   ·   Rest {rest}'**
+  /// **'Earn {limit} per quiz   ·   Rest {rest}'**
   String limitRestSummaryLabel(String limit, String rest);
 
   /// No description provided for @minLeftLabel.
@@ -3834,6 +3834,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No time limit set — enjoy learning!'**
   String get noTimeLimitMessage;
+
+  /// No description provided for @doQuizToUnlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete a quiz to unlock your apps!'**
+  String get doQuizToUnlockTitle;
+
+  /// No description provided for @perQuizRewardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Each quiz earns you {time} of free time.'**
+  String perQuizRewardSubtitle(String time);
+
+  /// No description provided for @doQuizNowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Do a quiz!'**
+  String get doQuizNowLabel;
+
+  /// No description provided for @rewardTimeZeroError.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward time must be at least 1 minute.'**
+  String get rewardTimeZeroError;
 
   /// No description provided for @questionsTodayLabel.
   ///

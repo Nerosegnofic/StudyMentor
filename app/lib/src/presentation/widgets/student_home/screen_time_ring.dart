@@ -1,19 +1,22 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../../l10n/app_localizations.dart';
 
-/// A single circular "time ring" that unifies screen-time and cooldown.
+/// Circular ring showing the student's reward time state.
 ///
-/// • Normal — fills green→amber→red as monitored-app usage approaches the
-///   limit; center shows remaining time (minutes).
-/// • Cooldown (`MascotOverlayService.isBlocked`) — amber ring fills as the
-///   rest period elapses; center shows a bedtime icon + mm:ss countdown.
+/// Three modes:
+///   • **Earned** — green→amber→red ring depletes as reward time is used.
+///     Centre shows remaining minutes/seconds.
+///   • **Cooldown** — amber ring fills as the cooldown elapses.
+///     Centre shows bedtime icon + mm:ss countdown.
+///   • **No time** — grey ring (0 earned, not in cooldown).
+///     Centre prompts the student to complete a quiz.
 ///
-/// Reads live values from [MascotOverlayService]; the parent screen already
-/// rebuilds every second, which animates the countdown.
+/// The parent screen rebuilds every second (via its Timer), which drives
+/// the live countdown animations.
 class ScreenTimeRing extends StatelessWidget {
   final StudentConfigModel config;
 
@@ -22,86 +25,88 @@ class ScreenTimeRing extends StatelessWidget {
   static const Color _green = Color(0xFF4CAF50);
   static const Color _amber = Color(0xFFFFC107);
   static const Color _red = Color(0xFFEF5350);
+  static const Color _grey = Color(0xFFE2E8F0);
   static const Color _ink = Color(0xFF1F2937);
 
   @override
   Widget build(BuildContext context) {
     final svc = MascotOverlayService.instance;
-    final usageLimit = (config.usageHours * 3600) + (config.usageMinutes * 60);
-    final cooldownTotal =
-        (config.cooldownHours * 3600) + (config.cooldownMinutes * 60);
-
     final loc = AppLocalizations.of(context);
 
-    if (usageLimit <= 0) {
-      return _shell(child: _noLimit(loc));
-    }
+    final perQuizSecs = config.rewardPerQuizSeconds;
+    final cooldownTotal = config.cooldownSeconds;
 
-    final bool resting = svc.isBlocked;
-    final double fraction;
-    final Color color;
-    final String title;
+    final bool inCooldown = svc.isInCooldown;
+    final int earned = svc.earnedRewardSeconds;
+    final int used = svc.totalUsageSeconds;
 
-    if (resting) {
+    // ── Cooldown mode ──────────────────────────────────────────────────────────
+    if (inCooldown) {
       final remaining = svc.remainingSeconds.clamp(0, 1 << 31);
-      fraction = cooldownTotal > 0
+      final fraction = cooldownTotal > 0
           ? ((cooldownTotal - remaining) / cooldownTotal).clamp(0.0, 1.0)
           : 0.0;
-      color = _amber;
-      title = loc.timeToRestTitle;
-    } else {
-      final used = svc.totalUsageSeconds.clamp(0, usageLimit);
-      fraction = (used / usageLimit).clamp(0.0, 1.0);
-      color = fraction < 0.6 ? _green : (fraction < 0.85 ? _amber : _red);
-      title = loc.screenTimeTitle;
+      return _shell(
+        child: Column(
+          children: [
+            _title(loc.timeToRestTitle),
+            const SizedBox(height: 16),
+            _ring(
+              fraction: fraction,
+              color: _amber,
+              center: _restingCenter(loc, remaining),
+            ),
+            const SizedBox(height: 16),
+            _footer(loc, perQuizSecs, cooldownTotal),
+          ],
+        ),
+      );
     }
+
+    // ── No earned time (initial or post-cooldown with no quiz) ─────────────────
+    if (earned <= 0) {
+      return _shell(
+        child: Column(
+          children: [
+            _title(loc.screenTimeTitle),
+            const SizedBox(height: 16),
+            _ring(
+              fraction: 0.0,
+              color: _grey,
+              center: _noTimeCenter(loc),
+            ),
+            const SizedBox(height: 16),
+            _footer(loc, perQuizSecs, cooldownTotal),
+          ],
+        ),
+      );
+    }
+
+    // ── Active: counting down earned reward time ────────────────────────────────
+    final remaining = (earned - used).clamp(0, earned);
+    final fraction = (used / earned).clamp(0.0, 1.0);
+    final color = fraction < 0.6 ? _green : (fraction < 0.85 ? _amber : _red);
 
     return _shell(
       child: Column(
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              title,
-              style: GoogleFonts.cairo(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: _ink,
-              ),
-            ),
+          _title(loc.screenTimeTitle),
+          const SizedBox(height: 16),
+          _ring(
+            fraction: fraction,
+            color: color,
+            center: _usageCenter(loc, remaining, color),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: 150,
-            height: 150,
-            child: CustomPaint(
-              painter: _RingPainter(fraction: fraction, color: color),
-              child: Center(
-                child: resting
-                    ? _restingCenter(loc, svc.remainingSeconds, color)
-                    : _usageCenter(loc, usageLimit, svc.totalUsageSeconds, color),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            loc.limitRestSummaryLabel(
-              _dur(config.usageHours, config.usageMinutes),
-              _dur(config.cooldownHours, config.cooldownMinutes),
-            ),
-            style: GoogleFonts.cairo(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade500,
-            ),
-          ),
+          _footer(loc, perQuizSecs, cooldownTotal),
         ],
       ),
     );
   }
 
-  Widget _usageCenter(AppLocalizations loc, int limit, int used, Color color) {
-    final remaining = (limit - used).clamp(0, limit);
+  // ── Centre widgets ─────────────────────────────────────────────────────────
+
+  Widget _usageCenter(AppLocalizations loc, int remaining, Color color) {
     final String big;
     final String small;
     if (remaining >= 60) {
@@ -136,18 +141,18 @@ class ScreenTimeRing extends StatelessWidget {
     );
   }
 
-  Widget _restingCenter(AppLocalizations loc, int remainingSeconds, Color color) {
+  Widget _restingCenter(AppLocalizations loc, int remainingSeconds) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.bedtime_rounded, color: color, size: 24),
+        Icon(Icons.bedtime_rounded, color: _amber, size: 24),
         const SizedBox(height: 4),
         Text(
           _mmss(remainingSeconds),
           style: GoogleFonts.cairo(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: color,
+            color: _amber,
             height: 1.0,
           ),
         ),
@@ -164,67 +169,85 @@ class ScreenTimeRing extends StatelessWidget {
     );
   }
 
-  Widget _shell({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+  Widget _noTimeCenter(AppLocalizations loc) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.quiz_rounded, color: Colors.grey.shade400, size: 28),
+        const SizedBox(height: 6),
+        Text(
+          loc.doQuizNowLabel,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.cairo(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade500,
+            height: 1.2,
           ),
-        ],
-      ),
-      child: child,
+        ),
+      ],
     );
   }
 
-  Widget _noLimit(AppLocalizations loc) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          loc.screenTimeTitle,
+  // ── Layout helpers ─────────────────────────────────────────────────────────
+
+  Widget _title(String text) => Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
           style: GoogleFonts.cairo(
             fontSize: 16,
             fontWeight: FontWeight.w800,
             color: _ink,
           ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _green.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.all_inclusive_rounded,
-                  color: _green, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                loc.noTimeLimitMessage,
-                style: GoogleFonts.cairo(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade600,
-                ),
-              ),
+      );
+
+  Widget _ring({
+    required double fraction,
+    required Color color,
+    required Widget center,
+  }) =>
+      SizedBox(
+        width: 150,
+        height: 150,
+        child: CustomPaint(
+          painter: _RingPainter(fraction: fraction, color: color),
+          child: Center(child: center),
+        ),
+      );
+
+  Widget _footer(AppLocalizations loc, int perQuizSecs, int cooldownSecs) =>
+      Text(
+        loc.limitRestSummaryLabel(
+          _dur(perQuizSecs ~/ 3600, (perQuizSecs % 3600) ~/ 60, loc),
+          _dur(cooldownSecs ~/ 3600, (cooldownSecs % 3600) ~/ 60, loc),
+        ),
+        style: GoogleFonts.cairo(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: Colors.grey.shade500,
+        ),
+      );
+
+  Widget _shell({required Widget child}) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-      ],
-    );
-  }
+        child: child,
+      );
+
+  // ── Formatting ─────────────────────────────────────────────────────────────
 
   String _mmss(int seconds) {
     final m = seconds ~/ 60;
@@ -232,11 +255,13 @@ class ScreenTimeRing extends StatelessWidget {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  String _dur(int hours, int minutes) {
-    if (hours == 0 && minutes == 0) return '0m';
-    if (hours == 0) return '${minutes}m';
-    if (minutes == 0) return '${hours}h';
-    return '${hours}h ${minutes}m';
+  String _dur(int hours, int minutes, AppLocalizations loc) {
+    final h = loc.hourUnitLabel;
+    final m = loc.minuteUnitLabel;
+    if (hours == 0 && minutes == 0) return '0$m';
+    if (hours == 0) return '$minutes$m';
+    if (minutes == 0) return '$hours$h';
+    return '$hours$h $minutes$m';
   }
 }
 

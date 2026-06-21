@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">يراقب StudyMentor استخدام التطبيقات لمساعدة الطلاب في إدارة وقت الشاشة</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_cooldown_title">فترة الراحة — التطبيقات مغلقة</string>
+    <string name="notif_time_remaining">الوقت المتبقي</string>
+    <string name="notif_running">StudyMentor يعمل…</string>
+
+    <!-- Usage threshold alerts -->
+    <string name="notif_usage_5min_title">بقي 5 دقائق ⏳</string>
+    <string name="notif_usage_5min_body">لديك 5 دقائق من الوقت الحر المتبقية.</string>
+    <string name="notif_usage_1min_title">بقيت دقيقة واحدة ⚠️</string>
+    <string name="notif_usage_1min_body">دقيقة واحدة فقط من الوقت الحر متبقية.</string>
+    <string name="notif_usage_10sec_title">بقي 10 ثوانٍ 🚨</string>
+    <string name="notif_usage_10sec_body">وقتك الحر على وشك الانتهاء!</string>
+
+    <!-- Cooldown threshold alerts -->
+    <string name="notif_cooldown_5min_title">5 دقائق حتى فتح التطبيقات ⏳</string>
+    <string name="notif_cooldown_5min_body">تنتهي فترة الراحة خلال 5 دقائق — استعد للدراسة!</string>
+    <string name="notif_cooldown_1min_title">دقيقة واحدة حتى فتح التطبيقات ⚠️</string>
+    <string name="notif_cooldown_1min_body">اقتربت — ستُفتح التطبيقات خلال دقيقة.</string>
+    <string name="notif_cooldown_10sec_title">التطبيقات على وشك الانفتاح 🎉</string>
+    <string name="notif_cooldown_10sec_body">فترة الراحة تنتهي خلال 10 ثوانٍ!</string>
+</resources>

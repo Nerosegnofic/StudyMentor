@@ -25,32 +25,28 @@ class MascotOverlayService {
   // ── Mirrored state ─────────────────────────────────────────────────────────
 
   bool _running = false;
-  bool _isBlocked = false;
+  // True while the native service is in cooldown countdown.
+  bool _isInCooldown = false;
   bool _overlayVisible = false;
   bool _usageNotificationVisible = false;
   bool _cooldownNotificationVisible = false;
   MascotState _mascotState = MascotState.idle;
 
   int _remainingCooldownSeconds = 0;
+  // Usage within the current reward window (counts up from 0, reported by native).
   int _totalUsageSeconds = 0;
 
-  // ── Cumulative daily free time (monitored-app usage across windows) ─────────
+  // ── Earned reward time ─────────────────────────────────────────────────────
   //
-  // [_totalUsageSeconds] is reset to 0 by the native service on every cooldown
-  // window end, so it only reflects the current window. To show how much free
-  // app-time the student has earned across the whole day, we accumulate the
-  // per-window deltas here and persist them (date-keyed) so they survive
-  // restarts and reset at local midnight.
-  int _dailyFreeTimeSeconds = 0;
-  int _lastWindowUsage = 0;
-  bool _usageBaselineSet = false;
-  String? _freeTimeDate;
+  // Accumulated seconds earned from quiz completions. Apps are accessible only
+  // when this is > 0 AND not in cooldown. Each quiz adds the configured
+  // per-quiz reward amount. Persisted per-student so it survives restarts.
+  //
+  // Key: 'reward_earned_<studentUid>'
+  int _earnedRewardSeconds = 0;
 
   // ── Student UID ────────────────────────────────────────────────────────────
 
-  /// The UID of the student whose timer is currently active.
-  /// Passed to the native timer service so it can detect account switches
-  /// and reset usage/cooldown state automatically.
   String? _studentUid;
 
   // ── Quiz trigger stream ────────────────────────────────────────────────────
@@ -72,9 +68,6 @@ class MascotOverlayService {
     _quizStream.add(null);
   }
 
-  /// Subscribes [onQuiz] to the quiz-trigger stream.
-  /// If a trigger fired before this call (cold-launch scenario), it is
-  /// delivered immediately via a microtask.
   StreamSubscription<void> listenForQuiz(VoidCallback onQuiz) {
     if (_pendingQuizTrigger) {
       _pendingQuizTrigger = false;
@@ -99,12 +92,6 @@ class MascotOverlayService {
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
-  /// Initialises the overlay service for [studentUid].
-  ///
-  /// [studentUid] is forwarded to the native timer service on every
-  /// [startTimerService] / [updateTimerConfig] call so that the service can
-  /// detect when a different student logs in and reset usage/cooldown state
-  /// automatically — preventing timer state from leaking across accounts.
   Future<void> init({
     required String studentUid,
     List<AppRuleModel> rules = const [],
@@ -114,14 +101,14 @@ class MascotOverlayService {
     _monitoredPackages = {for (var r in rules) if (!r.isPaused) r.packageName};
     _config = config;
 
-    // Save the paused packages to SharedPreferences so the native side can also see them independently
     if (_studentUid != null && _studentUid!.isNotEmpty) {
       try {
         final prefs = await SharedPreferences.getInstance();
-        final pausedPackages = rules.where((r) => r.isPaused).map((r) => r.packageName).toList();
+        final pausedPackages =
+            rules.where((r) => r.isPaused).map((r) => r.packageName).toList();
         await prefs.setStringList('paused_packages_$_studentUid', pausedPackages);
       } catch (e) {
-        debugPrint('[MascotOverlayService] Failed to save paused packages to prefs in init: $e');
+        debugPrint('[MascotOverlayService] Failed to save paused packages: $e');
       }
     }
 
@@ -133,7 +120,7 @@ class MascotOverlayService {
       'studentUid': _studentUid,
     });
 
-    await _loadDailyFreeTime();
+    await _loadEarnedReward();
     await _syncStateFromNative();
 
     final settings = await _getSettings();
@@ -144,8 +131,10 @@ class MascotOverlayService {
   void start() {
     if (_running) return;
     _running = true;
-    _startNativeTimerService();
-    debugPrint('[MascotOverlayService] Started (native timer service).');
+    if (_earnedRewardSeconds > 0 && !_isInCooldown) {
+      _startNativeTimerService();
+    }
+    debugPrint('[MascotOverlayService] Started.');
   }
 
   Future<void> stop() async {
@@ -155,12 +144,6 @@ class MascotOverlayService {
     await _hideCooldownNotification();
     await _hideOverlayNative();
 
-    // App restrictions must be tied to the active logged-in session: once
-    // this student logs out, lift any cooldown blocking and clear the
-    // monitored-app list so neither bleeds into whichever student (if any)
-    // logs in next. The per-student cooldown progress itself is left intact
-    // in native prefs so this student's cooldown resumes correctly if they
-    // log back in.
     await _resetAccessibilityState();
     try {
       await _accessibilityChannel.invokeMethod('setMonitoredApps', {
@@ -173,21 +156,16 @@ class MascotOverlayService {
       );
     }
 
-    _isBlocked = false;
+    _isInCooldown = false;
     _overlayVisible = false;
     _usageNotificationVisible = false;
     _cooldownNotificationVisible = false;
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
-    // Reset the daily free-time tracker so the next student loads their own
-    // (persisted) total rather than inheriting this session's in-memory state.
-    _dailyFreeTimeSeconds = 0;
-    _lastWindowUsage = 0;
-    _usageBaselineSet = false;
-    _freeTimeDate = null;
+    // Reset in-memory only — persisted value stays for next login.
+    _earnedRewardSeconds = 0;
     _studentUid = null;
     _quizDismissedForThisCooldown = false;
-    _quizShownForThisCooldown = false;
     _quizController?.close();
     debugPrint('[MascotOverlayService] Stopped.');
   }
@@ -201,14 +179,14 @@ class MascotOverlayService {
     _monitoredPackages = {for (var r in rules) if (!r.isPaused) r.packageName};
     _config = config;
 
-    // Save the paused packages to SharedPreferences so the native side can also see them independently
     if (_studentUid != null && _studentUid!.isNotEmpty) {
       try {
         final prefs = await SharedPreferences.getInstance();
-        final pausedPackages = rules.where((r) => r.isPaused).map((r) => r.packageName).toList();
+        final pausedPackages =
+            rules.where((r) => r.isPaused).map((r) => r.packageName).toList();
         await prefs.setStringList('paused_packages_$_studentUid', pausedPackages);
       } catch (e) {
-        debugPrint('[MascotOverlayService] Failed to save paused packages to prefs: $e');
+        debugPrint('[MascotOverlayService] Failed to save paused packages: $e');
       }
     }
 
@@ -219,11 +197,11 @@ class MascotOverlayService {
       });
     } on PlatformException catch (e) {
       debugPrint(
-        '[MascotOverlayService] updateMonitoredApps accessibility error: ${e.message}',
+        '[MascotOverlayService] updateMonitoredApps error: ${e.message}',
       );
     }
 
-    if (_running) {
+    if (_running && _earnedRewardSeconds > 0 && !_isInCooldown) {
       await _updateNativeTimerConfig();
     }
 
@@ -236,151 +214,123 @@ class MascotOverlayService {
   // ── Getters ────────────────────────────────────────────────────────────────
 
   bool get isRunning => _running;
-  bool get isBlocked => _isBlocked;
+
+  /// True when apps should be blocked — either in cooldown OR no earned reward
+  /// time remaining.
+  bool get isBlocked => _isInCooldown || _earnedRewardSeconds <= 0;
+
+  /// True specifically when the cooldown countdown is running.
+  bool get isInCooldown => _isInCooldown;
+
   bool get isOverlayVisible => _overlayVisible;
   bool get isUsageNotificationVisible => _usageNotificationVisible;
   bool get isCooldownNotificationVisible => _cooldownNotificationVisible;
   int get remainingSeconds => _remainingCooldownSeconds;
   int get totalUsageSeconds => _totalUsageSeconds;
 
-  /// Cumulative monitored-app usage for today, summed across cooldown windows
-  /// (unlike [totalUsageSeconds], which the native service resets each window).
-  int get dailyFreeTimeSeconds => _dailyFreeTimeSeconds;
+  /// Total reward seconds currently in the student's bank (earned but not yet
+  /// used up). Decreases as restricted apps are used; increases on quiz
+  /// completion.
+  int get earnedRewardSeconds => _earnedRewardSeconds;
+
+  /// Remaining reward time = what was banked minus what has been used so far
+  /// in the current window.
+  int get remainingRewardSeconds =>
+      (_earnedRewardSeconds - _totalUsageSeconds).clamp(0, 1 << 31);
+
   MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
 
-  // ── Daily free-time accumulator ────────────────────────────────────────────
+  // ── Earned reward persistence ──────────────────────────────────────────────
 
-  String _todayKey() {
-    final now = DateTime.now();
-    final m = now.month.toString().padLeft(2, '0');
-    final d = now.day.toString().padLeft(2, '0');
-    return '${now.year}-$m-$d';
-  }
+  String get _earnedRewardKey => 'reward_earned_${_studentUid ?? 'unknown'}';
 
-  String get _freeTimeKey => 'free_time_${_studentUid ?? 'unknown'}';
-  String get _freeTimeDateKey => 'free_time_date_${_studentUid ?? 'unknown'}';
-
-  Future<void> _loadDailyFreeTime() async {
-    final today = _todayKey();
+  Future<void> _loadEarnedReward() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final storedDate = prefs.getString(_freeTimeDateKey);
-      if (storedDate == today) {
-        _dailyFreeTimeSeconds = prefs.getInt(_freeTimeKey) ?? 0;
-      } else {
-        _dailyFreeTimeSeconds = 0;
-        await prefs.setString(_freeTimeDateKey, today);
-        await prefs.setInt(_freeTimeKey, 0);
-      }
+      _earnedRewardSeconds = prefs.getInt(_earnedRewardKey) ?? 0;
     } catch (e) {
-      debugPrint('[MascotOverlayService] load daily free time error: $e');
-      _dailyFreeTimeSeconds = 0;
+      debugPrint('[MascotOverlayService] load earned reward error: $e');
+      _earnedRewardSeconds = 0;
     }
-    _freeTimeDate = today;
+    debugPrint(
+      '[MascotOverlayService] Loaded earned reward: ${_earnedRewardSeconds}s',
+    );
   }
 
-  Future<void> _persistDailyFreeTime() async {
+  Future<void> _persistEarnedReward() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_freeTimeDateKey, _freeTimeDate ?? _todayKey());
-      await prefs.setInt(_freeTimeKey, _dailyFreeTimeSeconds);
-    } catch (_) {/* best-effort; recomputed from deltas next tick */}
+      await prefs.setInt(_earnedRewardKey, _earnedRewardSeconds);
+    } catch (_) {}
   }
 
-  /// Ingests a usage value reported by the native timer, accumulating the
-  /// cumulative daily total across cooldown-window resets.
-  void _applyUsage(int newUsage) {
-    // Midnight rollover → start a fresh day.
-    final today = _todayKey();
-    if (_freeTimeDate != today) {
-      _freeTimeDate = today;
-      _dailyFreeTimeSeconds = 0;
-      _persistDailyFreeTime();
-    }
+  // ── Quiz completion: add reward time ───────────────────────────────────────
 
-    // First reading after launch: align the tracker without accumulating, so a
-    // restart mid-window doesn't double-count usage already in the daily total.
-    if (!_usageBaselineSet) {
-      _usageBaselineSet = true;
-      _lastWindowUsage = newUsage;
-      _totalUsageSeconds = newUsage;
-      return;
-    }
+  /// Called when the student successfully completes a quiz. Adds [perQuizSeconds]
+  /// to their earned reward pool. If not currently in cooldown, the native timer
+  /// limit is updated so the new time is immediately available.
+  Future<void> addRewardTime(int perQuizSeconds) async {
+    if (perQuizSeconds <= 0) return;
 
-    if (newUsage > _lastWindowUsage) {
-      _dailyFreeTimeSeconds += newUsage - _lastWindowUsage;
-      _persistDailyFreeTime();
+    _earnedRewardSeconds += perQuizSeconds;
+    await _persistEarnedReward();
+
+    debugPrint(
+      '[MascotOverlayService] addRewardTime(${perQuizSeconds}s) → '
+      'total earned: ${_earnedRewardSeconds}s',
+    );
+
+    if (!_isInCooldown) {
+      // Unblock accessibility so apps become accessible.
+      try {
+        await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': false});
+      } catch (_) {}
+
+      // Update the native timer so it uses the new earned total as the limit.
+      if (_running) {
+        await _updateNativeTimerConfig();
+      } else {
+        // Timer wasn't started yet (0 earned at login) — start it now.
+        _running = true;
+        _startNativeTimerService();
+      }
     }
-    // A drop means the native window reset on cooldown end; those seconds were
-    // already counted, so realign without subtracting.
-    _lastWindowUsage = newUsage;
-    _totalUsageSeconds = newUsage;
+    // If in cooldown: just accumulate. When cooldown ends, _onUnblocked() will
+    // start the timer with the earned total.
   }
 
   // ── Quiz state ─────────────────────────────────────────────────────────────
 
-  /// True when the student explicitly dismissed the quiz (tapped away without
-  /// finishing). Persisted to native SharedPreferences so it survives process
-  /// death. Cleared when the cooldown ends or a fresh cooldown starts.
   bool _quizDismissedForThisCooldown = false;
 
-  /// True once the quiz overlay has been pushed onto the navigator at least
-  /// once during this cooldown. Persisted to native SharedPreferences.
-  ///
-  /// On cold relaunch we use this together with [_quizDismissedForThisCooldown]
-  /// to decide what to do:
-  ///   • dismissed=true              → suppress (student already said no)
-  ///   • dismissed=false, shown=true → quiz was visible when the app was
-  ///                                   killed — show it again
-  ///   • dismissed=false, shown=false → normal first trigger this cooldown
-  bool _quizShownForThisCooldown = false;
-
-  /// Called by [StudentScreen] immediately after pushing the QuizOverlayPage.
-  /// Records that the quiz was shown so a cold relaunch can re-show it if the
-  /// student had not yet dismissed it.
   void markQuizShown() {
-    _quizShownForThisCooldown = true;
-    // Fire-and-forget — failure here is non-critical.
     _timerServiceChannel.invokeMethod('markQuizShown').catchError((_) {});
     debugPrint('[MascotOverlayService] Quiz marked as shown.');
   }
 
-  /// Called by [StudentScreen] when the QuizOverlayPage pops without the
-  /// student completing it. Suppresses re-triggers for this cooldown cycle.
   void markQuizDismissed() {
     _quizDismissedForThisCooldown = true;
-    _quizShownForThisCooldown =
-        true; // implied — can only dismiss after showing
     _timerServiceChannel
         .invokeMethod('setQuizDismissed', {'dismissed': true})
         .catchError((_) {});
     debugPrint(
       '[MascotOverlayService] Quiz dismissed — suppressing re-triggers '
-      'until cooldown ends.',
+      'until next event.',
     );
   }
 
-  /// Called by [StudentScreen] when the QuizOverlayPage pops after the student
-  /// successfully completes the quiz. Clears both flags.
   void markQuizCompleted() {
     _quizDismissedForThisCooldown = false;
-    _quizShownForThisCooldown = false;
     _timerServiceChannel
         .invokeMethod('setQuizDismissed', {'dismissed': false})
         .catchError((_) {});
     debugPrint('[MascotOverlayService] Quiz completed.');
   }
 
-  /// True when the quiz should be shown:
-  ///   • The student is in a cooldown AND
-  ///   • The student has NOT explicitly dismissed the quiz this cooldown.
-  ///
-  /// Note: [_quizShownForThisCooldown] alone does NOT suppress the quiz —
-  /// only an explicit dismissal does. This ensures that if the app is killed
-  /// while the quiz is open (without the student tapping dismiss), the quiz
-  /// reappears on the next launch.
-  bool get shouldShowQuiz => _isBlocked && !_quizDismissedForThisCooldown;
+  /// True when the quiz overlay should be shown: apps are blocked AND the
+  /// student has not explicitly dismissed the quiz overlay this cycle.
+  bool get shouldShowQuiz => isBlocked && !_quizDismissedForThisCooldown;
 
   // ── Native timer service helpers ───────────────────────────────────────────
 
@@ -389,8 +339,8 @@ class MascotOverlayService {
       await _timerServiceChannel.invokeMethod('startTimerService', {
         'studentUid': _studentUid ?? '',
         'monitoredApps': _monitoredPackages.toList(),
-        'usageLimitSecs': _usageLimitSecondsFromConfig(),
-        'cooldownLimitSecs': _cooldownLimitSecondsFromConfig(),
+        'usageLimitSecs': _earnedRewardSeconds,
+        'cooldownLimitSecs': _config.cooldownSeconds,
       });
     } on PlatformException catch (e) {
       debugPrint(
@@ -412,8 +362,8 @@ class MascotOverlayService {
       await _timerServiceChannel.invokeMethod('updateTimerConfig', {
         'studentUid': _studentUid ?? '',
         'monitoredApps': _monitoredPackages.toList(),
-        'usageLimitSecs': _usageLimitSecondsFromConfig(),
-        'cooldownLimitSecs': _cooldownLimitSecondsFromConfig(),
+        'usageLimitSecs': _earnedRewardSeconds,
+        'cooldownLimitSecs': _config.cooldownSeconds,
       });
     } on PlatformException catch (e) {
       debugPrint(
@@ -424,76 +374,42 @@ class MascotOverlayService {
 
   Future<void> _syncStateFromNative() async {
     try {
-      // Pass our own UID so the native side returns THIS student's saved
-      // cooldown/usage state rather than whatever student was last active —
-      // the native "active student" pointer is only updated once
-      // startTimerService() runs (in start(), after this call).
       final state = await _timerServiceChannel.invokeMapMethod<String, dynamic>(
         'getTimerState',
         {'studentUid': _studentUid ?? ''},
       );
       if (state == null) return;
 
-      _applyUsage((state['totalUsage'] as int?) ?? 0);
-      _isBlocked = (state['isBlocked'] as bool?) ?? false;
+      _totalUsageSeconds = (state['totalUsage'] as int?) ?? 0;
+      _isInCooldown = (state['isBlocked'] as bool?) ?? false;
       _remainingCooldownSeconds = (state['cooldownRemaining'] as int?) ?? 0;
 
-      // ── Restore quiz state from native prefs ───────────────────────────────
-      // These survive process death so we know exactly what state the quiz was
-      // in when the app was last killed.
       _quizDismissedForThisCooldown =
           (state['quizDismissed'] as bool?) ?? false;
-      _quizShownForThisCooldown = (state['quizShown'] as bool?) ?? false;
 
-      // ── FIX: unconditionally sync the accessibility blocked state ──────────
-      //
-      // Previously this call was inside `if (_isBlocked)` and only ever sent
-      // setBlocked(true). That meant switching to an account that is NOT in
-      // cooldown left the accessibility service's isBlocked flag stale from
-      // the previous account's session, causing all restricted apps to remain
-      // blocked for the newly logged-in account.
-      //
-      // By moving the call outside the guard and passing _isBlocked directly,
-      // we always clear the stale flag when the incoming account is free, and
-      // still set it correctly when the incoming account is in cooldown.
+      // Determine effective blocked state: in cooldown OR no earned reward.
+      final effectivelyBlocked = isBlocked;
       await _accessibilityChannel.invokeMethod('setBlocked', {
-        'blocked': _isBlocked,
+        'blocked': effectivelyBlocked,
       });
 
-      if (_isBlocked) {
-        // ── Cold-launch quiz recovery ──────────────────────────────────────
-        //
-        // Decision table:
-        //   dismissed=true              → do NOT show (student said no)
-        //   dismissed=false, shown=true → SHOW (quiz was open when app died)
-        //   dismissed=false, shown=false → SHOW (normal first trigger)
-        //
-        // In all "SHOW" cases we fire the quiz trigger as normal.
-        if (!_quizDismissedForThisCooldown) {
-          debugPrint(
-            '[MascotOverlayService] Cold-launch recovery: blocked=true, '
-            'dismissed=false (shown=$_quizShownForThisCooldown) — '
-            'firing quiz trigger.',
-          );
-          if (_quizStream.hasListener) {
-            _quizStream.add(null);
-          } else {
-            _pendingQuizTrigger = true;
-          }
+      if (effectivelyBlocked && !_quizDismissedForThisCooldown) {
+        debugPrint(
+          '[MascotOverlayService] Cold-launch recovery: blocked=true, '
+          'dismissed=false — firing quiz trigger.',
+        );
+        if (_quizStream.hasListener) {
+          _quizStream.add(null);
         } else {
-          debugPrint(
-            '[MascotOverlayService] Cold-launch recovery: quiz already '
-            'dismissed for this cooldown — skipping trigger.',
-          );
+          _pendingQuizTrigger = true;
         }
       }
 
       debugPrint(
-        '[MascotOverlayService] Restored state from native — '
-        'usage: $_totalUsageSeconds s, blocked: $_isBlocked, '
-        'cooldown remaining: $_remainingCooldownSeconds s, '
-        'quizDismissed: $_quizDismissedForThisCooldown, '
-        'quizShown: $_quizShownForThisCooldown.',
+        '[MascotOverlayService] Restored state — '
+        'usage: ${_totalUsageSeconds}s, earnedReward: ${_earnedRewardSeconds}s, '
+        'inCooldown: $_isInCooldown, cooldownRem: ${_remainingCooldownSeconds}s, '
+        'quizDismissed: $_quizDismissedForThisCooldown.',
       );
     } on PlatformException catch (e) {
       debugPrint('[MascotOverlayService] getTimerState error: ${e.message}');
@@ -525,20 +441,14 @@ class MascotOverlayService {
     }
   }
 
-  int _usageLimitSecondsFromConfig() =>
-      (_config.usageHours * 3600) + (_config.usageMinutes * 60);
-
-  int _cooldownLimitSecondsFromConfig() =>
-      (_config.cooldownHours * 3600) + (_config.cooldownMinutes * 60);
-
   // ── Native → Dart callback: timer service ─────────────────────────────────
 
   Future<dynamic> _handleTimerServiceCallback(MethodCall call) async {
     switch (call.method) {
       case 'onTimerTick':
         final args = call.arguments as Map<dynamic, dynamic>;
-        _applyUsage((args['totalUsage'] as int?) ?? 0);
-        _isBlocked = (args['isBlocked'] as bool?) ?? false;
+        _totalUsageSeconds = (args['totalUsage'] as int?) ?? 0;
+        _isInCooldown = (args['isBlocked'] as bool?) ?? false;
         _remainingCooldownSeconds = (args['cooldownRemaining'] as int?) ?? 0;
         break;
 
@@ -564,7 +474,7 @@ class MascotOverlayService {
   Future<dynamic> _handleOverlayCallback(MethodCall call) async {
     switch (call.method) {
       case 'onOverlayDismissed':
-        if (_isBlocked) {
+        if (isBlocked) {
           _overlayVisible = false;
           debugPrint(
             '[MascotOverlayService] Overlay dismissed — '
@@ -574,7 +484,7 @@ class MascotOverlayService {
         break;
 
       case 'onMonitoredAppIntercepted':
-        if (_isBlocked) {
+        if (isBlocked) {
           debugPrint(
             '[MascotOverlayService] Monitored app intercepted — '
             'bringing Flutter quiz screen to foreground.',
@@ -594,24 +504,27 @@ class MascotOverlayService {
     }
   }
 
-  // ── Limit-reached handling ─────────────────────────────────────────────────
+  // ── Reward time depleted ───────────────────────────────────────────────────
 
   Future<void> _onLimitReached() async {
-    if (_isBlocked) {
+    if (_isInCooldown) {
       debugPrint(
-        '[MascotOverlayService] _onLimitReached called while already blocked — ignoring duplicate.',
+        '[MascotOverlayService] _onLimitReached called while already in cooldown — ignoring.',
       );
       return;
     }
 
-    _isBlocked = true;
-    _quizDismissedForThisCooldown =
-        false; // fresh cooldown — reset dismiss flag
-    _quizShownForThisCooldown = false; // fresh cooldown — quiz not yet shown
+    // Earned time is depleted; reset it.
+    _earnedRewardSeconds = 0;
+    _totalUsageSeconds = 0;
+    await _persistEarnedReward();
+
+    _isInCooldown = true;
+    _quizDismissedForThisCooldown = false;
     _mascotState = MascotState.idle;
     debugPrint(
-      '[MascotOverlayService] Limit reached — '
-      'total usage: ${_totalUsageSeconds}s. Starting cooldown.',
+      '[MascotOverlayService] Reward time depleted — entering cooldown '
+      '(${_config.cooldownSeconds}s).',
     );
 
     await _hideUsageNotification();
@@ -630,22 +543,41 @@ class MascotOverlayService {
     _quizStream.add(null);
   }
 
+  // ── Cooldown ended ─────────────────────────────────────────────────────────
+
   Future<void> _onUnblocked() async {
-    _isBlocked = false;
+    _isInCooldown = false;
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
     _mascotState = MascotState.idle;
-    _quizDismissedForThisCooldown = false; // cooldown over — always reset
-    _quizShownForThisCooldown = false; // cooldown over — always reset
+    _quizDismissedForThisCooldown = false;
 
-    await _hideUsageNotification();
     await _hideCooldownNotification();
     await _hideOverlayNative();
-    // _resetAccessibilityState() is safe here and only here: the cooldown has
-    // genuinely ended (confirmed by UsageTimerService), so clearing the blocked
-    // flag in both memory and AppPrefs is correct.
-    await _resetAccessibilityState();
-    debugPrint('[MascotOverlayService] Cooldown ended — student is free.');
+
+    if (_earnedRewardSeconds > 0) {
+      // Student earned time during cooldown → unblock and start timer.
+      await _resetAccessibilityState();
+      if (_running) {
+        await _updateNativeTimerConfig();
+      }
+      debugPrint(
+        '[MascotOverlayService] Cooldown ended — student has '
+        '${_earnedRewardSeconds}s earned, unlocking.',
+      );
+    } else {
+      // No earned time → stay blocked, show quiz.
+      debugPrint(
+        '[MascotOverlayService] Cooldown ended — no earned reward time. '
+        'Staying blocked; showing quiz.',
+      );
+      // Accessibility was already blocked; keep it that way.
+      // Fire quiz so student can earn time.
+      if (!_quizStream.hasListener) {
+        _pendingQuizTrigger = true;
+      }
+      _quizStream.add(null);
+    }
   }
 
   // ── Threshold alert firing ─────────────────────────────────────────────────
@@ -664,10 +596,6 @@ class MascotOverlayService {
           'remainingSeconds': remainingSeconds,
         });
       }
-      debugPrint(
-        '[MascotOverlayService] Threshold alert fired: '
-        '${remainingSeconds}s remaining (cooldown: $isCooldown).',
-      );
     } on PlatformException catch (e) {
       debugPrint('[MascotOverlayService] threshold alert error: ${e.message}');
     }
@@ -684,8 +612,6 @@ class MascotOverlayService {
     }
   }
 
-  // ── Usage notification helpers ─────────────────────────────────────────────
-
   Future<void> _hideUsageNotification() async {
     if (!_usageNotificationVisible) return;
     _usageNotificationVisible = false;
@@ -695,8 +621,6 @@ class MascotOverlayService {
       debugPrint('[MascotOverlayService] hideUsageTimer error: ${e.message}');
     }
   }
-
-  // ── Cooldown notification helpers ──────────────────────────────────────────
 
   Future<void> _hideCooldownNotification() async {
     if (!_cooldownNotificationVisible) return;
@@ -709,8 +633,6 @@ class MascotOverlayService {
       );
     }
   }
-
-  // ── Accessibility helpers ──────────────────────────────────────────────────
 
   Future<void> _resetAccessibilityState() async {
     try {

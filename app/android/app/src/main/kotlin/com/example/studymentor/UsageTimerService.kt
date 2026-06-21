@@ -8,12 +8,14 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
+import java.util.Locale
 
 /**
  * A foreground Service that owns the restricted-app usage timer and cooldown
@@ -115,6 +117,7 @@ class UsageTimerService : Service() {
         const val EXTRA_COOLDOWN_REM     = "cooldown_remaining"
         const val EXTRA_THRESHOLD_ALERT  = "threshold_alert_seconds"
         const val EXTRA_MONITORED_IN_FG  = "monitored_in_foreground"
+        const val EXTRA_UNBLOCKED        = "unblocked"
 
         // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -296,7 +299,7 @@ class UsageTimerService : Service() {
             }
 
         } else {
-            if (foreground != null && monitoredApps.contains(foreground)) {
+            if (foreground != null && monitoredApps.contains(foreground) && usageLimitSecs > 0) {
                 totalUsageSecs++
                 val remaining = (usageLimitSecs - totalUsageSecs).coerceAtLeast(0)
                 thresholdAlert = checkUsageThreshold(remaining)
@@ -354,14 +357,16 @@ class UsageTimerService : Service() {
         quizShownForCooldown     = false
         firedUsageThresholds.clear()
         firedCooldownThresholds.clear()
-        StudyMentorAccessibilityService.isBlocked = false
+        // Do NOT set StudyMentorAccessibilityService.isBlocked = false here.
+        // The Dart side decides whether to actually unblock based on earned
+        // reward seconds — it will call setBlocked(false) if appropriate.
 
         applicationContext
             .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, false).apply()
 
         persistState()
-        broadcastState(-1)
+        broadcastState(-1, unblocked = true)
         updateFgNotification()
     }
 
@@ -411,6 +416,22 @@ class UsageTimerService : Service() {
     // HIGH importance and sound=true (set by LocalNotificationService), so
     // these will vibrate and play the default sound — correct for alerts.
 
+    /**
+     * Returns a [Context] whose locale matches the language the user chose
+     * inside the Flutter app (persisted at `flutter.app_locale_code` in
+     * FlutterSharedPreferences). Falls back to English when the key is absent.
+     * Pass this context to [Context.getString] so notification text is shown
+     * in the correct language regardless of the device's system locale.
+     */
+    private fun localizedContext(): Context {
+        val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val langCode = flutterPrefs.getString("flutter.app_locale_code", "en") ?: "en"
+        val locale = Locale(langCode)
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        return createConfigurationContext(config)
+    }
+
     private fun mainActivityPendingIntent(requestCode: Int): PendingIntent {
         val intent = Intent(applicationContext, MainActivity::class.java).apply {
             addFlags(
@@ -426,27 +447,29 @@ class UsageTimerService : Service() {
     }
 
     private fun postUsageThresholdAlert(remainingSeconds: Int) {
-        data class AlertInfo(val notifId: Int, val title: String, val body: String)
+        data class AlertInfo(val notifId: Int, val titleRes: Int, val bodyRes: Int)
         val alert = when {
             remainingSeconds >= 270 -> AlertInfo(
                 ALERT_NOTIF_ID_5MIN,
-                "5 minutes left ⏳",
-                "You have 5 minutes before your usage limit is reached.",
+                R.string.notif_usage_5min_title,
+                R.string.notif_usage_5min_body,
             )
             remainingSeconds >= 45 -> AlertInfo(
                 ALERT_NOTIF_ID_1MIN,
-                "1 minute left ⚠️",
-                "Only 1 minute remaining before your usage is blocked.",
+                R.string.notif_usage_1min_title,
+                R.string.notif_usage_1min_body,
             )
             else -> AlertInfo(
                 ALERT_NOTIF_ID_10S,
-                "10 seconds left 🚨",
-                "Your usage limit is almost up!",
+                R.string.notif_usage_10sec_title,
+                R.string.notif_usage_10sec_body,
             )
         }
+        val ctx = localizedContext()
         val notification = NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle(alert.title).setContentText(alert.body)
+            .setContentTitle(ctx.getString(alert.titleRes))
+            .setContentText(ctx.getString(alert.bodyRes))
             .setOngoing(false).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -458,27 +481,29 @@ class UsageTimerService : Service() {
     }
 
     private fun postCooldownThresholdAlert(remainingSeconds: Int) {
-        data class AlertInfo(val notifId: Int, val title: String, val body: String)
+        data class AlertInfo(val notifId: Int, val titleRes: Int, val bodyRes: Int)
         val alert = when {
             remainingSeconds >= 270 -> AlertInfo(
                 COOLDOWN_ALERT_NOTIF_ID_5MIN,
-                "5 minutes until unlock ⏳",
-                "Your cooldown ends in 5 minutes — get ready to study!",
+                R.string.notif_cooldown_5min_title,
+                R.string.notif_cooldown_5min_body,
             )
             remainingSeconds >= 45 -> AlertInfo(
                 COOLDOWN_ALERT_NOTIF_ID_1MIN,
-                "1 minute until unlock ⚠️",
-                "Almost there — apps will unlock in 1 minute.",
+                R.string.notif_cooldown_1min_title,
+                R.string.notif_cooldown_1min_body,
             )
             else -> AlertInfo(
                 COOLDOWN_ALERT_NOTIF_ID_10S,
-                "Apps unlocking soon 🎉",
-                "Your cooldown is ending in 10 seconds!",
+                R.string.notif_cooldown_10sec_title,
+                R.string.notif_cooldown_10sec_body,
             )
         }
+        val ctx = localizedContext()
         val notification = NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(alert.title).setContentText(alert.body)
+            .setContentTitle(ctx.getString(alert.titleRes))
+            .setContentText(ctx.getString(alert.bodyRes))
             .setOngoing(false).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -512,6 +537,7 @@ class UsageTimerService : Service() {
         )
 
         val isIdle = !isBlocked && !monitoredInForeground
+        val ctx = localizedContext()
 
         val (title, body) = when {
             isBlocked -> {
@@ -519,17 +545,19 @@ class UsageTimerService : Service() {
                     val h = cooldownRemSecs / 3600
                     val m = (cooldownRemSecs % 3600) / 60
                     val s = cooldownRemSecs % 60
-                    "Cooldown — apps locked" to String.format("%02d:%02d:%02d", h, m, s)
-                } else "StudyMentor is running..." to ""
+                    ctx.getString(R.string.notif_cooldown_title) to
+                        String.format("%02d:%02d:%02d", h, m, s)
+                } else ctx.getString(R.string.notif_running) to ""
             }
             monitoredInForeground -> {
                 if (timerNotifEnabled) {
                     val rem = (usageLimitSecs - totalUsageSecs).coerceAtLeast(0)
                     val h = rem / 3600; val m = (rem % 3600) / 60; val s = rem % 60
-                    "Time remaining" to String.format("%02d:%02d:%02d", h, m, s)
-                } else "StudyMentor is running..." to ""
+                    ctx.getString(R.string.notif_time_remaining) to
+                        String.format("%02d:%02d:%02d", h, m, s)
+                } else ctx.getString(R.string.notif_running) to ""
             }
-            else -> "StudyMentor is running..." to ""
+            else -> ctx.getString(R.string.notif_running) to ""
         }
 
         return NotificationCompat.Builder(applicationContext, CHILD_TIMER_CHANNEL_ID)
@@ -632,6 +660,7 @@ class UsageTimerService : Service() {
         thresholdAlert: Int,
         limitReached: Boolean = false,
         monitoredInForeground: Boolean = false,
+        unblocked: Boolean = false,
     ) {
         val intent = Intent(BROADCAST_STATE_UPDATE).apply {
             putExtra(EXTRA_TOTAL_USAGE,     totalUsageSecs)
@@ -640,6 +669,7 @@ class UsageTimerService : Service() {
             putExtra(EXTRA_THRESHOLD_ALERT, thresholdAlert)
             putExtra(EXTRA_MONITORED_IN_FG, monitoredInForeground)
             putExtra("limit_reached",       limitReached)
+            putExtra(EXTRA_UNBLOCKED,       unblocked)
             setPackage(packageName)
         }
         sendBroadcast(intent)

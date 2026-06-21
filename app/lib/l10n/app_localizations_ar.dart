@@ -2177,26 +2177,26 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String earnedFreeTimeLockedSubtitle(String time) {
-    return 'لقد أقلت $time من الوقت الحر اليوم. أكمل اختبارك لفتح المزيد.';
+    return 'رصيدك $time — ينفتح بعد انتهاء وقت الراحة.';
   }
 
   @override
-  String get finishQuizUnlockApps => 'أكمل اختبارك لفتح تطبيقاتك.';
+  String get finishQuizUnlockApps => 'أكمل اختبارًا لتجميع وقت حر بعد الراحة.';
 
   @override
   String earnedFreeTimeUnlockedTitle(String time) {
-    return 'لقد أقلت $time من الوقت الحر اليوم';
+    return 'تبقى لديك $time من الوقت الحر';
   }
 
   @override
   String get appsUnlockedEnjoySubtitle =>
-      'تطبيقاتك مفتوحة — استمتع بوقتك الحر.';
+      'أكمل المزيد من الاختبارات لكسب وقت إضافي.';
 
   @override
   String get appsUnlockedTitle => 'تطبيقاتك مفتوحة';
 
   @override
-  String get enjoyFreeTimeSubtitle => 'استمتع بوقتك الحر.';
+  String get enjoyFreeTimeSubtitle => 'أكمل اختبارًا لكسب المزيد من الوقت.';
 
   @override
   String get timeToRestTitle => 'وقت الراحة';
@@ -2206,7 +2206,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String limitRestSummaryLabel(String limit, String rest) {
-    return 'الحد $limit   ·   الراحة $rest';
+    return 'اكسب $limit لكل اختبار   ·   الراحة $rest';
   }
 
   @override
@@ -2220,6 +2220,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noTimeLimitMessage => 'لا يوجد حد للوقت — استمتع بالتعلم!';
+
+  @override
+  String get doQuizToUnlockTitle => 'أكمل اختبارًا لفتح تطبيقاتك!';
+
+  @override
+  String perQuizRewardSubtitle(String time) {
+    return 'كل اختبار يمنحك $time من الوقت الحر.';
+  }
+
+  @override
+  String get doQuizNowLabel => 'ابدأ اختبارًا!';
+
+  @override
+  String get rewardTimeZeroError =>
+      'يجب أن يكون وقت المكافأة دقيقة واحدة على الأقل.';
 
   @override
   String get questionsTodayLabel => 'أسئلة اليوم';

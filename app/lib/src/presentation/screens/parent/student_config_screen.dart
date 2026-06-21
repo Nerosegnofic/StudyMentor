@@ -82,6 +82,17 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
   }
 
   Future<void> _save() async {
+    // Reward time must be > 0.
+    if (!_config.isValidRewardTime) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).rewardTimeZeroError),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
     final rulesToSave = _rules.map((r) => PendingAppRule(
       packageName: r.packageName,
       appLabel: r.appLabel,
@@ -216,6 +227,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         return _SetRewardTimeSheet(
           initialHours: _config.usageHours,
           initialMinutes: _config.usageMinutes,
+          allowZero: false,
         );
       },
     );
@@ -239,6 +251,7 @@ class _StudentConfigScreenState extends State<StudentConfigScreen> {
         initialHours: _config.cooldownHours,
         initialMinutes: _config.cooldownMinutes,
         title: AppLocalizations.of(context).setCooldownTimeTitle,
+        allowZero: true,
       ),
     );
     if (result != null && mounted) {
@@ -2182,11 +2195,15 @@ class _SetRewardTimeSheet extends StatefulWidget {
   final int initialHours;
   final int initialMinutes;
   final String? title;
+  /// When false (reward time), 0h 0m is rejected and the save button is disabled.
+  /// When true (cooldown time), 0h 0m is a valid "no cooldown" choice.
+  final bool allowZero;
 
   const _SetRewardTimeSheet({
     required this.initialHours,
     required this.initialMinutes,
     this.title,
+    this.allowZero = true,
   });
 
   @override
@@ -2370,42 +2387,65 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
                 ],
               ),
             ),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SizedBox(
+            Builder(builder: (context) {
+              final isZero = _hours == 0 && _minutes == 0;
+              final canSave = widget.allowZero || !isZero;
+              return Container(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop({'hours': _hours, 'minutes': _minutes});
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2196F3),
-                    shape: const StadiumBorder(),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    loc.saveTimeButton,
-                    style: GoogleFonts.cairo(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, -4),
                     ),
-                  ),
+                  ],
                 ),
-              ),
-            ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!widget.allowZero && isZero)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text(
+                          AppLocalizations.of(context).rewardTimeZeroError,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.cairo(
+                            color: Colors.red.shade700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: canSave
+                            ? () => Navigator.of(context)
+                                .pop({'hours': _hours, 'minutes': _minutes})
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2196F3),
+                          disabledBackgroundColor: const Color(0xFFBDBDBD),
+                          shape: const StadiumBorder(),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          loc.saveTimeButton,
+                          style: GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           ],
         ),
       ),

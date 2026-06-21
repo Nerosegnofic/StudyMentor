@@ -439,6 +439,12 @@ class _StudentScreenState extends State<StudentScreen>
           _quizIsOpen = false;
           if (completed == true) {
             MascotOverlayService.instance.markQuizCompleted();
+            // Grant the configured per-quiz reward time to the student.
+            final reward =
+                MascotOverlayService.instance.config.rewardPerQuizSeconds;
+            if (reward > 0) {
+              MascotOverlayService.instance.addRewardTime(reward);
+            }
           } else {
             MascotOverlayService.instance.markQuizDismissed();
           }
