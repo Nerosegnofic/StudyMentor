@@ -50,23 +50,37 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         #    A 40-char chunk like "### الدرس الثاني: المتغيرات" alone is too
         #    short for meaningful embedding. Merging it with the next chunk
         #    preserves context locality and improves retrieval quality.
+        #
+        #    BOUNDARY GUARD: never merge ACROSS a lesson/unit boundary. If the
+        #    incoming chunk is itself a lesson_header/unit_header, flush the
+        #    accumulator and start fresh — even when it's still under
+        #    MIN_CHUNK_SIZE. A tiny orphaned header chunk is the lesser evil vs.
+        #    a chunk straddling two lessons (which would mis-tag skill_names and
+        #    cross-contaminate retrieval). The signal is the content-derived
+        #    ROLE, not raw h1/h2 presence: real books have many non-boundary
+        #    h1/h2 headers ("# نشاط 2", "# ابدأ", "## الأهداف") that must NOT
+        #    trigger a flush, or every lesson would shatter into fragments.
         merged_chunks = []
         accumulator = None
         for chunk in all_sub_chunks:
             if accumulator is None:
                 accumulator = chunk
+                continue
+
+            is_boundary = detect_chunk_role(chunk.page_content) in ('lesson_header', 'unit_header')
+            combined_len = len(accumulator.page_content) + len(chunk.page_content)
+            if (not is_boundary
+                    and len(accumulator.page_content) < self.MIN_CHUNK_SIZE
+                    and combined_len <= 3000):
+                # Merge: combine text, keep metadata from the first chunk
+                accumulator.page_content = accumulator.page_content + "\n\n" + chunk.page_content
+                # Inherit any new header metadata from the merged chunk
+                for key in ('h1', 'h2', 'h3'):
+                    if key in chunk.metadata and key not in accumulator.metadata:
+                        accumulator.metadata[key] = chunk.metadata[key]
             else:
-                combined_len = len(accumulator.page_content) + len(chunk.page_content)
-                if len(accumulator.page_content) < self.MIN_CHUNK_SIZE and combined_len <= 3000:
-                    # Merge: combine text, keep metadata from the first chunk
-                    accumulator.page_content = accumulator.page_content + "\n\n" + chunk.page_content
-                    # Inherit any new header metadata from the merged chunk
-                    for key in ('h1', 'h2', 'h3'):
-                        if key in chunk.metadata and key not in accumulator.metadata:
-                            accumulator.metadata[key] = chunk.metadata[key]
-                else:
-                    merged_chunks.append(accumulator)
-                    accumulator = chunk
+                merged_chunks.append(accumulator)
+                accumulator = chunk
         if accumulator is not None:
             merged_chunks.append(accumulator)
         

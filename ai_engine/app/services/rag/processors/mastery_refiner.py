@@ -118,6 +118,26 @@ RULES:
    - Broad enough to NOT be a single-answer trivia fact
    - Focused on ONE testable cognitive ability
 
+   CONSOLIDATION BIAS — avoid over-splitting. If two or more objectives describe
+   the SAME act on the SAME content (e.g. read X / write X / order X), MERGE them
+   into one skill. When genuinely unsure whether two objectives are the same skill,
+   PREFER TO MERGE. Do not turn each micro-step of one procedure into its own skill.
+
+   COVERAGE GUARDRAIL — do NOT over-merge. Keep objectives that test DIFFERENT
+   competencies or skill strands as SEPARATE skills. A lesson may legitimately have
+   many skills when it genuinely teaches many distinct things (e.g. a language lesson
+   covering reading comprehension AND grammar AND spelling AND handwriting keeps all
+   four as separate skills). Never drop a distinct skill just to reduce the count.
+   There is NO fixed number of skills per lesson — let the content decide.
+
+   This merge/keep rule is IDENTICAL for every subject. Examples (each shows BOTH a
+   MERGE and a KEEP-SEPARATE case for the same subject):
+   - Math — MERGE: "قراءة الأعداد العشرية" + "كتابة الأعداد العشرية" → "قراءة وكتابة الأعداد العشرية". KEEP SEPARATE: "ضرب الكسور" and "قسمة الكسور" (different procedures).
+   - Science — MERGE: "تسمية أجزاء النبات" + "تحديد أجزاء النبات" → "التعرف على أجزاء النبات". KEEP SEPARATE: "أجزاء النبات ووظائفها" and "دورة حياة النبات" (different concepts).
+   - Arabic — MERGE: "التمييز بين التاء المربوطة والمفتوحة" + "كتابة التاء المربوطة" → "التمييز بين التاء المربوطة والمفتوحة وكتابتهما". KEEP SEPARATE: reading comprehension, a grammar point (المفعول المطلق), a spelling rule, and handwriting in one lesson stay as separate skills (different strands).
+   - English — MERGE: "Read sight words" + "Spell sight words" → "Reading and spelling sight words". KEEP SEPARATE: "Using the past simple tense" and "Reading comprehension of the passage" (different strands).
+   - Social Studies — MERGE: "تحديد عاصمة مصر" + "ذكر موقع مصر الجغرافي" → "تحديد عاصمة مصر وموقعها الجغرافي". KEEP SEPARATE: "موقع مصر الجغرافي" and "أهمية نهر النيل" (different topics).
+
 5. LANGUAGE: Keep the EXACT language of the textbook. If the textbook is in English, write skills in English. If Arabic, write skills in Arabic. Do NOT translate.
 
 6. REMOVE filler/generic points like "أستطيع أن أتحقق من معقولية إجاباتي" UNLESS they are the only point for a lesson.
@@ -162,7 +182,26 @@ RULES:
    - Specific enough to generate 5-10 diverse quiz questions.
    - Broad enough to NOT be a single-answer trivia fact.
    - Focused on ONE testable cognitive ability.
-   Merge near-duplicate objectives that test the same skill; split an objective that clearly spans multiple distinct skills.
+
+   CONSOLIDATION BIAS — avoid over-splitting. If two or more objectives describe
+   the SAME act on the SAME content (e.g. read X / write X / order X), MERGE them
+   into one skill. When genuinely unsure whether two objectives are the same skill,
+   PREFER TO MERGE. Do not turn each micro-step of one procedure into its own skill.
+
+   COVERAGE GUARDRAIL — do NOT over-merge. Keep objectives that test DIFFERENT
+   competencies or skill strands as SEPARATE skills. A lesson may legitimately have
+   many skills when it genuinely teaches many distinct things (e.g. a language lesson
+   covering reading comprehension AND grammar AND spelling AND handwriting keeps all
+   four as separate skills). Never drop a distinct skill just to reduce the count.
+   There is NO fixed number of skills per lesson — let the content decide.
+
+   This merge/keep rule is IDENTICAL for every subject. Examples (each shows BOTH a
+   MERGE and a KEEP-SEPARATE case for the same subject):
+   - Math — MERGE: "قراءة الأعداد العشرية" + "كتابة الأعداد العشرية" → "قراءة وكتابة الأعداد العشرية". KEEP SEPARATE: "ضرب الكسور" and "قسمة الكسور" (different procedures).
+   - Science — MERGE: "تسمية أجزاء النبات" + "تحديد أجزاء النبات" → "التعرف على أجزاء النبات". KEEP SEPARATE: "أجزاء النبات ووظائفها" and "دورة حياة النبات" (different concepts).
+   - Arabic — MERGE: "التمييز بين التاء المربوطة والمفتوحة" + "كتابة التاء المربوطة" → "التمييز بين التاء المربوطة والمفتوحة وكتابتهما". KEEP SEPARATE: reading comprehension, a grammar point (المفعول المطلق), a spelling rule, and handwriting in one lesson stay as separate skills (different strands).
+   - English — MERGE: "Read sight words" + "Spell sight words" → "Reading and spelling sight words". KEEP SEPARATE: "Using the past simple tense" and "Reading comprehension of the passage" (different strands).
+   - Social Studies — MERGE: "تحديد عاصمة مصر" + "ذكر موقع مصر الجغرافي" → "تحديد عاصمة مصر وموقعها الجغرافي". KEEP SEPARATE: "موقع مصر الجغرافي" and "أهمية نهر النيل" (different topics).
 
 7. LANGUAGE: Keep the EXACT language of the textbook. If the textbook is in English, write skills in English. If Arabic, write skills in Arabic. Do NOT translate.
 
