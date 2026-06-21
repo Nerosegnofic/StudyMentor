@@ -33,17 +33,42 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         md_splitter = MarkdownHeaderTextSplitter(headers_to_split_on, strip_headers=False)
         md_chunks = md_splitter.split_text(full_text)
         
-        # 2. Recursive fallback for large sections
+        # 2. Recursive fallback for large sections.
+        #    Generic content uses plain prose separators. Exercise/example sections
+        #    use an ITEM-AWARE splitter (P2): a worked example or numbered exercise
+        #    must not be cut between a question and its answer. We prefer item
+        #    boundaries (numbered/bulleted items, "مثال"/"Example", "تمرين"/"Exercise")
+        #    as split points, falling back to prose separators only if a single item
+        #    is still too big. These sections also get more headroom so a long worked
+        #    example stays intact. detect_chunk_role runs BEFORE splitting here so it
+        #    can protect boundaries, not just label them after the fact.
         recursive_splitter = RecursiveCharacterTextSplitter(
             chunk_size=2000,
             chunk_overlap=200,
             separators=["\n\n", "\n", "۔", ".", "،", ",", " ", ""]
         )
-        
-        # 3. Sub-split and flatten
+        item_aware_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=3000,
+            chunk_overlap=200,
+            separators=[
+                # Item boundaries first (regex): keep each problem/example whole.
+                r"\n#+\s*(?:مثال|تمرين|Example|Exercise)\s*\(?\s*\d*",  # headed items
+                r"\n\s*(?:مثال|تمرين|Example|Exercise)\s*\(?\s*\d+",     # inline items
+                r"\n\s*\d+\s*[.)\-]\s",                                  # 1.  2)  3-
+                r"\n\s*[-*•]\s",                                          # bullets
+                # Then generic prose separators as fallback (escaped: literal under
+                # regex mode, so "." stays a period and doesn't match any char).
+                "\n\n", "\n", "۔", r"\.", "،", ",", " ", "",
+            ],
+            is_separator_regex=True,
+        )
+
+        # 3. Sub-split and flatten. Pick the splitter by the section's content role.
         all_sub_chunks = []
         for chunk in md_chunks:
-            sub_chunks = recursive_splitter.split_documents([chunk])
+            role = detect_chunk_role(chunk.page_content)
+            splitter = item_aware_splitter if role in ('exercise', 'example') else recursive_splitter
+            sub_chunks = splitter.split_documents([chunk])
             all_sub_chunks.extend(sub_chunks)
         
         # 4. Merge adjacent small chunks to prevent context fragmentation.
