@@ -157,6 +157,14 @@ class UsageTimerService : Service() {
 
     private var activeStudentUid = ""
 
+    // Timestamp of the last block() call. Used to suppress GLOBAL_ACTION_HOME
+    // for a short window after blocking, because UsageStatsManager on some OEMs
+    // (Xiaomi/Realme) returns stale foreground data for several seconds after an
+    // app switch, which would otherwise cause tick() to fire home and close
+    // StudyMentor immediately after it's launched.
+    private var blockTimestampMs = 0L
+    private val BLOCK_GRACE_MS   = 3_000L
+
     // ── Quiz state ────────────────────────────────────────────────────────────
 
     private var quizDismissedForCooldown = false
@@ -291,7 +299,8 @@ class UsageTimerService : Service() {
                 return
             }
 
-            if (isForegroundMonitored) {
+            val inGracePeriod = System.currentTimeMillis() - blockTimestampMs < BLOCK_GRACE_MS
+            if (isForegroundMonitored && !inGracePeriod) {
                 StudyMentorAccessibilityService.instance?.performGlobalAction(
                     android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME,
                 )
@@ -322,6 +331,7 @@ class UsageTimerService : Service() {
     // ── Block / unblock ───────────────────────────────────────────────────────
 
     private fun block() {
+        blockTimestampMs         = System.currentTimeMillis()
         isBlocked                = true
         cooldownRemSecs          = cooldownLimitSecs
         quizDismissedForCooldown = false
