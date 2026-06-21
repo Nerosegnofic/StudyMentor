@@ -18,6 +18,7 @@ from app.services.rag.processors.language_detector import (
     guess_language_from_subject_name,
 )
 from app.services.rag.preprocessors import preprocess_parsed_text
+from app.core.config import settings
 from app.core.database import SessionLocal
 
 parser_context = ParserContext(strategy=LlamaParseStrategy())
@@ -133,8 +134,18 @@ def process_and_ingest_document(
                 document_repo.set_detected_metadata(db, document_id, subject=detected_subject)
 
             skill_count = sum(len(e.get("objectives", [])) for e in final_mastery_data)
+            per_lesson = [(e.get("lesson", ""), len(e.get("objectives", []))) for e in final_mastery_data]
+            max_skills = max((c for _, c in per_lesson), default=0)
             print(f"[{document_id}] Skill extraction source={mastery_source}, "
-                  f"{skill_count} skills across {len(final_mastery_data)} groups.", flush=True)
+                  f"{skill_count} skills across {len(final_mastery_data)} groups "
+                  f"(max {max_skills}/lesson).", flush=True)
+
+            # Drift telemetry (rec 3): flag lessons that over-split. Pure logging —
+            # surfaces granularity regressions without manual debug_output inspection.
+            over = [(l, c) for l, c in per_lesson if c > settings.SKILL_COUNT_WARN_THRESHOLD]
+            if over:
+                print(f"[{document_id}] [SkillDrift] {len(over)} lesson(s) exceed "
+                      f"{settings.SKILL_COUNT_WARN_THRESHOLD} skills: {over[:5]}", flush=True)
 
             # DEBUG DUMP 4: Final Skills
             if final_mastery_data:

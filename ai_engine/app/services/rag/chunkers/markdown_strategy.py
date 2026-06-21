@@ -1,5 +1,6 @@
 from uuid import UUID
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
+from app.core.config import settings
 from app.services.rag.chunkers.base import DocumentChunkerStrategy
 from app.services.rag.processors import (
     ChunkClassifier,
@@ -23,8 +24,9 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         7. Filter garbage chunks (CamScanner artifacts, orphaned headers).
     """
     # Minimum number of characters for a chunk to stand on its own.
-    # Smaller chunks get merged with the next chunk.
-    MIN_CHUNK_SIZE = 350
+    # Smaller chunks get merged with the next chunk. Sourced from config (default 350)
+    # so it stays tunable alongside the other chunking sizes; behavior is unchanged.
+    MIN_CHUNK_SIZE = settings.CHUNK_MIN_SIZE
 
     def chunk(self, full_text: str, document_id: UUID) -> list:
         headers_to_split_on = [("#", "h1"), ("##", "h2"), ("###", "h3")]
@@ -43,13 +45,13 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         #    example stays intact. detect_chunk_role runs BEFORE splitting here so it
         #    can protect boundaries, not just label them after the fact.
         recursive_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=2000,
-            chunk_overlap=200,
+            chunk_size=settings.CHUNK_SIZE,
+            chunk_overlap=settings.CHUNK_OVERLAP,
             separators=["\n\n", "\n", "۔", ".", "،", ",", " ", ""]
         )
         item_aware_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=3000,
-            chunk_overlap=200,
+            chunk_size=settings.EXERCISE_CHUNK_SIZE,
+            chunk_overlap=settings.CHUNK_OVERLAP,
             separators=[
                 # Item boundaries first (regex): keep each problem/example whole.
                 r"\n#+\s*(?:مثال|تمرين|Example|Exercise)\s*\(?\s*\d*",  # headed items
@@ -96,7 +98,7 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
             combined_len = len(accumulator.page_content) + len(chunk.page_content)
             if (not is_boundary
                     and len(accumulator.page_content) < self.MIN_CHUNK_SIZE
-                    and combined_len <= 3000):
+                    and combined_len <= settings.CHUNK_MERGE_MAX_SIZE):
                 # Merge: combine text, keep metadata from the first chunk
                 accumulator.page_content = accumulator.page_content + "\n\n" + chunk.page_content
                 # Inherit any new header metadata from the merged chunk
