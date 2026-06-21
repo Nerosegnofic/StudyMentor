@@ -55,7 +55,7 @@ class MarkdownRecursiveChunkerStrategy(DocumentChunkerStrategy):
         #    incoming chunk is itself a lesson_header/unit_header, flush the
         #    accumulator and start fresh — even when it's still under
         #    MIN_CHUNK_SIZE. A tiny orphaned header chunk is the lesser evil vs.
-        #    a chunk straddling two lessons (which would mis-tag skill_names and
+        #    a chunk straddling two lessons (which would mis-tag parent_lesson and
         #    cross-contaminate retrieval). The signal is the content-derived
         #    ROLE, not raw h1/h2 presence: real books have many non-boundary
         #    h1/h2 headers ("# نشاط 2", "# ابدأ", "## الأهداف") that must NOT

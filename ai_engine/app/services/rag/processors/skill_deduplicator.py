@@ -10,7 +10,7 @@ Within-lesson scope is deliberate (see plan): a lesson is a single teachable con
 so two near-identical skills there are genuinely redundant. We never compare across
 lessons, so a skill that legitimately recurs in every lesson (e.g. "reading
 comprehension" in a language book) is left alone, and the per-(name, subject_id)
-upsert + chunk skill_names tagging stay consistent.
+upsert stays consistent.
 
 Best-effort and non-fatal: if Cohere is unavailable or embedding fails, the input is
 returned unchanged — skill de-duplication must never block ingestion.

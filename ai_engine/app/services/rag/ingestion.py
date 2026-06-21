@@ -141,36 +141,11 @@ def process_and_ingest_document(
                 with open(f"{debug_prefix}_refined_skills.json", "w", encoding="utf-8") as f:
                     json.dump(final_mastery_data, f, indent=4, ensure_ascii=False)
 
-            # Step 6: Tag chunks with skill_names from mastery data (for precision retrieval)
-            # Build a lesson → skill_names mapping from the extracted mastery data.
-            active_mastery_data = final_mastery_data
-            if active_mastery_data:
-                lesson_to_skills = {}
-                for entry in active_mastery_data:
-                    lesson = entry.get("lesson", "")
-                    skills = entry.get("objectives", [])
-                    if lesson and skills:
-                        skill_names = [str(s) for s in skills]
-                        lesson_to_skills[lesson] = skill_names
-
-                # Tag each chunk with its lesson's skills
-                tagged_count = 0
-                for chunk in langchain_docs:
-                    parent_lesson = chunk.metadata.get("parent_lesson", "")
-                    if parent_lesson:
-                        for lesson_key, skill_list in lesson_to_skills.items():
-                            if lesson_key in parent_lesson or parent_lesson in lesson_key:
-                                chunk.metadata["skill_names"] = skill_list
-                                tagged_count += 1
-                                break
-                if tagged_count > 0:
-                    print(f"[{document_id}] Tagged {tagged_count}/{len(langchain_docs)} chunks with skill_names.", flush=True)
-
-            # Step 7: Store Vector Embeddings
+            # Step 6: Store Vector Embeddings
             document_repo.set_stage(db, document_id, "building_skills")
             save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
 
-            # Step 8: Save skills to DB
+            # Step 7: Save skills to DB
             if final_mastery_data:
                 save_skills_from_mastery_data(db, final_mastery_data, subject_id=subject_id)
 
