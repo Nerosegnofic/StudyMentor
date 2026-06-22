@@ -76,6 +76,31 @@ class MascotOverlayService {
     return quizRequested.listen((_) => onQuiz());
   }
 
+  // ── Quiz restore stream ────────────────────────────────────────────────────
+  // Fired when the native side signals that a quiz session must be restored
+  // (app was relaunched after task removal or device reboot while a quiz was
+  // active). StudentScreen subscribes and re-opens QuizOverlayPage with the
+  // saved session data from QuizLockService.
+
+  bool _pendingQuizRestoreTrigger = false;
+  StreamController<void>? _quizRestoreController;
+
+  StreamController<void> get _quizRestoreStream {
+    if (_quizRestoreController == null ||
+        _quizRestoreController!.isClosed) {
+      _quizRestoreController = StreamController<void>.broadcast();
+    }
+    return _quizRestoreController!;
+  }
+
+  StreamSubscription<void> listenForQuizRestore(VoidCallback onRestore) {
+    if (_pendingQuizRestoreTrigger) {
+      _pendingQuizRestoreTrigger = false;
+      Future.microtask(onRestore);
+    }
+    return _quizRestoreStream.stream.listen((_) => onRestore());
+  }
+
   // ── Settings ───────────────────────────────────────────────────────────────
 
   SettingsService? _settingsService;
@@ -171,6 +196,7 @@ class MascotOverlayService {
     _studentUid = null;
     _quizDismissedForThisCooldown = false;
     _quizController?.close();
+    _quizRestoreController?.close();
     debugPrint('[MascotOverlayService] Stopped.');
   }
 
@@ -435,6 +461,15 @@ class MascotOverlayService {
     }
   }
 
+  /// Brings StudyMentor to the foreground immediately using the overlay
+  /// channel, which calls activity.startActivity() — exempt from Android 12+
+  /// background-launch restrictions because of the SYSTEM_ALERT_WINDOW permission.
+  Future<void> bringToForeground() async {
+    try {
+      await _overlayChannel.invokeMethod('bringAppToForeground');
+    } catch (_) {}
+  }
+
   Future<void> setCooldownNotificationEnabled(bool enabled) async {
     try {
       await _timerServiceChannel.invokeMethod(
@@ -472,6 +507,15 @@ class MascotOverlayService {
 
       case 'onUnblocked':
         await _onUnblocked();
+        break;
+
+      case 'onQuizRestore':
+        debugPrint('[MascotOverlayService] onQuizRestore received from native.');
+        if (_quizRestoreStream.hasListener) {
+          _quizRestoreStream.add(null);
+        } else {
+          _pendingQuizRestoreTrigger = true;
+        }
         break;
     }
   }

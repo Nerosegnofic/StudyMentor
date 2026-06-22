@@ -96,6 +96,11 @@ class UsageTimerService : Service() {
         const val KEY_COOLDOWN_NOTIF_ENABLED     = "cooldown_notification_enabled"
         private const val KEY_STUDENT_UID        = "student_uid"
 
+        // ── Quiz lock ─────────────────────────────────────────────────────────
+        // Device-wide (not per-student): only one quiz can be locked at a time.
+        const val KEY_QUIZ_LOCK_ACTIVE   = "quiz_lock_active"
+        const val EXTRA_QUIZ_RESTORE     = "EXTRA_QUIZ_RESTORE"
+
         // ── Per-student key suffixes ───────────────────────────────────────────
         private const val SUFFIX_TOTAL_USAGE        = "total_usage_seconds"
         private const val SUFFIX_IS_BLOCKED         = "is_blocked"
@@ -164,6 +169,17 @@ class UsageTimerService : Service() {
     // StudyMentor immediately after it's launched.
     private var blockTimestampMs = 0L
     private val BLOCK_GRACE_MS   = 3_000L
+
+    // ── Quiz lock state ───────────────────────────────────────────────────────
+    // True while the student has an active quiz session. When true the service
+    // brings StudyMentor to the foreground whenever it detects that another app
+    // is in front, and relaunches it (with EXTRA_QUIZ_RESTORE) on task removal.
+
+    private var quizLockActive     = false
+    // Timestamp of setQuizLockActive(true); used for a short grace period so we
+    // do not immediately force-foreground while the quiz screen is still animating in.
+    private var quizLockActivatedMs = 0L
+    private val QUIZ_LOCK_GRACE_MS  = 4_000L
 
     // ── Quiz state ────────────────────────────────────────────────────────────
 
@@ -323,9 +339,51 @@ class UsageTimerService : Service() {
 
         monitoredInForeground = !isBlocked && isForegroundMonitored
 
+        // Quiz lock enforcement backup: the Dart-side AppLifecycleState.paused
+        // handler is the primary mechanism (immediate, no OEM delay). This tick
+        // check is a secondary fallback for cases where the Dart engine cannot
+        // call bringAppToForeground (e.g. engine suspended by the OS).
+        // Also reads from prefs to catch the case where setQuizLockActive was
+        // called via the prefs-fallback path (binder was not yet connected).
+        val effectiveQuizLock = quizLockActive || prefs.getBoolean(KEY_QUIZ_LOCK_ACTIVE, false)
+        if (effectiveQuizLock) {
+            if (!quizLockActive) {
+                quizLockActive = true
+                quizLockActivatedMs = System.currentTimeMillis()
+            }
+            val ownPkg = applicationContext.packageName
+            val inGrace = System.currentTimeMillis() - quizLockActivatedMs < QUIZ_LOCK_GRACE_MS
+            if (!inGrace && foreground != null && foreground != ownPkg) {
+                applicationContext.startActivity(
+                    Intent(applicationContext, MainActivity::class.java).apply {
+                        addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK
+                                or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                                or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                        )
+                    }
+                )
+            }
+        }
+
         persistState()
         broadcastState(thresholdAlert, monitoredInForeground = monitoredInForeground)
         updateFgNotification()
+    }
+
+    // Relaunches the app with EXTRA_QUIZ_RESTORE when the student swipes it
+    // away from the recents screen while a quiz is active. The service itself
+    // continues running (stopWithTask="false") and START_STICKY restarts it.
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        if (quizLockActive || prefs.getBoolean(KEY_QUIZ_LOCK_ACTIVE, false)) {
+            applicationContext.startActivity(
+                Intent(applicationContext, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    putExtra(EXTRA_QUIZ_RESTORE, true)
+                }
+            )
+        }
     }
 
     // ── Block / unblock ───────────────────────────────────────────────────────
@@ -643,6 +701,8 @@ class UsageTimerService : Service() {
                                        ?.toMutableSet() ?: mutableSetOf()
         quizDismissedForCooldown = prefs.getBoolean(studentKey(uid, SUFFIX_QUIZ_DISMISSED), false)
         quizShownForCooldown     = prefs.getBoolean(studentKey(uid, SUFFIX_QUIZ_SHOWN), false)
+        quizLockActive = prefs.getBoolean(KEY_QUIZ_LOCK_ACTIVE, false)
+        if (quizLockActive) quizLockActivatedMs = System.currentTimeMillis()
 
         studentLoggedIn      = prefs.getBoolean(KEY_STUDENT_LOGGED_IN, false)
         timerNotifEnabled    = prefs.getBoolean(KEY_TIMER_NOTIF_ENABLED, true)
@@ -715,6 +775,13 @@ class UsageTimerService : Service() {
     fun getUsageLimitSecs()  = usageLimitSecs
     fun getQuizDismissed()   = quizDismissedForCooldown
     fun getQuizShown()       = quizShownForCooldown
+    fun getQuizLockActive()  = quizLockActive
+
+    fun setQuizLockActive(active: Boolean) {
+        quizLockActive = active
+        if (active) quizLockActivatedMs = System.currentTimeMillis()
+        prefs.edit().putBoolean(KEY_QUIZ_LOCK_ACTIVE, active).apply()
+    }
 
     fun setTimerNotifEnabled(enabled: Boolean) {
         timerNotifEnabled = enabled

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -130,7 +130,15 @@ def process_quiz_submission(
     score = (correct_answers / total_submitted) * 100
     if quiz_session:
         quiz_session.score = score
-        quiz_session.end_time = datetime.utcnow()
+        # Prefer the client's foreground-only elapsed time so background/idle
+        # periods are excluded from the study-time calculation.  Fall back to
+        # wall-clock time when the client field is absent or zero.
+        if request.total_elapsed_ms and request.total_elapsed_ms > 0:
+            quiz_session.end_time = quiz_session.start_time + timedelta(
+                milliseconds=request.total_elapsed_ms
+            )
+        else:
+            quiz_session.end_time = datetime.utcnow()
 
     # ── Gamification rewards ──────────────────────────────────────────────
     rewards = gamification_service.process_quiz_rewards(

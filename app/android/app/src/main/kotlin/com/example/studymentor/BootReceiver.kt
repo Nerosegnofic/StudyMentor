@@ -71,19 +71,22 @@ class BootReceiver : BroadcastReceiver() {
         }
 
         // ── 2. Bring the app to the foreground ────────────────────────────────
-        // Launch MainActivity so the student sees the app immediately after
-        // boot. If the student was mid-cooldown the quiz overlay will appear
-        // as soon as the Flutter UI is displayed (handled by the existing
-        // pendingQuizOnLaunch logic in MainActivity + UsageTimerService.block).
-        //
-        // FLAG_ACTIVITY_NEW_TASK is required when starting an Activity from a
-        // non-Activity context (BroadcastReceiver counts as one).
+        // If a quiz was active when the device was rebooted, add
+        // EXTRA_QUIZ_RESTORE so MainActivity can invoke onQuizRestore on the
+        // Flutter side and the student resumes exactly where they left off.
+        val timerPrefs = UsageTimerService.prefs(context)
+        val quizLockActive = timerPrefs.getBoolean(
+            UsageTimerService.KEY_QUIZ_LOCK_ACTIVE, false)
+
         val activityIntent = Intent(context, MainActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK
                     or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                     or Intent.FLAG_ACTIVITY_SINGLE_TOP
             )
+            if (quizLockActive) {
+                putExtra(UsageTimerService.EXTRA_QUIZ_RESTORE, true)
+            }
         }
         context.startActivity(activityIntent)
     }

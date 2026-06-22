@@ -104,7 +104,7 @@ def get_study_time_series(
         if s.start_time is None or s.end_time is None:
             continue
         d = s.start_time.date()
-        minutes_by_date[d] = minutes_by_date.get(d, 0) + int(
+        minutes_by_date[d] = minutes_by_date.get(d, 0) + round(
             (s.end_time - s.start_time).total_seconds() / 60
         )
 
@@ -202,7 +202,7 @@ def get_time_of_day_distribution(
         if s.start_time is None or s.end_time is None:
             continue
         hour = (s.start_time + offset).hour
-        minutes = int((s.end_time - s.start_time).total_seconds() / 60)
+        minutes = round((s.end_time - s.start_time).total_seconds() / 60)
         if 5 <= hour < 12:
             buckets["Morning"] += minutes
         elif 12 <= hour < 17:
@@ -228,7 +228,7 @@ def get_daily_snapshot_stats(db: Session, student_uid: str, anchor_date=None) ->
         .all()
     )
     study_minutes = sum(
-        int((s.end_time - s.start_time).total_seconds() / 60)
+        round((s.end_time - s.start_time).total_seconds() / 60)
         for s in sessions
         if s.start_time and s.end_time
     )
@@ -254,7 +254,7 @@ def get_window_summary(db: Session, student_uid: str, start, end) -> Dict:
         .all()
     )
     study_minutes = sum(
-        int((s.end_time - s.start_time).total_seconds() / 60)
+        round((s.end_time - s.start_time).total_seconds() / 60)
         for s in sessions
         if s.start_time and s.end_time
     )
@@ -316,7 +316,7 @@ def get_subject_time_allocation(db: Session, sessions: List[QuizSession]) -> Lis
     for s in sessions:
         if s.subject_id is None or s.start_time is None or s.end_time is None:
             continue
-        minutes = int((s.end_time - s.start_time).total_seconds() / 60)
+        minutes = round((s.end_time - s.start_time).total_seconds() / 60)
         subject_minutes[s.subject_id] = subject_minutes.get(s.subject_id, 0) + minutes
 
     total = sum(subject_minutes.values())

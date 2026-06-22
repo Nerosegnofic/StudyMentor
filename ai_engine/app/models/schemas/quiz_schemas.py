@@ -160,6 +160,14 @@ class QuizSubmissionRequest(BaseModel):
     quiz_session_id: str = Field(..., description="The ID of the generated quiz session")
     answers: List[StudentAnswer]
     client_local_date: Optional[str] = Field(None, description="Client's local date (YYYY-MM-DD) for streak tracking")
+    total_elapsed_ms: Optional[int] = Field(
+        None, ge=0,
+        description=(
+            "Foreground-only solve time measured by the client stopwatch (ms). "
+            "Pauses when the app is backgrounded, so it excludes idle/background time. "
+            "Used to set end_time = start_time + elapsed for accurate study-time accounting."
+        ),
+    )
 
 
 class QuizSubmissionResponse(BaseModel):

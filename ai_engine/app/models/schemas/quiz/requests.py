@@ -51,3 +51,4 @@ class QuizSubmissionRequest(BaseModel):
     quiz_session_id: str = Field(..., description="The ID of the generated quiz session")
     answers: List[StudentAnswer]
     client_local_date: Optional[str] = Field(None, description="Client's local date (YYYY-MM-DD) for streak tracking")
+    total_elapsed_ms: Optional[int] = Field(None, ge=0, description="Foreground-only solve time from client stopwatch (ms)")
