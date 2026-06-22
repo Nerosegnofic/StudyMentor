@@ -131,9 +131,13 @@ class MascotOverlayService {
   void start() {
     if (_running) return;
     _running = true;
-    if (_earnedRewardSeconds > 0 && !_isInCooldown) {
-      _startNativeTimerService();
-    }
+    // Always start the native timer service so it monitors foreground apps
+    // throughout the entire student session, not only when reward time is
+    // available. When _earnedRewardSeconds == 0 the tick loop runs but the
+    // usageLimitSecs=0 condition prevents counting; the accessibility service
+    // handles blocking independently. When _isInCooldown the service resumes
+    // the countdown from persisted prefs.
+    _startNativeTimerService();
     debugPrint('[MascotOverlayService] Started.');
   }
 
@@ -234,9 +238,12 @@ class MascotOverlayService {
   int get earnedRewardSeconds => _earnedRewardSeconds;
 
   /// Remaining reward time = what was banked minus what has been used so far
-  /// in the current window.
-  int get remainingRewardSeconds =>
-      (_earnedRewardSeconds - _totalUsageSeconds).clamp(0, 1 << 31);
+  /// in the current window. During cooldown, apps are blocked so no usage
+  /// can occur — return the full earned amount so the UI reflects accumulated
+  /// quiz rewards correctly even while the cooldown timer is running.
+  int get remainingRewardSeconds => _isInCooldown
+      ? _earnedRewardSeconds.clamp(0, 1 << 31)
+      : (_earnedRewardSeconds - _totalUsageSeconds).clamp(0, 1 << 31);
 
   MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
@@ -567,16 +574,20 @@ class MascotOverlayService {
       );
     } else {
       // No earned time → stay blocked, show quiz.
-      debugPrint(
-        '[MascotOverlayService] Cooldown ended — no earned reward time. '
-        'Staying blocked; showing quiz.',
-      );
-      // Accessibility was already blocked; keep it that way.
+      // unblock() on the native side wrote AppPrefs.KEY_IS_BLOCKED=false;
+      // re-assert true so that the correct state survives a service restart.
+      try {
+        await _accessibilityChannel.invokeMethod('setBlocked', {'blocked': true});
+      } catch (_) {}
       // Fire quiz so student can earn time.
       if (!_quizStream.hasListener) {
         _pendingQuizTrigger = true;
       }
       _quizStream.add(null);
+      debugPrint(
+        '[MascotOverlayService] Cooldown ended — no earned reward time. '
+        'Staying blocked; showing quiz.',
+      );
     }
   }
 

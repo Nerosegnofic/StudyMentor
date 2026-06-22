@@ -362,35 +362,26 @@ class _AutoStartPanel extends StatelessWidget {
               ),
             ),
 
-            // ── ⚠️ TESTING ONLY — REMOVE BEFORE PRODUCTION RELEASE ────────
-            const SizedBox(height: 32),
-            const Divider(color: Color(0xFFFFCDD2)),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop(false),
-              icon: const Icon(Icons.home_outlined, color: Color(0xFFE53935)),
-              label: Text(
-                'Redirect to student home\n(FOR TESTING PURPOSES ONLY. DO NOT SHIP TO PRODUCTION!)',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.cairo(
-                  fontSize: 11,
-                  color: const Color(0xFFE53935),
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE53935)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFBDBDBD),
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(60),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                elevation: 0,
+              ),
+              child: Text(
+                loc.notNowButton,
+                style: GoogleFonts.cairo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            // ── END TESTING BLOCK ──────────────────────────────────────────
           ],
         ),
       ),

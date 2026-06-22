@@ -91,7 +91,7 @@ class UsageTimerService : Service() {
 
         // ── Device-wide keys (NOT prefixed with UID) ───────────────────────────
         private const val KEY_ACTIVE_STUDENT_UID = "active_student_uid"
-        private const val KEY_STUDENT_LOGGED_IN  = "student_logged_in"
+        const val KEY_STUDENT_LOGGED_IN          = "student_logged_in"
         const val KEY_TIMER_NOTIF_ENABLED        = "timer_notification_enabled"
         const val KEY_COOLDOWN_NOTIF_ENABLED     = "cooldown_notification_enabled"
         private const val KEY_STUDENT_UID        = "student_uid"
@@ -339,6 +339,18 @@ class UsageTimerService : Service() {
         firedUsageThresholds.clear()
         StudyMentorAccessibilityService.isBlocked = true
 
+        // Zero the Flutter-side earned-reward pref before broadcasting, so that
+        // if Dart is suspended/killed before _onLimitReached() persists the reset,
+        // a cold restart still sees 0 instead of the stale pre-cooldown balance.
+        // Quizzes solved during cooldown call addRewardTime() which persists the
+        // new positive value on top of this zero, so those are not affected.
+        if (activeStudentUid.isNotEmpty()) {
+            getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                .edit()
+                .putInt("flutter.reward_earned_$activeStudentUid", 0)
+                .apply()
+        }
+
         applicationContext
             .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, true).apply()
@@ -551,7 +563,7 @@ class UsageTimerService : Service() {
 
         val (title, body) = when {
             isBlocked -> {
-                if (cooldownNotifEnabled) {
+                if (cooldownNotifEnabled && cooldownRemSecs > 0) {
                     val h = cooldownRemSecs / 3600
                     val m = (cooldownRemSecs % 3600) / 60
                     val s = cooldownRemSecs % 60
@@ -560,7 +572,7 @@ class UsageTimerService : Service() {
                 } else ctx.getString(R.string.notif_running) to ""
             }
             monitoredInForeground -> {
-                if (timerNotifEnabled) {
+                if (timerNotifEnabled && usageLimitSecs > 0) {
                     val rem = (usageLimitSecs - totalUsageSecs).coerceAtLeast(0)
                     val h = rem / 3600; val m = (rem % 3600) / 60; val s = rem % 60
                     ctx.getString(R.string.notif_time_remaining) to
@@ -636,10 +648,20 @@ class UsageTimerService : Service() {
         timerNotifEnabled    = prefs.getBoolean(KEY_TIMER_NOTIF_ENABLED, true)
         cooldownNotifEnabled = prefs.getBoolean(KEY_COOLDOWN_NOTIF_ENABLED, true)
 
-        StudyMentorAccessibilityService.isBlocked = isBlocked
-        applicationContext
+        // AppPrefs.KEY_IS_BLOCKED is the Dart-controlled "effective blocked" flag
+        // and covers both cooldown AND zero-reward-time blocking. SUFFIX_IS_BLOCKED
+        // only reflects cooldown state. Prefer AppPrefs as the source of truth so
+        // restoring the service (e.g. on login or START_STICKY restart) does not
+        // overwrite the value that Dart already set. Fall back to the native
+        // cooldown flag only if Dart has never written the key (first-ever launch).
+        val appPrefs = applicationContext
             .getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, isBlocked).apply()
+        val effectiveBlocked = if (appPrefs.contains(AppPrefs.KEY_IS_BLOCKED))
+            appPrefs.getBoolean(AppPrefs.KEY_IS_BLOCKED, false)
+        else
+            isBlocked
+        StudyMentorAccessibilityService.isBlocked = effectiveBlocked
+        appPrefs.edit().putBoolean(AppPrefs.KEY_IS_BLOCKED, effectiveBlocked).apply()
     }
 
     private fun persistState() {

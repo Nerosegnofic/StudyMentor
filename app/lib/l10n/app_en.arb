@@ -684,6 +684,7 @@
   "quizPromptMessage": "Your focus time is up. Let's do a quick quiz to keep your brain sharp!",
   "startQuizButton": "Start Quiz",
   "tailoredToLevelMessage": "Tailored to your current level",
+  "notNowButton": "Not Now",
   "selectAnswerFirstMessage": "Please select an answer first.",
   "noMoreHintsMessage": "No more hints available.",
   "hintNumberTitle": "Hint {number}",
@@ -1108,6 +1109,8 @@
   "hourUnitLabel": "hr",
   "hoursUnitLabel": "hrs",
   "minuteUnitLabel": "min",
+  "hourPickerLabel": "hr",
+  "minutePickerLabel": "min",
 
   "appsParentWatchesTitle": "Apps your parent watches",
   "restingNowSubtitle": "Resting now · tap to see all",

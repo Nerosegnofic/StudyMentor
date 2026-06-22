@@ -1360,6 +1360,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tailoredToLevelMessage => 'مصمم خصيصًا لمستواك الحالي';
 
   @override
+  String get notNowButton => 'ليس الآن';
+
+  @override
   String get selectAnswerFirstMessage => 'يرجى اختيار إجابة أولاً.';
 
   @override
@@ -2108,6 +2111,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get minuteUnitLabel => 'د';
+
+  @override
+  String get hourPickerLabel => 'ساعة';
+
+  @override
+  String get minutePickerLabel => 'دقيقة';
 
   @override
   String get appsParentWatchesTitle => 'التطبيقات التي يراقبها والدك';

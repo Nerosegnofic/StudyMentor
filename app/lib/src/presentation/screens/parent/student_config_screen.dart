@@ -2288,7 +2288,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
     );
     final hoursLabel = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Text(AppLocalizations.of(context).hourUnitLabel, style: labelStyle),
+      child: Text(AppLocalizations.of(context).hourPickerLabel, style: labelStyle),
     );
     final hoursPicker = Expanded(
       flex: 3,
@@ -2304,7 +2304,7 @@ class _SetRewardTimeSheetState extends State<_SetRewardTimeSheet> {
     );
     final minutesLabel = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Text(AppLocalizations.of(context).minuteUnitLabel, style: labelStyle),
+      child: Text(AppLocalizations.of(context).minutePickerLabel, style: labelStyle),
     );
     final minutesPicker = Expanded(
       flex: 3,

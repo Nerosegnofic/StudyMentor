@@ -21,12 +21,18 @@ class FreeTimeBanner extends StatelessWidget {
   /// True when apps are blocked for any reason (cooldown OR no earned time).
   final bool isLocked;
 
+  /// Whether the parent has configured a cooldown duration > 0.
+  /// When false, cooldown-specific messaging is suppressed even if
+  /// [isInCooldown] is momentarily true.
+  final bool cooldownConfigured;
+
   const FreeTimeBanner({
     super.key,
     required this.remainingSeconds,
     required this.perQuizRewardSeconds,
     required this.isInCooldown,
     required this.isLocked,
+    this.cooldownConfigured = true,
   });
 
   static const Color _amber = Color(0xFFFFC107);
@@ -51,7 +57,7 @@ class FreeTimeBanner extends StatelessWidget {
     final Color borderColor;
     final Color inkColor;
 
-    if (isInCooldown) {
+    if (isInCooldown && cooldownConfigured) {
       // Cooldown running: show banked time (earned during cooldown) or prompt.
       bgColor = const Color(0xFFFFF8E1);
       borderColor = const Color(0xFFFFE082);

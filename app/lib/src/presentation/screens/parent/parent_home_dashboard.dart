@@ -8,6 +8,8 @@ import '../../../bloc/students/students_event.dart';
 import '../../../bloc/students/students_state.dart';
 import '../../../bloc/snapshot/snapshot_bloc.dart';
 import '../../../bloc/reports/reports_bloc.dart';
+import '../../../bloc/ai_summary/ai_summary_bloc.dart';
+import '../../../bloc/ai_summary/ai_summary_event.dart';
 import '../../../domain/models/student_model.dart';
 import '../../widgets/parent_home/branded_header.dart';
 import '../../widgets/parent_home/child_card.dart';
@@ -105,6 +107,13 @@ class ParentHomeDashboardState extends State<ParentHomeDashboard> {
           setState(() {
             _realStudents = state.students;
           });
+          // Always refresh the AI summary once the children list is confirmed —
+          // this handles the case where the initial carousel dispatch failed
+          // (e.g. transient error) and the students UIDs haven't changed, so
+          // didUpdateWidget would skip the re-dispatch.
+          context.read<AiSummaryBloc>().add(
+                LoadAiSummaryRequested(children: state.students),
+              );
         } else if (state is StudentDeleted) {
           context.read<StudentsBloc>().add(
             LoadStudentsRequested(parentUid: widget.parentUid),

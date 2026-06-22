@@ -36,34 +36,11 @@ class ScreenTimeRing extends StatelessWidget {
     final perQuizSecs = config.rewardPerQuizSeconds;
     final cooldownTotal = config.cooldownSeconds;
 
-    final bool inCooldown = svc.isInCooldown;
     final int earned = svc.earnedRewardSeconds;
-    final int used = svc.totalUsageSeconds;
+    // Use the service getter which correctly ignores stale usage during cooldown.
+    final int remaining = svc.remainingRewardSeconds.clamp(0, earned == 0 ? 0 : earned);
 
-    // ── Cooldown mode ──────────────────────────────────────────────────────────
-    if (inCooldown) {
-      final remaining = svc.remainingSeconds.clamp(0, 1 << 31);
-      final fraction = cooldownTotal > 0
-          ? ((cooldownTotal - remaining) / cooldownTotal).clamp(0.0, 1.0)
-          : 0.0;
-      return _shell(
-        child: Column(
-          children: [
-            _title(loc.timeToRestTitle),
-            const SizedBox(height: 16),
-            _ring(
-              fraction: fraction,
-              color: _amber,
-              center: _restingCenter(loc, remaining),
-            ),
-            const SizedBox(height: 16),
-            _footer(loc, perQuizSecs, cooldownTotal),
-          ],
-        ),
-      );
-    }
-
-    // ── No earned time (initial or post-cooldown with no quiz) ─────────────────
+    // ── No earned time (initial, post-cooldown with no quiz, or no quizzes yet) ─
     if (earned <= 0) {
       return _shell(
         child: Column(
@@ -82,9 +59,8 @@ class ScreenTimeRing extends StatelessWidget {
       );
     }
 
-    // ── Active: counting down earned reward time ────────────────────────────────
-    final remaining = (earned - used).clamp(0, earned);
-    final fraction = (used / earned).clamp(0.0, 1.0);
+    // ── Active / banked: show reward time (depleting when in use, static when banked) ──
+    final fraction = ((earned - remaining) / earned).clamp(0.0, 1.0);
     final color = fraction < 0.6 ? _green : (fraction < 0.85 ? _amber : _red);
 
     return _shell(
@@ -106,23 +82,23 @@ class ScreenTimeRing extends StatelessWidget {
 
   // ── Centre widgets ─────────────────────────────────────────────────────────
 
+  static String _toHhMmSs(int totalSeconds) {
+    final h = totalSeconds ~/ 3600;
+    final m = (totalSeconds % 3600) ~/ 60;
+    final s = totalSeconds % 60;
+    return '${h.toString().padLeft(2, '0')}:'
+        '${m.toString().padLeft(2, '0')}:'
+        '${s.toString().padLeft(2, '0')}';
+  }
+
   Widget _usageCenter(AppLocalizations loc, int remaining, Color color) {
-    final String big;
-    final String small;
-    if (remaining >= 60) {
-      big = '${(remaining / 60).ceil()}';
-      small = loc.minLeftLabel;
-    } else {
-      big = '$remaining';
-      small = loc.secLeftLabel;
-    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          big,
+          _toHhMmSs(remaining),
           style: GoogleFonts.cairo(
-            fontSize: 34,
+            fontSize: 20,
             fontWeight: FontWeight.w800,
             color: color,
             height: 1.0,
@@ -130,35 +106,7 @@ class ScreenTimeRing extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          small,
-          style: GoogleFonts.cairo(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _restingCenter(AppLocalizations loc, int remainingSeconds) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.bedtime_rounded, color: _amber, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          _mmss(remainingSeconds),
-          style: GoogleFonts.cairo(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: _amber,
-            height: 1.0,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          loc.restingLabel,
+          loc.remainingLabel,
           style: GoogleFonts.cairo(
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -248,12 +196,6 @@ class ScreenTimeRing extends StatelessWidget {
       );
 
   // ── Formatting ─────────────────────────────────────────────────────────────
-
-  String _mmss(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
 
   String _dur(int hours, int minutes, AppLocalizations loc) {
     final h = loc.hourUnitLabel;

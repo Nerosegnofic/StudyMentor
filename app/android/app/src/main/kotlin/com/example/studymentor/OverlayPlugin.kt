@@ -4,6 +4,7 @@ import android.app.AppOpsManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.media.AudioAttributes
@@ -27,6 +28,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import java.util.Locale
 
 class OverlayPlugin(private val activity: FlutterActivity) {
 
@@ -216,6 +218,20 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // Shared helpers
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Returns a [Context] whose locale matches the language the user chose
+     * inside the Flutter app (persisted at `flutter.app_locale_code` in
+     * FlutterSharedPreferences). Falls back to English when the key is absent.
+     */
+    private fun localizedContext(): Context {
+        val flutterPrefs = activity.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val langCode = flutterPrefs.getString("flutter.app_locale_code", "en") ?: "en"
+        val locale = Locale(langCode)
+        val config = Configuration(activity.resources.configuration)
+        config.setLocale(locale)
+        return activity.createConfigurationContext(config)
+    }
+
     private fun formatHms(totalSeconds: Int): String {
         val h = totalSeconds / 3600
         val m = (totalSeconds % 3600) / 60
@@ -246,9 +262,10 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun postUsageNotification(remainingSeconds: Int) {
+        val ctx = localizedContext()
         val notification = NotificationCompat.Builder(activity, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
-            .setContentTitle("Time remaining")
+            .setContentTitle(ctx.getString(R.string.notif_time_remaining))
             .setContentText(formatHms(remainingSeconds))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -270,9 +287,10 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun postCooldownNotification(remainingSeconds: Int) {
+        val ctx = localizedContext()
         val notification = NotificationCompat.Builder(activity, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
-            .setContentTitle("Cooldown — apps locked")
+            .setContentTitle(ctx.getString(R.string.notif_cooldown_title))
             .setContentText(formatHms(remainingSeconds))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -294,28 +312,29 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun postThresholdAlert(remainingSeconds: Int) {
-        data class AlertInfo(val notifId: Int, val title: String, val body: String)
+        data class AlertInfo(val notifId: Int, val titleRes: Int, val bodyRes: Int)
         val alert = when {
             remainingSeconds >= 270 -> AlertInfo(
                 ALERT_NOTIF_ID_5MIN,
-                "5 minutes left ⏳",
-                "You have 5 minutes before your usage limit is reached.",
+                R.string.notif_usage_5min_title,
+                R.string.notif_usage_5min_body,
             )
             remainingSeconds >= 45 -> AlertInfo(
                 ALERT_NOTIF_ID_1MIN,
-                "1 minute left ⚠️",
-                "Only 1 minute remaining before your usage is blocked.",
+                R.string.notif_usage_1min_title,
+                R.string.notif_usage_1min_body,
             )
             else -> AlertInfo(
                 ALERT_NOTIF_ID_10S,
-                "10 seconds left 🚨",
-                "Your usage limit is almost up!",
+                R.string.notif_usage_10sec_title,
+                R.string.notif_usage_10sec_body,
             )
         }
+        val ctx = localizedContext()
         val notification = NotificationCompat.Builder(activity, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle(alert.title)
-            .setContentText(alert.body)
+            .setContentTitle(ctx.getString(alert.titleRes))
+            .setContentText(ctx.getString(alert.bodyRes))
             .setOngoing(false)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -332,28 +351,29 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun postCooldownThresholdAlert(remainingSeconds: Int) {
-        data class AlertInfo(val notifId: Int, val title: String, val body: String)
+        data class AlertInfo(val notifId: Int, val titleRes: Int, val bodyRes: Int)
         val alert = when {
             remainingSeconds >= 270 -> AlertInfo(
                 COOLDOWN_ALERT_NOTIF_ID_5MIN,
-                "5 minutes until unlock ⏳",
-                "Your cooldown ends in 5 minutes — get ready to study!",
+                R.string.notif_cooldown_5min_title,
+                R.string.notif_cooldown_5min_body,
             )
             remainingSeconds >= 45 -> AlertInfo(
                 COOLDOWN_ALERT_NOTIF_ID_1MIN,
-                "1 minute until unlock ⚠️",
-                "Almost there — apps will unlock in 1 minute.",
+                R.string.notif_cooldown_1min_title,
+                R.string.notif_cooldown_1min_body,
             )
             else -> AlertInfo(
                 COOLDOWN_ALERT_NOTIF_ID_10S,
-                "Apps unlocking soon 🎉",
-                "Your cooldown is ending in 10 seconds!",
+                R.string.notif_cooldown_10sec_title,
+                R.string.notif_cooldown_10sec_body,
             )
         }
+        val ctx = localizedContext()
         val notification = NotificationCompat.Builder(activity, CHILD_TIMER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(alert.title)
-            .setContentText(alert.body)
+            .setContentTitle(ctx.getString(alert.titleRes))
+            .setContentText(ctx.getString(alert.bodyRes))
             .setOngoing(false)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

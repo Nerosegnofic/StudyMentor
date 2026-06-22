@@ -35,7 +35,9 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
   @override
   void initState() {
     super.initState();
-    _dispatchLoad();
+    // Only dispatch if we already have students; otherwise ParentHomeDashboard
+    // will dispatch via its StudentsLoaded listener once the list is confirmed.
+    if (widget.students.isNotEmpty) _dispatchLoad();
     _timer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (!mounted || !_controller.hasClients || _slides.length < 2) return;
       final next = (_currentPage + 1) % _slides.length;

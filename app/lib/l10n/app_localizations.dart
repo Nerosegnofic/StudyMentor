@@ -2395,6 +2395,12 @@ abstract class AppLocalizations {
   /// **'Tailored to your current level'**
   String get tailoredToLevelMessage;
 
+  /// No description provided for @notNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Now'**
+  String get notNowButton;
+
   /// No description provided for @selectAnswerFirstMessage.
   ///
   /// In en, this message translates to:
@@ -3654,6 +3660,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'min'**
   String get minuteUnitLabel;
+
+  /// No description provided for @hourPickerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'hr'**
+  String get hourPickerLabel;
+
+  /// No description provided for @minutePickerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get minutePickerLabel;
 
   /// No description provided for @appsParentWatchesTitle.
   ///

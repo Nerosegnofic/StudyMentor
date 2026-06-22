@@ -1370,6 +1370,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tailoredToLevelMessage => 'Tailored to your current level';
 
   @override
+  String get notNowButton => 'Not Now';
+
+  @override
   String get selectAnswerFirstMessage => 'Please select an answer first.';
 
   @override
@@ -2129,6 +2132,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get minuteUnitLabel => 'min';
+
+  @override
+  String get hourPickerLabel => 'hr';
+
+  @override
+  String get minutePickerLabel => 'min';
 
   @override
   String get appsParentWatchesTitle => 'Apps your parent watches';

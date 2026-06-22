@@ -409,6 +409,7 @@
   "quizPromptMessage": "انتهى وقت التركيز. لنقم باختبار سريع لتنشيط عقلك!",
   "startQuizButton": "ابدأ الاختبار",
   "tailoredToLevelMessage": "مصمم خصيصًا لمستواك الحالي",
+  "notNowButton": "ليس الآن",
   "selectAnswerFirstMessage": "يرجى اختيار إجابة أولاً.",
   "noMoreHintsMessage": "لا توجد تلميحات أخرى متاحة.",
   "hintNumberTitle": "تلميح {number}",
@@ -807,6 +808,8 @@
   "hourUnitLabel": "س",
   "hoursUnitLabel": "س",
   "minuteUnitLabel": "د",
+  "hourPickerLabel": "ساعة",
+  "minutePickerLabel": "دقيقة",
 
   "appsParentWatchesTitle": "التطبيقات التي يراقبها والدك",
   "restingNowSubtitle": "في وضع الراحة · اضغط لرؤية الكل",
