@@ -117,6 +117,7 @@ def get_overall_dashboard_stats(db: Session, student_uid: str) -> dict:
         .filter(
             QuizSession.student_uid == student_uid,
             QuizSession.start_time >= thirty_days_ago,
+            QuizSession.end_time.isnot(None),  # only count submitted quizzes
         )
         .group_by(cast(QuizSession.start_time, Date))
         .order_by(cast(QuizSession.start_time, Date))

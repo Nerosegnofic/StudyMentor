@@ -1544,10 +1544,17 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                         ),
                       ),
                       const SizedBox(height: 12),
+                      // One equal-width cell per bar with centered text, so each
+                      // label sits directly under its bar (the painter centers bar
+                      // i at (i + 0.5) * width/n). spaceBetween would edge-anchor
+                      // the first/last labels and drift them off the bars.
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: report.dailyStudy
-                            .map((c) => _chartLabel(c.dayLabel))
+                            .map(
+                              (c) => Expanded(
+                                child: Center(child: _chartLabel(c.dayLabel)),
+                              ),
+                            )
                             .toList(),
                       ),
                     ] else

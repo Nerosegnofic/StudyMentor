@@ -494,25 +494,25 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) {
-    return dataConnect.getSubjectOverview(studentUid, subjectKey);
+  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, int subjectId, String subjectKey) {
+    return dataConnect.getSubjectOverview(studentUid, subjectId, subjectKey);
   }
 
   @override
-  Future<List<SkillProgressModel>> getSkillsForSubject(String studentUid, String subjectKey) {
-    return dataConnect.getSkillsForSubject(studentUid: studentUid, subjectKey: subjectKey);
+  Future<List<SkillProgressModel>> getSkillsForSubject(String studentUid, int subjectId, String subjectKey) {
+    return dataConnect.getSkillsForSubject(studentUid: studentUid, subjectId: subjectId, subjectKey: subjectKey);
   }
 
   // ── Quizzes ─────────────────────────────────────────────────────────────
 
   @override
-  Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, String subjectKey, {int limit = 10}) {
-    return dataConnect.getRecentQuizzes(studentUid, subjectKey, limit: limit);
+  Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, int subjectId, String subjectKey, {int limit = 10}) {
+    return dataConnect.getRecentQuizzes(studentUid, subjectId, subjectKey, limit: limit);
   }
 
   @override
-  Future<List<QuizAttemptModel>> getAllQuizzes(String studentUid, String subjectKey) {
-    return dataConnect.getRecentQuizzes(studentUid, subjectKey, limit: 100);
+  Future<List<QuizAttemptModel>> getAllQuizzes(String studentUid, int subjectId, String subjectKey) {
+    return dataConnect.getRecentQuizzes(studentUid, subjectId, subjectKey, limit: 100);
   }
 
   @override

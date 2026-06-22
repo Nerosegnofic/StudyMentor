@@ -255,7 +255,7 @@ def generate_quiz_for_student(
         if recent_fps:
             avoidance_instructions = (
                 "\n\n⚠️ PREVIOUSLY ASKED QUESTIONS (DO NOT REPEAT):\n"
-                + "\n".join(f'  - "{fp}..."' for fp in list(recent_fps)[:15])
+                + "\n".join(f'  - "{fp}..."' for fp in list(recent_fps)[:25])
                 + "\n\nGenerate COMPLETELY DIFFERENT questions with different numbers, names, and scenarios."
             )
             context = context + avoidance_instructions

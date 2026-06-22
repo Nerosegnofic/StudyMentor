@@ -9,12 +9,17 @@ abstract class SubjectDetailEvent extends Equatable {
 
 class LoadSubjectDetailRequested extends SubjectDetailEvent {
   final String studentUid;
+  final int subjectId;
   final String subjectKey;
 
-  const LoadSubjectDetailRequested({required this.studentUid, required this.subjectKey});
+  const LoadSubjectDetailRequested({
+    required this.studentUid,
+    required this.subjectId,
+    required this.subjectKey,
+  });
 
   @override
-  List<Object?> get props => [studentUid, subjectKey];
+  List<Object?> get props => [studentUid, subjectId, subjectKey];
 }
 
 class FetchQuestionDetailRequested extends SubjectDetailEvent {

@@ -39,7 +39,7 @@ class WeeklyStudyChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                loc.thisWeekLabel,
+                loc.thisWeekSublabel,
                 style: GoogleFonts.cairo(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,

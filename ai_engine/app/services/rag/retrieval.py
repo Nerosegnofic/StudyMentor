@@ -1,3 +1,4 @@
+import random
 import re
 from typing import List, Optional
 from app.core.database import get_vector_store
@@ -59,6 +60,28 @@ _ZONE_BUDGETS = {
 }
 
 
+def _rank_with_intra_tier_shuffle(docs: list, key) -> list:
+    """Rank docs by a priority `key` (lower = better) but SHUFFLE ties.
+
+    Variety fix: retrieval is deterministic, so repeated quizzes on the same skill
+    always picked the same top-N chunks → repetitive questions. Here we group docs by
+    their priority value, shuffle each group, then concatenate groups in priority
+    order. The best tier (e.g. examples/exercises) still comes first — quality is
+    preserved — but *which* of the equally-good chunks lead varies each call, so the
+    downstream "take the first `budget`" selection rotates over runs. Stateless
+    (unseeded `random`), so every generation differs.
+    """
+    tiers: dict = {}
+    for d in docs:
+        tiers.setdefault(key(d), []).append(d)
+    ranked: list = []
+    for priority in sorted(tiers):
+        bucket = tiers[priority]
+        random.shuffle(bucket)
+        ranked.extend(bucket)
+    return ranked
+
+
 def retrieve_context_for_topics(
     topics: List[str],
     k: int = 10,
@@ -104,16 +127,18 @@ def retrieve_context_for_topics(
         topic_docs = _retrieve_with_safe_fallback(
             vector_store=vector_store,
             topic=topic,
-            k=quota * 4,  # Fetch more than needed for MMR diversity pool
+            k=quota * 6,  # Wider pool so the intra-tier shuffle has chunks to rotate among
             firebase_uid=firebase_uid,
             subject_id=subject_id,
             score_threshold=score_threshold,
             is_global=is_global,
         )
 
-        # Re-rank by role priority (examples/exercises first)
-        topic_docs.sort(
-            key=lambda d: ROLE_PRIORITY.get(d.metadata.get('chunk_role', 'content'), 10)
+        # Rank by role priority (examples/exercises first), shuffling ties so repeated
+        # retrievals for the same topic rotate over equally-good chunks.
+        topic_docs = _rank_with_intra_tier_shuffle(
+            topic_docs,
+            key=lambda d: ROLE_PRIORITY.get(d.metadata.get('chunk_role', 'content'), 10),
         )
 
         added = 0
@@ -185,27 +210,30 @@ def retrieve_context_for_quiz(
         topic_docs = _retrieve_with_safe_fallback(
             vector_store=vector_store,
             topic=skill_name,
-            k=budget * 3,  # Fetch 3x budget for filtering headroom
+            k=budget * 5,  # Wider pool so the intra-tier shuffle has chunks to rotate among
             firebase_uid=firebase_uid,
             subject_id=subject_id,
             score_threshold=score_threshold,
             is_global=is_global,
         )
 
-        # Re-rank by role priority — adapted to difficulty level.
+        # Rank by role priority — adapted to difficulty level — then shuffle ties so
+        # repeated quizzes on the same skill rotate over equally-good chunks (variety).
         # Low difficulty (1-2): prefer explanations, definitions, and rules
         # (facts the student needs to recall), NOT exercises/examples which
         # contain complex problems that bias the LLM toward harder output.
         # High difficulty (3+): prefer examples and exercises as before.
         if zone == "preview" or difficulty <= 2:
             # For preview or easy questions, prefer explanations (objectives/intro/definitions)
-            topic_docs.sort(
-                key=lambda d: 0 if d.metadata.get('chunk_role') in ('explanation', 'content', 'rule') else 1
+            topic_docs = _rank_with_intra_tier_shuffle(
+                topic_docs,
+                key=lambda d: 0 if d.metadata.get('chunk_role') in ('explanation', 'content', 'rule') else 1,
             )
         else:
             # For frontier/review at medium+ difficulty, prefer examples and exercises
-            topic_docs.sort(
-                key=lambda d: ROLE_PRIORITY.get(d.metadata.get('chunk_role', 'content'), 10)
+            topic_docs = _rank_with_intra_tier_shuffle(
+                topic_docs,
+                key=lambda d: ROLE_PRIORITY.get(d.metadata.get('chunk_role', 'content'), 10),
             )
 
         added = 0

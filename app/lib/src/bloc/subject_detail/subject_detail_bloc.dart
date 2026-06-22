@@ -24,9 +24,9 @@ class SubjectDetailBloc extends Bloc<SubjectDetailEvent, SubjectDetailState> {
     try {
       // Run all 3 fetches in parallel to reduce total load time
       final results = await Future.wait<dynamic>([
-        authRepository.getSubjectOverview(event.studentUid, event.subjectKey),
-        authRepository.getSkillsForSubject(event.studentUid, event.subjectKey),
-        authRepository.getAllQuizzes(event.studentUid, event.subjectKey),
+        authRepository.getSubjectOverview(event.studentUid, event.subjectId, event.subjectKey),
+        authRepository.getSkillsForSubject(event.studentUid, event.subjectId, event.subjectKey),
+        authRepository.getAllQuizzes(event.studentUid, event.subjectId, event.subjectKey),
       ]);
 
       emit(SubjectDetailLoaded(

@@ -11,12 +11,14 @@ from app.repositories.vector_repo import save_chunks_to_pgvector
 from app.repositories import save_skills_from_mastery_data, document_repo
 from app.services.rag.processors.objective_extractor import extract_all_objectives
 from app.services.rag.processors.mastery_refiner import extract_skills_with_llm, refine_mastery_points
+from app.services.rag.processors.skill_deduplicator import deduplicate_skills_within_lessons
 from app.services.rag.processors.language_detector import (
     detect_language,
     dominant_language,
     guess_language_from_subject_name,
 )
 from app.services.rag.preprocessors import preprocess_parsed_text
+from app.core.config import settings
 from app.core.database import SessionLocal
 
 parser_context = ParserContext(strategy=LlamaParseStrategy())
@@ -119,50 +121,42 @@ def process_and_ingest_document(
                     if raw_mastery_data else []
                 )
 
+            # Deterministic safety net: merge near-duplicate skills WITHIN each lesson
+            # (embedding-based). Catches over-splitting the LLM consolidation prompt
+            # missed. Best-effort — returns the input unchanged if Cohere is unavailable.
+            # Runs before chunk skill-tagging and the DB save so both see the same set.
+            if final_mastery_data:
+                final_mastery_data = deduplicate_skills_within_lessons(final_mastery_data)
+
             # Persist the content-classified subject (a hint; used downstream alongside
             # the parent's label). Only the primary LLM path produces it.
             if detected_subject:
                 document_repo.set_detected_metadata(db, document_id, subject=detected_subject)
 
             skill_count = sum(len(e.get("objectives", [])) for e in final_mastery_data)
+            per_lesson = [(e.get("lesson", ""), len(e.get("objectives", []))) for e in final_mastery_data]
+            max_skills = max((c for _, c in per_lesson), default=0)
             print(f"[{document_id}] Skill extraction source={mastery_source}, "
-                  f"{skill_count} skills across {len(final_mastery_data)} groups.", flush=True)
+                  f"{skill_count} skills across {len(final_mastery_data)} groups "
+                  f"(max {max_skills}/lesson).", flush=True)
+
+            # Drift telemetry (rec 3): flag lessons that over-split. Pure logging —
+            # surfaces granularity regressions without manual debug_output inspection.
+            over = [(l, c) for l, c in per_lesson if c > settings.SKILL_COUNT_WARN_THRESHOLD]
+            if over:
+                print(f"[{document_id}] [SkillDrift] {len(over)} lesson(s) exceed "
+                      f"{settings.SKILL_COUNT_WARN_THRESHOLD} skills: {over[:5]}", flush=True)
 
             # DEBUG DUMP 4: Final Skills
             if final_mastery_data:
                 with open(f"{debug_prefix}_refined_skills.json", "w", encoding="utf-8") as f:
                     json.dump(final_mastery_data, f, indent=4, ensure_ascii=False)
 
-            # Step 6: Tag chunks with skill_names from mastery data (for precision retrieval)
-            # Build a lesson → skill_names mapping from the extracted mastery data.
-            active_mastery_data = final_mastery_data
-            if active_mastery_data:
-                lesson_to_skills = {}
-                for entry in active_mastery_data:
-                    lesson = entry.get("lesson", "")
-                    skills = entry.get("objectives", [])
-                    if lesson and skills:
-                        skill_names = [str(s) for s in skills]
-                        lesson_to_skills[lesson] = skill_names
-
-                # Tag each chunk with its lesson's skills
-                tagged_count = 0
-                for chunk in langchain_docs:
-                    parent_lesson = chunk.metadata.get("parent_lesson", "")
-                    if parent_lesson:
-                        for lesson_key, skill_list in lesson_to_skills.items():
-                            if lesson_key in parent_lesson or parent_lesson in lesson_key:
-                                chunk.metadata["skill_names"] = skill_list
-                                tagged_count += 1
-                                break
-                if tagged_count > 0:
-                    print(f"[{document_id}] Tagged {tagged_count}/{len(langchain_docs)} chunks with skill_names.", flush=True)
-
-            # Step 7: Store Vector Embeddings
+            # Step 6: Store Vector Embeddings
             document_repo.set_stage(db, document_id, "building_skills")
             save_chunks_to_pgvector(langchain_docs, document_id, firebase_uid=firebase_uid, subject_id=subject_id)
 
-            # Step 8: Save skills to DB
+            # Step 7: Save skills to DB
             if final_mastery_data:
                 save_skills_from_mastery_data(db, final_mastery_data, subject_id=subject_id)
 

@@ -204,6 +204,7 @@ def get_subject_quiz_history(
         .filter(
             QuizSession.student_uid == target_uid,
             QuizSession.subject_id == subject_id,
+            QuizSession.end_time.isnot(None),  # only quizzes the student actually submitted
         )
         .order_by(QuizSession.start_time.desc())
     )
@@ -432,7 +433,9 @@ def get_session_questions(
     target_uid = student_uid if student_uid else current_user
 
     session = db.query(QuizSession).filter(QuizSession.session_id == session_id).first()
-    if not session:
+    # An unsubmitted (generated/cached) session has no review data and must not be
+    # visible — treat it as not-found until the student submits it.
+    if not session or session.end_time is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     if session.student_uid != target_uid:
         raise HTTPException(status_code=403, detail="Not authorized.")

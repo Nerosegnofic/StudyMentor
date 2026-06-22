@@ -79,12 +79,12 @@ abstract class AuthRepository {
   Future<void> setSubjectSelection({required String studentUid, required int subjectId, required bool isSelected});
   Future<void> removeStudentSubjectData({required String studentUid, required int subjectId});
 
-  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey);
-  Future<List<SkillProgressModel>> getSkillsForSubject(String studentUid, String subjectKey);
-  
+  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, int subjectId, String subjectKey);
+  Future<List<SkillProgressModel>> getSkillsForSubject(String studentUid, int subjectId, String subjectKey);
+
   // ── Quizzes ─────────────────────────────────────────────────────────────
-  Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, String subjectKey, {int limit = 10});
-  Future<List<QuizAttemptModel>> getAllQuizzes(String studentUid, String subjectKey);
+  Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, int subjectId, String subjectKey, {int limit = 10});
+  Future<List<QuizAttemptModel>> getAllQuizzes(String studentUid, int subjectId, String subjectKey);
   Future<List<QuestionDetailModel>> getSessionQuestions(String quizAttemptId, {String? studentUid});
   Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber);
 

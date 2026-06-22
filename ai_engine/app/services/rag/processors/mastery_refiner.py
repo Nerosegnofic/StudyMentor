@@ -118,6 +118,44 @@ RULES:
    - Broad enough to NOT be a single-answer trivia fact
    - Focused on ONE testable cognitive ability
 
+   CONSOLIDATION BIAS — avoid over-splitting. If two or more objectives describe
+   the SAME act on the SAME content (e.g. read X / write X / order X), MERGE them
+   into one skill. When genuinely unsure whether two objectives are the same skill,
+   PREFER TO MERGE. Do not turn each micro-step of one procedure into its own skill.
+   The METHOD or REPRESENTATION used to perform a skill is NOT itself a separate
+   skill: if two objectives perform the SAME operation on the SAME content and differ
+   only in tool/representation (e.g. with grids vs a place-value table, by experiment
+   vs by diagram, orally vs in writing), MERGE them. (A genuinely different OPERATION
+   — e.g. multiply vs divide — stays separate.)
+
+   COVERAGE GUARDRAIL — do NOT over-merge. Keep objectives that test DIFFERENT
+   competencies or skill strands as SEPARATE skills. A lesson may legitimately have
+   many skills when it genuinely teaches many distinct things (e.g. a language lesson
+   covering reading comprehension AND grammar AND spelling AND handwriting keeps all
+   four as separate skills). Never drop a distinct skill just to reduce the count.
+   There is NO fixed number of skills per lesson — let the content decide.
+   COMPLETENESS bias: when in doubt about whether something is a distinct skill, KEEP
+   IT. It is worse to omit a testable skill than to include a slightly narrow one.
+   In particular, these are SEPARATE skills, not to be folded away:
+     • a representation/modeling skill stated as its own objective (e.g. "representing
+       decimals with models", "drawing a diagram of the cell") is distinct from the
+       computation/identification skill it supports — keep both;
+     • closely-related operations the lesson lists separately (e.g. comparing AND
+       ordering, rounding AND a named strategy like the number-line/midpoint method)
+       are distinct skills — keep each.
+   (This does NOT contradict the CONSOLIDATION BIAS above: merge only when two
+   objectives are the SAME operation differing only in tool/representation; keep them
+   separate when they are different operations OR when a representation/strategy is
+   itself a stated learning objective.)
+
+   This merge/keep rule is IDENTICAL for every subject. Examples (each shows BOTH a
+   MERGE and a KEEP-SEPARATE case for the same subject):
+   - Math — MERGE: "قراءة الأعداد العشرية" + "كتابة الأعداد العشرية" → "قراءة وكتابة الأعداد العشرية". KEEP SEPARATE: "ضرب الكسور" and "قسمة الكسور" (different procedures).
+   - Science — MERGE: "تسمية أجزاء النبات" + "تحديد أجزاء النبات" → "التعرف على أجزاء النبات". KEEP SEPARATE: "أجزاء النبات ووظائفها" and "دورة حياة النبات" (different concepts).
+   - Arabic — MERGE: "التمييز بين التاء المربوطة والمفتوحة" + "كتابة التاء المربوطة" → "التمييز بين التاء المربوطة والمفتوحة وكتابتهما". KEEP SEPARATE: reading comprehension, a grammar point (المفعول المطلق), a spelling rule, and handwriting in one lesson stay as separate skills (different strands).
+   - English — MERGE: "Read sight words" + "Spell sight words" → "Reading and spelling sight words". KEEP SEPARATE: "Using the past simple tense" and "Reading comprehension of the passage" (different strands).
+   - Social Studies — MERGE: "تحديد عاصمة مصر" + "ذكر موقع مصر الجغرافي" → "تحديد عاصمة مصر وموقعها الجغرافي". KEEP SEPARATE: "موقع مصر الجغرافي" and "أهمية نهر النيل" (different topics).
+
 5. LANGUAGE: Keep the EXACT language of the textbook. If the textbook is in English, write skills in English. If Arabic, write skills in Arabic. Do NOT translate.
 
 6. REMOVE filler/generic points like "أستطيع أن أتحقق من معقولية إجاباتي" UNLESS they are the only point for a lesson.
@@ -146,6 +184,7 @@ OUTPUT STRUCTURE: a hierarchy of units → lessons → skills, where each skill 
 
 RULES:
 1. GROUNDING — NO HALLUCINATION. Extract only units, lessons, and skills that are actually present in the document. Copy each unit_name and lesson_name VERBATIM from the document's own headers (e.g. "الوحدة الأولى: الاختيار والمسئولية", "الدرس الأول: الاستماع"). Do NOT invent, rename, translate, or renumber them.
+   A lesson counts as "present" ONLY if it has actual TEACHING CONTENT in the document (a body: objectives, explanations, examples, or exercises). A lesson that appears ONLY as a table-of-contents / index entry — typically a line PREFIXED WITH A PAGE NUMBER (e.g. "3 الدرس الأول: ...", "121 الدرس الرابع: ...") or a dotted-leader line, with NO body following — is NOT present: DO NOT output it. Real lessons appear later as their own HEADER (e.g. "# الدرس الأول") followed by content.
 
 2. SKILL SOURCE. For each lesson:
    - If the lesson states an explicit objectives/outcomes section (e.g. "الأهداف", "نواتج التعلم", "نتائج التعلم", "مخرجات التعلم", "Learning Outcomes", "Now I can..."), derive the skills from those objectives.
@@ -154,15 +193,52 @@ RULES:
 
 3. UNITS. If the document has no clear unit structure, group all lessons under a single sensible unit named after the document/subject.
 
-4. COMPLETENESS. Enumerate EVERY unit and EVERY lesson found in the document, in order. Do not stop early, summarize, or skip lessons.
+4. COMPLETENESS (content only). Enumerate every unit and every lesson THAT HAS ACTUAL BODY CONTENT, in order — do not stop early, summarize, or skip a lesson that is genuinely taught. But do NOT treat the table of contents / index as the source of lessons: a TOC lists the WHOLE book, while THIS document may contain only some of those lessons. Cover exactly the lessons whose content appears in the body — no more (never add TOC-only lessons), no fewer.
 
-5. IGNORE FRONT MATTER. Skip cover pages, author/review credits ("تأليف", "مراجعة", "إشراف"), the introduction ("مقدمة"), the table of contents ("الفهرس", "المحتويات"), and copyright/publisher pages. These are not lessons.
+5. IGNORE FRONT MATTER. Skip cover pages, author/review credits ("تأليف", "مراجعة", "إشراف"), the introduction ("مقدمة"), and copyright/publisher pages. The TABLE OF CONTENTS ("الفهرس", "المحتويات", "Table of Contents", "Scope and Sequence") lists lessons as page-number-prefixed or dotted-leader entries with no teaching content — treat it as NAVIGATION ONLY. NEVER create a lesson or skill from a TOC entry; only the lesson BODIES later in the document are real.
 
 6. SKILL GRANULARITY (sweet spot). Each skill must be:
    - Specific enough to generate 5-10 diverse quiz questions.
    - Broad enough to NOT be a single-answer trivia fact.
    - Focused on ONE testable cognitive ability.
-   Merge near-duplicate objectives that test the same skill; split an objective that clearly spans multiple distinct skills.
+
+   CONSOLIDATION BIAS — avoid over-splitting. If two or more objectives describe
+   the SAME act on the SAME content (e.g. read X / write X / order X), MERGE them
+   into one skill. When genuinely unsure whether two objectives are the same skill,
+   PREFER TO MERGE. Do not turn each micro-step of one procedure into its own skill.
+   The METHOD or REPRESENTATION used to perform a skill is NOT itself a separate
+   skill: if two objectives perform the SAME operation on the SAME content and differ
+   only in tool/representation (e.g. with grids vs a place-value table, by experiment
+   vs by diagram, orally vs in writing), MERGE them. (A genuinely different OPERATION
+   — e.g. multiply vs divide — stays separate.)
+
+   COVERAGE GUARDRAIL — do NOT over-merge. Keep objectives that test DIFFERENT
+   competencies or skill strands as SEPARATE skills. A lesson may legitimately have
+   many skills when it genuinely teaches many distinct things (e.g. a language lesson
+   covering reading comprehension AND grammar AND spelling AND handwriting keeps all
+   four as separate skills). Never drop a distinct skill just to reduce the count.
+   There is NO fixed number of skills per lesson — let the content decide.
+   COMPLETENESS bias: when in doubt about whether something is a distinct skill, KEEP
+   IT. It is worse to omit a testable skill than to include a slightly narrow one.
+   In particular, these are SEPARATE skills, not to be folded away:
+     • a representation/modeling skill stated as its own objective (e.g. "representing
+       decimals with models", "drawing a diagram of the cell") is distinct from the
+       computation/identification skill it supports — keep both;
+     • closely-related operations the lesson lists separately (e.g. comparing AND
+       ordering, rounding AND a named strategy like the number-line/midpoint method)
+       are distinct skills — keep each.
+   (This does NOT contradict the CONSOLIDATION BIAS above: merge only when two
+   objectives are the SAME operation differing only in tool/representation; keep them
+   separate when they are different operations OR when a representation/strategy is
+   itself a stated learning objective.)
+
+   This merge/keep rule is IDENTICAL for every subject. Examples (each shows BOTH a
+   MERGE and a KEEP-SEPARATE case for the same subject):
+   - Math — MERGE: "قراءة الأعداد العشرية" + "كتابة الأعداد العشرية" → "قراءة وكتابة الأعداد العشرية". KEEP SEPARATE: "ضرب الكسور" and "قسمة الكسور" (different procedures).
+   - Science — MERGE: "تسمية أجزاء النبات" + "تحديد أجزاء النبات" → "التعرف على أجزاء النبات". KEEP SEPARATE: "أجزاء النبات ووظائفها" and "دورة حياة النبات" (different concepts).
+   - Arabic — MERGE: "التمييز بين التاء المربوطة والمفتوحة" + "كتابة التاء المربوطة" → "التمييز بين التاء المربوطة والمفتوحة وكتابتهما". KEEP SEPARATE: reading comprehension, a grammar point (المفعول المطلق), a spelling rule, and handwriting in one lesson stay as separate skills (different strands).
+   - English — MERGE: "Read sight words" + "Spell sight words" → "Reading and spelling sight words". KEEP SEPARATE: "Using the past simple tense" and "Reading comprehension of the passage" (different strands).
+   - Social Studies — MERGE: "تحديد عاصمة مصر" + "ذكر موقع مصر الجغرافي" → "تحديد عاصمة مصر وموقعها الجغرافي". KEEP SEPARATE: "موقع مصر الجغرافي" and "أهمية نهر النيل" (different topics).
 
 7. LANGUAGE: Keep the EXACT language of the textbook. If the textbook is in English, write skills in English. If Arabic, write skills in Arabic. Do NOT translate.
 

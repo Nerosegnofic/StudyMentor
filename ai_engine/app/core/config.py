@@ -44,6 +44,30 @@ class Settings(BaseSettings):
     # - "embed-multilingual-light-v3.0" (Faster, smaller dimensions)
     COHERE_EMBEDDING_MODEL: str = "embed-multilingual-v3.0"
 
+    # Skill de-duplication (post-extraction safety net): cosine-similarity threshold
+    # above which two skills WITHIN THE SAME LESSON are treated as near-duplicates and
+    # merged into one. 0.88 is conservative (high precision — merges only true
+    # near-duplicates); lower it to merge more aggressively. Per-lesson only, so a skill
+    # that legitimately recurs across lessons is never collapsed. The extraction prompt
+    # (which merges same-operation/different-representation skills) is the primary defense;
+    # this threshold is the deterministic backstop.
+    SKILL_DEDUP_SIMILARITY_THRESHOLD: float = 0.88
+
+    # Skill-count drift warning: log a [SkillDrift] warning when any single lesson
+    # produces more than this many skills. Pure observability — never modifies skills
+    # or blocks ingestion. 6 sits well above the observed mean (1.82) and 95th pctile
+    # (<=4), so it fires only on genuine over-split outliers (the old 10-15 skill lessons).
+    SKILL_COUNT_WARN_THRESHOLD: int = 6
+
+    # --- Chunking (MarkdownRecursiveChunkerStrategy tunables) ---
+    # Defaults equal the previously-hardcoded literals, so chunking output is
+    # unchanged until a value is tuned here.
+    CHUNK_SIZE: int = 2000           # generic-content recursive splitter target (chars)
+    CHUNK_OVERLAP: int = 200         # overlap for both splitters (chars)
+    CHUNK_MIN_SIZE: int = 350        # below this, a chunk is merged forward
+    CHUNK_MERGE_MAX_SIZE: int = 3000 # a merge may not exceed this combined length
+    EXERCISE_CHUNK_SIZE: int = 3000  # item-aware splitter headroom for exercise/example
+
     # --- Guardrail Configuration ---
     # File Upload
     MAX_UPLOAD_SIZE_MB: int = 50
