@@ -51,6 +51,7 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
             val alertSecs     = intent.getIntExtra(UsageTimerService.EXTRA_THRESHOLD_ALERT, -1)
             val limitReached  = intent.getBooleanExtra("limit_reached", false)
             val monitoredInFg = intent.getBooleanExtra(UsageTimerService.EXTRA_MONITORED_IN_FG, false)
+            val unblocked     = intent.getBooleanExtra(UsageTimerService.EXTRA_UNBLOCKED, false)
 
             // Prefer the live bound service value; fall back to prefs using the
             // active UID so we always read the correct per-student key.
@@ -63,6 +64,9 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
             mainHandler.post {
                 if (limitReached) {
                     channel?.invokeMethod("onLimitReached", null)
+                }
+                if (unblocked) {
+                    channel?.invokeMethod("onUnblocked", null)
                 }
                 if (alertSecs >= 0) {
                     channel?.invokeMethod(
@@ -120,14 +124,15 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                     }
 
                     "stopTimerService" -> {
-                        // Mark the student as logged out (device-wide flag) but
-                        // do NOT stop or reset the service — the timer must keep
-                        // running so the cooldown/usage counts are intact on the
-                        // next login.
-                        val intent = serviceIntent(ACTION_START).apply {
-                            putExtra(UsageTimerService.EXTRA_STUDENT_LOGGED_IN, false)
-                        }
-                        startService(intent)
+                        // Persist the logged-out flag directly so START_STICKY
+                        // restarts do not re-enable the tick loop, then stop the
+                        // service cleanly. Writing to prefs directly avoids the
+                        // spurious ACTION_START → startForeground() call that
+                        // previously caused a brief foreground notification flash.
+                        UsageTimerService.prefs(activity)
+                            .edit()
+                            .putBoolean(UsageTimerService.KEY_STUDENT_LOGGED_IN, false)
+                            .apply()
                         startService(serviceIntent(ACTION_STOP))
                         unbindService()
                         result.success(null)

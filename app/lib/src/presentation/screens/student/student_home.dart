@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
@@ -240,10 +241,18 @@ class StudentHomeState extends State<StudentHome> {
                   ScreenTimeRing(config: _config),
                   const SizedBox(height: 16),
                   FreeTimeBanner(
-                    earnedSeconds:
-                        MascotOverlayService.instance.dailyFreeTimeSeconds,
+                    remainingSeconds:
+                        MascotOverlayService.instance.remainingRewardSeconds,
+                    perQuizRewardSeconds: _config.rewardPerQuizSeconds,
+                    isInCooldown: MascotOverlayService.instance.isInCooldown,
                     isLocked: isResting,
+                    cooldownConfigured: _config.cooldownSeconds > 0,
                   ),
+                  if (_config.cooldownSeconds > 0 &&
+                      MascotOverlayService.instance.isInCooldown) ...[
+                    const SizedBox(height: 16),
+                    _buildCooldownCard(),
+                  ],
                   const SizedBox(height: 16),
                 ],
 
@@ -513,6 +522,72 @@ class StudentHomeState extends State<StudentHome> {
 
   double _overallGardenProgress() {
     return ((_avgGardenMastery() ?? 0.0) / 100).clamp(0.0, 1.0);
+  }
+
+  Widget _buildCooldownCard() {
+    final loc = AppLocalizations.of(context);
+    final remaining = MascotOverlayService.instance.remainingSeconds;
+    final h = remaining ~/ 3600;
+    final m = (remaining % 3600) ~/ 60;
+    final s = remaining % 60;
+    final countdown = '${h.toString().padLeft(2, '0')}:'
+        '${m.toString().padLeft(2, '0')}:'
+        '${s.toString().padLeft(2, '0')}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFE082)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFC107).withValues(alpha: 0.20),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.bedtime_rounded,
+              color: Color(0xFFF57F17),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  loc.timeToRestTitle,
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF8D6E00),
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  countdown,
+                  style: GoogleFonts.cairo(
+                    fontSize: 12,
+                    color: const Color(0xFF8D6E00).withValues(alpha: 0.75),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildLoadingCard() {

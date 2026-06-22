@@ -4,6 +4,7 @@ import '../../../domain/models/gamification_models.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../utils/student_rank_utils.dart';
 // ---------------------------------------------------------------------------
 // Design-system tokens (mirrored from student_quiz / shop screens)
 // ---------------------------------------------------------------------------
@@ -132,7 +133,10 @@ class _LevelUpCelebrationScreenState extends State<LevelUpCelebrationScreen>
                     ),
                   ),
                   child: Text(
-                    widget.newLevel.levelName,
+                    StudentRankUtils.localizedRankName(
+                      AppLocalizations.of(context),
+                      widget.newLevel.levelNumber,
+                    ),
                     style: GoogleFonts.cairo(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,

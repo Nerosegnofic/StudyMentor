@@ -19,7 +19,7 @@ class StudentConfigModel {
     this.usageHours = 0,
     this.usageMinutes = 30,
     this.cooldownHours = 0,
-    this.cooldownMinutes = 30,
+    this.cooldownMinutes = 0,
     this.quizCount = const Auto(),
   });
 
@@ -74,6 +74,15 @@ class StudentConfigModel {
       cooldownHours <= 24 &&
       cooldownMinutes >= 0 &&
       cooldownMinutes <= 59;
+
+  /// Reward time must be at least 1 minute; 0h 0m is not allowed.
+  bool get isValidRewardTime => usageHours > 0 || usageMinutes > 0;
+
+  /// Total reward seconds earned per quiz completion.
+  int get rewardPerQuizSeconds => (usageHours * 3600) + (usageMinutes * 60);
+
+  /// Total cooldown seconds configured.
+  int get cooldownSeconds => (cooldownHours * 3600) + (cooldownMinutes * 60);
 }
 
 /// Represents one app rule saved by a parent for a student.

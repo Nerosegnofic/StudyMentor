@@ -409,6 +409,7 @@
   "quizPromptMessage": "انتهى وقت التركيز. لنقم باختبار سريع لتنشيط عقلك!",
   "startQuizButton": "ابدأ الاختبار",
   "tailoredToLevelMessage": "مصمم خصيصًا لمستواك الحالي",
+  "notNowButton": "ليس الآن",
   "selectAnswerFirstMessage": "يرجى اختيار إجابة أولاً.",
   "noMoreHintsMessage": "لا توجد تلميحات أخرى متاحة.",
   "hintNumberTitle": "تلميح {number}",
@@ -807,6 +808,8 @@
   "hourUnitLabel": "س",
   "hoursUnitLabel": "س",
   "minuteUnitLabel": "د",
+  "hourPickerLabel": "ساعة",
+  "minutePickerLabel": "دقيقة",
 
   "appsParentWatchesTitle": "التطبيقات التي يراقبها والدك",
   "restingNowSubtitle": "في وضع الراحة · اضغط لرؤية الكل",
@@ -847,25 +850,25 @@
     }
   },
   "appsRestingTitle": "التطبيقات في وضع الراحة الآن",
-  "earnedFreeTimeLockedSubtitle": "لقد أقلت {time} من الوقت الحر اليوم. أكمل اختبارك لفتح المزيد.",
+  "earnedFreeTimeLockedSubtitle": "رصيدك {time} — ينفتح بعد انتهاء وقت الراحة.",
   "@earnedFreeTimeLockedSubtitle": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "finishQuizUnlockApps": "أكمل اختبارك لفتح تطبيقاتك.",
-  "earnedFreeTimeUnlockedTitle": "لقد أقلت {time} من الوقت الحر اليوم",
+  "finishQuizUnlockApps": "أكمل اختبارًا لتجميع وقت حر بعد الراحة.",
+  "earnedFreeTimeUnlockedTitle": "تبقى لديك {time} من الوقت الحر",
   "@earnedFreeTimeUnlockedTitle": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "appsUnlockedEnjoySubtitle": "تطبيقاتك مفتوحة — استمتع بوقتك الحر.",
+  "appsUnlockedEnjoySubtitle": "أكمل المزيد من الاختبارات لكسب وقت إضافي.",
   "appsUnlockedTitle": "تطبيقاتك مفتوحة",
-  "enjoyFreeTimeSubtitle": "استمتع بوقتك الحر.",
+  "enjoyFreeTimeSubtitle": "أكمل اختبارًا لكسب المزيد من الوقت.",
   "timeToRestTitle": "وقت الراحة",
   "screenTimeTitle": "وقت الشاشة",
-  "limitRestSummaryLabel": "الحد {limit}   ·   الراحة {rest}",
+  "limitRestSummaryLabel": "اكسب {limit} لكل اختبار   ·   الراحة {rest}",
   "@limitRestSummaryLabel": {
     "placeholders": {
       "limit": {"type": "String"},
@@ -876,6 +879,15 @@
   "secLeftLabel": "ث. متبقية",
   "restingLabel": "راحة",
   "noTimeLimitMessage": "لا يوجد حد للوقت — استمتع بالتعلم!",
+  "doQuizToUnlockTitle": "أكمل اختبارًا لفتح تطبيقاتك!",
+  "perQuizRewardSubtitle": "كل اختبار يمنحك {time} من الوقت الحر.",
+  "@perQuizRewardSubtitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "doQuizNowLabel": "ابدأ اختبارًا!",
+  "rewardTimeZeroError": "يجب أن يكون وقت المكافأة دقيقة واحدة على الأقل.",
   "questionsTodayLabel": "أسئلة اليوم",
   "noQuestionsYetMessage": "لا أسئلة اليوم حتى الآن — لنبدأ! 🌱",
   "topRankLabel": "أعلى مستوى",

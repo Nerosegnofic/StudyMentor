@@ -18,6 +18,7 @@ import '../../../data/constants/gamification_levels.dart';
 
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../bloc/garden/garden_bloc.dart';
+import '../../../bloc/garden/garden_state.dart';
 import '../../../domain/models/app_config_model.dart';
 import '../../../domain/models/quiz_count.dart';
 import '../../../domain/models/avatar_config.dart';
@@ -91,6 +92,14 @@ class _StudentScreenState extends State<StudentScreen>
   /// Set to true immediately before pushing, cleared in the .then() callback
   /// after the route pops.
   bool _quizIsOpen = false;
+
+  /// Whether the student has at least one subject uploaded by the parent.
+  /// null = garden not loaded yet, false = no subjects, true = has subjects.
+  bool? _hasSubjects;
+
+  /// True when a forced-quiz trigger arrived before garden state was known.
+  /// Flushed (and quiz opened or suppressed) when [GardenLoaded] is received.
+  bool _pendingQuizAwaitingGarden = false;
 
   /// Parent-configured quiz question count — kept in sync when config loads.
   QuizCount _quizCount = const Auto();
@@ -405,6 +414,20 @@ class _StudentScreenState extends State<StudentScreen>
 
   void _openQuizOverlay() {
     if (!mounted) return;
+
+    // ── No subjects guard ──────────────────────────────────────────────────
+    // Never prompt for a quiz until the parent has uploaded at least one subject.
+    if (_hasSubjects == false) {
+      debugPrint('[StudentScreen] Quiz suppressed — no subjects uploaded yet.');
+      return;
+    }
+    if (_hasSubjects == null) {
+      // Garden hasn't responded yet — buffer this trigger.
+      debugPrint('[StudentScreen] Quiz deferred — waiting for garden to load.');
+      _pendingQuizAwaitingGarden = true;
+      return;
+    }
+
     // ── Defense-in-depth guard ─────────────────────────────────────────────
     // The primary guard lives in MascotOverlayService._onLimitReached()
     // (the _isBlocked early-return). This flag catches any duplicate signal
@@ -452,6 +475,12 @@ class _StudentScreenState extends State<StudentScreen>
           _quizIsOpen = false;
           if (completed == true) {
             MascotOverlayService.instance.markQuizCompleted();
+            // Grant the configured per-quiz reward time to the student.
+            final reward =
+                MascotOverlayService.instance.config.rewardPerQuizSeconds;
+            if (reward > 0) {
+              MascotOverlayService.instance.addRewardTime(reward);
+            }
           } else {
             MascotOverlayService.instance.markQuizDismissed();
           }
@@ -639,6 +668,21 @@ class _StudentScreenState extends State<StudentScreen>
         },
         child: MultiBlocListener(
           listeners: [
+            BlocListener<GardenBloc, GardenState>(
+              listener: (context, state) {
+                if (state is GardenLoaded) {
+                  setState(() => _hasSubjects = state.plants.isNotEmpty);
+                  if (_pendingQuizAwaitingGarden) {
+                    _pendingQuizAwaitingGarden = false;
+                    if (_hasSubjects!) {
+                      _openQuizOverlay();
+                    } else {
+                      debugPrint('[StudentScreen] Deferred quiz dropped — no subjects.');
+                    }
+                  }
+                }
+              },
+            ),
             BlocListener<AuthBloc, AuthState>(
               listener: (context, state) {
                 if (state is LegacyAppRulesLoaded && state.studentUid == widget.uid) {

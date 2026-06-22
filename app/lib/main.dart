@@ -369,7 +369,7 @@ class _BrandedSplash extends StatelessWidget {
             const MascotWidget(state: MascotState.idle, size: 140),
             const SizedBox(height: 16),
             Text(
-              'StudyMentor',
+              AppLocalizations.of(context).appTitle,
               style: GoogleFonts.cairo(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
