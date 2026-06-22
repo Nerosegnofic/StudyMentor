@@ -20,6 +20,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     on<AnswerQuestionEvent>(_onAnswer);
     on<SubmitQuizEvent>(_onSubmit);
     on<ResetQuizEvent>(_onReset);
+    on<RestoreQuizSessionEvent>(_onRestore);
   }
 
   // ---------------------------------------------------------------------------
@@ -70,6 +71,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
           quizSessionId: event.quizSessionId,
           answers: current.currentAnswers.values.toList(),
           clientLocalDate: DateTime.now().toIso8601String().split('T')[0],
+          totalElapsedMs: event.totalElapsedMs,
         ),
       );
       emit(QuizResultsLoaded(
@@ -90,5 +92,12 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
 
   void _onReset(ResetQuizEvent event, Emitter<QuizState> emit) {
     emit(QuizInitial());
+  }
+
+  void _onRestore(RestoreQuizSessionEvent event, Emitter<QuizState> emit) {
+    emit(QuizLoaded(
+      quizResponse: event.quizResponse,
+      currentAnswers: event.answers,
+    ));
   }
 }

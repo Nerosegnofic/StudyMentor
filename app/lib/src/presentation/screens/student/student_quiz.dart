@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/quiz/quiz_bloc.dart';
@@ -15,30 +17,28 @@ import '../../../features/mascot/mascot_cubit.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
+import '../../../services/quiz_lock_service.dart';
+import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // StudyMentor design-system tokens (Student app)
 // ---------------------------------------------------------------------------
-// Kept file-local to mirror the existing convention in subject_detail_screen.dart
-// (which defines `_kGreen` / `_kGreenLight`). Reference these instead of inline hex.
-const _kBg = Color(0xFFF5F7FA); // Soft Cloud scaffold
-const _kGreen = Color(0xFF4CAF50); // primary actions / growth
-const _kGreenLight = Color(0xFFE8F5E9); // progress track, good-result bg
-const _kAmber = Color(0xFFFFC107); // hint / gamification highlight
-const _kAmberLight = Color(0xFFFFF8E1); // needs-improvement bg
-const _kBlue = Color(0xFF2196F3); // informational (skill chip, explanation)
+const _kBg = Color(0xFFF5F7FA);
+const _kGreen = Color(0xFF4CAF50);
+const _kGreenLight = Color(0xFFE8F5E9);
+const _kAmber = Color(0xFFFFC107);
+const _kAmberLight = Color(0xFFFFF8E1);
+const _kBlue = Color(0xFF2196F3);
 const _kBlueLight = Color(0xFFE3F2FD);
 const _kBlueBorder = Color(0xFF90CAF9);
-const _kRed = Color(0xFFEA4335); // wrong-answer reveal
-const _kInk = Color(0xFF1A1F3C); // heading text
-const _kMuted = Color(0xFF8B93A7); // secondary text
-const _kHairline = Color(0xFFE3E8EF); // neutral card border
-const _kDisabled = Color(0xFFCFD6E0); // disabled button fill
+const _kRed = Color(0xFFEA4335);
+const _kInk = Color(0xFF1A1F3C);
+const _kMuted = Color(0xFF8B93A7);
+const _kHairline = Color(0xFFE3E8EF);
+const _kDisabled = Color(0xFFCFD6E0);
 
-// Content-aware text direction: quiz content can arrive in Arabic OR English,
-// so direction is detected per-field (Arabic Unicode block → RTL, else LTR).
-// Inline Latin numbers are handled by the Unicode bidi algorithm.
+// Content-aware text direction: quiz content can arrive in Arabic OR English.
 TextDirection _dirOf(String s) =>
     RegExp(r'[؀-ۿ]').hasMatch(s)
         ? TextDirection.rtl
@@ -50,9 +50,8 @@ TextDirection _dirOf(String s) =>
 // Full-screen Scaffold pushed by StudentScreen when the mascot overlay fires,
 // or by SubjectDetailScreen when the student taps "Practice Now".
 //
-// [subjectId] — optional. When provided the backend generates a quiz
-// specifically for that subject. When null the backend auto-selects the
-// highest-priority subject based on BKT mastery data.
+// [restoredSession] — when non-null the BLoC is seeded with the saved quiz
+// data and the student resumes at [restoredSession.currentIndex].
 //
 // Pop return value convention:
 //   true  → student completed the quiz (reached results screen, tapped Done)
@@ -60,19 +59,15 @@ TextDirection _dirOf(String s) =>
 
 class QuizOverlayPage extends StatelessWidget {
   final AiEngineRepository repository;
-
   final String studentId;
   final QuizContext contextType;
   final int totalQuestions;
-
-  /// When true (parent's "Auto" length), the backend sizes the quiz; [totalQuestions]
-  /// is only a fallback.
   final bool autoLength;
   final int? subjectId;
-
-  /// The student's grade level (from their profile); null falls back to 5.
   final int? studentGrade;
 
+  /// Non-null when restoring a previously interrupted quiz session.
+  final QuizSessionData? restoredSession;
 
   const QuizOverlayPage({
     super.key,
@@ -83,6 +78,7 @@ class QuizOverlayPage extends StatelessWidget {
     this.autoLength = false,
     this.subjectId,
     this.studentGrade,
+    this.restoredSession,
   });
 
   @override
@@ -90,10 +86,6 @@ class QuizOverlayPage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => QuizBloc(repository: repository)),
-        // Scoped to this quiz session — independent of the shared
-        // StudentScreen-level MascotCubit used on the home screen, so the
-        // forced-quiz-during-cooldown case never has the two fight over
-        // the mascot's face.
         BlocProvider(create: (_) => MascotCubit()),
       ],
       child: _QuizOverlayScaffold(
@@ -103,21 +95,24 @@ class QuizOverlayPage extends StatelessWidget {
         autoLength: autoLength,
         subjectId: subjectId,
         studentGrade: studentGrade,
+        restoredSession: restoredSession,
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+// _QuizOverlayScaffold
+// ---------------------------------------------------------------------------
 
 class _QuizOverlayScaffold extends StatefulWidget {
-
-
   final String studentId;
   final QuizContext contextType;
   final int totalQuestions;
   final bool autoLength;
   final int? subjectId;
   final int? studentGrade;
+  final QuizSessionData? restoredSession;
 
   const _QuizOverlayScaffold({
     required this.studentId,
@@ -126,146 +121,209 @@ class _QuizOverlayScaffold extends StatefulWidget {
     this.autoLength = false,
     this.subjectId,
     this.studentGrade,
+    this.restoredSession,
   });
-
 
   @override
   State<_QuizOverlayScaffold> createState() => _QuizOverlayScaffoldState();
 }
 
 class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
-  // Captured when quiz results arrive; used to compute the mastery delta.
   double? _preQuizMastery;
   String? _quizzedSubjectName;
   int? _quizzedSubjectId;
   bool _waitingForGardenUpdate = false;
 
+  // Set to true once the first QuizLoaded state arrives so we only save the
+  // initial session (with index=0) once, not on every answer update.
+  bool _quizLockActivated = false;
+
+  // Restored index/elapsed passed down to _QuizActiveView so initState can
+  // position the student at the right question.
+  int _restoredIndex = 0;
+  int _restoredElapsedMs = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final restored = widget.restoredSession;
+    if (restored != null) {
+      _restoredIndex = restored.currentIndex;
+      _restoredElapsedMs = restored.elapsedMs;
+      _quizLockActivated = true; // already locked (we're restoring)
+      // Dispatch restore event after the BlocProvider tree is fully built.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<QuizBloc>().add(
+              RestoreQuizSessionEvent(
+                quizResponse: restored.quizResponse,
+                answers: restored.answers,
+              ),
+            );
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    return Scaffold(
-      backgroundColor: _kBg,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          loc.studyQuizTitle,
-          style: GoogleFonts.cairo(
-            fontWeight: FontWeight.w800,
-            color: _kInk,
-            fontSize: 18,
-          ),
-        ),
-        automaticallyImplyLeading: false,
-        actions: [
-          BlocBuilder<QuizBloc, QuizState>(
-            builder: (context, state) {
-              if (state is QuizResultsLoaded || state is QuizError) {
-                return IconButton(
-                  icon: const Icon(Icons.close, color: _kMuted),
-                  onPressed: () => Navigator.of(context)
-                      .pop(state is QuizResultsLoaded ? true : false),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
-      ),
 
+    // Use BlocBuilder at the top level so PopScope can derive canPop from state.
+    return BlocBuilder<QuizBloc, QuizState>(
+      builder: (context, state) {
+        // Lock prevents back navigation while a quiz is actively in progress.
+        final canPop = state is QuizResultsLoaded ||
+            state is QuizError ||
+            state is QuizInitial;
 
-      body: BlocListener<QuizBloc, QuizState>(
-        listener: (context, state) {
-          if (state is QuizLoading || state is QuizSubmitting) {
-            context.read<MascotCubit>().startThinking();
-          }
-          if (state is QuizResultsLoaded) {
-                _quizzedSubjectId = state.quizResponse.selectedSubjectId;
-                _quizzedSubjectName = state.quizResponse.selectedSubjectName;
-
-                // Snapshot mastery BEFORE the reload so we can show a delta.
-                final gardenState = context.read<GardenBloc>().state;
-                if (gardenState is GardenLoaded) {
-                  _preQuizMastery = gardenState.plants
-                      .where((p) => p.subjectId == _quizzedSubjectId)
-                      .map((p) => p.masteryPercent)
-                      .firstOrNull;
-                }
-                _waitingForGardenUpdate = true;
-
-                // NOTE: quiz reward processing (which drives the level-up
-                // celebration) is intentionally NOT dispatched here. It now
-                // fires when the student leaves the results screen (taps Done /
-                // Take Another) so the level-up appears AFTER they've seen the
-                // result — see _ResultsView.
-
-                context.read<GardenBloc>().add(
-                      LoadGardenRequested(studentUid: widget.studentId),
-                    );
-              }
-            },
-          child: BlocListener<GardenBloc, GardenState>(
-            listener: (context, state) {
-              if (state is GardenLoaded && _waitingForGardenUpdate) {
-                _waitingForGardenUpdate = false;
-                if (_quizzedSubjectId == null || !mounted) return;
-
-                final plant = state.plants
-                    .where((p) => p.subjectId == _quizzedSubjectId)
-                    .firstOrNull;
-                if (plant == null) return;
-
-                final newMastery = plant.masteryPercent;
-                final pre = _preQuizMastery;
-                final delta = pre != null ? newMastery - pre : null;
-
-                final message = (delta != null && delta > 0.05)
-                    ? loc.masteryUpdateMessage(
-                        _quizzedSubjectName ?? '',
-                        pre!.toStringAsFixed(0),
-                        newMastery.toStringAsFixed(0),
-                        delta.toStringAsFixed(1),
-                      )
-                    : loc.masteryUpdatedSimpleMessage(_quizzedSubjectName ?? '');
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(message),
-                    duration: const Duration(seconds: 3),
-                    backgroundColor: _kGreen,
+        return PopScope(
+          canPop: canPop,
+          child: Scaffold(
+            backgroundColor: _kBg,
+            appBar: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              title: Text(
+                loc.studyQuizTitle,
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  color: _kInk,
+                  fontSize: 18,
+                ),
+              ),
+              automaticallyImplyLeading: false,
+              actions: [
+                if (state is QuizResultsLoaded || state is QuizError)
+                  IconButton(
+                    icon: const Icon(Icons.close, color: _kMuted),
+                    onPressed: () => Navigator.of(context)
+                        .pop(state is QuizResultsLoaded ? true : false),
                   ),
-                );
-              }
-            },
+              ],
+            ),
+            body: BlocListener<QuizBloc, QuizState>(
+              listener: (context, state) {
+                if (state is QuizLoading || state is QuizSubmitting) {
+                  context.read<MascotCubit>().startThinking();
+                }
 
-        child: BlocBuilder<QuizBloc, QuizState>(
-          builder: (context, state) {
-            if (state is QuizInitial) {
-              return _AutoStartPanel(
-                totalQuestions: widget.totalQuestions,
-                autoLength: widget.autoLength,
-                subjectId: widget.subjectId,
-                studentGrade: widget.studentGrade,
-                contextType: widget.contextType,
-              );
-            }
-            if (state is QuizLoading) {
-              return _LoadingView(message: loc.generatingQuizMessage);
-            }
-            if (state is QuizLoaded) return _QuizActiveView(state: state);
-            if (state is QuizSubmitting) {
-              return _LoadingView(message: loc.submittingAnswersMessage);
-            }
-            if (state is QuizResultsLoaded) {
-              return _ResultsView(state: state, studentId: widget.studentId);
-            }
-            if (state is QuizError) return _ErrorView(message: state.message);
-            return const SizedBox.shrink();
-          },
-        ),
-      ),
-      ),
+                // First QuizLoaded arrival — save initial session and activate lock.
+                if (state is QuizLoaded && !_quizLockActivated) {
+                  _quizLockActivated = true;
+                  QuizLockService.instance.saveSession(QuizSessionData(
+                    quizResponse: state.quizResponse,
+                    answers: const {},
+                    currentIndex: 0,
+                    elapsedMs: 0,
+                    studentId: widget.studentId,
+                    contextType: widget.contextType,
+                    totalQuestions: widget.totalQuestions,
+                    autoLength: widget.autoLength,
+                    subjectId: widget.subjectId,
+                    studentGrade: widget.studentGrade,
+                  ));
+                }
+
+                if (state is QuizResultsLoaded) {
+                  // Deactivate the quiz lock as soon as results arrive.
+                  QuizLockService.instance.clearSession();
+
+                  _quizzedSubjectId = state.quizResponse.selectedSubjectId;
+                  _quizzedSubjectName = state.quizResponse.selectedSubjectName;
+
+                  final gardenState = context.read<GardenBloc>().state;
+                  if (gardenState is GardenLoaded) {
+                    _preQuizMastery = gardenState.plants
+                        .where((p) => p.subjectId == _quizzedSubjectId)
+                        .map((p) => p.masteryPercent)
+                        .firstOrNull;
+                  }
+                  _waitingForGardenUpdate = true;
+
+                  context.read<GardenBloc>().add(
+                        LoadGardenRequested(studentUid: widget.studentId),
+                      );
+                }
+              },
+              child: BlocListener<GardenBloc, GardenState>(
+                listener: (context, state) {
+                  if (state is GardenLoaded && _waitingForGardenUpdate) {
+                    _waitingForGardenUpdate = false;
+                    if (_quizzedSubjectId == null || !mounted) return;
+
+                    final plant = state.plants
+                        .where((p) => p.subjectId == _quizzedSubjectId)
+                        .firstOrNull;
+                    if (plant == null) return;
+
+                    final newMastery = plant.masteryPercent;
+                    final pre = _preQuizMastery;
+                    final delta =
+                        pre != null ? newMastery - pre : null;
+
+                    final message = (delta != null && delta > 0.05)
+                        ? loc.masteryUpdateMessage(
+                            _quizzedSubjectName ?? '',
+                            pre!.toStringAsFixed(0),
+                            newMastery.toStringAsFixed(0),
+                            delta.toStringAsFixed(1),
+                          )
+                        : loc.masteryUpdatedSimpleMessage(
+                            _quizzedSubjectName ?? '');
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(message),
+                        duration: const Duration(seconds: 3),
+                        backgroundColor: _kGreen,
+                      ),
+                    );
+                  }
+                },
+                child: _buildBody(context, state),
+              ),
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  Widget _buildBody(BuildContext context, QuizState state) {
+    final loc = AppLocalizations.of(context);
+    if (state is QuizInitial) {
+      return _AutoStartPanel(
+        totalQuestions: widget.totalQuestions,
+        autoLength: widget.autoLength,
+        subjectId: widget.subjectId,
+        studentGrade: widget.studentGrade,
+        contextType: widget.contextType,
+      );
+    }
+    if (state is QuizLoading) {
+      return _LoadingView(message: loc.generatingQuizMessage);
+    }
+    if (state is QuizLoaded) {
+      return _QuizActiveView(
+        state: state,
+        initialIndex: _restoredIndex,
+        initialElapsedMs: _restoredElapsedMs,
+        studentId: widget.studentId,
+        contextType: widget.contextType,
+        totalQuestions: widget.totalQuestions,
+        autoLength: widget.autoLength,
+        subjectId: widget.subjectId,
+        studentGrade: widget.studentGrade,
+      );
+    }
+    if (state is QuizSubmitting) {
+      return _LoadingView(message: loc.submittingAnswersMessage);
+    }
+    if (state is QuizResultsLoaded) {
+      return _ResultsView(state: state, studentId: widget.studentId);
+    }
+    if (state is QuizError) return _ErrorView(message: state.message);
+    return const SizedBox.shrink();
   }
 }
 
@@ -274,7 +332,6 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
 // ---------------------------------------------------------------------------
 
 class _AutoStartPanel extends StatelessWidget {
-
   final int totalQuestions;
   final bool autoLength;
   final int? subjectId;
@@ -288,7 +345,6 @@ class _AutoStartPanel extends StatelessWidget {
     this.subjectId,
     this.studentGrade,
   });
-
 
   @override
   Widget build(BuildContext context) {
@@ -325,15 +381,14 @@ class _AutoStartPanel extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 context.read<QuizBloc>().add(
-                  GenerateQuizEvent(
-                    totalQuestions: totalQuestions,
-                    autoLength: autoLength,
-                    subjectId: subjectId,
-                    studentGrade: studentGrade ?? 5,
-                    quizContext: contextType,
-                  ),
-                );
-
+                      GenerateQuizEvent(
+                        totalQuestions: totalQuestions,
+                        autoLength: autoLength,
+                        subjectId: subjectId,
+                        studentGrade: studentGrade ?? 5,
+                        quizContext: contextType,
+                      ),
+                    );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kGreen,
@@ -361,7 +416,6 @@ class _AutoStartPanel extends StatelessWidget {
                 color: _kMuted,
               ),
             ),
-
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -395,7 +449,8 @@ class StudentQuizScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      const _AutoStartPanel(totalQuestions: 5, contextType: QuizContext.voluntary);
+      const _AutoStartPanel(
+          totalQuestions: 5, contextType: QuizContext.voluntary);
 }
 
 // ---------------------------------------------------------------------------
@@ -405,29 +460,89 @@ class StudentQuizScreen extends StatelessWidget {
 class _QuizActiveView extends StatefulWidget {
   final QuizLoaded state;
 
-  const _QuizActiveView({required this.state});
+  // Restore position — 0 and 0 for fresh quizzes.
+  final int initialIndex;
+  final int initialElapsedMs;
+
+  // Quiz params forwarded for session persistence.
+  final String studentId;
+  final QuizContext contextType;
+  final int totalQuestions;
+  final bool autoLength;
+  final int? subjectId;
+  final int? studentGrade;
+
+  const _QuizActiveView({
+    required this.state,
+    required this.initialIndex,
+    required this.initialElapsedMs,
+    required this.studentId,
+    required this.contextType,
+    required this.totalQuestions,
+    required this.autoLength,
+    this.subjectId,
+    this.studentGrade,
+  });
 
   @override
   State<_QuizActiveView> createState() => _QuizActiveViewState();
 }
 
-class _QuizActiveViewState extends State<_QuizActiveView> {
-  int _currentIndex = 0;
+class _QuizActiveViewState extends State<_QuizActiveView>
+    with WidgetsBindingObserver {
+  late int _currentIndex;
   int _hintsUsed = 0;
 
-  // Tentative selection for the current question — re-changeable until the
-  // student taps Submit. `_revealed` flips once the answer is committed.
   String? _selectedOption;
   bool _revealed = false;
 
   DateTime? _questionStartedAt;
+  // Timestamp set when the app enters the background mid-question. On resume,
+  // _questionStartedAt is shifted forward by the background duration so that
+  // timeTakenMs sent to the BKT engine reflects actual thinking time only.
+  DateTime? _questionBackgroundedAt;
   final PageController _pageController = PageController();
+
+  // Counts only active foreground time; paused whenever the app leaves
+  // the foreground (background, lock screen, app switch).
+  final Stopwatch _stopwatch = Stopwatch();
+  Timer? _ticker;
+
+  // Elapsed time from a restored session. Added to the stopwatch value so
+  // the timer display is continuous across interruptions.
+  late int _extraElapsedMs;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
+    _extraElapsedMs = widget.initialElapsedMs;
+
+    // If restoring to a question that was already answered, show it as
+    // revealed so the student sees the result before advancing.
+    final savedAnswer =
+        widget.state.currentAnswers[_currentQuestion.questionId];
+    if (savedAnswer != null) {
+      _selectedOption = savedAnswer.selectedOption;
+      _revealed = true;
+    }
+
     _questionStartedAt = DateTime.now();
-    // Put the mascot into thinking state as soon as the question is visible.
+    WidgetsBinding.instance.addObserver(this);
+    _stopwatch.start();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+
+    // PageController requires the widget to be laid out before we can jump.
+    if (_currentIndex > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(_currentIndex);
+        }
+      });
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<MascotCubit>().startThinking();
     });
@@ -435,8 +550,49 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopwatch.stop();
+    _ticker?.cancel();
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        _stopwatch.stop();
+        _questionBackgroundedAt = DateTime.now();
+        _persistSession(context);
+        // Primary foreground-recovery mechanism for Home button and app-switch:
+        // fires immediately via Flutter lifecycle, unlike the native service's
+        // UsageStatsManager poll which can lag several seconds on many OEMs.
+        MascotOverlayService.instance.bringToForeground();
+        break;
+      case AppLifecycleState.resumed:
+        _stopwatch.start();
+        // Shift _questionStartedAt forward by the time spent in the background
+        // so that timeTakenMs for the current question excludes background idle.
+        if (_questionBackgroundedAt != null && _questionStartedAt != null) {
+          final backgrounded = DateTime.now().difference(_questionBackgroundedAt!);
+          _questionStartedAt = _questionStartedAt!.add(backgrounded);
+        }
+        _questionBackgroundedAt = null;
+        break;
+      default:
+        break;
+    }
+  }
+
+  Duration get _totalElapsed =>
+      Duration(milliseconds: _extraElapsedMs + _stopwatch.elapsedMilliseconds);
+
+  String _formatElapsed(Duration d) {
+    final h = d.inHours.toString().padLeft(2, '0');
+    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$h:$m:$s';
   }
 
   QuestionModel get _currentQuestion =>
@@ -445,14 +601,11 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
   bool get _isLastQuestion =>
       _currentIndex == widget.state.quizResponse.questions.length - 1;
 
-  // Local-only: lets the student re-pick before committing.
   void _selectOption(String option) {
     if (_revealed) return;
     setState(() => _selectedOption = option);
   }
 
-  // Commits the answer to the BLoC (for progress + final submission) and
-  // reveals the correct/wrong colouring + the solution card.
   void _submitAnswer(BuildContext context) {
     if (_selectedOption == null) return;
     final timeTaken = DateTime.now()
@@ -471,19 +624,25 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
         );
     setState(() => _revealed = true);
 
+    // Save after the bloc has processed the answer (next frame).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _persistSession(context);
+    });
+
     final isCorrect = _selectedOption == _currentQuestion.correctAnswer;
-    // Persist happy/sad until the student moves to the next question.
     context.read<MascotCubit>().react(isCorrect);
   }
 
   void _advance(BuildContext context) {
     if (_isLastQuestion) {
-      context.read<QuizBloc>().add(
-            SubmitQuizEvent(widget.state.quizResponse.quizSessionId),
-          );
+      // Clear the persistent session before submitting — quiz is finishing.
+      QuizLockService.instance.clearSession();
+      context.read<QuizBloc>().add(SubmitQuizEvent(
+        widget.state.quizResponse.quizSessionId,
+        totalElapsedMs: _totalElapsed.inMilliseconds,
+      ));
       return;
     }
-    // Reset mascot to thinking for the next question.
     context.read<MascotCubit>().startThinking();
     setState(() {
       _currentIndex++;
@@ -496,6 +655,28 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+    // Save the updated index after advancing.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _persistSession(context);
+    });
+  }
+
+  // Persists the current session state to SharedPreferences via QuizLockService.
+  void _persistSession(BuildContext context) {
+    final blocState = context.read<QuizBloc>().state;
+    if (blocState is! QuizLoaded) return;
+    QuizLockService.instance.saveSession(QuizSessionData(
+      quizResponse: blocState.quizResponse,
+      answers: blocState.currentAnswers,
+      currentIndex: _currentIndex,
+      elapsedMs: _extraElapsedMs + _stopwatch.elapsedMilliseconds,
+      studentId: widget.studentId,
+      contextType: widget.contextType,
+      totalQuestions: widget.totalQuestions,
+      autoLength: widget.autoLength,
+      subjectId: widget.subjectId,
+      studentGrade: widget.studentGrade,
+    ));
   }
 
   void _showHint(BuildContext context) {
@@ -522,7 +703,6 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header row: hint content left, thinking mascot right
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -621,7 +801,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -642,9 +823,31 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                   ),
                 ],
               ),
-              Text(
-                loc.answeredCountLabel(answered.length),
-                style: GoogleFonts.cairo(fontSize: 13, color: _kMuted),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _kGreenLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border:
+                      Border.all(color: _kGreen.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.timer_outlined,
+                        size: 14, color: _kGreen),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatElapsed(_totalElapsed),
+                      style: GoogleFonts.cairo(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: _kGreen,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -660,7 +863,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
                 question: questions[index],
                 selectedOption: isCurrent
                     ? _selectedOption
-                    : answered[questions[index].questionId]?.selectedOption,
+                    : answered[questions[index].questionId]
+                        ?.selectedOption,
                 revealed: isCurrent ? _revealed : true,
                 onSelect: _selectOption,
               );
@@ -680,7 +884,8 @@ class _QuizActiveViewState extends State<_QuizActiveView> {
     final VoidCallback? onPrimary;
     if (!_revealed) {
       label = loc.submitButton;
-      onPrimary = _selectedOption != null ? () => _submitAnswer(context) : null;
+      onPrimary =
+          _selectedOption != null ? () => _submitAnswer(context) : null;
     } else if (_isLastQuestion) {
       label = loc.finishButton;
       onPrimary = () => _advance(context);
@@ -761,7 +966,6 @@ class _QuestionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── White question card ────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -805,7 +1009,6 @@ class _QuestionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // ── Answer options (uniform full-width) ─────────────────────────
           ...question.options.map(
             (opt) => _OptionTile(
               label: opt,
@@ -815,8 +1018,9 @@ class _QuestionCard extends StatelessWidget {
               onTap: () => onSelect(opt),
             ),
           ),
-          // ── Solution / explanation (after submit) ───────────────────────
-          if (revealed) _SolutionCard(question: question, isCorrect: isCorrectSelection),
+          if (revealed)
+            _SolutionCard(
+                question: question, isCorrect: isCorrectSelection),
         ],
       ),
     );
@@ -825,7 +1029,8 @@ class _QuestionCard extends StatelessWidget {
   Widget _difficultyPill(AppLocalizations loc) {
     final color = _difficultyColor(question.difficulty);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
@@ -843,7 +1048,8 @@ class _QuestionCard extends StatelessWidget {
 
   Widget _skillChip() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: _kBlueLight,
         borderRadius: BorderRadius.circular(20),
@@ -920,7 +1126,6 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Resolve the visual treatment for the four reachable states.
     late final Color bg;
     late final Color border;
     late final Color fg;
@@ -944,7 +1149,6 @@ class _OptionTile extends StatelessWidget {
         iconColor = _kMuted;
       }
     } else if (isCorrect) {
-      // The correct option is always highlighted green, even if not chosen.
       bg = _kGreen;
       border = _kGreen;
       fg = Colors.white;
@@ -952,7 +1156,6 @@ class _OptionTile extends StatelessWidget {
       iconColor = Colors.white;
       emphasize = true;
     } else if (isSelected) {
-      // The student's wrong pick.
       bg = _kRed;
       border = _kRed;
       fg = Colors.white;
@@ -973,7 +1176,8 @@ class _OptionTile extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(18),
@@ -992,7 +1196,8 @@ class _OptionTile extends StatelessWidget {
                   style: GoogleFonts.cairo(
                     fontSize: 15,
                     color: fg,
-                    fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight:
+                        emphasize ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
               ),
@@ -1005,7 +1210,7 @@ class _OptionTile extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Solution / explanation card (shown after the answer is submitted)
+// Solution / explanation card
 // ---------------------------------------------------------------------------
 
 class _SolutionCard extends StatelessWidget {
@@ -1019,7 +1224,8 @@ class _SolutionCard extends StatelessWidget {
     final loc = AppLocalizations.of(context);
     final accent = isCorrect ? _kGreen : _kAmber;
     final bg = isCorrect ? _kGreenLight : _kAmberLight;
-    final mascotEmotion = isCorrect ? MascotState.happy : MascotState.sad;
+    final mascotEmotion =
+        isCorrect ? MascotState.happy : MascotState.sad;
 
     return Container(
       width: double.infinity,
@@ -1033,7 +1239,6 @@ class _SolutionCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left: label + optional correct answer + explanation
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1041,13 +1246,17 @@ class _SolutionCard extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      isCorrect ? Icons.check_circle : Icons.lightbulb_rounded,
+                      isCorrect
+                          ? Icons.check_circle
+                          : Icons.lightbulb_rounded,
                       size: 18,
                       color: accent,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isCorrect ? loc.correctExclamationLabel : loc.solutionLabel,
+                      isCorrect
+                          ? loc.correctExclamationLabel
+                          : loc.solutionLabel,
                       style: GoogleFonts.cairo(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1096,7 +1305,6 @@ class _SolutionCard extends StatelessWidget {
               ],
             ),
           ),
-          // Right: mascot reacting to the answer
           const SizedBox(width: 12),
           MascotWidget(state: mascotEmotion, size: 72),
         ],
@@ -1115,9 +1323,6 @@ class _ResultsView extends StatelessWidget {
 
   const _ResultsView({required this.state, required this.studentId});
 
-  // Processes the quiz rewards (XP / coins / level-up). Dispatched only when the
-  // student leaves the results screen, so the level-up celebration appears
-  // after they've seen the result rather than on top of it.
   void _processRewards(BuildContext context) {
     context.read<GamificationBloc>().add(
           ProcessQuizRewardsRequested(

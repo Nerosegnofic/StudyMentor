@@ -231,7 +231,7 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Align(
-                              alignment: Alignment.centerLeft,
+                              alignment: AlignmentDirectional.centerStart,
                               child: Text(
                                 slide.text,
                                 style: GoogleFonts.cairo(
@@ -243,9 +243,11 @@ class _AiSummaryCarouselState extends State<AiSummaryCarousel> {
                             ),
                           ),
                           if (tappable)
-                            const Icon(
-                              Icons.chevron_right_rounded,
-                              color: Color(0xFF94A3B8),
+                            Icon(
+                              Directionality.of(context) == TextDirection.rtl
+                                  ? Icons.chevron_left_rounded
+                                  : Icons.chevron_right_rounded,
+                              color: const Color(0xFF94A3B8),
                               size: 20,
                             ),
                         ],

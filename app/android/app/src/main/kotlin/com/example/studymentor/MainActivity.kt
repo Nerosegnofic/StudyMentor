@@ -21,6 +21,10 @@ class MainActivity : FlutterActivity() {
     // Set in configureFlutterEngine and consumed in onFlutterUiDisplayed.
     private var pendingQuizOnLaunch = false
 
+    // True when the app was (re)launched to restore a quiz session interrupted
+    // by task removal or device reboot.
+    private var pendingQuizRestore = false
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -59,6 +63,10 @@ class MainActivity : FlutterActivity() {
             pendingQuizOnLaunch = true
             intent.removeExtra(UsageTimerService.EXTRA_QUIZ_ON_LAUNCH)
         }
+        if (intent?.getBooleanExtra(UsageTimerService.EXTRA_QUIZ_RESTORE, false) == true) {
+            pendingQuizRestore = true
+            intent.removeExtra(UsageTimerService.EXTRA_QUIZ_RESTORE)
+        }
     }
 
     /**
@@ -77,6 +85,10 @@ class MainActivity : FlutterActivity() {
             pendingQuizOnLaunch = false
             dispatchQuizOnLaunch()
         }
+        if (pendingQuizRestore) {
+            pendingQuizRestore = false
+            dispatchQuizRestore()
+        }
     }
 
     /**
@@ -94,6 +106,10 @@ class MainActivity : FlutterActivity() {
         if (intent.getBooleanExtra(UsageTimerService.EXTRA_QUIZ_ON_LAUNCH, false)) {
             dispatchQuizOnLaunch()
             intent.removeExtra(UsageTimerService.EXTRA_QUIZ_ON_LAUNCH)
+        }
+        if (intent.getBooleanExtra(UsageTimerService.EXTRA_QUIZ_RESTORE, false)) {
+            dispatchQuizRestore()
+            intent.removeExtra(UsageTimerService.EXTRA_QUIZ_RESTORE)
         }
     }
 
@@ -128,6 +144,10 @@ class MainActivity : FlutterActivity() {
      */
     private fun dispatchQuizOnLaunch() {
         timerChannel?.invokeMethod("onLimitReached", null)
+    }
+
+    private fun dispatchQuizRestore() {
+        timerChannel?.invokeMethod("onQuizRestore", null)
     }
 
     override fun onDestroy() {

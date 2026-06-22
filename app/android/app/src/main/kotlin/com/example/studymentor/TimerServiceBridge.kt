@@ -251,6 +251,26 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                         result.success(null)
                     }
 
+                    "setQuizLockActive" -> {
+                        val active = call.argument<Boolean>("active") ?: false
+                        if (timerService != null) {
+                            timerService!!.setQuizLockActive(active)
+                        } else {
+                            UsageTimerService.prefs(activity)
+                                .edit()
+                                .putBoolean(UsageTimerService.KEY_QUIZ_LOCK_ACTIVE, active)
+                                .apply()
+                        }
+                        result.success(null)
+                    }
+
+                    "getQuizLockActive" -> {
+                        val active = timerService?.getQuizLockActive()
+                            ?: UsageTimerService.prefs(activity)
+                                .getBoolean(UsageTimerService.KEY_QUIZ_LOCK_ACTIVE, false)
+                        result.success(active)
+                    }
+
                     "setTimerNotificationEnabled" -> {
                         val enabled = call.argument<Boolean>("enabled") ?: true
                         UsageTimerService.prefs(activity)

@@ -76,6 +76,17 @@ class QuestionModel {
       hints: List<String>.from(json['hints'] as List),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'question_id': questionId,
+        'topic': topic,
+        'question_text': questionText,
+        'options': options,
+        'correct_answer': correctAnswer,
+        'explanation': explanation,
+        'difficulty': difficulty,
+        'hints': hints,
+      };
 }
 
 class GenerateQuizResponse {
@@ -104,6 +115,14 @@ class GenerateQuizResponse {
           .toList(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'quiz_session_id': quizSessionId,
+        'selected_subject_id': selectedSubjectId,
+        'selected_subject_name': selectedSubjectName,
+        'quiz_title': quizTitle,
+        'questions': questions.map((q) => q.toJson()).toList(),
+      };
 }
 
 class StudentAnswer {
@@ -119,6 +138,13 @@ class StudentAnswer {
     required this.hintsUsed,
   });
 
+  factory StudentAnswer.fromJson(Map<String, dynamic> json) => StudentAnswer(
+        questionId: json['question_id'] as String,
+        selectedOption: json['selected_option'] as String,
+        timeTakenMs: json['time_taken_ms'] as int,
+        hintsUsed: json['hints_used'] as int,
+      );
+
   Map<String, dynamic> toJson() => {
         'question_id': questionId,
         'selected_option': selectedOption,
@@ -131,17 +157,23 @@ class QuizSubmissionRequest {
   final String quizSessionId;
   final List<StudentAnswer> answers;
   final String clientLocalDate;
+  /// Foreground-only solve time from the client stopwatch (ms).
+  /// Pauses when the app is backgrounded; used server-side to compute accurate
+  /// study time (end_time = start_time + totalElapsedMs).
+  final int totalElapsedMs;
 
   const QuizSubmissionRequest({
     required this.quizSessionId,
     required this.answers,
     required this.clientLocalDate,
+    required this.totalElapsedMs,
   });
 
   Map<String, dynamic> toJson() => {
         'quiz_session_id': quizSessionId,
         'answers': answers.map((a) => a.toJson()).toList(),
         'client_local_date': clientLocalDate,
+        'total_elapsed_ms': totalElapsedMs,
       };
 }
 
@@ -200,7 +232,7 @@ class AiEngineRepository {
   ///
   /// Change this single constant when switching environments.
 
-  static const String defaultBaseUrl = 'http://192.168.100.18:8000';
+  static const String defaultBaseUrl = 'http://192.168.100.2:8000';
 
   /// Lazy singleton — created on first access, reused everywhere.
   static final AiEngineRepository instance = AiEngineRepository(

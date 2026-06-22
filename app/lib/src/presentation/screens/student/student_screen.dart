@@ -36,6 +36,7 @@ import '../../../data/providers/dataconnect_provider.dart';
 import '../../../features/mascot/mascot_cubit.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
+import '../../../services/quiz_lock_service.dart';
 import 'student_permission_gate_screen.dart';
 import 'student_home.dart';
 import 'student_quiz.dart';
@@ -114,6 +115,12 @@ class _StudentScreenState extends State<StudentScreen>
   /// Subscription to the quiz-trigger stream from MascotOverlayService.
   StreamSubscription<void>? _quizSub;
 
+  /// Subscription to the quiz-restore stream fired after task removal / reboot.
+  StreamSubscription<void>? _quizRestoreSub;
+
+  /// Buffered restore session received before the shell was ready.
+  QuizSessionData? _pendingQuizRestoreAfterShell;
+
   // ── Verification dialog state ─────────────────────────────────────────────
   StateSetter? _dialogSetState;
   bool _dialogIsLoading = false;
@@ -145,6 +152,8 @@ class _StudentScreenState extends State<StudentScreen>
      ..add(CheckDailyLoginRewardRequested(studentId: widget.uid));
 
     _quizSub = MascotOverlayService.instance.listenForQuiz(_onQuizTriggered);
+    _quizRestoreSub =
+        MascotOverlayService.instance.listenForQuizRestore(_onQuizRestoreTriggered);
 
     _initMascotService();
 
@@ -329,6 +338,7 @@ class _StudentScreenState extends State<StudentScreen>
   @override
   void dispose() {
     _quizSub?.cancel();
+    _quizRestoreSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MascotOverlayService.instance.stop();
     _shopBloc.close();
@@ -387,6 +397,17 @@ class _StudentScreenState extends State<StudentScreen>
         });
       }
     });
+
+    // Flush a buffered quiz-restore session (e.g. received from native before
+    // the permission gate finished).
+    if (_pendingQuizRestoreAfterShell != null) {
+      final session = _pendingQuizRestoreAfterShell!;
+      _pendingQuizRestoreAfterShell = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openQuizOverlayWithRestore(session);
+      });
+      return;
+    }
 
     if (_pendingQuizAfterInit && MascotOverlayService.instance.shouldShowQuiz) {
       _pendingQuizAfterInit = false;
@@ -486,6 +507,80 @@ class _StudentScreenState extends State<StudentScreen>
           }
 
           // Flush any buffered celebrations now that the quiz is gone.
+          _flushPendingCelebrations();
+        });
+  }
+
+  // ── Quiz restore (after task removal / reboot) ────────────────────────────
+
+  /// Called when the native side signals that a quiz session must be restored.
+  /// Fires on both warm resume (onNewIntent) and cold start (onFlutterUiDisplayed).
+  void _onQuizRestoreTriggered() {
+    // If the quiz overlay is already in the navigation stack (warm resume
+    // where the process was not killed), there is nothing to do — the existing
+    // overlay is still live and will resume normally.
+    if (_quizIsOpen) return;
+
+    QuizLockService.instance.loadSession().then((session) {
+      if (session == null || !mounted) return;
+      final shellReady =
+          !_initializing && !_checkingPermissions && _permissionsGranted;
+      if (!shellReady) {
+        _pendingQuizRestoreAfterShell = session;
+        return;
+      }
+      _openQuizOverlayWithRestore(session);
+    });
+  }
+
+  /// Pushes QuizOverlayPage seeded with a previously saved [session].
+  void _openQuizOverlayWithRestore(QuizSessionData session) {
+    if (!mounted || _quizIsOpen) return;
+
+    // Respect the no-subjects guard the same way _openQuizOverlay does.
+    if (_hasSubjects == false) return;
+    if (_hasSubjects == null) {
+      _pendingQuizRestoreAfterShell = session;
+      return;
+    }
+
+    _quizIsOpen = true;
+    MascotOverlayService.instance.markQuizShown();
+
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute<bool?>(
+            fullscreenDialog: true,
+            builder: (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: _gamificationBloc),
+                BlocProvider.value(value: _gardenBloc),
+              ],
+              child: QuizOverlayPage(
+                repository: _aiRepo,
+                studentId: session.studentId,
+                contextType: session.contextType,
+                totalQuestions: session.totalQuestions,
+                autoLength: session.autoLength,
+                subjectId: session.subjectId,
+                studentGrade: session.studentGrade,
+                restoredSession: session,
+              ),
+            ),
+          ),
+        )
+        .then((completed) {
+          _quizIsOpen = false;
+          if (completed == true) {
+            MascotOverlayService.instance.markQuizCompleted();
+            final reward =
+                MascotOverlayService.instance.config.rewardPerQuizSeconds;
+            if (reward > 0) {
+              MascotOverlayService.instance.addRewardTime(reward);
+            }
+          } else {
+            MascotOverlayService.instance.markQuizDismissed();
+          }
           _flushPendingCelebrations();
         });
   }

@@ -43,9 +43,27 @@ class SubmitQuizEvent extends QuizEvent {
   /// to /quizzes/submit so the server can look up the correct answers.
   final String quizSessionId;
 
-  SubmitQuizEvent(this.quizSessionId);
+  /// Foreground-only solve time from the client stopwatch (ms). Pauses
+  /// when the app is backgrounded so background idle is excluded from the
+  /// study-time statistic.
+  final int totalElapsedMs;
+
+  SubmitQuizEvent(this.quizSessionId, {required this.totalElapsedMs});
 }
 
 /// Dispatched to reset the BLoC back to [QuizInitial], e.g. after
 /// viewing results or navigating away from the quiz screen.
 class ResetQuizEvent extends QuizEvent {}
+
+/// Dispatched when restoring a previously interrupted quiz session from
+/// persistent storage. Bypasses generation and immediately puts the BLoC
+/// into [QuizLoaded] with the saved quiz data and submitted answers.
+class RestoreQuizSessionEvent extends QuizEvent {
+  final GenerateQuizResponse quizResponse;
+  final Map<String, StudentAnswer> answers;
+
+  RestoreQuizSessionEvent({
+    required this.quizResponse,
+    required this.answers,
+  });
+}

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from fastapi import HTTPException
@@ -147,13 +148,14 @@ def generate_quiz_for_student(
     if active_session:
         cached_questions = get_questions_for_session(db, active_session.session_id)
         if cached_questions and all(q.text_content is not None for q in cached_questions):
-            # Re-stamp the served session with the *consuming* request's context.
-            # A pre-warmed session is generated blindly (its context is a placeholder);
-            # the request that actually hands the quiz to the student decides whether it
-            # counts as VOLUNTARY or FORCED for grading. Grading reads this at submit time.
+            # Re-stamp start_time to now so that end_time − start_time reflects the
+            # student's actual solve window, not the (potentially stale) pre-warm time.
+            # Also update quiz_context: a pre-warmed session carries a placeholder; the
+            # consuming request decides VOLUNTARY vs FORCED for grading purposes.
+            active_session.start_time = datetime.utcnow()
             if active_session.quiz_context != request_body.quiz_context:
                 active_session.quiz_context = request_body.quiz_context
-                db.commit()
+            db.commit()
             print(
                 f"[QuizCache] Returning cached session {active_session.session_id} "
                 f"for student={student_uid}, subject_id={target_subject_id} "
