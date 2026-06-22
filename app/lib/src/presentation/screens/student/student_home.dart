@@ -527,12 +527,10 @@ class StudentHomeState extends State<StudentHome> {
   Widget _buildCooldownCard() {
     final loc = AppLocalizations.of(context);
     final remaining = MascotOverlayService.instance.remainingSeconds;
-    final h = remaining ~/ 3600;
-    final m = (remaining % 3600) ~/ 60;
-    final s = remaining % 60;
-    final countdown = '${h.toString().padLeft(2, '0')}:'
-        '${m.toString().padLeft(2, '0')}:'
-        '${s.toString().padLeft(2, '0')}';
+    final mins = remaining ~/ 60;
+    final secs = remaining % 60;
+    final countdown =
+        '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
 
     return Container(
       width: double.infinity,

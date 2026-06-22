@@ -82,23 +82,23 @@ class ScreenTimeRing extends StatelessWidget {
 
   // ── Centre widgets ─────────────────────────────────────────────────────────
 
-  static String _toHhMmSs(int totalSeconds) {
-    final h = totalSeconds ~/ 3600;
-    final m = (totalSeconds % 3600) ~/ 60;
-    final s = totalSeconds % 60;
-    return '${h.toString().padLeft(2, '0')}:'
-        '${m.toString().padLeft(2, '0')}:'
-        '${s.toString().padLeft(2, '0')}';
-  }
-
   Widget _usageCenter(AppLocalizations loc, int remaining, Color color) {
+    final String big;
+    final String small;
+    if (remaining >= 60) {
+      big = '${(remaining / 60).ceil()}';
+      small = loc.minLeftLabel;
+    } else {
+      big = '$remaining';
+      small = loc.secLeftLabel;
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          _toHhMmSs(remaining),
+          big,
           style: GoogleFonts.cairo(
-            fontSize: 20,
+            fontSize: 34,
             fontWeight: FontWeight.w800,
             color: color,
             height: 1.0,
@@ -106,7 +106,7 @@ class ScreenTimeRing extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          loc.remainingLabel,
+          small,
           style: GoogleFonts.cairo(
             fontSize: 12,
             fontWeight: FontWeight.w500,
