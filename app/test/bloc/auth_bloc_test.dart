@@ -230,7 +230,7 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<SubjectSummaryModel> getSubjectOverview(
-          String studentUid, String subjectKey) async =>
+          String studentUid, int subjectId, String subjectKey) async =>
       SubjectSummaryModel(
         subjectKey: subjectKey,
         colorHex: '#2196F3',
@@ -243,17 +243,17 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<List<SkillProgressModel>> getSkillsForSubject(
-      String studentUid, String subjectKey) async => const [];
+      String studentUid, int subjectId, String subjectKey) async => const [];
 
   @override
   Future<List<QuizAttemptModel>> getRecentQuizzes(
-          String studentUid, String subjectKey,
+          String studentUid, int subjectId, String subjectKey,
           {int limit = 10}) async =>
       const [];
 
   @override
   Future<List<QuizAttemptModel>> getAllQuizzes(
-      String studentUid, String subjectKey) async => const [];
+      String studentUid, int subjectId, String subjectKey) async => const [];
 
   @override
   Future<List<QuestionDetailModel>> getSessionQuestions(

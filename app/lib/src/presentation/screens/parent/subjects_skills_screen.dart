@@ -312,6 +312,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
           MaterialPageRoute(
             builder: (ctx) => ParentSubjectDetailScreen(
               studentUid: widget.student.uid,
+              subjectId: subject.subjectId,
               subjectKey: subject.subjectKey,
               subjectName: title,
               color: color,

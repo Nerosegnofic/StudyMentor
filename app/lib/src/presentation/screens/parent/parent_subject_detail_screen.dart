@@ -19,6 +19,7 @@ const int _kPreviewQuizCount = 10;
 
 class ParentSubjectDetailScreen extends StatefulWidget {
   final String studentUid;
+  final int subjectId;
   final String subjectKey;
   final String subjectName;
   final Color color;
@@ -26,6 +27,7 @@ class ParentSubjectDetailScreen extends StatefulWidget {
   const ParentSubjectDetailScreen({
     super.key,
     required this.studentUid,
+    required this.subjectId,
     required this.subjectKey,
     required this.subjectName,
     required this.color,
@@ -187,6 +189,7 @@ class _ParentSubjectDetailScreenState
         authRepository: context.read<AuthRepository>(),
       )..add(LoadSubjectDetailRequested(
           studentUid: widget.studentUid,
+          subjectId: widget.subjectId,
           subjectKey: widget.subjectKey,
         )),
       child: Builder(builder: (ctx) => _buildScaffold(ctx)),

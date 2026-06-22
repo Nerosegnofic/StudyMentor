@@ -562,26 +562,20 @@ class DataConnectProvider {
 
   Future<List<SkillProgressModel>> getSkillsForSubject({
     required String studentUid,
+    required int subjectId,
     required String subjectKey,
   }) async {
 
-    final def = SubjectMetadataRegistry.getDefinition(subjectKey);
     List<SkillProgressModel> skills = [];
 
     try {
       final analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
-      final keyLower = subjectKey.toLowerCase().trim();
-      final nameLower = def.name.toLowerCase().trim();
       final a = analyticsList.firstWhere(
-        (element) {
-          final name = (element['name'] as String).toLowerCase().trim();
-          return name == keyLower || name == nameLower;
-        },
+        (element) => (element['subject_id'] as int?) == subjectId,
         orElse: () => <String, dynamic>{},
       );
 
       if (a.isNotEmpty) {
-        final subjectId = a['subject_id'] as int;
         final masteryTree = await AiEngineRepository.instance.getSubjectMasteryTree(subjectId, studentUid: studentUid);
         final units = masteryTree['units'] as List? ?? [];
         
@@ -732,7 +726,7 @@ class DataConnectProvider {
     }
   }
 
-  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, String subjectKey) async {
+  Future<SubjectSummaryModel> getSubjectOverview(String studentUid, int subjectId, String subjectKey) async {
     final def = SubjectMetadataRegistry.getDefinition(subjectKey);
     final colorHex = '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
 
@@ -744,20 +738,14 @@ class DataConnectProvider {
 
     try {
       final analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
-      final keyLower = subjectKey.toLowerCase().trim();
-      final nameLower = def.name.toLowerCase().trim();
       final a = analyticsList.firstWhere(
-        (element) {
-          final name = (element['name'] as String).toLowerCase().trim();
-          return name == keyLower || name == nameLower;
-        },
+        (element) => (element['subject_id'] as int?) == subjectId,
         orElse: () => <String, dynamic>{},
       );
 
       if (a.isNotEmpty) {
         skillsCount = a['total_skills'] as int? ?? 0;
         masteryPercent = ((a['average_mastery'] as num? ?? 0.0).toDouble() * 100).round();
-        final subjectId = a['subject_id'] as int;
 
         final history = await AiEngineRepository.instance.getSubjectQuizHistory(subjectId, page: 1, pageSize: 50, studentUid: studentUid);
         final sessions = history['sessions'] as List? ?? [];
@@ -808,27 +796,20 @@ class DataConnectProvider {
 
   Future<List<QuizAttemptModel>> getRecentQuizzes(
     String studentUid,
+    int subjectId,
     String subjectKey, {
     int limit = 10,
   }) async {
     try {
-      final def = SubjectMetadataRegistry.getDefinition(subjectKey);
-      final keyLower = subjectKey.toLowerCase().trim();
-      final nameLower = def.name.toLowerCase().trim();
-
       final analyticsList = await AiEngineRepository.instance
           .getSubjectsAnalytics(studentUid: studentUid);
       final a = analyticsList.firstWhere(
-        (e) {
-          final name = (e['name'] as String).toLowerCase().trim();
-          return name == keyLower || name == nameLower;
-        },
+        (e) => (e['subject_id'] as int?) == subjectId,
         orElse: () => <String, dynamic>{},
       );
 
       if (a.isEmpty) return [];
 
-      final subjectId = a['subject_id'] as int;
       final history = await AiEngineRepository.instance.getSubjectQuizHistory(
         subjectId,
         page: 1,

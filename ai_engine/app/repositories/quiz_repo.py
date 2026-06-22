@@ -105,12 +105,13 @@ def get_recent_question_fingerprints(
     limit: int = 50,
 ) -> Set[str]:
     """
-    Get fingerprints (first 80 chars) of recently generated questions
+    Get fingerprints (first 150 chars) of recently generated questions
     for a specific student + subject, to prevent the LLM from repeating
     questions across quiz sessions.
 
     Scoped to `subject_id` so Math dedup fingerprints don't bleed into
-    Arabic or Science quizzes (and vice versa).
+    Arabic or Science quizzes (and vice versa). Scans the last 20 sessions
+    so a wider window of prior questions is available to avoid.
     """
     recent_session_ids = (
         db.query(QuizSession.session_id)
@@ -119,7 +120,7 @@ def get_recent_question_fingerprints(
             QuizSession.subject_id == subject_id,
         )
         .order_by(QuizSession.start_time.desc())
-        .limit(10)
+        .limit(20)
         .all()
     )
     if not recent_session_ids:

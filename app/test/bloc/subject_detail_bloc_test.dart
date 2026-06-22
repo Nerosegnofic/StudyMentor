@@ -72,6 +72,7 @@ class _FakeSubjectDetailRepo extends FakeAuthRepository {
   @override
   Future<SubjectSummaryModel> getSubjectOverview(
     String studentUid,
+    int subjectId,
     String subjectKey,
   ) async {
     if (shouldThrowOnLoad) throw Exception('Load failed');
@@ -81,6 +82,7 @@ class _FakeSubjectDetailRepo extends FakeAuthRepository {
   @override
   Future<List<SkillProgressModel>> getSkillsForSubject(
     String studentUid,
+    int subjectId,
     String subjectKey,
   ) async {
     if (shouldThrowOnLoad) throw Exception('Load failed');
@@ -90,6 +92,7 @@ class _FakeSubjectDetailRepo extends FakeAuthRepository {
   @override
   Future<List<QuizAttemptModel>> getAllQuizzes(
     String studentUid,
+    int subjectId,
     String subjectKey,
   ) async {
     if (shouldThrowOnLoad) throw Exception('Load failed');
@@ -129,6 +132,7 @@ void main() {
         act: (bloc) => bloc.add(
           const LoadSubjectDetailRequested(
             studentUid: 'uid-student',
+            subjectId: 1,
             subjectKey: 'math',
           ),
         ),
@@ -146,6 +150,7 @@ void main() {
         act: (bloc) => bloc.add(
           const LoadSubjectDetailRequested(
             studentUid: 'uid-student',
+            subjectId: 1,
             subjectKey: 'math',
           ),
         ),
@@ -164,6 +169,7 @@ void main() {
         act: (bloc) => bloc.add(
           const LoadSubjectDetailRequested(
             studentUid: 'uid-student',
+            subjectId: 1,
             subjectKey: 'math',
           ),
         ),
@@ -182,6 +188,7 @@ void main() {
         act: (bloc) => bloc.add(
           const LoadSubjectDetailRequested(
             studentUid: 'uid-student',
+            subjectId: 1,
             subjectKey: 'math',
           ),
         ),
@@ -200,6 +207,7 @@ void main() {
         act: (bloc) => bloc.add(
           const LoadSubjectDetailRequested(
             studentUid: 'uid-student',
+            subjectId: 1,
             subjectKey: 'math',
           ),
         ),

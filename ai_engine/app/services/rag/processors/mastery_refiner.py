@@ -184,6 +184,7 @@ OUTPUT STRUCTURE: a hierarchy of units → lessons → skills, where each skill 
 
 RULES:
 1. GROUNDING — NO HALLUCINATION. Extract only units, lessons, and skills that are actually present in the document. Copy each unit_name and lesson_name VERBATIM from the document's own headers (e.g. "الوحدة الأولى: الاختيار والمسئولية", "الدرس الأول: الاستماع"). Do NOT invent, rename, translate, or renumber them.
+   A lesson counts as "present" ONLY if it has actual TEACHING CONTENT in the document (a body: objectives, explanations, examples, or exercises). A lesson that appears ONLY as a table-of-contents / index entry — typically a line PREFIXED WITH A PAGE NUMBER (e.g. "3 الدرس الأول: ...", "121 الدرس الرابع: ...") or a dotted-leader line, with NO body following — is NOT present: DO NOT output it. Real lessons appear later as their own HEADER (e.g. "# الدرس الأول") followed by content.
 
 2. SKILL SOURCE. For each lesson:
    - If the lesson states an explicit objectives/outcomes section (e.g. "الأهداف", "نواتج التعلم", "نتائج التعلم", "مخرجات التعلم", "Learning Outcomes", "Now I can..."), derive the skills from those objectives.
@@ -192,9 +193,9 @@ RULES:
 
 3. UNITS. If the document has no clear unit structure, group all lessons under a single sensible unit named after the document/subject.
 
-4. COMPLETENESS. Enumerate EVERY unit and EVERY lesson found in the document, in order. Do not stop early, summarize, or skip lessons.
+4. COMPLETENESS (content only). Enumerate every unit and every lesson THAT HAS ACTUAL BODY CONTENT, in order — do not stop early, summarize, or skip a lesson that is genuinely taught. But do NOT treat the table of contents / index as the source of lessons: a TOC lists the WHOLE book, while THIS document may contain only some of those lessons. Cover exactly the lessons whose content appears in the body — no more (never add TOC-only lessons), no fewer.
 
-5. IGNORE FRONT MATTER. Skip cover pages, author/review credits ("تأليف", "مراجعة", "إشراف"), the introduction ("مقدمة"), the table of contents ("الفهرس", "المحتويات"), and copyright/publisher pages. These are not lessons.
+5. IGNORE FRONT MATTER. Skip cover pages, author/review credits ("تأليف", "مراجعة", "إشراف"), the introduction ("مقدمة"), and copyright/publisher pages. The TABLE OF CONTENTS ("الفهرس", "المحتويات", "Table of Contents", "Scope and Sequence") lists lessons as page-number-prefixed or dotted-leader entries with no teaching content — treat it as NAVIGATION ONLY. NEVER create a lesson or skill from a TOC entry; only the lesson BODIES later in the document are real.
 
 6. SKILL GRANULARITY (sweet spot). Each skill must be:
    - Specific enough to generate 5-10 diverse quiz questions.
