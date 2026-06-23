@@ -304,6 +304,14 @@ class _StudentScreenState extends State<StudentScreen>
     // Pick up parent config changes (e.g. quiz count) made while backgrounded.
     _refreshQuizCount();
 
+    // Recover the monitoring service if an earlier foreground-service start was
+    // refused by the OS (e.g. the app was briefly backgrounded during the login /
+    // permission flow). Idempotent; the native side now bails out cleanly instead
+    // of crashing when it cannot enter the foreground.
+    if (_permissionsGranted && !_initializing && !_checkingPermissions) {
+      unawaited(MascotOverlayService.instance.ensureStarted());
+    }
+
     // Reload home data (XP/streak/garden/daily snapshot) so the dashboard isn't
     // stale after returning from background or from a quiz. Skipped while a quiz
     // overlay is open to avoid churning state mid-quiz.

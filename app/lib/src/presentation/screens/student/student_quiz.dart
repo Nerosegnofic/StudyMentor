@@ -443,26 +443,6 @@ class _AutoStartPanel extends StatelessWidget {
                 color: _kMuted,
               ),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFBDBDBD),
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(60),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                loc.notNowButton,
-                style: GoogleFonts.cairo(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
           ],
         ),
       ),

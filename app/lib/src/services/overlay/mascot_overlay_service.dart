@@ -153,6 +153,19 @@ class MascotOverlayService {
     await setCooldownNotificationEnabled(settings.cooldownNotificationEnabled);
   }
 
+  /// Re-issues the native foreground-service start. Called on app resume to
+  /// recover monitoring if an earlier start was refused by the OS (e.g. the app
+  /// was briefly in the background during the login / permission flow, where a
+  /// background foreground-service start is rejected on Android 12+). The native
+  /// side treats a repeated ACTION_START for the same student as an idempotent
+  /// config refresh, and now bails out cleanly instead of crashing if it still
+  /// cannot enter the foreground.
+  Future<void> ensureStarted() async {
+    if (_studentUid == null || _studentUid!.isEmpty) return;
+    _running = true;
+    await _startNativeTimerService();
+  }
+
   void start() {
     if (_running) return;
     _running = true;

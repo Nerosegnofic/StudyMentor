@@ -264,10 +264,15 @@ class UsageTimerService : Service() {
                     }
                 }
 
-                startForegroundWithNotification()
-                if (!isRunning) {
-                    isRunning = true
-                    handler.post(tickRunnable)
+                if (startForegroundWithNotification()) {
+                    if (!isRunning) {
+                        isRunning = true
+                        handler.post(tickRunnable)
+                    }
+                } else {
+                    // Could not enter foreground (e.g. started from background).
+                    // Stop cleanly; a later foreground start brings it back.
+                    stopSelf()
                 }
             }
 
@@ -276,10 +281,13 @@ class UsageTimerService : Service() {
             ACTION_UNBLOCK -> unblock()
 
             null -> {
-                startForegroundWithNotification()
-                if (studentLoggedIn && !isRunning) {
-                    isRunning = true
-                    handler.post(tickRunnable)
+                if (startForegroundWithNotification()) {
+                    if (studentLoggedIn && !isRunning) {
+                        isRunning = true
+                        handler.post(tickRunnable)
+                    }
+                } else {
+                    stopSelf()
                 }
             }
         }
@@ -660,25 +668,68 @@ class UsageTimerService : Service() {
             .setContentIntent(pi).build()
     }
 
-    private fun startForegroundWithNotification() {
-        when {
-            // Android 14+ (API 34): use specialUse — it is exempt from the
-            // dataSync ~6 h/day cumulative runtime cap that would otherwise stop
-            // this always-on monitor.
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
-                startForeground(
-                    FG_NOTIF_ID, buildFgNotification(),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
-                )
+    /**
+     * Ensures the CHILD_TIMER notification channel exists before we post the
+     * foreground notification.
+     *
+     * Normally LocalNotificationService (Dart) creates it during app startup,
+     * but this service can be launched in a process where Flutter main() has
+     * NEVER run — the BootReceiver and the accessibility-service watchdog both
+     * start it without an Activity/engine. In that case the channel is missing
+     * and startForeground() throws "bad notification for startForeground:
+     * NotificationChannel not found", which crashes the whole app.
+     *
+     * Creating it here is idempotent and conflict-free: we only create it when it
+     * does not already exist, so we never override the settings LocalNotificationService
+     * applied. Importance HIGH matches the Dart-side definition (kChannelChildTimer).
+     */
+    private fun ensureTimerChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val mgr = notificationManager ?: return
+        if (mgr.getNotificationChannel(CHILD_TIMER_CHANNEL_ID) != null) return
+        mgr.createNotificationChannel(
+            NotificationChannel(
+                CHILD_TIMER_CHANNEL_ID,
+                "App Timer",
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
+        )
+    }
+
+    /**
+     * Enters the foreground. Returns true on success, false if the OS refused the
+     * foreground-service start. **Never throws** — a failed start must not crash
+     * the app. This can happen when the service is started from the background on
+     * Android 12+ (ForegroundServiceStartNotAllowedException) or under OEM FGS
+     * restrictions; callers should bail out and let a later valid foreground start
+     * (app resume / accessibility reconnect / START_STICKY) bring it back.
+     */
+    private fun startForegroundWithNotification(): Boolean {
+        ensureTimerChannel()
+        return try {
+            when {
+                // Android 14+ (API 34): use specialUse — it is exempt from the
+                // dataSync ~6 h/day cumulative runtime cap that would otherwise
+                // stop this always-on monitor.
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
+                    startForeground(
+                        FG_NOTIF_ID, buildFgNotification(),
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                    )
+                }
+                // Android 10–13 (API 29–33): dataSync (no runtime cap on these versions).
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                    startForeground(
+                        FG_NOTIF_ID, buildFgNotification(),
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                    )
+                }
+                else -> startForeground(FG_NOTIF_ID, buildFgNotification())
             }
-            // Android 10–13 (API 29–33): dataSync (no runtime cap on these versions).
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                startForeground(
-                    FG_NOTIF_ID, buildFgNotification(),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-                )
-            }
-            else -> startForeground(FG_NOTIF_ID, buildFgNotification())
+            true
+        } catch (e: Exception) {
+            android.util.Log.w("UsageTimerService", "startForeground failed: ${e.message}")
+            false
         }
     }
 
@@ -693,8 +744,7 @@ class UsageTimerService : Service() {
     @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onTimeout(startId: Int) {
         super.onTimeout(startId)
-        if (studentLoggedIn) {
-            startForegroundWithNotification()
+        if (studentLoggedIn && startForegroundWithNotification()) {
             if (!isRunning) {
                 isRunning = true
                 handler.post(tickRunnable)
