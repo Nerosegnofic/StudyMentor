@@ -2186,11 +2186,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String earnedFreeTimeLockedSubtitle(String time) {
-    return 'رصيدك $time — ينفتح بعد انتهاء وقت الراحة.';
+    return 'ربحت $time — ينفتح بعد انتهاء وقت الراحة.';
   }
 
   @override
-  String get finishQuizUnlockApps => 'أكمل اختبارًا لتجميع وقت حر بعد الراحة.';
+  String get finishQuizUnlockApps => 'أكمل اختبارًا لربح وقت حر بعد الراحة.';
 
   @override
   String earnedFreeTimeUnlockedTitle(String time) {
@@ -2206,6 +2206,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get enjoyFreeTimeSubtitle => 'أكمل اختبارًا لكسب المزيد من الوقت.';
+
+  @override
+  String bankedTimeSubtitle(String time) {
+    return 'رصيدك $time من الوقت الحر.';
+  }
 
   @override
   String get timeToRestTitle => 'وقت الراحة';

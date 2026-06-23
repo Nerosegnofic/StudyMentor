@@ -850,13 +850,13 @@
     }
   },
   "appsRestingTitle": "التطبيقات في وضع الراحة الآن",
-  "earnedFreeTimeLockedSubtitle": "رصيدك {time} — ينفتح بعد انتهاء وقت الراحة.",
+  "earnedFreeTimeLockedSubtitle": "ربحت {time} — ينفتح بعد انتهاء وقت الراحة.",
   "@earnedFreeTimeLockedSubtitle": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "finishQuizUnlockApps": "أكمل اختبارًا لتجميع وقت حر بعد الراحة.",
+  "finishQuizUnlockApps": "أكمل اختبارًا لربح وقت حر بعد الراحة.",
   "earnedFreeTimeUnlockedTitle": "تبقى لديك {time} من الوقت الحر",
   "@earnedFreeTimeUnlockedTitle": {
     "placeholders": {
@@ -866,6 +866,12 @@
   "appsUnlockedEnjoySubtitle": "أكمل المزيد من الاختبارات لكسب وقت إضافي.",
   "appsUnlockedTitle": "تطبيقاتك مفتوحة",
   "enjoyFreeTimeSubtitle": "أكمل اختبارًا لكسب المزيد من الوقت.",
+  "bankedTimeSubtitle": "رصيدك {time} من الوقت الحر.",
+  "@bankedTimeSubtitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "timeToRestTitle": "وقت الراحة",
   "screenTimeTitle": "وقت الشاشة",
   "limitRestSummaryLabel": "اكسب {limit} لكل اختبار   ·   الراحة {rest}",

@@ -214,12 +214,23 @@ class _StudentScreenState extends State<StudentScreen>
       }
     }
 
-    MascotOverlayService.instance.start();
-
     if (mounted) {
       setState(() => _initializing = false);
       _onShellReady();
     }
+
+    // Start the native foreground monitoring service AFTER the first frame.
+    // Starting it inline here races the heavy initial render (asset/image
+    // decoding) which saturates the main thread; that can starve the service's
+    // onStartCommand so it misses the startForegroundService→startForeground
+    // deadline and Android kills the process
+    // (ForegroundServiceDidNotStartInTimeException — the "app closes after login"
+    // crash). Deferring to a post-frame callback lets the start happen once the
+    // first frame is on screen and the main thread has room to run onStartCommand
+    // promptly.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MascotOverlayService.instance.start();
+    });
   }
 
   Future<void> _checkPermissions() async {

@@ -17,6 +17,7 @@ import '../../../features/mascot/mascot_cubit.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
+import '../../../features/mascot/mascot_loading_view.dart';
 import '../../../services/quiz_lock_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -1459,15 +1460,9 @@ class _LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: MascotWithBubble(
-          state: MascotState.thinking,
-          mascotSize: 100,
-          message: message,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: MascotLoadingView(message: message),
     );
   }
 }
@@ -1479,45 +1474,45 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              AppLocalizations.of(context).somethingWentWrongTitle,
-              style: GoogleFonts.cairo(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: _kInk,
-              ),
+    final loc = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const Spacer(),
+          Text(
+            loc.somethingWentWrongTitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.cairo(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _kInk,
             ),
-            const SizedBox(height: 16),
-            MascotWithBubble(
-              state: MascotState.sad,
-              mascotSize: 90,
-              message: message,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () =>
-                  context.read<QuizBloc>().add(ResetQuizEvent()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kGreen,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => context.read<QuizBloc>().add(ResetQuizEvent()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(
-                AppLocalizations.of(context).tryAgainButton,
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-              ),
+              elevation: 0,
             ),
-          ],
-        ),
+            child: Text(
+              loc.tryAgainButton,
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const Spacer(),
+          MascotWithBubble(
+            state: MascotState.sad,
+            mascotSize: 90,
+            message: message,
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }

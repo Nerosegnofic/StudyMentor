@@ -226,6 +226,28 @@ class UsageTimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // ── Enter the foreground FIRST, before any other work ────────────────────
+        // Every start path reaches us via startForegroundService() (TimerServiceBridge,
+        // BootReceiver, the accessibility watchdog). Android then requires a
+        // startForeground() call within a few seconds, or it kills the WHOLE PROCESS
+        // with ForegroundServiceDidNotStartInTimeException — this was the
+        // "app closes after the student logs in" crash: during login the main thread
+        // is saturated (asset/image decoding) and the old code did SharedPreferences
+        // I/O + extra parsing before startForeground(), blowing the deadline.
+        //
+        // Calling it as the very first statement (for ACTION_STOP/UNBLOCK too, since
+        // those also arrive via startForegroundService) guarantees we satisfy the
+        // contract immediately. The notification is refreshed below once the real
+        // per-student state is loaded.
+        val enteredForeground = startForegroundWithNotification()
+        if (!enteredForeground) {
+            // OS refused the foreground promotion (e.g. background-start restriction
+            // on Android 12+). Stop cleanly; a later valid foreground start
+            // (app resume → ensureStarted, accessibility reconnect) brings it back.
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         when (intent?.action) {
             ACTION_START -> {
                 val incomingUid = intent.getStringExtra(EXTRA_STUDENT_UID).orEmpty()
@@ -264,15 +286,13 @@ class UsageTimerService : Service() {
                     }
                 }
 
-                if (startForegroundWithNotification()) {
-                    if (!isRunning) {
-                        isRunning = true
-                        handler.post(tickRunnable)
-                    }
-                } else {
-                    // Could not enter foreground (e.g. started from background).
-                    // Stop cleanly; a later foreground start brings it back.
-                    stopSelf()
+                // Now that the real per-student state is loaded, refresh the
+                // (initially generic) foreground notification.
+                updateFgNotification()
+
+                if (!isRunning) {
+                    isRunning = true
+                    handler.post(tickRunnable)
                 }
             }
 
@@ -281,13 +301,9 @@ class UsageTimerService : Service() {
             ACTION_UNBLOCK -> unblock()
 
             null -> {
-                if (startForegroundWithNotification()) {
-                    if (studentLoggedIn && !isRunning) {
-                        isRunning = true
-                        handler.post(tickRunnable)
-                    }
-                } else {
-                    stopSelf()
+                if (studentLoggedIn && !isRunning) {
+                    isRunning = true
+                    handler.post(tickRunnable)
                 }
             }
         }

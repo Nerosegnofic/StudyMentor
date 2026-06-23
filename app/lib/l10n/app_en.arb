@@ -1151,13 +1151,13 @@
     }
   },
   "appsRestingTitle": "Apps are resting right now",
-  "earnedFreeTimeLockedSubtitle": "You've banked {time} — it unlocks after cooldown.",
+  "earnedFreeTimeLockedSubtitle": "You've earned {time} — it unlocks after cooldown.",
   "@earnedFreeTimeLockedSubtitle": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "finishQuizUnlockApps": "Complete a quiz to bank free time for after cooldown.",
+  "finishQuizUnlockApps": "Complete a quiz to earn free time for after cooldown.",
   "earnedFreeTimeUnlockedTitle": "You have {time} of free time left",
   "@earnedFreeTimeUnlockedTitle": {
     "placeholders": {
@@ -1167,6 +1167,12 @@
   "appsUnlockedEnjoySubtitle": "Complete more quizzes to earn extra time.",
   "appsUnlockedTitle": "Your apps are unlocked",
   "enjoyFreeTimeSubtitle": "Complete a quiz to earn more time.",
+  "bankedTimeSubtitle": "You've banked {time} of free time.",
+  "@bankedTimeSubtitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "timeToRestTitle": "Time to rest",
   "screenTimeTitle": "Screen time",
   "limitRestSummaryLabel": "Earn {limit} per quiz   ·   Rest {rest}",

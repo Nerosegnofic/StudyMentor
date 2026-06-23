@@ -3778,13 +3778,13 @@ abstract class AppLocalizations {
   /// No description provided for @earnedFreeTimeLockedSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve banked {time} — it unlocks after cooldown.'**
+  /// **'You\'ve earned {time} — it unlocks after cooldown.'**
   String earnedFreeTimeLockedSubtitle(String time);
 
   /// No description provided for @finishQuizUnlockApps.
   ///
   /// In en, this message translates to:
-  /// **'Complete a quiz to bank free time for after cooldown.'**
+  /// **'Complete a quiz to earn free time for after cooldown.'**
   String get finishQuizUnlockApps;
 
   /// No description provided for @earnedFreeTimeUnlockedTitle.
@@ -3810,6 +3810,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Complete a quiz to earn more time.'**
   String get enjoyFreeTimeSubtitle;
+
+  /// No description provided for @bankedTimeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve banked {time} of free time.'**
+  String bankedTimeSubtitle(String time);
 
   /// No description provided for @timeToRestTitle.
   ///

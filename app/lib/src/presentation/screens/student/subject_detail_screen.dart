@@ -17,6 +17,7 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
+import '../../../features/mascot/mascot_loading_view.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -164,14 +165,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           future: _skillsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: const MascotWithBubble(
-                    state: MascotState.thinking,
-                    showLoadingSpinner: true,
-                  ),
-                ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: MascotLoadingView(message: loc.commonLoading),
               );
             }
             if (snapshot.hasError) {

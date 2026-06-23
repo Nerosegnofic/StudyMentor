@@ -2207,12 +2207,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String earnedFreeTimeLockedSubtitle(String time) {
-    return 'You\'ve banked $time — it unlocks after cooldown.';
+    return 'You\'ve earned $time — it unlocks after cooldown.';
   }
 
   @override
   String get finishQuizUnlockApps =>
-      'Complete a quiz to bank free time for after cooldown.';
+      'Complete a quiz to earn free time for after cooldown.';
 
   @override
   String earnedFreeTimeUnlockedTitle(String time) {
@@ -2228,6 +2228,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enjoyFreeTimeSubtitle => 'Complete a quiz to earn more time.';
+
+  @override
+  String bankedTimeSubtitle(String time) {
+    return 'You\'ve banked $time of free time.';
+  }
 
   @override
   String get timeToRestTitle => 'Time to rest';

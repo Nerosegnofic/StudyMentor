@@ -93,13 +93,10 @@ class FreeTimeBanner extends StatelessWidget {
       iconColor = _green;
       iconBg = _green.withValues(alpha: 0.15);
 
-      if (remainingSeconds >= 60) {
-        headline = loc.earnedFreeTimeUnlockedTitle(remainingFormatted);
-        subtitle = loc.appsUnlockedEnjoySubtitle;
-      } else {
-        headline = loc.appsUnlockedTitle;
-        subtitle = loc.enjoyFreeTimeSubtitle;
-      }
+      headline = loc.appsUnlockedTitle;
+      subtitle = remainingSeconds >= 60
+          ? loc.bankedTimeSubtitle(remainingFormatted)
+          : loc.enjoyFreeTimeSubtitle;
     }
 
     return Container(
