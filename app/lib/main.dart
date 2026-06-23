@@ -4,7 +4,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:workmanager/workmanager.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
@@ -35,7 +34,6 @@ import 'src/presentation/screens/auth/login_screen.dart';
 import 'src/presentation/screens/parent/parent_screen.dart';
 import 'src/presentation/screens/auth/parent_register_screen.dart';
 import 'src/presentation/screens/student/student_screen.dart';
-import 'src/services/installed_apps_service.dart';
 import 'src/services/device_admin_service.dart';
 import 'src/services/local_notification_service.dart';
 import 'src/services/garden_nudge_service.dart';
@@ -45,10 +43,6 @@ import 'src/services/parent_notification_poll_service.dart';
 import 'src/services/parent_inactivity_check_service.dart';
 import 'src/features/mascot/mascot_state.dart';
 import 'src/features/mascot/mascot_widget.dart';
-
-// ── WorkManager task identifiers ─────────────────────────────────────────────
-const _kSyncTaskName = 'installedAppSync';
-const _kSyncTaskTag = 'com.example.studymentor.installedAppSync';
 
 // ── Background callback dispatcher ───────────────────────────────────────────
 @pragma('vm:entry-point')
@@ -60,33 +54,7 @@ void callbackDispatcher() {
       );
     } catch (_) {}
 
-    if (taskName == _kSyncTaskName) {
-      try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) return true;
-
-        final apps = await InstalledAppsService.instance.getFromDevice();
-
-        final provider = DataConnectProvider();
-        await provider.deleteAllInstalledAppsForStudent(user.uid);
-        await Future.wait(
-          apps.map(
-            (app) => provider.insertInstalledApp(
-              studentUid: user.uid,
-              packageName: app.packageName,
-              appLabel: app.appLabel,
-              isSystemApp: app.isSystemApp,
-            ),
-          ),
-        );
-
-        await InstalledAppsService.instance.markInventoryClean();
-
-        return true;
-      } catch (_) {
-        return false;
-      }
-    } else if (taskName == kGardenNudgeTaskName) {
+    if (taskName == kGardenNudgeTaskName) {
       await GardenNudgeService.runTask();
     } else if (taskName == kStreakReminderTaskName) {
       await StreakReminderService.runTask();
@@ -148,15 +116,6 @@ Future<void> main() async {
   await LocalNotificationService.instance.init();
 
   await Workmanager().initialize(callbackDispatcher);
-
-  await Workmanager().registerPeriodicTask(
-    _kSyncTaskName,
-    _kSyncTaskName,
-    tag: _kSyncTaskTag,
-    frequency: const Duration(minutes: 15),
-    constraints: Constraints(networkType: NetworkType.connected),
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
-  );
 
   final firebaseProvider = FirebaseAuthProvider();
   final dataConnectProvider = DataConnectProvider();
