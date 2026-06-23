@@ -101,6 +101,13 @@ class UsageTimerService : Service() {
         const val KEY_QUIZ_LOCK_ACTIVE   = "quiz_lock_active"
         const val EXTRA_QUIZ_RESTORE     = "EXTRA_QUIZ_RESTORE"
 
+        // Signals "the student is blocked and reached the app — show the unmet
+        // gate" (the quiz if it is unsolved, otherwise the cooldown status). Unlike
+        // EXTRA_QUIZ_ON_LAUNCH (which maps to onLimitReached and is a one-shot
+        // cooldown-entry transition), this is side-effect-free: it never mutates
+        // timer/reward/cooldown state, so it is safe to fire while already blocked.
+        const val EXTRA_SHOW_QUIZ        = "EXTRA_SHOW_QUIZ"
+
         // ── Per-student key suffixes ───────────────────────────────────────────
         private const val SUFFIX_TOTAL_USAGE        = "total_usage_seconds"
         private const val SUFFIX_IS_BLOCKED         = "is_blocked"
@@ -654,13 +661,46 @@ class UsageTimerService : Service() {
     }
 
     private fun startForegroundWithNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                FG_NOTIF_ID, buildFgNotification(),
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-            )
+        when {
+            // Android 14+ (API 34): use specialUse — it is exempt from the
+            // dataSync ~6 h/day cumulative runtime cap that would otherwise stop
+            // this always-on monitor.
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
+                startForeground(
+                    FG_NOTIF_ID, buildFgNotification(),
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                )
+            }
+            // Android 10–13 (API 29–33): dataSync (no runtime cap on these versions).
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                startForeground(
+                    FG_NOTIF_ID, buildFgNotification(),
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                )
+            }
+            else -> startForeground(FG_NOTIF_ID, buildFgNotification())
+        }
+    }
+
+    /**
+     * Belt-and-suspenders against a system-imposed foreground-service timeout.
+     *
+     * The specialUse type used on Android 14+ is not time-restricted, so this is
+     * not expected to fire — but if a future Android version (or an OEM) ever caps
+     * it, re-assert the foreground state and keep ticking so the monitor revives
+     * itself instead of being silently stopped.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    override fun onTimeout(startId: Int) {
+        super.onTimeout(startId)
+        if (studentLoggedIn) {
+            startForegroundWithNotification()
+            if (!isRunning) {
+                isRunning = true
+                handler.post(tickRunnable)
+            }
         } else {
-            startForeground(FG_NOTIF_ID, buildFgNotification())
+            stopSelf()
         }
     }
 

@@ -38,10 +38,15 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
 
-        // Accept both the post-decryption boot (normal) and the
-        // direct-boot-aware early boot event (Android 7+).
+        // Accept the normal post-decryption boot AND the OEM "quick boot" /
+        // fast-boot events. These are the exact actions registered in the
+        // manifest's intent-filter — previously this check only allowed
+        // ACTION_BOOT_COMPLETED (and an unreachable LOCKED_BOOT_COMPLETED),
+        // so on Xiaomi/Samsung/HTC devices that emit only QUICKBOOT_POWERON the
+        // receiver returned early and the service never restarted after reboot.
         if (action != Intent.ACTION_BOOT_COMPLETED &&
-            action != "android.intent.action.LOCKED_BOOT_COMPLETED"
+            action != "android.intent.action.QUICKBOOT_POWERON" &&
+            action != "com.htc.intent.action.QUICKBOOT_POWERON"
         ) return
 
         // Only act when a student was logged in before the reboot.

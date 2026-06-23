@@ -517,6 +517,48 @@ class MascotOverlayService {
           _pendingQuizRestoreTrigger = true;
         }
         break;
+
+      case 'onShowQuiz':
+        debugPrint('[MascotOverlayService] onShowQuiz received from native.');
+        await _showUnmetGate();
+        break;
+    }
+  }
+
+  // ── Show the currently-unmet unlock gate ───────────────────────────────────
+  //
+  // Unblocking is a dual gate: apps unlock only when the cooldown has finished
+  // AND the forced quiz has been solved this cycle. When the student is blocked
+  // and reaches the app (opened a locked app, or it was brought forward), show
+  // whichever gate is still unmet:
+  //   • quiz unsolved (_earnedRewardSeconds <= 0) → bring app forward + show the
+  //     start-quiz screen (clearing any prior "Not now" dismissal);
+  //   • quiz already solved, only cooldown remaining (_earnedRewardSeconds > 0) →
+  //     just bring the app forward (home shows the cooldown banner/ring), do NOT
+  //     re-force a quiz they already completed.
+  // This is side-effect-free — it never mutates timer/reward/cooldown state.
+  Future<void> _showUnmetGate() async {
+    if (!isBlocked) return;
+
+    try {
+      await _overlayChannel.invokeMethod('bringAppToForeground');
+    } catch (_) {}
+
+    // If init() has not yet run for this student, _earnedRewardSeconds is not
+    // loaded — defer the quiz/cooldown decision to _syncStateFromNative (which
+    // runs during init() and fires the quiz when appropriate).
+    if (_studentUid == null) return;
+
+    if (_earnedRewardSeconds <= 0) {
+      _quizDismissedForThisCooldown = false;
+      _timerServiceChannel
+          .invokeMethod('setQuizDismissed', {'dismissed': false})
+          .catchError((_) {});
+      if (_quizStream.hasListener) {
+        _quizStream.add(null);
+      } else {
+        _pendingQuizTrigger = true;
+      }
     }
   }
 
@@ -535,15 +577,11 @@ class MascotOverlayService {
         break;
 
       case 'onMonitoredAppIntercepted':
-        if (isBlocked) {
-          debugPrint(
-            '[MascotOverlayService] Monitored app intercepted — '
-            'bringing Flutter quiz screen to foreground.',
-          );
-          try {
-            await _overlayChannel.invokeMethod('bringAppToForeground');
-          } catch (_) {}
-        }
+        debugPrint(
+          '[MascotOverlayService] Monitored app intercepted — '
+          'showing the unmet unlock gate.',
+        );
+        await _showUnmetGate();
         break;
 
       case 'onQuizRequested':

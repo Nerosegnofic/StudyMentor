@@ -128,7 +128,8 @@ class _QuizOverlayScaffold extends StatefulWidget {
   State<_QuizOverlayScaffold> createState() => _QuizOverlayScaffoldState();
 }
 
-class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
+class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold>
+    with WidgetsBindingObserver {
   double? _preQuizMastery;
   String? _quizzedSubjectName;
   int? _quizzedSubjectId;
@@ -146,6 +147,7 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final restored = widget.restoredSession;
     if (restored != null) {
       _restoredIndex = restored.currentIndex;
@@ -161,6 +163,31 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
               ),
             );
       });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    if (lifecycle != AppLifecycleState.paused &&
+        lifecycle != AppLifecycleState.hidden) {
+      return;
+    }
+    // Single quiz-lock enforcement point for the whole overlay: while a quiz is
+    // in progress the student must not be able to leave. This covers loading,
+    // loaded AND submitting — including the gap before/after _QuizActiveView is
+    // mounted — so a quick home-press during generation or submission can't
+    // escape. QuizInitial (start panel / "Not now"), results and error states are
+    // intentionally escapable. The native UsageTimerService tick is the fallback
+    // for when the engine is suspended.
+    final s = context.read<QuizBloc>().state;
+    if (s is QuizLoading || s is QuizLoaded || s is QuizSubmitting) {
+      MascotOverlayService.instance.bringToForeground();
     }
   }
 
@@ -565,10 +592,9 @@ class _QuizActiveViewState extends State<_QuizActiveView>
         _stopwatch.stop();
         _questionBackgroundedAt = DateTime.now();
         _persistSession(context);
-        // Primary foreground-recovery mechanism for Home button and app-switch:
-        // fires immediately via Flutter lifecycle, unlike the native service's
-        // UsageStatsManager poll which can lag several seconds on many OEMs.
-        MascotOverlayService.instance.bringToForeground();
+        // Foreground-recovery (bringToForeground) is handled once at the
+        // _QuizOverlayScaffold level so it also covers the loading/submitting
+        // states; here we only pause the stopwatch and persist progress.
         break;
       case AppLifecycleState.resumed:
         _stopwatch.start();

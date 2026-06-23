@@ -94,6 +94,12 @@ class _StudentScreenState extends State<StudentScreen>
   /// after the route pops.
   bool _quizIsOpen = false;
 
+  /// True while [_openQuizOverlay] / [_onQuizRestoreTriggered] are awaiting the
+  /// async `QuizLockService.loadSession()` lookup. Guards the await gap so two
+  /// concurrent triggers (e.g. the forced-quiz stream racing the native restore
+  /// signal on relaunch) cannot both open a quiz. Always paired with [_quizIsOpen].
+  bool _quizResolving = false;
+
   /// Whether the student has at least one subject uploaded by the parent.
   /// null = garden not loaded yet, false = no subjects, true = has subjects.
   bool? _hasSubjects;
@@ -323,14 +329,15 @@ class _StudentScreenState extends State<StudentScreen>
       }
     });
 
+    // On every resume, re-run the quiz gate. It resumes an in-progress session
+    // if one exists (covers a voluntary quiz that was swiped away even when the
+    // student is not blocked), otherwise opens a fresh quiz only when
+    // shouldShowQuiz. Cheap: a single SharedPreferences read when not already open.
     if (_permissionsGranted &&
         !_initializing &&
         !_checkingPermissions &&
         !_quizIsOpen &&
-        MascotOverlayService.instance.shouldShowQuiz) {
-      debugPrint(
-        '[StudentScreen] warm-resume: shouldShowQuiz=true and no quiz open — re-arming.',
-      );
+        !_quizResolving) {
       _openQuizOverlay();
     }
   }
@@ -351,14 +358,6 @@ class _StudentScreenState extends State<StudentScreen>
   // ── Quiz overlay ──────────────────────────────────────────────────────────
 
   void _onQuizTriggered() {
-    if (!MascotOverlayService.instance.shouldShowQuiz) {
-      debugPrint(
-        '[StudentScreen] quiz trigger suppressed — already dismissed '
-        'for this cooldown.',
-      );
-      return;
-    }
-
     final shellReady =
         !_initializing && !_checkingPermissions && _permissionsGranted;
     if (!shellReady) {
@@ -368,6 +367,8 @@ class _StudentScreenState extends State<StudentScreen>
       _pendingQuizAfterInit = true;
       return;
     }
+    // _openQuizOverlay() is the single gate: it restores an in-progress session
+    // if one exists, otherwise opens a fresh quiz only when shouldShowQuiz.
     _openQuizOverlay();
   }
 
@@ -409,20 +410,16 @@ class _StudentScreenState extends State<StudentScreen>
       return;
     }
 
-    if (_pendingQuizAfterInit && MascotOverlayService.instance.shouldShowQuiz) {
+    if (_pendingQuizAfterInit) {
       _pendingQuizAfterInit = false;
       debugPrint(
         '[StudentScreen] shell ready — flushing buffered quiz trigger.',
       );
+      // The gate (_openQuizOverlay) restores an in-progress session if present,
+      // otherwise opens a fresh quiz only when shouldShowQuiz is still true.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openQuizOverlay();
       });
-    } else if (_pendingQuizAfterInit) {
-      _pendingQuizAfterInit = false;
-      debugPrint(
-        '[StudentScreen] shell ready — buffered quiz trigger dropped '
-        '(quiz dismissed for this cooldown).',
-      );
     }
 
     // Top up the quiz cache for every active subject on dashboard load so the
@@ -433,6 +430,13 @@ class _StudentScreenState extends State<StudentScreen>
     unawaited(_aiRepo.warmAllQuizzes());
   }
 
+  /// Single entry point for showing the quiz overlay. Enforces **restore
+  /// precedence**: if an in-progress quiz session is persisted on disk
+  /// (`QuizLockService.loadSession()` non-null), it is resumed exactly — a fresh
+  /// quiz is **never** generated while a session exists. This closes the bug
+  /// where swiping mid-quiz spawned a new quiz (different subject, lost progress)
+  /// and let the student dodge submission. A fresh quiz is opened only when no
+  /// session exists AND `shouldShowQuiz` is true.
   void _openQuizOverlay() {
     if (!mounted) return;
 
@@ -449,20 +453,30 @@ class _StudentScreenState extends State<StudentScreen>
       return;
     }
 
-    // ── Defense-in-depth guard ─────────────────────────────────────────────
-    // The primary guard lives in MascotOverlayService._onLimitReached()
-    // (the _isBlocked early-return). This flag catches any duplicate signal
-    // that slips through — e.g. a race between broadcastState PATH 1 and the
-    // startActivity PATH 2 on a warm resume where both arrive after _isBlocked
-    // has already been set to true by the first call but before the stream
-    // listener fires for the second.
-    if (_quizIsOpen) {
-      debugPrint(
-        '[StudentScreen] _openQuizOverlay called while quiz is already open — ignoring duplicate.',
-      );
-      return;
-    }
+    // Already open, or another trigger is mid-resolution — ignore duplicates.
+    if (_quizIsOpen || _quizResolving) return;
 
+    // Restore precedence: check for a saved in-progress session before deciding
+    // whether to resume it or generate a new quiz. _quizResolving guards the
+    // await gap so a concurrent trigger cannot also open a quiz.
+    _quizResolving = true;
+    QuizLockService.instance.loadSession().then((session) {
+      _quizResolving = false;
+      if (!mounted || _quizIsOpen) return;
+      if (session != null) {
+        _openQuizOverlayWithRestore(session);
+      } else if (MascotOverlayService.instance.shouldShowQuiz) {
+        _pushFreshQuiz();
+      }
+    }).catchError((_) {
+      _quizResolving = false;
+    });
+  }
+
+  /// Pushes a brand-new forced quiz. Only called from [_openQuizOverlay] after
+  /// confirming no in-progress session exists.
+  void _pushFreshQuiz() {
+    if (!mounted || _quizIsOpen) return;
     _quizIsOpen = true;
 
     MascotOverlayService.instance.markQuizShown();
@@ -519,10 +533,12 @@ class _StudentScreenState extends State<StudentScreen>
     // If the quiz overlay is already in the navigation stack (warm resume
     // where the process was not killed), there is nothing to do — the existing
     // overlay is still live and will resume normally.
-    if (_quizIsOpen) return;
+    if (_quizIsOpen || _quizResolving) return;
 
+    _quizResolving = true;
     QuizLockService.instance.loadSession().then((session) {
-      if (session == null || !mounted) return;
+      _quizResolving = false;
+      if (session == null || !mounted || _quizIsOpen) return;
       final shellReady =
           !_initializing && !_checkingPermissions && _permissionsGranted;
       if (!shellReady) {
@@ -530,6 +546,8 @@ class _StudentScreenState extends State<StudentScreen>
         return;
       }
       _openQuizOverlayWithRestore(session);
+    }).catchError((_) {
+      _quizResolving = false;
     });
   }
 

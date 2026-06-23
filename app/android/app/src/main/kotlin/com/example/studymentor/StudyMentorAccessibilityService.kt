@@ -3,6 +3,8 @@ package com.example.studymentor
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.view.accessibility.AccessibilityEvent
 
 class StudyMentorAccessibilityService : AccessibilityService() {
@@ -152,6 +154,20 @@ class StudyMentorAccessibilityService : AccessibilityService() {
             }
         }
 
+        // ── Watchdog: revive the usage-timer service ─────────────────────────
+        //
+        // The system restarts accessibility services independently of our app
+        // process, which makes this the single most reliable revival point after
+        // an aggressive OEM kills the process and swallows the UsageTimerService
+        // START_STICKY restart. If a student is logged in, (re)start the timer
+        // service with a null-action intent so it falls into the onStartCommand
+        // `null` branch — restoring persisted state and resuming the tick loop.
+        // No-op if the service is already running. Starting a FGS from the
+        // background here is permitted because the app holds SYSTEM_ALERT_WINDOW.
+        if (isStudentLoggedIn) {
+            startTimerServiceIfNeeded()
+        }
+
         serviceInfo = AccessibilityServiceInfo().apply {
             eventTypes          = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
             feedbackType        = AccessibilityServiceInfo.FEEDBACK_GENERIC
@@ -221,7 +237,47 @@ class StudyMentorAccessibilityService : AccessibilityService() {
 
         justIntercepted = true
         performGlobalAction(GLOBAL_ACTION_HOME)
+
+        // Bring StudyMentor forward and show the unmet gate (quiz or cooldown).
+        // We start MainActivity directly with EXTRA_SHOW_QUIZ rather than relying
+        // solely on OverlayPlugin.instance, which is null whenever the Flutter
+        // engine/activity has been destroyed (e.g. after a process kill). The
+        // intent guarantees the gate appears even on a cold start; the Dart side
+        // decides quiz-vs-cooldown. Background activity launch is permitted via
+        // the app's SYSTEM_ALERT_WINDOW permission.
+        startActivity(
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                        or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                        or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                )
+                putExtra(UsageTimerService.EXTRA_SHOW_QUIZ, true)
+            },
+        )
+
+        // Fast path when the engine is already alive — brings the app forward
+        // immediately without waiting for the Activity launch above to settle.
         OverlayPlugin.instance?.notifyMonitoredAppIntercepted(pkg)
+    }
+
+    /**
+     * (Re)starts [UsageTimerService] with a null-action intent so it restores
+     * persisted per-student state and resumes ticking. Idempotent — a no-op when
+     * the service is already running. Used by the onServiceConnected watchdog.
+     */
+    private fun startTimerServiceIfNeeded() {
+        try {
+            val intent = Intent(applicationContext, UsageTimerService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                applicationContext.startForegroundService(intent)
+            } else {
+                applicationContext.startService(intent)
+            }
+        } catch (_: Exception) {
+            // Background-start may be refused on some OEMs without SYSTEM_ALERT_WINDOW;
+            // the START_STICKY / boot-receiver paths remain as fallbacks.
+        }
     }
 
     override fun onInterrupt() {
