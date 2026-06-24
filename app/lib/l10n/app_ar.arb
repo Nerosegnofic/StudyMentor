@@ -872,6 +872,14 @@
       "time": {"type": "String"}
     }
   },
+  "earnedTodayTitle": "كسبت {time} اليوم",
+  "@earnedTodayTitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "appsRestingUnlockSubtitle": "التطبيقات في راحة — ستُفتح عند انتهاء المؤقت.",
+  "appsRestingFinishQuizSubtitle": "التطبيقات في راحة — أكمل اختبارًا لتُفتح عند انتهاء المؤقت.",
   "timeToRestTitle": "وقت الراحة",
   "screenTimeTitle": "وقت الشاشة",
   "limitRestSummaryLabel": "اكسب {limit} لكل اختبار   ·   الراحة {rest}",

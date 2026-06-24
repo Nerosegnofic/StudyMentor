@@ -240,6 +240,8 @@ class StudentHomeState extends State<StudentHome> {
                   ScreenTimeRing(config: _config),
                   const SizedBox(height: 16),
                   FreeTimeBanner(
+                    dailyEarnedSeconds:
+                        MascotOverlayService.instance.dailyRewardSeconds,
                     remainingSeconds:
                         MascotOverlayService.instance.remainingRewardSeconds,
                     perQuizRewardSeconds: _config.rewardPerQuizSeconds,

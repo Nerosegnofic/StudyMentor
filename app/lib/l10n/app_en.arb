@@ -1173,6 +1173,14 @@
       "time": {"type": "String"}
     }
   },
+  "earnedTodayTitle": "You've earned {time} today",
+  "@earnedTodayTitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "appsRestingUnlockSubtitle": "Apps are resting — they'll unlock when the timer ends.",
+  "appsRestingFinishQuizSubtitle": "Apps are resting — finish a quiz to unlock when the timer ends.",
   "timeToRestTitle": "Time to rest",
   "screenTimeTitle": "Screen time",
   "limitRestSummaryLabel": "Earn {limit} per quiz   ·   Rest {rest}",

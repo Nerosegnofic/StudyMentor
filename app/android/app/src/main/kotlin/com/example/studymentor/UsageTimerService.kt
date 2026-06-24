@@ -335,6 +335,21 @@ class UsageTimerService : Service() {
         }
         val isForegroundMonitored = foreground != null && monitoredApps.contains(foreground) && !isPaused
 
+        // Effective lock state: the native cooldown countdown (isBlocked) OR the
+        // Dart-owned zero-reward lock, which is mirrored onto the accessibility
+        // static by setBlocked() / restoreStudentState(). Enforcement must cover
+        // BOTH. Previously the tick only bounced a monitored app while isBlocked
+        // (cooldown) was true, so in the far more common zero-reward state the
+        // tick safety net was inert: the only enforcement was the accessibility
+        // TYPE_WINDOW_STATE_CHANGED listener, which a monitored app resumed from
+        // recents does not always re-fire on many OEMs — leaving it usable until
+        // the next in-app window change. We read the in-process static rather than
+        // AppPrefs.KEY_IS_BLOCKED because the static has no transient-false window
+        // during a cooldown→zero-reward flip (native unblock() writes the pref
+        // false a tick before Dart re-asserts setBlocked(true)).
+        val effectivelyBlocked = isBlocked || StudyMentorAccessibilityService.isBlocked
+
+        // Cooldown countdown is driven solely by the native cooldown flag.
         if (isBlocked) {
             if (cooldownRemSecs > 0) {
                 cooldownRemSecs--
@@ -345,13 +360,22 @@ class UsageTimerService : Service() {
                 unblock()
                 return
             }
+        }
 
+        if (effectivelyBlocked) {
+            // Reliable safety net: force a monitored foreground app off-screen.
+            // The grace window suppresses repeat HOME presses driven by stale
+            // UsageStats foreground data right after we move the foreground —
+            // which would otherwise close StudyMentor's own quiz. Re-arm the
+            // grace on every enforced press so the next ticks don't self-close
+            // the app we just brought forward.
             val inGracePeriod = System.currentTimeMillis() - blockTimestampMs < BLOCK_GRACE_MS
             if (isForegroundMonitored && !inGracePeriod) {
                 StudyMentorAccessibilityService.instance?.performGlobalAction(
                     android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME,
                 )
                 OverlayPlugin.instance?.notifyMonitoredAppIntercepted(foreground!!)
+                blockTimestampMs = System.currentTimeMillis()
             }
 
         } else {
@@ -368,7 +392,7 @@ class UsageTimerService : Service() {
             }
         }
 
-        monitoredInForeground = !isBlocked && isForegroundMonitored
+        monitoredInForeground = !effectivelyBlocked && isForegroundMonitored
 
         // Quiz lock enforcement backup: the Dart-side AppLifecycleState.paused
         // handler is the primary mechanism (immediate, no OEM delay). This tick

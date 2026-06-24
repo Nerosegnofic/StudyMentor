@@ -100,6 +100,16 @@ class _StudentScreenState extends State<StudentScreen>
   /// signal on relaunch) cannot both open a quiz. Always paired with [_quizIsOpen].
   bool _quizResolving = false;
 
+  /// True while [_refreshMonitoredConfig] has a fetch in flight. Stops overlapping
+  /// resumes from launching concurrent config fetches.
+  bool _refreshingConfig = false;
+
+  /// Ownership token for the [MascotOverlayService] singleton. Acquired in
+  /// [initState]; dispose only tears the service down if this instance is still
+  /// the owner, so a superseded StudentScreen (built twice during the login
+  /// render) cannot stop a session a newer instance already started.
+  int _mascotOwnerToken = 0;
+
   /// Whether the student has at least one subject uploaded by the parent.
   /// null = garden not loaded yet, false = no subjects, true = has subjects.
   bool? _hasSubjects;
@@ -157,6 +167,10 @@ class _StudentScreenState extends State<StudentScreen>
     )..add(LoadGamificationDataRequested(studentId: widget.uid))
      ..add(CheckDailyLoginRewardRequested(studentId: widget.uid));
 
+    // Claim ownership before init so a later (superseding) instance's dispose
+    // cannot stop the service this instance is about to start.
+    _mascotOwnerToken = MascotOverlayService.instance.acquireOwnership();
+
     _quizSub = MascotOverlayService.instance.listenForQuiz(_onQuizTriggered);
     _quizRestoreSub =
         MascotOverlayService.instance.listenForQuizRestore(_onQuizRestoreTriggered);
@@ -195,40 +209,30 @@ class _StudentScreenState extends State<StudentScreen>
     }
 
     if (mounted) {
-      try {
-        final repo = context.read<AuthBloc>().repository;
-        final (:config, :rules) = await repo.getAppConfigForStudent(widget.uid);
-        if (mounted) {
-          final resolvedConfig = config ?? const StudentConfigModel();
-          _quizCount = resolvedConfig.quizCount;
-          await MascotOverlayService.instance.updateMonitoredApps(
-            rules,
-            studentUid: widget.uid,
-            config: resolvedConfig,
-          );
-        }
-      } catch (e) {
-        debugPrint(
-          '[StudentScreen] Config pre-load failed, using defaults: $e',
-        );
-      }
-    }
-
-    if (mounted) {
       setState(() => _initializing = false);
       _onShellReady();
     }
 
-    // Start the native foreground monitoring service AFTER the first frame.
-    // Starting it inline here races the heavy initial render (asset/image
-    // decoding) which saturates the main thread; that can starve the service's
-    // onStartCommand so it misses the startForegroundService→startForeground
-    // deadline and Android kills the process
-    // (ForegroundServiceDidNotStartInTimeException — the "app closes after login"
-    // crash). Deferring to a post-frame callback lets the start happen once the
-    // first frame is on screen and the main thread has room to run onStartCommand
-    // promptly.
+    // Fetch the live locked-app config and refresh the monitored set (single
+    // attempt). init() already seeded blocking from the local cache, so a
+    // slow/failed fetch here never leaves the student unblocked — this just brings
+    // the latest config.
+    unawaited(_refreshMonitoredConfig());
+
+    // After the first frame:
+    //  1. Re-assert the blocked state + monitored apps. The login-time
+    //     setBlocked/setMonitoredApps channel pushes run during the heavy login
+    //     render and don't reliably "stick" (the accessibility static stays
+    //     isBlocked=false until a resume re-asserts) — that was the "not blocked
+    //     until I reopen the app" bug. Doing the same reassert the resume path
+    //     does, right after login, makes blocking active immediately.
+    //  2. Start the native foreground service. Starting it inline races the heavy
+    //     initial render and can starve onStartCommand past the
+    //     startForegroundService→startForeground deadline
+    //     (ForegroundServiceDidNotStartInTimeException — the "app closes after
+    //     login" crash). Post-frame gives the main thread room.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(MascotOverlayService.instance.reassertBlockingState());
       MascotOverlayService.instance.start();
     });
   }
@@ -293,34 +297,53 @@ class _StudentScreenState extends State<StudentScreen>
     } catch (_) {}
   }
 
-  /// Re-fetch the parent-configured quiz count so a change made while the student
-  /// app was backgrounded takes effect on the next forced quiz. (The voluntary path
-  /// already reloads config when the subject screen opens.) The count is also
-  /// enforced server-side: a pre-warmed quiz with a stale count is not reused — a
-  /// fresh quiz is generated for the new count instead.
-  Future<void> _refreshQuizCount() async {
+  /// Fetches the parent-configured locked-app rules + quiz count and pushes them
+  /// to [MascotOverlayService] (which caches them locally). Single attempt — no
+  /// retry loop: the local cache keeps blocking working from last-known meanwhile,
+  /// and a fresh sync happens on the next resume / AuthBloc rule-load anyway. The
+  /// in-flight guard stops overlapping resumes from launching concurrent fetches.
+  Future<void> _refreshMonitoredConfig() async {
+    if (!mounted || _refreshingConfig) return;
+    _refreshingConfig = true;
     try {
       final repo = context.read<AuthBloc>().repository;
-      final config = (await repo.getAppConfigForStudent(widget.uid)).config;
-      if (mounted && config != null) {
-        setState(() => _quizCount = config.quizCount);
-      }
-    } catch (_) {}
+      final (:config, :rules) = await repo.getAppConfigForStudent(widget.uid);
+      if (!mounted) return;
+      final resolvedConfig = config ?? const StudentConfigModel();
+      setState(() => _quizCount = resolvedConfig.quizCount);
+      await MascotOverlayService.instance.updateMonitoredApps(
+        rules,
+        studentUid: widget.uid,
+        config: resolvedConfig,
+      );
+      debugPrint(
+        '[StudentScreen] Monitored config refreshed: ${rules.length} rules.',
+      );
+    } catch (e) {
+      // Keep the cached/last-known monitored apps (never cleared); the next
+      // resume / rule-load will re-sync.
+      debugPrint('[StudentScreen] Monitored config refresh failed: $e');
+    } finally {
+      _refreshingConfig = false;
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
 
-    // Pick up parent config changes (e.g. quiz count) made while backgrounded.
-    _refreshQuizCount();
+    // Pick up parent config changes (quiz count + locked apps) made while
+    // backgrounded, with retry. Refreshes the cached monitored-apps list.
+    _refreshMonitoredConfig();
 
     // Recover the monitoring service if an earlier foreground-service start was
     // refused by the OS (e.g. the app was briefly backgrounded during the login /
-    // permission flow). Idempotent; the native side now bails out cleanly instead
-    // of crashing when it cannot enter the foreground.
+    // permission flow), and re-assert the monitored apps + blocked state so a
+    // stale/empty accessibility static self-heals. Idempotent; the native side now
+    // bails out cleanly instead of crashing when it cannot enter the foreground.
     if (_permissionsGranted && !_initializing && !_checkingPermissions) {
       unawaited(MascotOverlayService.instance.ensureStarted());
+      unawaited(MascotOverlayService.instance.reassertBlockingState());
     }
 
     // Reload home data (XP/streak/garden/daily snapshot) so the dashboard isn't
@@ -366,7 +389,13 @@ class _StudentScreenState extends State<StudentScreen>
     _quizSub?.cancel();
     _quizRestoreSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    MascotOverlayService.instance.stop();
+    // Only tear the singleton down if we still own it. A StudentScreen that was
+    // superseded during the login render must NOT stop() — doing so pushed
+    // setBlocked(false) and nulled the studentUid, leaving app-locking inert
+    // until a manual reopen (the "lock not active after login" bug).
+    if (MascotOverlayService.instance.isOwner(_mascotOwnerToken)) {
+      MascotOverlayService.instance.stop();
+    }
     _shopBloc.close();
     _gardenBloc.close();
     _gamificationBloc.close();
@@ -610,10 +639,15 @@ class _StudentScreenState extends State<StudentScreen>
           _quizIsOpen = false;
           if (completed == true) {
             MascotOverlayService.instance.markQuizCompleted();
-            final reward =
-                MascotOverlayService.instance.config.rewardPerQuizSeconds;
-            if (reward > 0) {
-              MascotOverlayService.instance.addRewardTime(reward);
+            // Only forced quizzes grant reward time. A restored session can be
+            // voluntary (e.g. a practice quiz interrupted by task removal), so
+            // gate the grant on its context type.
+            if (session.contextType == QuizContext.forced) {
+              final reward =
+                  MascotOverlayService.instance.config.rewardPerQuizSeconds;
+              if (reward > 0) {
+                MascotOverlayService.instance.addRewardTime(reward);
+              }
             }
           } else {
             MascotOverlayService.instance.markQuizDismissed();

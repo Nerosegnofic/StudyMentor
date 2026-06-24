@@ -3817,6 +3817,24 @@ abstract class AppLocalizations {
   /// **'You\'ve banked {time} of free time.'**
   String bankedTimeSubtitle(String time);
 
+  /// No description provided for @earnedTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve earned {time} today'**
+  String earnedTodayTitle(String time);
+
+  /// No description provided for @appsRestingUnlockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps are resting — they\'ll unlock when the timer ends.'**
+  String get appsRestingUnlockSubtitle;
+
+  /// No description provided for @appsRestingFinishQuizSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps are resting — finish a quiz to unlock when the timer ends.'**
+  String get appsRestingFinishQuizSubtitle;
+
   /// No description provided for @timeToRestTitle.
   ///
   /// In en, this message translates to:

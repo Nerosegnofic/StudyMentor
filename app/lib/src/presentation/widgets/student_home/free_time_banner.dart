@@ -9,7 +9,13 @@ import '../../../../l10n/app_localizations.dart';
 ///   • **In cooldown** — apps locked; show banked time (if any) or prompt.
 ///   • **Unlocked, has time** — show remaining time and encourage more quizzes.
 class FreeTimeBanner extends StatelessWidget {
+  /// Cumulative reward time earned from forced quizzes so far today. Drives the
+  /// headline ("You've earned X today"). Resets at local midnight.
+  final int dailyEarnedSeconds;
+
   /// Seconds currently earned and available (earned − used so far in window).
+  /// Used only to distinguish a banked vs not-yet-solved cooldown — never shown
+  /// as a number, since the ScreenTimeRing above already displays it.
   final int remainingSeconds;
 
   /// How many seconds one quiz completion grants (from parent config).
@@ -28,6 +34,7 @@ class FreeTimeBanner extends StatelessWidget {
 
   const FreeTimeBanner({
     super.key,
+    required this.dailyEarnedSeconds,
     required this.remainingSeconds,
     required this.perQuizRewardSeconds,
     required this.isInCooldown,
@@ -46,7 +53,12 @@ class FreeTimeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final rewardFormatted = _formatTime(perQuizRewardSeconds, loc);
-    final remainingFormatted = _formatTime(remainingSeconds, loc);
+    final dailyFormatted = _formatTime(dailyEarnedSeconds, loc);
+
+    // Headline carries the cumulative daily total whenever the student has earned
+    // anything today; it only falls back to a prompt at the day's first quiz.
+    final bool hasEarnedToday = dailyEarnedSeconds > 0;
+    final String earnedTodayHeadline = loc.earnedTodayTitle(dailyFormatted);
 
     final String headline;
     final String subtitle;
@@ -58,7 +70,8 @@ class FreeTimeBanner extends StatelessWidget {
     final Color inkColor;
 
     if (isInCooldown && cooldownConfigured) {
-      // Cooldown running: show banked time (earned during cooldown) or prompt.
+      // Cooldown running. The ScreenTimeRing shows the countdown; the banner just
+      // states today's total and whether a quiz still needs solving to unlock.
       bgColor = const Color(0xFFFFF8E1);
       borderColor = const Color(0xFFFFE082);
       inkColor = _amberInk;
@@ -66,13 +79,12 @@ class FreeTimeBanner extends StatelessWidget {
       iconColor = const Color(0xFFF57F17);
       iconBg = _amber.withValues(alpha: 0.20);
 
-      if (remainingSeconds > 0) {
-        headline = loc.appsRestingTitle;
-        subtitle = loc.earnedFreeTimeLockedSubtitle(remainingFormatted);
-      } else {
-        headline = loc.appsRestingTitle;
-        subtitle = loc.finishQuizUnlockApps;
-      }
+      headline = hasEarnedToday ? earnedTodayHeadline : loc.appsRestingTitle;
+      // remainingSeconds > 0 means the unlock quiz is already solved (reward
+      // banked); otherwise the student still needs to finish one.
+      subtitle = remainingSeconds > 0
+          ? loc.appsRestingUnlockSubtitle
+          : loc.appsRestingFinishQuizSubtitle;
     } else if (isLocked) {
       // No earned time, not in cooldown — initial state or post-cooldown.
       bgColor = const Color(0xFFFFF8E1);
@@ -82,10 +94,11 @@ class FreeTimeBanner extends StatelessWidget {
       iconColor = const Color(0xFFF57F17);
       iconBg = _amber.withValues(alpha: 0.20);
 
-      headline = loc.doQuizToUnlockTitle;
+      headline = hasEarnedToday ? earnedTodayHeadline : loc.doQuizToUnlockTitle;
       subtitle = loc.perQuizRewardSubtitle(rewardFormatted);
     } else {
-      // Unlocked: apps accessible, show remaining time.
+      // Unlocked: apps accessible. The ring shows remaining time; the banner
+      // headlines today's total and encourages earning more.
       bgColor = _greenBg;
       borderColor = _greenBorder;
       inkColor = _greenInk;
@@ -93,10 +106,8 @@ class FreeTimeBanner extends StatelessWidget {
       iconColor = _green;
       iconBg = _green.withValues(alpha: 0.15);
 
-      headline = loc.appsUnlockedTitle;
-      subtitle = remainingSeconds >= 60
-          ? loc.bankedTimeSubtitle(remainingFormatted)
-          : loc.enjoyFreeTimeSubtitle;
+      headline = hasEarnedToday ? earnedTodayHeadline : loc.appsUnlockedTitle;
+      subtitle = loc.enjoyFreeTimeSubtitle;
     }
 
     return Container(

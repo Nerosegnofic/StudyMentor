@@ -125,6 +125,10 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         )
     }
 
+    // Timestamp of the last throttled isBlocked refresh-from-prefs in
+    // onAccessibilityEvent (self-heal for a stale static after login).
+    private var lastBlockedRefreshMs = 0L
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
@@ -144,9 +148,17 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         isInPermissionSetup = prefs.getBoolean(AppPrefs.KEY_PERMISSION_SETUP, false)
         isBlocked           = prefs.getBoolean(AppPrefs.KEY_IS_BLOCKED, false)
 
-        // Restore monitored apps from UsageTimerService shared prefs
+        // Restore monitored apps from UsageTimerService shared prefs. The live
+        // set is persisted per-student under "<uid>_monitored_apps"
+        // (UsageTimerService.saveMonitoredApps + OverlayPlugin.setMonitoredApps);
+        // the bare "monitored_apps" key is only a legacy fallback. Reading the
+        // per-student key is what makes a fresh-process reconnect recover the set
+        // instead of leaving it empty until a Dart push lands.
         val timerPrefs = UsageTimerService.prefs(applicationContext)
-        val savedApps = timerPrefs.getStringSet("monitored_apps", null)
+        val restoreUid = timerPrefs.getString("student_uid", "") ?: ""
+        val savedApps = timerPrefs.getStringSet(
+            UsageTimerService.studentKey(restoreUid, "monitored_apps"), null,
+        ) ?: timerPrefs.getStringSet("monitored_apps", null)
         if (savedApps != null) {
             synchronized(monitoredApps) {
                 monitoredApps.clear()
@@ -206,6 +218,35 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         }
 
         // ── App-blocking guard (existing feature) ────────────────────────────
+
+        // ONE-DIRECTIONAL self-heal of the blocked flag from prefs (throttled to
+        // ≤ once/sec). Only ever ADOPT blocked=true — recovering a stale-false
+        // static after login (the Dart setBlocked(true) push can lag behind the
+        // heavy login render: the "not blocked until I reopen the app" bug). It must
+        // NEVER copy false onto the static: native unblock() writes
+        // KEY_IS_BLOCKED=false on a cooldown flip while the student should stay
+        // blocked (reward 0), and the only thing that legitimately unblocks the
+        // static is Dart setBlocked(false), which sets it directly. Copying false
+        // here disabled the instant accessibility bounce and forced the slow
+        // native-tick fallback — the post-quiz re-bounce delay.
+        val nowMs = System.currentTimeMillis()
+        if (nowMs - lastBlockedRefreshMs > 1000L) {
+            lastBlockedRefreshMs = nowMs
+            if (getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+                    .getBoolean(AppPrefs.KEY_IS_BLOCKED, false)
+            ) {
+                isBlocked = true
+            }
+        }
+
+        // TEMP diagnostics — logged BEFORE the guard so a logcat distinguishes
+        // "isBlocked=false" from "no event at all". Remove once verified.
+        android.util.Log.d(
+            "StudyMentorA11y",
+            "evt pkg=$pkg isBlocked=$isBlocked monitored=${monitoredApps.size} " +
+                "contains=${monitoredApps.contains(pkg)}",
+        )
+
         if (!isBlocked) return
 
         val isLauncher  = LAUNCHER_PACKAGES.any { pkg.startsWith(it) }
@@ -213,6 +254,25 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         // Fetch studentUid from UsageTimerService shared prefs
         val timerPrefs = UsageTimerService.prefs(this)
         val studentUid = timerPrefs.getString("student_uid", "") ?: ""
+
+        // Self-heal an empty monitored set from prefs — the missing half of the
+        // isBlocked self-heal above. On every login the Dart setMonitoredApps push
+        // can fail to "stick" during the heavy first render; isBlocked recovers
+        // (so the quiz fires) but monitoredApps did not, so nothing was recognised
+        // as blockable until a manual reopen re-pushed it. Repair from the
+        // per-student key UsageTimerService persists. Only when empty, so a live
+        // Dart push always wins; runs only while blocked (after the guard above).
+        if (monitoredApps.isEmpty() && studentUid.isNotEmpty()) {
+            val saved = timerPrefs.getStringSet(
+                UsageTimerService.studentKey(studentUid, "monitored_apps"), null,
+            )
+            if (!saved.isNullOrEmpty()) {
+                synchronized(monitoredApps) {
+                    monitoredApps.clear()
+                    monitoredApps.addAll(saved)
+                }
+            }
+        }
 
         // Fetch paused packages from FlutterSharedPreferences
         val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", android.content.Context.MODE_PRIVATE)

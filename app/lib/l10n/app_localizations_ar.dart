@@ -2213,6 +2213,19 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String earnedTodayTitle(String time) {
+    return 'كسبت $time اليوم';
+  }
+
+  @override
+  String get appsRestingUnlockSubtitle =>
+      'التطبيقات في راحة — ستُفتح عند انتهاء المؤقت.';
+
+  @override
+  String get appsRestingFinishQuizSubtitle =>
+      'التطبيقات في راحة — أكمل اختبارًا لتُفتح عند انتهاء المؤقت.';
+
+  @override
   String get timeToRestTitle => 'وقت الراحة';
 
   @override

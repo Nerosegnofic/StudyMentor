@@ -2235,6 +2235,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String earnedTodayTitle(String time) {
+    return 'You\'ve earned $time today';
+  }
+
+  @override
+  String get appsRestingUnlockSubtitle =>
+      'Apps are resting — they\'ll unlock when the timer ends.';
+
+  @override
+  String get appsRestingFinishQuizSubtitle =>
+      'Apps are resting — finish a quiz to unlock when the timer ends.';
+
+  @override
   String get timeToRestTitle => 'Time to rest';
 
   @override

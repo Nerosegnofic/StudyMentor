@@ -410,8 +410,20 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 StudyMentorAccessibilityService.monitoredApps.clear()
                 StudyMentorAccessibilityService.monitoredApps.addAll(apps)
                 if (studentUid.isNotEmpty()) {
+                    // Persist the pushed set to the same per-student key
+                    // UsageTimerService uses, so the accessibility service can
+                    // self-heal an empty monitoredApps from the earliest login
+                    // push (before the timer service starts). Always refreshed on
+                    // every parent-config change, keeping the self-heal source in
+                    // sync with the parent's current lock/unlock/pause choice.
                     val timerPrefs = UsageTimerService.prefs(activity)
-                    timerPrefs.edit().putString("student_uid", studentUid).apply()
+                    timerPrefs.edit()
+                        .putString("student_uid", studentUid)
+                        .putStringSet(
+                            UsageTimerService.studentKey(studentUid, "monitored_apps"),
+                            apps.toSet(),
+                        )
+                        .apply()
                 }
                 result.success(null)
             }
