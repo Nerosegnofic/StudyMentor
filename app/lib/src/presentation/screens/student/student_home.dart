@@ -556,13 +556,13 @@ class StudentHomeState extends State<StudentHome> {
   }
 
   /// Full-width CTA that launches the focused (reward-earning) quiz. Label adapts
-  /// to the screen-time state: "Solve to unlock" when apps are blocked with no
-  /// reward time (a quiz unblocks immediately), otherwise "Start a quiz" (the
-  /// student is earning/banking time — in cooldown it banks for after the rest).
+  /// to the screen-time state: "Solve to unlock" whenever apps are blocked —
+  /// out of reward time OR in cooldown (both block app access) — otherwise
+  /// "Start a quiz" (the student proactively earns/banks more time).
   Widget _buildStartQuizButton() {
     final loc = AppLocalizations.of(context);
     final svc = MascotOverlayService.instance;
-    final lockedNoReward = svc.isBlocked && !svc.isInCooldown;
+    final blocked = svc.isBlocked; // includes cooldown — apps are blocked either way
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
@@ -576,7 +576,7 @@ class StudentHomeState extends State<StudentHome> {
         ),
         icon: const Icon(Icons.quiz_rounded, size: 22),
         label: Text(
-          lockedNoReward ? loc.solveToUnlockButton : loc.startQuizButton,
+          blocked ? loc.solveToUnlockButton : loc.startQuizButton,
           style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
