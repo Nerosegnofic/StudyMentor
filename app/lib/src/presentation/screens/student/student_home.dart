@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
@@ -31,7 +32,16 @@ class StudentHome extends StatefulWidget {
   final String fullName;
   final String uid;
 
-  const StudentHome({super.key, required this.fullName, required this.uid});
+  /// Launches the focused (reward-earning) quiz. Wired by [StudentScreen] to its
+  /// existing forced-quiz launcher so behavior matches the overlay-triggered quiz.
+  final VoidCallback? onStartFocusedQuiz;
+
+  const StudentHome({
+    super.key,
+    required this.fullName,
+    required this.uid,
+    this.onStartFocusedQuiz,
+  });
 
   @override
   State<StudentHome> createState() => StudentHomeState();
@@ -230,6 +240,12 @@ class StudentHomeState extends State<StudentHome> {
                 // 2 ── Garden (hero growth visual) ─────────────────────────────
                 _buildGardenArea(),
                 const SizedBox(height: 16),
+
+                // 2b ── Focused-quiz CTA (only when the screen-time system is on)
+                if (!_rulesLoading && activeRules.isNotEmpty) ...[
+                  _buildStartQuizButton(),
+                  const SizedBox(height: 16),
+                ],
 
                 // 3 ── Rank progress ───────────────────────────────────────────
                 RankProgressCard(xpTotal: _xp, currentLevel: _level),
@@ -536,6 +552,34 @@ class StudentHomeState extends State<StudentHome> {
         ],
       ),
       child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    );
+  }
+
+  /// Full-width CTA that launches the focused (reward-earning) quiz. Label adapts
+  /// to the screen-time state: "Solve to unlock" when apps are blocked with no
+  /// reward time (a quiz unblocks immediately), otherwise "Start a quiz" (the
+  /// student is earning/banking time — in cooldown it banks for after the rest).
+  Widget _buildStartQuizButton() {
+    final loc = AppLocalizations.of(context);
+    final svc = MascotOverlayService.instance;
+    final lockedNoReward = svc.isBlocked && !svc.isInCooldown;
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => widget.onStartFocusedQuiz?.call(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF4CAF50), // Primary Green
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+        ),
+        icon: const Icon(Icons.quiz_rounded, size: 22),
+        label: Text(
+          lockedNoReward ? loc.solveToUnlockButton : loc.startQuizButton,
+          style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+      ),
     );
   }
 

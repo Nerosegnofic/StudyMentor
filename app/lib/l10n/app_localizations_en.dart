@@ -1364,6 +1364,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your focus time is up. Let\'s do a quick quiz to keep your brain sharp!';
 
   @override
+  String get solveToUnlockButton => 'Solve to unlock';
+
+  @override
   String get startQuizButton => 'Start Quiz';
 
   @override

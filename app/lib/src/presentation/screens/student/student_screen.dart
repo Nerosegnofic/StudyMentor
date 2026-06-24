@@ -521,9 +521,10 @@ class _StudentScreenState extends State<StudentScreen>
     });
   }
 
-  /// Pushes a brand-new forced quiz. Only called from [_openQuizOverlay] after
-  /// confirming no in-progress session exists.
-  void _pushFreshQuiz() {
+  /// Pushes a brand-new quiz with no in-progress session. Defaults to
+  /// [QuizContext.forced] (the overlay-triggered case); the home-screen button
+  /// passes [QuizContext.voluntary] when the student starts one while not blocked.
+  void _pushFreshQuiz({QuizContext quizContext = QuizContext.forced}) {
     if (!mounted || _quizIsOpen) return;
     _quizIsOpen = true;
 
@@ -542,7 +543,7 @@ class _StudentScreenState extends State<StudentScreen>
               child: QuizOverlayPage(
                 repository: _aiRepo,
                 studentId: widget.uid,
-                contextType: QuizContext.forced,
+                contextType: quizContext,
                 studentGrade: _studentGrade,
                 totalQuestions: switch (_quizCount) {
                   Auto() => 5,
@@ -571,6 +572,35 @@ class _StudentScreenState extends State<StudentScreen>
           // Flush any buffered celebrations now that the quiz is gone.
           _flushPendingCelebrations();
         });
+  }
+
+  /// User-initiated focused quiz from the home-screen button. Unlike
+  /// [_openQuizOverlay], this does not require [MascotOverlayService.shouldShowQuiz]
+  /// — the student may proactively earn/bank reward time even while unlocked, and
+  /// it overrides a prior dismissal. Still honors the no-subjects guard,
+  /// session-restore precedence, and the single-open lock.
+  void _startFocusedQuizFromButton() {
+    if (!mounted || _quizIsOpen || _quizResolving) return;
+    if (_hasSubjects != true) return; // nothing to quiz on yet (or garden not loaded)
+    _quizResolving = true;
+    QuizLockService.instance.loadSession().then((session) {
+      _quizResolving = false;
+      if (!mounted || _quizIsOpen) return;
+      if (session != null) {
+        _openQuizOverlayWithRestore(session);
+      } else {
+        // Forced when apps are currently blocked (this quiz is required to
+        // unlock / bank time); voluntary when the student starts one proactively
+        // while they still have free time.
+        _pushFreshQuiz(
+          quizContext: MascotOverlayService.instance.isBlocked
+              ? QuizContext.forced
+              : QuizContext.voluntary,
+        );
+      }
+    }).catchError((_) {
+      _quizResolving = false;
+    });
   }
 
   // ── Quiz restore (after task removal / reboot) ────────────────────────────
@@ -940,6 +970,7 @@ class _StudentScreenState extends State<StudentScreen>
                           key: _homeKey,
                           fullName: widget.fullName,
                           uid: widget.uid,
+                          onStartFocusedQuiz: _startFocusedQuizFromButton,
                         ),
                       ],
                     ),

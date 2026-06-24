@@ -1354,6 +1354,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهى وقت التركيز. لنقم باختبار سريع لتنشيط عقلك!';
 
   @override
+  String get solveToUnlockButton => 'حل لفتح التطبيقات';
+
+  @override
   String get startQuizButton => 'ابدأ الاختبار';
 
   @override

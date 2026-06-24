@@ -2383,6 +2383,12 @@ abstract class AppLocalizations {
   /// **'Your focus time is up. Let\'s do a quick quiz to keep your brain sharp!'**
   String get quizPromptMessage;
 
+  /// No description provided for @solveToUnlockButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Solve to unlock'**
+  String get solveToUnlockButton;
+
   /// No description provided for @startQuizButton.
   ///
   /// In en, this message translates to:
