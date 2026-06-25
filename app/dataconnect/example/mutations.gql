@@ -28,13 +28,11 @@ mutation DeleteUser @auth(level: USER) {
   user_delete(key: { uid_expr: "auth.uid" })
 }
 
-mutation InsertParent($pinCode: String, $phoneNumber: String) @auth(level: USER) {
+mutation InsertParent @auth(level: USER) {
   parent_insert(
     data: {
       uid_expr: "auth.uid"
       userUid_expr: "auth.uid"
-      pinCode: $pinCode
-      phoneNumber: $phoneNumber
     }
   )
 }
@@ -90,24 +88,6 @@ mutation DeleteAllAppRulesForStudent($studentUid: String!) @auth(level: USER, in
 }
 
 
-
-# ── Student Settings ──────────────────────────────────────────────────────────
-
-mutation UpsertStudentSettings(
-  $studentUid: String!
-  $notificationsEnabled: Boolean!
-  $soundEffectsEnabled: Boolean!
-  $backgroundMusicEnabled: Boolean!
-) @auth(level: USER, insecureReason: "Students are authorized to update their own settings.") {
-  studentSettings_upsert(
-    data: {
-      studentUid: $studentUid
-      notificationsEnabled: $notificationsEnabled
-      soundEffectsEnabled: $soundEffectsEnabled
-      backgroundMusicEnabled: $backgroundMusicEnabled
-    }
-  )
-}
 
 # ── Avatar Shop Mutations ─────────────────────────────────────────────────────
 
@@ -238,15 +218,6 @@ mutation InsertLocalNotificationEvent(
     eventType: $eventType
     payload: $payload
   })
-}
-
-mutation MarkLocalNotificationEventsRead(
-  $eventIds: [UUID!]!
-) @auth(level: USER, insecureReason: "Parent marks their own events as read; ownership enforced by prior query scoping.") {
-  localNotificationEvent_updateMany(
-    where: { id: { in: $eventIds } }
-    data: { isRead: true }
-  )
 }
 
 # Marks events as dispatched (OS notification sent). Used by the 15-min poll so
