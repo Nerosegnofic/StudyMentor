@@ -8,14 +8,6 @@ class StudentRankUtils {
 
   static int levelFromXp(int totalXp) => levelForXp(totalXp).levelNumber;
 
-  static String rankFromLevel(int level) {
-    if (level < 1) return 'Seedling';
-    if (level > kGamificationLevels.length) return 'Legend';
-    return kGamificationLevels[level - 1].levelName;
-  }
-
-  static String rankFromXp(int totalXp) => rankFromLevel(levelFromXp(totalXp));
-
   static String localizedRankName(AppLocalizations loc, int level) {
     switch (level) {
       case 1: return loc.rankLevel1;
@@ -31,9 +23,4 @@ class StudentRankUtils {
     }
   }
 
-  /// Online = lastActiveAt within the last [thresholdMinutes] minutes.
-  static bool isOnline(DateTime? lastActiveAt, {int thresholdMinutes = 5}) {
-    if (lastActiveAt == null) return false;
-    return DateTime.now().toUtc().difference(lastActiveAt.toUtc()).inMinutes < thresholdMinutes;
-  }
 }

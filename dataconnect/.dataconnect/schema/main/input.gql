@@ -1113,22 +1113,6 @@ input Parent_Data {
   """
   user: User_Key @fdc_forbiddenInVariables
   """
-  ✨ Generated from Field `Parent`.`phoneNumber` of type `String`
-  """
-  phoneNumber: String
-  """
-  ✨ `_expr` server value variant of `phoneNumber` (✨ Generated from Field `Parent`.`phoneNumber` of type `String`)
-  """
-  phoneNumber_expr: String_Expr @fdc_forbiddenInVariables
-  """
-  ✨ Generated from Field `Parent`.`pinCode` of type `String`
-  """
-  pinCode: String
-  """
-  ✨ `_expr` server value variant of `pinCode` (✨ Generated from Field `Parent`.`pinCode` of type `String`)
-  """
-  pinCode_expr: String_Expr @fdc_forbiddenInVariables
-  """
   ✨ Generated from Field `Parent`.`students_on_parent` of type `[Student!]!`
   """
   students_on_parent: [Student_Data!]
@@ -1161,14 +1145,6 @@ input Parent_Filter {
   ✨ Generated from Field `Parent`.`user` of type `User!`
   """
   user: User_Filter
-  """
-  ✨ Generated from Field `Parent`.`phoneNumber` of type `String`
-  """
-  phoneNumber: String_Filter
-  """
-  ✨ Generated from Field `Parent`.`pinCode` of type `String`
-  """
-  pinCode: String_Filter
   """
   ✨ Generated from Field `Parent`.`students_on_parent` of type `[Student!]!`
   """
@@ -1211,14 +1187,6 @@ input Parent_Having {
   ✨ Generated from Field `Parent`.`_count` of type `Int!`
   """
   _count: Int_Filter
-  """
-  ✨ Generated from Field `Parent`.`phoneNumber_count` of type `Int!`
-  """
-  phoneNumber_count: Int_Filter
-  """
-  ✨ Generated from Field `Parent`.`pinCode_count` of type `Int!`
-  """
-  pinCode_count: Int_Filter
   """
   ✨ Generated from Field `Parent`.`uid_count` of type `Int!`
   """
@@ -1271,25 +1239,9 @@ input Parent_Order {
   """
   user: User_Order
   """
-  ✨ Generated from Field `Parent`.`phoneNumber` of type `String`
-  """
-  phoneNumber: OrderDirection
-  """
-  ✨ Generated from Field `Parent`.`pinCode` of type `String`
-  """
-  pinCode: OrderDirection
-  """
   ✨ Generated from Field `Parent`.`_count` of type `Int!`
   """
   _count: OrderDirection
-  """
-  ✨ Generated from Field `Parent`.`phoneNumber_count` of type `Int!`
-  """
-  phoneNumber_count: OrderDirection
-  """
-  ✨ Generated from Field `Parent`.`pinCode_count` of type `Int!`
-  """
-  pinCode_count: OrderDirection
   """
   ✨ Generated from Field `Parent`.`uid_count` of type `Int!`
   """

@@ -34,7 +34,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
     companion object {
         const val OVERLAY_CHANNEL = "com.example.studymentor/overlay"
-        const val USAGE_CHANNEL   = "com.example.studymentor/usage_stats"
         const val ACCESS_CHANNEL  = "com.example.studymentor/accessibility"
 
         // ── Notification channel ──────────────────────────────────────────────
@@ -94,11 +93,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            USAGE_CHANNEL,
-        ).setMethodCallHandler { call, result -> handleUsage(call, result) }
-
-        MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
             ACCESS_CHANNEL,
         ).setMethodCallHandler { call, result -> handleAccessibility(call, result) }
 
@@ -114,19 +108,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     private fun handleOverlay(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
 
-            "showOverlay" -> {
-                if (!Settings.canDrawOverlays(activity)) {
-                    result.error("NO_PERMISSION", "SYSTEM_ALERT_WINDOW not granted", null)
-                    return
-                }
-                val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 30
-                activity.runOnUiThread {
-                    cancelUsageNotification()
-                    showOrUpdateOverlay(remainingSeconds)
-                    result.success(null)
-                }
-            }
-
             "hideOverlay" -> {
                 activity.runOnUiThread {
                     removeOverlay()
@@ -134,49 +115,17 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 }
             }
 
-            "updateCountdown" -> {
-                val remaining = call.argument<Int>("remainingSeconds") ?: 0
-                activity.runOnUiThread {
-                    updateCountdownDisplay(remaining)
-                    result.success(null)
-                }
-            }
-
             // ── Silent usage timer notification ──────────────────────────────
-
-            "showUsageTimer" -> {
-                val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
-                postUsageNotification(remainingSeconds)
-                result.success(null)
-            }
 
             "hideUsageTimer" -> {
                 cancelUsageNotification()
                 result.success(null)
             }
 
-            "updateUsageTimer" -> {
-                val remaining = call.argument<Int>("remainingSeconds") ?: 0
-                postUsageNotification(remaining)
-                result.success(null)
-            }
-
             // ── Silent cooldown timer notification ───────────────────────────
-
-            "showCooldownTimer" -> {
-                val remainingSeconds = call.argument<Int>("remainingSeconds") ?: 0
-                postCooldownNotification(remainingSeconds)
-                result.success(null)
-            }
 
             "hideCooldownTimer" -> {
                 cancelCooldownNotification()
-                result.success(null)
-            }
-
-            "updateCooldownTimer" -> {
-                val remaining = call.argument<Int>("remainingSeconds") ?: 0
-                postCooldownNotification(remaining)
                 result.success(null)
             }
 
@@ -195,8 +144,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
                 postCooldownThresholdAlert(remainingSeconds)
                 result.success(null)
             }
-
-            "updateState" -> result.success(null)
 
             "bringAppToForeground" -> {
                 val intent = Intent(activity, MainActivity::class.java).apply {
@@ -386,24 +333,11 @@ class OverlayPlugin(private val activity: FlutterActivity) {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Usage-stats channel
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private fun handleUsage(call: MethodCall, result: MethodChannel.Result) {
-        when (call.method) {
-            "getForegroundApp" -> result.success(getForegroundPackage())
-            else -> result.notImplemented()
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
     // Accessibility channel
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun handleAccessibility(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "isAccessibilityEnabled" -> result.success(isAccessibilityEnabled())
-
             "setMonitoredApps" -> {
                 val apps = call.argument<List<String>>("apps") ?: emptyList()
                 val studentUid = call.argument<String>("studentUid") ?: ""
@@ -639,50 +573,6 @@ class OverlayPlugin(private val activity: FlutterActivity) {
         val mins = remainingSeconds / 60
         val secs = remainingSeconds % 60
         countdownText?.text = String.format("%02d:%02d", mins, secs)
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private fun getForegroundPackage(): String? {
-        val usageManager = activity.getSystemService(Context.USAGE_STATS_SERVICE)
-            as? android.app.usage.UsageStatsManager ?: return null
-        val now = System.currentTimeMillis()
-        val events = usageManager.queryEvents(now - 300_000L, now)
-        var lastPackage: String? = null
-        var lastTime = 0L
-        val event = android.app.usage.UsageEvents.Event()
-        while (events.hasNextEvent()) {
-            events.getNextEvent(event)
-            if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND
-                && event.timeStamp > lastTime) {
-                lastTime = event.timeStamp
-                lastPackage = event.packageName
-            }
-        }
-        return lastPackage
-    }
-
-    private fun isAccessibilityEnabled(): Boolean {
-        val prefString = Settings.Secure.getString(
-            activity.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-        ) ?: return false
-        val pkg = activity.packageName
-        val fullClass = StudyMentorAccessibilityService::class.java.name
-        val shortClass = ".${StudyMentorAccessibilityService::class.java.simpleName}"
-        val splitter = android.text.TextUtils.SimpleStringSplitter(':')
-        splitter.setString(prefString)
-        while (splitter.hasNext()) {
-            val entry = splitter.next()
-            val slash = entry.indexOf('/')
-            if (slash < 0) continue
-            if (entry.substring(0, slash) != pkg) continue
-            val cls = entry.substring(slash + 1)
-            if (cls == fullClass || cls == shortClass) return true
-        }
-        return false
     }
 
     private fun dpToPx(dp: Int): Int =

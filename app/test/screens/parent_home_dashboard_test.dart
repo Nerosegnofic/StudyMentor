@@ -16,9 +16,6 @@ import 'package:studymentor/src/bloc/auth/auth_state.dart';
 import 'package:studymentor/src/bloc/students/students_bloc.dart';
 import 'package:studymentor/src/bloc/students/students_event.dart';
 import 'package:studymentor/src/bloc/students/students_state.dart';
-import 'package:studymentor/src/bloc/snapshot/snapshot_bloc.dart';
-import 'package:studymentor/src/bloc/snapshot/snapshot_event.dart';
-import 'package:studymentor/src/bloc/snapshot/snapshot_state.dart';
 import 'package:studymentor/src/bloc/reports/reports_bloc.dart';
 import 'package:studymentor/src/bloc/reports/reports_event.dart';
 import 'package:studymentor/src/bloc/reports/reports_state.dart';
@@ -35,9 +32,6 @@ class MockStudentsBloc extends MockBloc<StudentsEvent, StudentsState>
     implements StudentsBloc {}
 
 class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
-
-class MockSnapshotBloc extends MockBloc<SnapshotEvent, SnapshotState>
-    implements SnapshotBloc {}
 
 class MockReportsBloc extends MockBloc<ReportsEvent, ReportsState>
     implements ReportsBloc {}
@@ -61,7 +55,6 @@ Widget _wrap({
   required Widget child,
   required StudentsBloc studentsBloc,
   required AuthBloc authBloc,
-  required SnapshotBloc snapshotBloc,
   required ReportsBloc reportsBloc,
   required AiSummaryBloc aiSummaryBloc,
   required NotificationsBloc notificationsBloc,
@@ -77,7 +70,6 @@ Widget _wrap({
         providers: [
           BlocProvider<StudentsBloc>.value(value: studentsBloc),
           BlocProvider<AuthBloc>.value(value: authBloc),
-          BlocProvider<SnapshotBloc>.value(value: snapshotBloc),
           BlocProvider<ReportsBloc>.value(value: reportsBloc),
           BlocProvider<AiSummaryBloc>.value(value: aiSummaryBloc),
           BlocProvider<NotificationsBloc>.value(value: notificationsBloc),
@@ -95,7 +87,6 @@ void main() {
 
   late MockStudentsBloc mockStudentsBloc;
   late MockAuthBloc mockAuthBloc;
-  late MockSnapshotBloc mockSnapshotBloc;
   late MockReportsBloc mockReportsBloc;
   late MockAiSummaryBloc mockAiSummaryBloc;
   late MockNotificationsBloc mockNotificationsBloc;
@@ -103,7 +94,6 @@ void main() {
   setUp(() {
     mockStudentsBloc = MockStudentsBloc();
     mockAuthBloc = MockAuthBloc();
-    mockSnapshotBloc = MockSnapshotBloc();
     mockReportsBloc = MockReportsBloc();
     mockAiSummaryBloc = MockAiSummaryBloc();
     mockNotificationsBloc = MockNotificationsBloc();
@@ -111,13 +101,12 @@ void main() {
     when(() => mockStudentsBloc.state)
         .thenReturn(StudentsLoaded(const []));
     when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-    when(() => mockSnapshotBloc.state).thenReturn(SnapshotInitial());
     when(() => mockReportsBloc.state).thenReturn(const ReportsState());
     when(() => mockAiSummaryBloc.state).thenReturn(AiSummaryInitial());
     when(() => mockNotificationsBloc.state).thenReturn(NotificationsInitial());
   });
 
-  Widget _buildDashboard() => _wrap(
+  Widget buildDashboard() => _wrap(
         child: ParentHomeDashboard(
           parentUid: 'parent_uid',
           fullName: 'Sara',
@@ -125,7 +114,6 @@ void main() {
         ),
         studentsBloc: mockStudentsBloc,
         authBloc: mockAuthBloc,
-        snapshotBloc: mockSnapshotBloc,
         reportsBloc: mockReportsBloc,
         aiSummaryBloc: mockAiSummaryBloc,
         notificationsBloc: mockNotificationsBloc,
@@ -133,21 +121,21 @@ void main() {
 
   group('ParentHomeDashboard', () {
     testWidgets('renders without throwing in empty state', (tester) async {
-      await tester.pumpWidget(_buildDashboard());
+      await tester.pumpWidget(buildDashboard());
       await tester.pump();
 
       expect(find.byType(ParentHomeDashboard), findsOneWidget);
     });
 
     testWidgets('has a CustomScrollView', (tester) async {
-      await tester.pumpWidget(_buildDashboard());
+      await tester.pumpWidget(buildDashboard());
       await tester.pump();
 
       expect(find.byType(CustomScrollView), findsOneWidget);
     });
 
     testWidgets('contains a Scaffold', (tester) async {
-      await tester.pumpWidget(_buildDashboard());
+      await tester.pumpWidget(buildDashboard());
       await tester.pump();
 
       expect(find.byType(Scaffold), findsWidgets);
@@ -157,7 +145,7 @@ void main() {
         (tester) async {
       when(() => mockStudentsBloc.state).thenReturn(StudentsLoading());
 
-      await tester.pumpWidget(_buildDashboard());
+      await tester.pumpWidget(buildDashboard());
       await tester.pump();
 
       expect(find.byType(ParentHomeDashboard), findsOneWidget);
@@ -168,7 +156,7 @@ void main() {
       when(() => mockStudentsBloc.state)
           .thenReturn(StudentsLoaded([_testStudent]));
 
-      await tester.pumpWidget(_buildDashboard());
+      await tester.pumpWidget(buildDashboard());
       await tester.pump();
 
       expect(find.byType(ParentHomeDashboard), findsOneWidget);

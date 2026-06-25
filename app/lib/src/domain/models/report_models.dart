@@ -1,6 +1,4 @@
 class WeeklyReportModel {
-  final String studentUid;
-  final DateTime weekStartDate;
   final double overallAccuracyPercent;
   final int totalQuizzes;
   final Duration totalStudyTime;
@@ -25,8 +23,6 @@ class WeeklyReportModel {
   final List<AlertModel> alerts;
 
   const WeeklyReportModel({
-    required this.studentUid,
-    required this.weekStartDate,
     required this.overallAccuracyPercent,
     required this.totalQuizzes,
     required this.totalStudyTime,
@@ -48,12 +44,10 @@ class WeeklyReportModel {
 /// A single "needs attention" alert. `severity` is "high" | "medium" | "info".
 class AlertModel {
   final String severity;
-  final String type;
   final String message;
 
   const AlertModel({
     required this.severity,
-    required this.type,
     required this.message,
   });
 }
@@ -84,13 +78,8 @@ class SubjectTimeAllocation {
 class SubjectChipModel {
   final int id;
   final String name;
-  final double masteryPercent;
 
-  const SubjectChipModel({
-    required this.id,
-    required this.name,
-    required this.masteryPercent,
-  });
+  const SubjectChipModel({required this.id, required this.name});
 }
 
 /// A single skill row in the Mastery tab (Strong / Needs-Work lists).
@@ -98,13 +87,8 @@ class SubjectChipModel {
 class MasterySkill {
   final String name;
   final double masteryPercent;
-  final int attempts;
 
-  const MasterySkill({
-    required this.name,
-    required this.masteryPercent,
-    required this.attempts,
-  });
+  const MasterySkill({required this.name, required this.masteryPercent});
 }
 
 class SubjectMasteryReport {
@@ -138,10 +122,9 @@ class SubjectMasteryReport {
 
 /// A single daily mastery reading for the mastery-over-time chart.
 class MasteryHistoryPoint {
-  final DateTime date;
   final double mastery; // 0–100
 
-  const MasteryHistoryPoint({required this.date, required this.mastery});
+  const MasteryHistoryPoint({required this.mastery});
 }
 
 /// Mistake-type split for wrong answers. Quizzes are untimed, so there is no
@@ -172,7 +155,6 @@ class DifficultyAccuracy {
 }
 
 class StudyHabitsReport {
-  final String studentUid;
   final int currentStreakDays;
   final int longestStreakDays;
   final List<HeatmapDay> consistencyHeatmap;
@@ -180,7 +162,6 @@ class StudyHabitsReport {
   final List<TimeOfDayPoint> timeOfDay;
 
   const StudyHabitsReport({
-    required this.studentUid,
     required this.currentStreakDays,
     required this.longestStreakDays,
     required this.consistencyHeatmap,
@@ -198,13 +179,9 @@ class TimeOfDayPoint {
 }
 
 class HeatmapDay {
-  final DateTime date;
   final int studyMinutes;
 
-  const HeatmapDay({
-    required this.date,
-    required this.studyMinutes,
-  });
+  const HeatmapDay({required this.studyMinutes});
 }
 
 /// Study minutes for a single recent day, for the Habits daily-study chart.
@@ -219,42 +196,33 @@ class DailyStudyPoint {
 }
 
 class DailyStudentSnapshotModel {
-  final String studentUid;
   final int quizzesCompletedToday;
   final Duration totalStudyTimeToday;
   final int averageAccuracyToday;
-
-  /// Total questions answered today (sum of all of today's quiz sessions).
-  final int questionsToday;
 
   /// Per-subject breakdown of today's questions, highest first.
   final List<SubjectQuestionCount> questionsBySubject;
 
   const DailyStudentSnapshotModel({
-    required this.studentUid,
     required this.quizzesCompletedToday,
     required this.totalStudyTimeToday,
     required this.averageAccuracyToday,
-    this.questionsToday = 0,
     this.questionsBySubject = const [],
   });
 }
 
 /// One subject's share of today's answered questions (for the home ring).
 class SubjectQuestionCount {
-  final int? subjectId;
   final String subjectName;
   final int questions;
 
   const SubjectQuestionCount({
-    required this.subjectId,
     required this.subjectName,
     required this.questions,
   });
 
   factory SubjectQuestionCount.fromJson(Map<String, dynamic> json) =>
       SubjectQuestionCount(
-        subjectId: json['subject_id'] as int?,
         subjectName: (json['subject_name'] as String?) ?? 'General',
         questions: (json['questions'] as int?) ?? 0,
       );

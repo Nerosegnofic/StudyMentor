@@ -93,14 +93,12 @@ class GenerateQuizResponse {
   final String quizSessionId;
   final int selectedSubjectId;
   final String selectedSubjectName;
-  final String quizTitle;
   final List<QuestionModel> questions;
 
   const GenerateQuizResponse({
     required this.quizSessionId,
     required this.selectedSubjectId,
     required this.selectedSubjectName,
-    required this.quizTitle,
     required this.questions,
   });
 
@@ -109,7 +107,6 @@ class GenerateQuizResponse {
       quizSessionId: json['quiz_session_id'] as String,
       selectedSubjectId: json['selected_subject_id'] as int,
       selectedSubjectName: json['selected_subject_name'] as String,
-      quizTitle: json['quiz_title'] as String,
       questions: (json['questions'] as List)
           .map((q) => QuestionModel.fromJson(q as Map<String, dynamic>))
           .toList(),
@@ -120,7 +117,6 @@ class GenerateQuizResponse {
         'quiz_session_id': quizSessionId,
         'selected_subject_id': selectedSubjectId,
         'selected_subject_name': selectedSubjectName,
-        'quiz_title': quizTitle,
         'questions': questions.map((q) => q.toJson()).toList(),
       };
 }
@@ -308,22 +304,10 @@ class AiEngineRepository {
   /// the engine's quiz cache. The next real `generateQuiz` for the same
   /// `(student, subject)` then returns it instantly as `quiz_source="CACHED"`.
   ///
-  /// The response is intentionally discarded and any error is swallowed: warming
-  /// is best-effort and must never surface to the user. If it's throttled or
-  /// fails, the next quiz simply generates live as before.
-  Future<void> prewarmNextQuiz(GenerateQuizRequest request) async {
-    try {
-      await generateQuiz(request);
-    } catch (_) {
-      // best-effort warming — ignore failures (rate limit, network, etc.)
-    }
-  }
-
   /// `POST /quizzes/warm` — fire-and-forget pre-generation of a cached quiz for
   /// EVERY active subject.
   ///
-  /// Unlike [prewarmNextQuiz] (which warms only one subject via `/generate`), this
-  /// tells the engine to top up the cache for all of the student's active subjects,
+  /// Tells the engine to top up the cache for all of the student's active subjects,
   /// so the next `generateQuiz` for ANY subject — voluntary or forced — returns
   /// instantly as `quiz_source="CACHED"`. The engine is idempotent: subjects that
   /// already have a cached quiz are skipped, so this is cheap once caches are full.
@@ -402,9 +386,9 @@ class AiEngineRepository {
   /// - [pdfFile]: The [File] on the device's filesystem to upload.
   /// - [subjectId]: Which subject the document belongs to (default: `1`).
   ///
-  /// Returns a [DocumentUploadResponse] immediately; the actual embedding and
-  /// chunking happen asynchronously on the server.
-  Future<DocumentUploadResponse> uploadDocument({
+  /// Returns immediately once the server accepts the upload; the actual
+  /// embedding and chunking happen asynchronously on the server.
+  Future<void> uploadDocument({
     required File pdfFile,
     required String subjectName,
     required String studentUid,
@@ -435,9 +419,6 @@ class AiEngineRepository {
       throw Exception(
           'uploadDocument failed [${response.statusCode}]: ${response.body}');
     }
-
-    return DocumentUploadResponse.fromJson(
-        jsonDecode(response.body) as Map<String, dynamic>);
   }
 
   /// `GET /documents/subjects/status` — per-subject ingestion readiness for the
@@ -500,18 +481,6 @@ class AiEngineRepository {
     _assertSuccess(response, 'spendCoins');
     final data = jsonDecode(response.body);
     return data['coins_total'] as int;
-  }
-
-  /// `GET /gamification/levels` — fetch static level definitions.
-  Future<List<Map<String, dynamic>>> getLevels() async {
-    final headers = await _getJsonHeaders();
-    final response = await _client.get(
-      Uri.parse('$baseUrl/api/v1/gamification/levels'),
-      headers: headers,
-    );
-    _assertSuccess(response, 'getLevels');
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return (body['levels'] as List).cast<Map<String, dynamic>>();
   }
 
   // -------------------------------------------------------------------------
@@ -657,11 +626,9 @@ class AiEngineRepository {
     final bySubjectRaw =
         (data['questions_by_subject'] as List<dynamic>?) ?? const [];
     return DailyStudentSnapshotModel(
-      studentUid: studentUid,
       quizzesCompletedToday: (data['quizzes_today'] as int?) ?? 0,
       totalStudyTimeToday: Duration(minutes: (data['study_time_minutes'] as int?) ?? 0),
       averageAccuracyToday: (data['accuracy_today'] as int?) ?? 0,
-      questionsToday: (data['questions_today'] as int?) ?? 0,
       questionsBySubject: bySubjectRaw
           .map((e) =>
               SubjectQuestionCount.fromJson(e as Map<String, dynamic>))
@@ -703,14 +670,11 @@ class AiEngineRepository {
       final m = e as Map<String, dynamic>;
       return AlertModel(
         severity: (m['severity'] as String?) ?? 'info',
-        type: (m['type'] as String?) ?? '',
         message: (m['message'] as String?) ?? '',
       );
     }).toList();
 
     return WeeklyReportModel(
-      studentUid: studentUid,
-      weekStartDate: DateTime.parse(data['week_start_date'] as String),
       overallAccuracyPercent: (data['overall_accuracy_percent'] as num?)?.toDouble() ?? 0.0,
       totalQuizzes: (data['total_quizzes'] as int?) ?? 0,
       totalStudyTime: Duration(minutes: (data['study_time_minutes'] as int?) ?? 0),
@@ -749,7 +713,6 @@ class AiEngineRepository {
     final heatmap = heatRaw.map((e) {
       final m = e as Map<String, dynamic>;
       return HeatmapDay(
-        date: DateTime.parse(m['date'] as String),
         studyMinutes: (m['study_minutes'] as int?) ?? 0,
       );
     }).toList();
@@ -773,7 +736,6 @@ class AiEngineRepository {
     }).toList();
 
     return StudyHabitsReport(
-      studentUid: studentUid,
       currentStreakDays: (data['current_streak_days'] as int?) ?? 0,
       longestStreakDays: (data['longest_streak_days'] as int?) ?? 0,
       consistencyHeatmap: heatmap,
@@ -790,7 +752,6 @@ class AiEngineRepository {
         .map((s) => SubjectChipModel(
               id: s['subject_id'] as int,
               name: (s['name'] as String?) ?? '',
-              masteryPercent: ((s['average_mastery'] as num?)?.toDouble() ?? 0.0) * 100.0,
             ))
         .toList();
   }
@@ -829,7 +790,6 @@ class AiEngineRepository {
           all.add(MasterySkill(
             name: (m['name'] as String?) ?? '',
             masteryPercent: ((m['mastery'] as num?)?.toDouble() ?? 0.0) * 100.0,
-            attempts: (m['attempts'] as int?) ?? 0,
           ));
         }
       }
@@ -838,7 +798,7 @@ class AiEngineRepository {
     final strong = all.where((s) => s.masteryPercent >= 75).toList()
       ..sort((a, b) => b.masteryPercent.compareTo(a.masteryPercent));
     final weak = all
-        .where((s) => s.attempts > 0 && s.masteryPercent < 50)
+        .where((s) => s.masteryPercent < 50)
         .toList()
       ..sort((a, b) => a.masteryPercent.compareTo(b.masteryPercent));
 
@@ -867,7 +827,6 @@ class AiEngineRepository {
     final masteryHistory = histRaw.map((e) {
       final m = e as Map<String, dynamic>;
       return MasteryHistoryPoint(
-        date: DateTime.parse(m['date'] as String),
         mastery: (m['mastery'] as num?)?.toDouble() ?? 0.0,
       );
     }).toList();
@@ -941,12 +900,6 @@ class AiEngineRepository {
       );
     }).toList();
 
-    return AiSummaryModel(
-      parentUid: '',
-      slides: slides,
-      generatedAt:
-          DateTime.tryParse((data['generated_at'] as String?) ?? '') ??
-              DateTime.now(),
-    );
+    return AiSummaryModel(slides: slides);
   }
 }

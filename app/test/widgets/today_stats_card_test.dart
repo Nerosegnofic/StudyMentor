@@ -133,8 +133,8 @@ void main() {
     testWidgets('renders with subject segments without throwing', (tester) async {
       await tester.pumpWidget(_wrap(TodayStatsCard(
         questionsBySubject: const [
-          SubjectQuestionCount(subjectId: 1, subjectName: 'Math', questions: 5),
-          SubjectQuestionCount(subjectId: 2, subjectName: 'English', questions: 3),
+          SubjectQuestionCount(subjectName: 'Math', questions: 5),
+          SubjectQuestionCount(subjectName: 'English', questions: 3),
         ],
         studyTime: const Duration(minutes: 40),
         streak: 4,

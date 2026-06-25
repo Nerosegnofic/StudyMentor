@@ -40,7 +40,6 @@ GenerateQuizResponse _fakeResponse({int questionCount = 2}) {
     quizSessionId: 'session-123',
     selectedSubjectId: 1,
     selectedSubjectName: 'Math',
-    quizTitle: 'Test Quiz',
     questions: questions,
   );
 }
@@ -76,14 +75,13 @@ void main() {
         quizSessionId: 'fallback',
         answers: const [],
         clientLocalDate: '2024-01-01',
+        totalElapsedMs: 0,
       ),
     );
   });
 
   setUp(() {
     mockRepo = MockAiEngineRepository();
-    // prewarmNextQuiz is fire-and-forget; stub it as no-op by default.
-    when(() => mockRepo.prewarmNextQuiz(any())).thenAnswer((_) async {});
   });
 
   group('QuizBloc', () {
@@ -260,7 +258,7 @@ void main() {
           when(() => mockRepo.submitQuiz(any()))
               .thenAnswer((_) async => _fakeSubmissionResponse());
         },
-        act: (bloc) => bloc.add(SubmitQuizEvent('session-123')),
+        act: (bloc) => bloc.add(SubmitQuizEvent('session-123', totalElapsedMs: 0)),
         expect: () => [
           isA<QuizSubmitting>(),
           isA<QuizResultsLoaded>().having(
@@ -280,7 +278,7 @@ void main() {
           when(() => mockRepo.submitQuiz(any()))
               .thenThrow(Exception('Submit failed'));
         },
-        act: (bloc) => bloc.add(SubmitQuizEvent('session-123')),
+        act: (bloc) => bloc.add(SubmitQuizEvent('session-123', totalElapsedMs: 0)),
         expect: () => [
           isA<QuizSubmitting>(),
           isA<QuizError>(),
@@ -290,7 +288,7 @@ void main() {
       blocTest<QuizBloc, QuizState>(
         'does nothing when state is not QuizLoaded',
         build: () => QuizBloc(repository: mockRepo),
-        act: (bloc) => bloc.add(SubmitQuizEvent('session-123')),
+        act: (bloc) => bloc.add(SubmitQuizEvent('session-123', totalElapsedMs: 0)),
         expect: () => <QuizState>[],
       );
     });

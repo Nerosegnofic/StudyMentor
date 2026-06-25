@@ -9,7 +9,6 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   StudentsBloc({required this.repository}) : super(StudentsInitial()) {
     on<LoadStudentsRequested>(_onLoadStudents);
     on<CreateStudentRequested>(_onCreateStudent);
-    on<RefreshStudentVerificationsRequested>(_onRefreshStudentVerifications);
     on<DeleteStudentRequested>(_onDeleteStudent);
   }
 
@@ -43,26 +42,6 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
     } catch (e) {
       emit(StudentCreateError(_mapRegistrationException(e)));
     }
-  }
-
-  Future<void> _onRefreshStudentVerifications(
-    RefreshStudentVerificationsRequested event,
-    Emitter<StudentsState> emit,
-  ) async {
-    try {
-      final updated = await repository.refreshStudentVerificationStatus(
-        event.currentStudents,
-      );
-
-      final changed = updated.any((s) {
-        final old = event.currentStudents.firstWhere((o) => o.uid == s.uid);
-        return old.isEmailVerified != s.isEmailVerified;
-      });
-
-      if (changed) {
-        emit(StudentsLoaded(updated));
-      }
-    } catch (_) {}
   }
 
   Future<void> _onDeleteStudent(

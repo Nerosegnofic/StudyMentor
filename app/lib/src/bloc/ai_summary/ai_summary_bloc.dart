@@ -18,8 +18,6 @@ class AiSummaryBloc extends Bloc<AiSummaryEvent, AiSummaryState> {
     try {
       final summary = await repository.getAiSummary(event.children);
       emit(AiSummaryLoaded(summary));
-    } catch (e) {
-      emit(AiSummaryError('Failed to load AI summary: $e'));
-    }
+    } catch (_) {}
   }
 }

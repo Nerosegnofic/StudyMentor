@@ -135,15 +135,6 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<List<StudentModel>> refreshStudentVerificationStatus(
-    List<StudentModel> students,
-  ) async {
-    if (students.isEmpty) return students;
-    final parentUid = await _getParentUidForStudent(students.first.uid);
-    return await getStudentsByParent(parentUid);
-  }
-
-  @override
   Future<void> sendEmailVerification() => firebase.sendEmailVerification();
 
   @override
@@ -166,10 +157,6 @@ class AuthRepositoryImpl implements AuthRepository {
     final profile = await dataConnect.getUserProfile(user.uid);
     return UserModel.fromJson(profile);
   }
-
-  @override
-  Future<String> getParentFullName(String studentUid) =>
-      dataConnect.getParentFullName(studentUid);
 
   @override
   Future<String> getParentUidForStudent(String studentUid) =>
@@ -207,7 +194,6 @@ class AuthRepositoryImpl implements AuthRepository {
 
   // ── Profile update ────────────────────────────────────────────────────────
 
-  @override
   @override
   Future<UserModel> updateProfile({
     required String parentUid,
@@ -387,19 +373,6 @@ class AuthRepositoryImpl implements AuthRepository {
     ]);
   }
 
-  // ── Student Full Name Update (parent-side) ────────────────────────────────
-
-  @override
-  Future<void> updateStudentFullName({
-    required String studentUid,
-    required String fullName,
-  }) async {
-    await dataConnect.updateStudentFullName(
-      uid: studentUid,
-      fullName: fullName,
-    );
-  }
-
   // ── Student Profile Update (parent-side: name + email + password) ─────────
 
   @override
@@ -437,8 +410,6 @@ class AuthRepositoryImpl implements AuthRepository {
       fullName: newFullName ?? 'Updated',
       email: studentEmail ?? 'student@example.com',
       gradeLevel: int.tryParse(newGradeLevel ?? '8') ?? 8,
-      totalXp: 0,
-      totalCoins: 0,
       isEmailVerified: true,
     );
   }
@@ -520,11 +491,6 @@ class AuthRepositoryImpl implements AuthRepository {
     return dataConnect.getSessionQuestions(quizAttemptId, studentUid: studentUid);
   }
 
-  @override
-  Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber) {
-    return dataConnect.getQuestionDetail(quizAttemptId, questionNumber);
-  }
-
   // ── Reports & Analytics ─────────────────────────────────────────────────
 
   @override
@@ -545,11 +511,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<StudyHabitsReport> getStudyHabitsReport(String studentUid) {
     return AiEngineRepository.instance.getStudyHabitsReport(studentUid);
-  }
-
-  @override
-  Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid) {
-    return AiEngineRepository.instance.getDailySnapshot(studentUid);
   }
 
   @override

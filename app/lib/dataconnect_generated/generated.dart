@@ -22,8 +22,6 @@ part 'insert_app_rule.dart';
 
 part 'delete_all_app_rules_for_student.dart';
 
-part 'upsert_student_settings.dart';
-
 part 'insert_student_owned_item.dart';
 
 part 'upsert_student_avatar.dart';
@@ -49,8 +47,6 @@ part 'delete_parent_record.dart';
 part 'upsert_student_config.dart';
 
 part 'insert_local_notification_event.dart';
-
-part 'mark_local_notification_events_read.dart';
 
 part 'mark_local_notification_events_dispatched.dart';
 
@@ -84,15 +80,11 @@ part 'insert_installed_app.dart';
 
 part 'delete_all_installed_apps_for_student.dart';
 
-part 'get_student_settings.dart';
-
 part 'get_student_owned_items.dart';
 
 part 'get_student_avatar.dart';
 
 part 'get_app_config_for_student.dart';
-
-part 'get_unread_local_notification_events.dart';
 
 part 'get_undispatched_local_notification_events.dart';
 
@@ -229,11 +221,6 @@ class ExampleConnector {
   }
   
   
-  UpsertStudentSettingsVariablesBuilder upsertStudentSettings ({required String studentUid, required bool notificationsEnabled, required bool soundEffectsEnabled, required bool backgroundMusicEnabled, }) {
-    return UpsertStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,notificationsEnabled: notificationsEnabled,soundEffectsEnabled: soundEffectsEnabled,backgroundMusicEnabled: backgroundMusicEnabled,);
-  }
-  
-  
   InsertStudentOwnedItemVariablesBuilder insertStudentOwnedItem ({required String studentUid, required String itemId, }) {
     return InsertStudentOwnedItemVariablesBuilder(dataConnect, studentUid: studentUid,itemId: itemId,);
   }
@@ -296,11 +283,6 @@ class ExampleConnector {
   
   InsertLocalNotificationEventVariablesBuilder insertLocalNotificationEvent ({required String fromStudentUid, required String toParentUid, required String eventType, required String payload, }) {
     return InsertLocalNotificationEventVariablesBuilder(dataConnect, fromStudentUid: fromStudentUid,toParentUid: toParentUid,eventType: eventType,payload: payload,);
-  }
-  
-  
-  MarkLocalNotificationEventsReadVariablesBuilder markLocalNotificationEventsRead ({required List<String> eventIds, }) {
-    return MarkLocalNotificationEventsReadVariablesBuilder(dataConnect, eventIds: eventIds,);
   }
   
   
@@ -384,11 +366,6 @@ class ExampleConnector {
   }
   
   
-  GetStudentSettingsVariablesBuilder getStudentSettings ({required String studentUid, }) {
-    return GetStudentSettingsVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
   GetStudentOwnedItemsVariablesBuilder getStudentOwnedItems ({required String studentUid, }) {
     return GetStudentOwnedItemsVariablesBuilder(dataConnect, studentUid: studentUid,);
   }
@@ -401,11 +378,6 @@ class ExampleConnector {
   
   GetAppConfigForStudentVariablesBuilder getAppConfigForStudent ({required String studentUid, }) {
     return GetAppConfigForStudentVariablesBuilder(dataConnect, studentUid: studentUid,);
-  }
-  
-  
-  GetUnreadLocalNotificationEventsVariablesBuilder getUnreadLocalNotificationEvents ({required String toParentUid, }) {
-    return GetUnreadLocalNotificationEventsVariablesBuilder(dataConnect, toParentUid: toParentUid,);
   }
   
   

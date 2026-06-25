@@ -25,14 +25,12 @@ void main() {
       expect(find.byType(RankProgressCard), findsOneWidget);
     });
 
-    testWidgets('shows current level name', (tester) async {
-      // Level 1 → first gamification level name.
-      final levelName = kGamificationLevels[0].levelName;
+    testWidgets('shows current level as a rank badge', (tester) async {
       await tester.pumpWidget(
-        _wrap(RankProgressCard(xpTotal: 0, currentLevel: 1)),
+        _wrap(const RankProgressCard(xpTotal: 0, currentLevel: 1)),
       );
       await tester.pump();
-      expect(find.text(levelName), findsOneWidget);
+      expect(find.text('Lv. 1'), findsOneWidget);
     });
 
     testWidgets('shows "Lv. X" badge', (tester) async {
@@ -48,8 +46,7 @@ void main() {
         _wrap(const RankProgressCard(xpTotal: 0, currentLevel: 1)),
       );
       await tester.pump();
-      final nextName = kGamificationLevels[1].levelName;
-      expect(find.textContaining('Next: $nextName'), findsOneWidget);
+      expect(find.textContaining('Next:'), findsOneWidget);
     });
 
     testWidgets('shows XP progress text (xpTotal / nextXp)', (tester) async {

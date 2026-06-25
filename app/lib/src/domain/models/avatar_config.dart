@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 
 /// Holds the student's current avatar configuration.
 /// The 5 extra slots (eyes, eyebrow, mouth, skinTone, facialHairColor) are
@@ -118,16 +117,6 @@ class AvatarConfig {
     );
   }
 
-  // ── Skin tone to Color ────────────────────────────────────────────────────
-  static const Map<String, Color> skinToneColors = {
-    'light': Color(0xFFFFDBAC),
-    'medium_light': Color(0xFFEEC27B),
-    'medium': Color(0xFFC68642),
-    'medium_dark': Color(0xFF8D5524),
-    'dark': Color(0xFF4A2C0A),
-  };
-
-  Color get skinColor => skinToneColors[skinTone] ?? skinToneColors['medium']!;
 }
 
 const _s = Object(); // sentinel for copyWith

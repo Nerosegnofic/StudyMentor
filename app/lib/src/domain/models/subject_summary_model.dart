@@ -49,18 +49,4 @@ class SubjectSummaryModel {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'subject_key': subjectKey,
-      'subject_id': subjectId,
-      'color_hex': colorHex,
-      'skills_count': skillsCount,
-      'mastery_percent': masteryPercent,
-      'quizzes_completed': quizzesCompleted,
-      'total_time_spent_seconds': totalTimeSpent.inSeconds,
-      'accuracy_percent': accuracyPercent,
-      'is_global': isGlobal,
-      'is_selected': isSelected,
-    };
-  }
 }

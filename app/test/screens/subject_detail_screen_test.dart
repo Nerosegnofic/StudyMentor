@@ -65,7 +65,7 @@ void main() {
         .thenAnswer((_) async => <SubjectStatus>[]);
   });
 
-  Widget _wrap(Widget child) => MaterialApp(
+  Widget wrap(Widget child) => MaterialApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -84,7 +84,7 @@ void main() {
 
   group('SubjectDetailScreen', () {
     testWidgets('renders without throwing', (tester) async {
-      await tester.pumpWidget(_wrap(
+      await tester.pumpWidget(wrap(
         SubjectDetailScreen(
           studentUid: 'uid_test',
           subjectId: 1,
@@ -99,7 +99,7 @@ void main() {
     });
 
     testWidgets('shows subject name in the screen', (tester) async {
-      await tester.pumpWidget(_wrap(
+      await tester.pumpWidget(wrap(
         SubjectDetailScreen(
           studentUid: 'uid_test',
           subjectId: 2,
@@ -114,7 +114,7 @@ void main() {
     });
 
     testWidgets('calls getSubjectSkills with correct subjectId', (tester) async {
-      await tester.pumpWidget(_wrap(
+      await tester.pumpWidget(wrap(
         SubjectDetailScreen(
           studentUid: 'uid_test',
           subjectId: 42,

@@ -16,8 +16,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:studymentor/main.dart' as app;
 
 // ─── Put your test account credentials here ──────────────────────────────────
-const _parentEmail    = 'YOUR_PARENT_EMAIL_HERE';
-const _parentPassword = 'YOUR_PARENT_PASSWORD_HERE';
+const _testEmail    = 'YOUR_PARENT_EMAIL_HERE';
+const _testPassword = 'YOUR_PARENT_PASSWORD_HERE';
 // ─────────────────────────────────────────────────────────────────────────────
 
 void main() {
