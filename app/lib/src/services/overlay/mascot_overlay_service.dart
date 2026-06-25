@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'mascot_state.dart';
 import '../../domain/models/app_config_model.dart';
 import '../../services/settings_service.dart';
 
@@ -51,10 +50,8 @@ class MascotOverlayService {
   bool _running = false;
   // True while the native service is in cooldown countdown.
   bool _isInCooldown = false;
-  bool _overlayVisible = false;
   bool _usageNotificationVisible = false;
   bool _cooldownNotificationVisible = false;
-  MascotState _mascotState = MascotState.idle;
 
   int _remainingCooldownSeconds = 0;
   // Usage within the current reward window (counts up from 0, reported by native).
@@ -97,19 +94,12 @@ class MascotOverlayService {
     return _quizController!;
   }
 
-  Stream<void> get quizRequested => _quizStream.stream;
-
-  void triggerQuizForTesting() {
-    debugPrint('[MascotOverlayService] Quiz trigger (test).');
-    _quizStream.add(null);
-  }
-
   StreamSubscription<void> listenForQuiz(VoidCallback onQuiz) {
     if (_pendingQuizTrigger) {
       _pendingQuizTrigger = false;
       Future.microtask(onQuiz);
     }
-    return quizRequested.listen((_) => onQuiz());
+    return _quizStream.stream.listen((_) => onQuiz());
   }
 
   // ── Quiz restore stream ────────────────────────────────────────────────────
@@ -272,7 +262,6 @@ class MascotOverlayService {
     }
 
     _isInCooldown = false;
-    _overlayVisible = false;
     _usageNotificationVisible = false;
     _cooldownNotificationVisible = false;
     _remainingCooldownSeconds = 0;
@@ -360,8 +349,6 @@ class MascotOverlayService {
 
   // ── Getters ────────────────────────────────────────────────────────────────
 
-  bool get isRunning => _running;
-
   /// True when apps should be blocked — either in cooldown OR no earned reward
   /// time remaining.
   bool get isBlocked => _isInCooldown || _earnedRewardSeconds <= 0;
@@ -369,11 +356,7 @@ class MascotOverlayService {
   /// True specifically when the cooldown countdown is running.
   bool get isInCooldown => _isInCooldown;
 
-  bool get isOverlayVisible => _overlayVisible;
-  bool get isUsageNotificationVisible => _usageNotificationVisible;
-  bool get isCooldownNotificationVisible => _cooldownNotificationVisible;
   int get remainingSeconds => _remainingCooldownSeconds;
-  int get totalUsageSeconds => _totalUsageSeconds;
 
   /// Total reward seconds currently in the student's bank (earned but not yet
   /// used up). Decreases as restricted apps are used; increases on quiz
@@ -397,7 +380,6 @@ class MascotOverlayService {
     return _dailyRewardSeconds;
   }
 
-  MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
 
   // ── Earned reward persistence ──────────────────────────────────────────────
@@ -808,7 +790,6 @@ class MascotOverlayService {
     switch (call.method) {
       case 'onOverlayDismissed':
         if (isBlocked) {
-          _overlayVisible = false;
           debugPrint(
             '[MascotOverlayService] Overlay dismissed — '
             'countdown continues ($_remainingCooldownSeconds s remaining).',
@@ -850,7 +831,6 @@ class MascotOverlayService {
 
     _isInCooldown = true;
     _quizDismissedForThisCooldown = false;
-    _mascotState = MascotState.idle;
     debugPrint(
       '[MascotOverlayService] Reward time depleted — entering cooldown '
       '(${_config.cooldownSeconds}s).',
@@ -878,7 +858,6 @@ class MascotOverlayService {
     _isInCooldown = false;
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
-    _mascotState = MascotState.idle;
     _quizDismissedForThisCooldown = false;
 
     await _hideCooldownNotification();
@@ -937,7 +916,6 @@ class MascotOverlayService {
   // ── Native overlay helpers ─────────────────────────────────────────────────
 
   Future<void> _hideOverlayNative() async {
-    _overlayVisible = false;
     try {
       await _overlayChannel.invokeMethod('hideOverlay');
     } on PlatformException catch (e) {

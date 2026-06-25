@@ -34,7 +34,6 @@ AvatarItem _itemFree({String id = 'item_free', int unlockLevel = 1}) =>
       category: ItemCategory.accessory,
       price: 0,
       emoji: '🎩',
-      rarity: ItemRarity.common,
       fluttermojiKey: 'accessoriesType',
       fluttermojiIndex: 0,
       unlockLevel: unlockLevel,
@@ -51,7 +50,6 @@ AvatarItem _itemPaid({
       category: ItemCategory.hair,
       price: price,
       emoji: '💇',
-      rarity: ItemRarity.rare,
       fluttermojiKey: 'topType',
       fluttermojiIndex: 1,
       unlockLevel: unlockLevel,
@@ -286,49 +284,5 @@ void main() {
       );
     });
 
-    // ── AvatarCustomizationChanged ───────────────────────────────────────────
-
-    group('AvatarCustomizationChanged', () {
-      blocTest<ShopBloc, ShopState>(
-        'updates avatar config locally without a network call',
-        build: () => ShopBloc(provider: mockProvider),
-        seed: () => _loadedState(),
-        act: (bloc) => bloc.add(
-          AvatarCustomizationChanged(
-            studentUid: _studentUid,
-            newConfig: const AvatarConfig(gender: 'female', skinTone: 'light'),
-          ),
-        ),
-        expect: () => [
-          isA<ShopLoaded>()
-              .having(
-                (s) => s.avatarConfig.gender,
-                'gender',
-                'female',
-              )
-              .having(
-                (s) => s.avatarConfig.skinTone,
-                'skinTone',
-                'light',
-              ),
-        ],
-        verify: (_) {
-          // Confirm no DB calls were made during local customisation
-          verifyNever(() => mockProvider.upsertStudentAvatar(
-                studentUid: any(named: 'studentUid'),
-                gender: any(named: 'gender'),
-                skinTone: any(named: 'skinTone'),
-                equippedHair: any(named: 'equippedHair'),
-                equippedOutfit: any(named: 'equippedOutfit'),
-                equippedBottom: any(named: 'equippedBottom'),
-                equippedShoes: any(named: 'equippedShoes'),
-                equippedAccessory: any(named: 'equippedAccessory'),
-                equippedBackground: any(named: 'equippedBackground'),
-                equippedSpecial: any(named: 'equippedSpecial'),
-                avatarConfig: any(named: 'avatarConfig'),
-              ));
-        },
-      );
-    });
   });
 }

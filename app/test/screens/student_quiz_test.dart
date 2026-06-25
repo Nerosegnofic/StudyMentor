@@ -49,7 +49,7 @@ void main() {
     when(() => mockGamificationBloc.state).thenReturn(GamificationInitial());
   });
 
-  Widget _wrap(Widget child) => MaterialApp(
+  Widget wrap(Widget child) => MaterialApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -67,7 +67,7 @@ void main() {
 
   group('QuizOverlayPage', () {
     testWidgets('renders initial state without throwing', (tester) async {
-      await tester.pumpWidget(_wrap(
+      await tester.pumpWidget(wrap(
         QuizOverlayPage(
           repository: mockRepo,
           studentId: 'uid_test',
@@ -80,7 +80,7 @@ void main() {
     });
 
     testWidgets('shows start quiz button in initial state', (tester) async {
-      await tester.pumpWidget(_wrap(
+      await tester.pumpWidget(wrap(
         QuizOverlayPage(
           repository: mockRepo,
           studentId: 'uid_test',

@@ -7,7 +7,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:studymentor/src/bloc/student_profile/student_profile_bloc.dart';
 import 'package:studymentor/src/bloc/student_profile/student_profile_event.dart';
 import 'package:studymentor/src/bloc/student_profile/student_profile_state.dart';
-import 'package:studymentor/src/domain/models/student_model.dart';
 
 // Reuse the full-featured fake defined in auth_bloc_test by importing directly
 // from the auth_repository abstraction — or define a minimal one here.
@@ -16,13 +15,6 @@ import 'auth_bloc_test.dart' show FakeAuthRepository;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-StudentModel _updatedStudent({
-  String uid = 'uid-student',
-  String fullName = 'Updated Name',
-  String email = 'student@test.com',
-}) =>
-    StudentModel(uid: uid, fullName: fullName, email: email);
 
 FakeAuthRepository _repoOk() => FakeAuthRepository();
 FakeAuthRepository _repoThrows(String msg) => FakeAuthRepository(

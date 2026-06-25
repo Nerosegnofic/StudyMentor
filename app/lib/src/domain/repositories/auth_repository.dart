@@ -32,11 +32,7 @@ abstract class AuthRepository {
     required int gradeLevel,
   });
   Future<List<StudentModel>> getStudentsByParent(String parentUid);
-  Future<String> getParentFullName(String studentUid);
   Future<String> getParentUidForStudent(String studentUid);
-  Future<List<StudentModel>> refreshStudentVerificationStatus(
-    List<StudentModel> students,
-  );
   Future<bool> verifyParentCredentials({
     required String studentUid,
     required String parentEmail,
@@ -65,12 +61,6 @@ abstract class AuthRepository {
     required String studentPassword,
   });
 
-  Future<void> updateStudentFullName({
-    required String studentUid,
-    required String fullName,
-  });
-
-
   // ── Subjects & Skills ───────────────────────────────────────────────────
   Future<List<SubjectSummaryModel>> getSubjectsByStudent(String studentUid);
   Future<List<SubjectSummaryModel>> getAvailableSubjects(String studentUid);
@@ -86,15 +76,12 @@ abstract class AuthRepository {
   Future<List<QuizAttemptModel>> getRecentQuizzes(String studentUid, int subjectId, String subjectKey, {int limit = 10});
   Future<List<QuizAttemptModel>> getAllQuizzes(String studentUid, int subjectId, String subjectKey);
   Future<List<QuestionDetailModel>> getSessionQuestions(String quizAttemptId, {String? studentUid});
-  Future<QuestionDetailModel> getQuestionDetail(String quizAttemptId, int questionNumber);
 
   // ── Reports & Analytics ──────────────────────────────────────────────────
   Future<WeeklyReportModel> getWeeklyReport(String studentUid);
   Future<List<SubjectChipModel>> getReportSubjects(String studentUid);
   Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId);
   Future<StudyHabitsReport> getStudyHabitsReport(String studentUid);
-  Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid);
-  
   // Dashboard additions
   Future<AiSummaryModel> getAiSummary(List<StudentModel> children);
 

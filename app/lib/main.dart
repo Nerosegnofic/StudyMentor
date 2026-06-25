@@ -23,7 +23,6 @@ import 'src/bloc/ai_summary/ai_summary_bloc.dart';
 import 'src/bloc/notifications/notifications_bloc.dart';
 import 'src/bloc/parent_profile/parent_profile_bloc.dart';
 import 'src/bloc/student_profile/student_profile_bloc.dart';
-import 'src/bloc/snapshot/snapshot_bloc.dart';
 import 'src/data/providers/dataconnect_provider.dart';
 import 'src/data/providers/firebase_auth_provider.dart';
 import 'src/data/repositories/auth_repository_impl.dart';
@@ -171,9 +170,6 @@ class StudyMentorApp extends StatelessWidget {
           ),
           BlocProvider<StudentProfileBloc>(
             create: (context) => StudentProfileBloc(repository: authRepository),
-          ),
-          BlocProvider<SnapshotBloc>(
-            create: (context) => SnapshotBloc(repository: authRepository),
           ),
         ],
         child: BlocBuilder<LocaleCubit, Locale>(

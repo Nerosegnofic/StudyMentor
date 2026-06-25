@@ -905,7 +905,6 @@ class UsageTimerService : Service() {
     fun getUsageLimitSecs()  = usageLimitSecs
     fun getQuizDismissed()   = quizDismissedForCooldown
     fun getQuizShown()       = quizShownForCooldown
-    fun getQuizLockActive()  = quizLockActive
 
     fun setQuizLockActive(active: Boolean) {
         quizLockActive = active

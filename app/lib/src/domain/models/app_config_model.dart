@@ -41,15 +41,6 @@ class StudentConfigModel {
     );
   }
 
-  factory StudentConfigModel.fromJson(Map<String, dynamic> json) =>
-      StudentConfigModel.validated(
-        usageHours: json['usage_hours'] as int? ?? 0,
-        usageMinutes: json['usage_minutes'] as int? ?? 30,
-        cooldownHours: json['cooldown_hours'] as int? ?? 0,
-        cooldownMinutes: json['cooldown_minutes'] as int? ?? 30,
-        quizCount: QuizCount.fromJson(json['quiz_count']),
-      );
-
   StudentConfigModel copyWith({
     int? usageHours,
     int? usageMinutes,
@@ -88,44 +79,22 @@ class StudentConfigModel {
 /// Represents one app rule saved by a parent for a student.
 /// Time limits are not stored here — they live in [StudentConfigModel].
 class AppRuleModel {
-  final String id;
   final String packageName;
   final String appLabel;
   final bool isPaused;
 
   AppRuleModel({
-    required this.id,
     required this.packageName,
     required this.appLabel,
     this.isPaused = false,
   });
 
   factory AppRuleModel.fromJson(Map<String, dynamic> json) => AppRuleModel(
-    id: json['id'] as String,
     packageName: json['package_name'] as String,
     appLabel: json['app_label'] as String,
     isPaused: json['is_paused'] as bool? ?? false,
   );
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'package_name': packageName,
-    'app_label': appLabel,
-    'is_paused': isPaused,
-  };
-
-  AppRuleModel copyWith({
-    String? id, 
-    String? packageName, 
-    String? appLabel,
-    bool? isPaused,
-  }) =>
-      AppRuleModel(
-        id: id ?? this.id,
-        packageName: packageName ?? this.packageName,
-        appLabel: appLabel ?? this.appLabel,
-        isPaused: isPaused ?? this.isPaused,
-      );
 }
 
 /// A pending (unsaved) app rule being configured in the UI.

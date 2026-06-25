@@ -40,18 +40,4 @@ class QuizAttemptModel {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'student_uid': studentUid,
-      'subject_key': subjectKey,
-      'skill_tag': skillTag,
-      'attempted_at': attemptedAt.toIso8601String(),
-      'correct_answers': correctAnswers,
-      'total_questions': totalQuestions,
-      'duration_seconds': duration.inSeconds,
-      'passed': passed,
-      'correct_answer_numbers': correctAnswerNumbers,
-    };
-  }
 }

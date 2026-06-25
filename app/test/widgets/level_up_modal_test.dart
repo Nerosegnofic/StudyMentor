@@ -12,7 +12,6 @@ import 'package:studymentor/src/presentation/widgets/gamification/level_up_modal
 
 const _testLevel = LevelModel(
   levelNumber: 5,
-  levelName: 'Scholar',
   xpRequired: 1050,
 );
 

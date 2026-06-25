@@ -23,7 +23,7 @@ void main() {
   late MockDataConnectProvider mockDataConnect;
   late AuthRepositoryImpl repo;
 
-  final _fakeUserJson = {
+  final fakeUserJson = {
     'uid': 'uid_123',
     'email': 'parent@example.com',
     'full_name': 'Sara Ali',
@@ -100,7 +100,7 @@ void main() {
         when(() => mockUser.uid).thenReturn('uid_123');
         when(() => mockFirebase.currentUser).thenReturn(mockUser);
         when(() => mockDataConnect.getUserProfile('uid_123'))
-            .thenAnswer((_) async => _fakeUserJson);
+            .thenAnswer((_) async => fakeUserJson);
 
         final result = await repo.getUserProfile();
 

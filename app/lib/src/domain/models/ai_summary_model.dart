@@ -1,13 +1,7 @@
 class AiSummaryModel {
-  final String parentUid;
   final List<AiSummarySlide> slides;
-  final DateTime generatedAt;
 
-  const AiSummaryModel({
-    required this.parentUid,
-    required this.slides,
-    required this.generatedAt,
-  });
+  const AiSummaryModel({required this.slides});
 }
 
 /// A single slide in the parent-home AI Daily Summary.

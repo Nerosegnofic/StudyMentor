@@ -21,11 +21,3 @@ class AiSummaryLoaded extends AiSummaryState {
   List<Object?> get props => [summary];
 }
 
-class AiSummaryError extends AiSummaryState {
-  final String message;
-
-  const AiSummaryError(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}

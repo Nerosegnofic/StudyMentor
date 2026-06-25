@@ -27,14 +27,11 @@ class GamificationBloc extends Bloc<GamificationEvent, GamificationState> {
     LoadGamificationDataRequested event,
     Emitter<GamificationState> emit,
   ) async {
-    emit(GamificationLoading());
     try {
       final profile = await repository.getStudentGamification(event.studentId);
       emit(GamificationLoaded(profile));
       await _cacheStreakState(event.studentId, profile.currentStreak);
-    } catch (e) {
-      emit(GamificationError(e.toString()));
-    }
+    } catch (_) {}
   }
 
   Future<void> _onProcessQuizRewards(
@@ -50,10 +47,6 @@ class GamificationBloc extends Bloc<GamificationEvent, GamificationState> {
           coinsTotal: rewards['coins_total'] ?? 0,
           currentLevel: rewards['new_level'] ?? 1,
           currentStreak: rewards['current_streak'] ?? 0,
-          longestStreak: rewards['longest_streak'] ?? 0,
-          lastQuizDate: rewards['last_quiz_date'],
-          nextMilestone: rewards['next_milestone'],
-          nextMilestoneDaysAway: rewards['next_milestone_days_away'],
         );
 
         await _cacheStreakState(
@@ -108,9 +101,7 @@ class GamificationBloc extends Bloc<GamificationEvent, GamificationState> {
       // Fallback if no rewards payload.
       final profile = await repository.getStudentGamification(event.studentId);
       emit(GamificationLoaded(profile));
-    } catch (e) {
-      emit(GamificationError(e.toString()));
-    }
+    } catch (_) {}
   }
 
   Future<void> _onCheckDailyLoginReward(

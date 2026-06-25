@@ -23,14 +23,8 @@ query GetStudentsByParent($parentUid: String!) @auth(level: USER, insecureReason
 
 query GetStudentWithParent($uid: String!) @auth(level: USER, insecureReason: "Used to verify the parent-student relationship; students access their own parent info or parents verify their own children.") {
   student(key: { uid: $uid }) {
-    uid
     parent {
       uid
-      user {
-        uid
-        fullName
-        email
-      }
     }
   }
 }
@@ -39,7 +33,6 @@ query GetStudentWithParent($uid: String!) @auth(level: USER, insecureReason: "Us
 
 query GetInstalledAppsForStudent($studentUid: String!) @auth(level: USER, insecureReason: "The app validates access via custom logic or shared student data.") {
   installedApps(where: { studentUid: { eq: $studentUid } }) {
-    id
     packageName
     appLabel
     isSystemApp
@@ -98,7 +91,6 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER, insecureRe
     quizCount
   }
   appRules(where: { studentUid: { eq: $studentUid } }) {
-    id
     packageName
     appLabel
     isPaused

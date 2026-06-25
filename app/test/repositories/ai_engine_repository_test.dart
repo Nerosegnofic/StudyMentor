@@ -158,7 +158,6 @@ void main() {
 
         expect(statuses.length, 1);
         expect(statuses.first.state, 'ready');
-        expect(statuses.first.hasSkills, isTrue);
       });
     });
   });

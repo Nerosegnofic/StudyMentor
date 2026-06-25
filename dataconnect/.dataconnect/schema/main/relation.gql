@@ -321,24 +321,6 @@ extend type Parent {
   """
   _count: Int! @fdc_generated(from: "Parent.", purpose: QUERY_COUNT)
   """
-  ✨ Count the number of rows in the `Parent` table where the `phoneNumber` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  phoneNumber_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Parent.phoneNumber", purpose: QUERY_COUNT)
-  """
-  ✨ Count the number of rows in the `Parent` table where the `pinCode` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
-  """
-  pinCode_count(
-    """
-    Set to true to count the number of distinct values.
-    """
-    distinct: Boolean = false
-  ): Int! @fdc_generated(from: "Parent.pinCode", purpose: QUERY_COUNT)
-  """
   ✨ Count the number of rows in the `Parent` table where the `uid` field is non-null. Pass the `distinct` argument to instead count the number of distinct values.
   """
   uid_count(

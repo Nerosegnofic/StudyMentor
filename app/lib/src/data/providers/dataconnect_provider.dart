@@ -7,11 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_data_connect/firebase_data_connect.dart';
 import '../../../dataconnect_generated/generated.dart';
 import '../../domain/models/app_config_model.dart';
-import '../../domain/models/user_model.dart';
-import '../../domain/models/student_model.dart';
 import '../../domain/models/quiz_count.dart';
 import '../../domain/models/skill_progress_model.dart';
-import '../../domain/models/report_models.dart';
 import '../../domain/models/subject_summary_model.dart';
 import '../../domain/models/quiz_attempt_model.dart';
 import '../../domain/models/question_detail_model.dart';
@@ -61,9 +58,6 @@ class DataConnectProvider {
     }
   }
 
-  // Username uniqueness check removed — schema no longer stores usernames.
-  Future<void> checkUsernameAvailable(String username) async {}
-
   Future<void> createStudentProfile({
     required String parentUid,
     required int gradeLevel,
@@ -98,16 +92,11 @@ class DataConnectProvider {
     final result = await _connector.getUserByUid(uid: uid).execute();
     final user = result.data.user;
     if (user == null) throw Exception('User not found in DataConnect');
-    final createdAt = DateTime.fromMillisecondsSinceEpoch(
-      user.createdAt.seconds * 1000,
-    );
     return {
       'uid': user.uid,
       'email': user.email,
       'full_name': user.fullName,
       'role': user.role.stringValue,
-      'is_active': user.isActive,
-      'created_at': createdAt.toIso8601String(),
     };
   }
 
@@ -156,15 +145,6 @@ class DataConnectProvider {
     return {'uid': uid, 'grade_level': null};
   }
 
-  Future<String> getParentFullName(String studentUid) async {
-    final result = await _connector
-        .getStudentWithParent(uid: studentUid)
-        .execute();
-    final student = result.data.student;
-    if (student == null) throw Exception('Student not found');
-    return student.parent.user.fullName;
-  }
-
   Future<String> getParentUidForStudent(String studentUid) async {
     final result = await _connector
         .getStudentWithParent(uid: studentUid)
@@ -172,20 +152,6 @@ class DataConnectProvider {
     final student = result.data.student;
     if (student == null) throw Exception('Student not found');
     return student.parent.uid;
-  }
-
-  Future<String> getEmailForUid(String uid) async {
-    final result = await _connector.getUserByUid(uid: uid).execute();
-    final user = result.data.user;
-    if (user == null) throw Exception('User not found in DataConnect');
-    return user.email;
-  }
-
-  Future<bool> getIsActiveForUid(String uid) async {
-    final result = await _connector.getUserByUid(uid: uid).execute();
-    final user = result.data.user;
-    if (user == null) return false;
-    return user.isActive;
   }
 
   Future<void> markEmailVerified() async {
@@ -214,7 +180,6 @@ class DataConnectProvider {
     final rules = result.data.appRules
         .map(
           (r) => {
-            'id': r.id,
             'package_name': r.packageName,
             'app_label': r.appLabel,
             'is_paused': r.isPaused,
@@ -372,21 +337,6 @@ class DataConnectProvider {
         .execute();
   }
 
-  // ── Student Settings ──────────────────────────────────────────────────────
-
-  Future<Map<String, dynamic>?> getStudentSettings(String studentUid) async {
-    final result = await _connector
-        .getStudentSettings(studentUid: studentUid)
-        .execute();
-    final s = result.data.studentSettings;
-    if (s == null) return null;
-    return {
-      'notifications_enabled': s.notificationsEnabled,
-      'sound_effects_enabled': s.soundEffectsEnabled,
-      'background_music_enabled': s.backgroundMusicEnabled,
-    };
-  }
-
   // ── Student Account Deletion (parent-side) ────────────────────────────────
 
   Future<void> deleteStudentAllData(String studentUid) async {
@@ -426,17 +376,6 @@ class DataConnectProvider {
     await _connector.deleteParentRecord().execute();
   }
 
-  // ── Support Tickets ───────────────────────────────────────────────────────
-
-  Future<void> insertSupportTicket({
-    required String userId,
-    required String userName,
-    required String issueType,
-    required String message,
-  }) async {
-    // insertSupportTicket was removed from the schema — no-op for now.
-  }
-
   // ── Local Notification System ─────────────────────────────────────────────
 
   Future<void> insertStudentNotificationEvent({
@@ -471,12 +410,6 @@ class DataConnectProvider {
         .execute();
   }
 
-  Future<void> markLocalNotificationEventsRead(List<String> eventIds) async {
-    await _connector
-        .markLocalNotificationEventsRead(eventIds: eventIds)
-        .execute();
-  }
-
   Future<void> markLocalNotificationEventsDispatched(List<String> eventIds) async {
     await _connector
         .markLocalNotificationEventsDispatched(eventIds: eventIds)
@@ -505,27 +438,6 @@ class DataConnectProvider {
         .toList();
   }
 
-  Future<List<Map<String, dynamic>>> getUnreadLocalNotificationEvents(
-    String toParentUid,
-  ) async {
-    final result = await _connector
-        .getUnreadLocalNotificationEvents(toParentUid: toParentUid)
-        .execute();
-    return result.data.localNotificationEvents
-        .map(
-          (e) => {
-            'id': e.id,
-            'from_student_uid': e.fromStudentUid,
-            'event_type': e.eventType,
-            'payload': e.payload,
-            'created_at': DateTime.fromMillisecondsSinceEpoch(
-              e.createdAt.seconds * 1000,
-              isUtc: true,
-            ).toIso8601String(),
-          },
-        )
-        .toList();
-  }
 
   Future<void> upsertLocalNotificationPreference({
     required String userUid,
@@ -589,14 +501,10 @@ class DataConnectProvider {
               final attempts = s['attempts'] as int? ?? 0;
               
               final correctAnswers = ((mastery / 100) * attempts).round();
-              final wrongAnswers = attempts - correctAnswers;
 
               skills.add(SkillProgressModel(
-                studentUid: studentUid,
-                subjectKey: subjectKey,
                 skillKey: skillName,
                 correctAnswers: correctAnswers,
-                wrongAnswers: wrongAnswers >= 0 ? wrongAnswers : 0,
                 totalAttempts: attempts,
                 lastPracticedAt: DateTime.now(),
               ));
@@ -630,7 +538,7 @@ class DataConnectProvider {
       final skillsCount = a['total_skills'] as int? ?? 0;
 
       return SubjectSummaryModel(
-        subjectKey: def.key,
+        subjectKey: name,
         subjectId: a['subject_id'] as int? ?? 0,
         colorHex: '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: skillsCount,
@@ -658,7 +566,7 @@ class DataConnectProvider {
       final name = (a['name'] as String).toLowerCase().trim();
       final def = SubjectMetadataRegistry.getDefinition(name);
       return SubjectSummaryModel(
-        subjectKey: def.key,
+        subjectKey: name,
         subjectId: a['subject_id'] as int? ?? 0,
         colorHex: '#${def.primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
         skillsCount: 0,
@@ -879,7 +787,6 @@ class DataConnectProvider {
       return questions.map((q) {
         final m = q as Map<String, dynamic>;
         return QuestionDetailModel(
-          quizAttemptId: quizAttemptId,
           questionNumber: m['question_number'] as int,
           isCorrect: m['is_correct'] as bool? ?? false,
           questionText: m['question_text'] as String,
@@ -894,77 +801,8 @@ class DataConnectProvider {
     }
   }
 
-  Future<QuestionDetailModel> getQuestionDetail(
-    String quizAttemptId,
-    int questionNumber,
-  ) async {
-    final all = await getSessionQuestions(quizAttemptId);
-    return all.firstWhere(
-      (q) => q.questionNumber == questionNumber,
-      orElse: () => throw Exception('Question $questionNumber not found in session $quizAttemptId'),
-    );
-  }
 
   // ── Reports & Analytics (Mocked for Sprint 3) ───────────────────────────
-
-  Future<WeeklyReportModel> getWeeklyReport(String studentUid) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    return WeeklyReportModel(
-      studentUid: studentUid,
-      weekStartDate: DateTime.now().subtract(const Duration(days: 7)),
-      overallAccuracyPercent: 85.0,
-      totalQuizzes: 12,
-      totalStudyTime: const Duration(hours: 4, minutes: 30),
-      currentStreakDays: 3,
-      longestStreakDays: 7,
-      accuracyTrend: const [
-        WeeklyAccuracyPoint(weekLabel: 'W1', accuracy: 70),
-        WeeklyAccuracyPoint(weekLabel: 'W2', accuracy: 72),
-        WeeklyAccuracyPoint(weekLabel: 'W3', accuracy: 78),
-        WeeklyAccuracyPoint(weekLabel: 'W4', accuracy: 80),
-        WeeklyAccuracyPoint(weekLabel: 'W5', accuracy: 82),
-        WeeklyAccuracyPoint(weekLabel: 'This Wk', accuracy: 85),
-      ],
-      subjectAllocations: const [
-        SubjectTimeAllocation(
-          subjectKey: 'math',
-          percentage: 45.0,
-          colorHex: '#2E7D32',
-        ),
-        SubjectTimeAllocation(
-          subjectKey: 'science',
-          percentage: 30.0,
-          colorHex: '#AD1457',
-        ),
-        SubjectTimeAllocation(
-          subjectKey: 'english',
-          percentage: 25.0,
-          colorHex: '#6A1B9A',
-        ),
-      ],
-      aiInsightText:
-          "Ahmed is showing great progress in Mathematics, improving his accuracy by 5% this week. He is still struggling slightly with fractions, but his consistency is excellent. Keep encouraging daily practice!",
-    );
-  }
-
-  Future<DailyStudentSnapshotModel> getDailySnapshot(String studentUid) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    return DailyStudentSnapshotModel(
-      studentUid: studentUid,
-      quizzesCompletedToday: 3,
-      totalStudyTimeToday: const Duration(minutes: 45),
-      averageAccuracyToday: 88,
-    );
-  }
-
-  Future<void> upsertSkillProgress({
-    required String studentUid,
-    required String subjectKey,
-    required String skillKey,
-    required int correctAnswers,
-    required int wrongAnswers,
-    required int totalAttempts,
-  }) async {}
 
   Future<List<NotificationModel>> getNotificationsForParent(
     String parentUid,
@@ -1095,46 +933,4 @@ class DataConnectProvider {
     }
   }
 
-  Future<UserModel> updateProfile({
-    required String parentUid,
-    String? newFullName,
-    String? newEmail,
-    String? currentPassword,
-    String? newPassword,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    return UserModel(
-      uid: parentUid,
-      email: newEmail ?? 'parent@example.com',
-      fullName: newFullName ?? 'Parent Name',
-      role: 'parent',
-      isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(days: 30)),
-    );
-  }
-
-  Future<void> deleteParentAccount(String currentPassword) async {
-    await Future.delayed(const Duration(seconds: 1));
-  }
-
-  Future<StudentModel> updateStudentProfile({
-    required String studentUid,
-    String? studentEmail,
-    String? newFullName,
-    String? newEmail,
-    String? currentPassword,
-    String? newPassword,
-    String? newGradeLevel,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    return StudentModel(
-      uid: studentUid,
-      email: newEmail ?? studentEmail ?? 'student@example.com',
-      fullName: newFullName ?? 'Student Name',
-      gradeLevel: newGradeLevel != null ? int.tryParse(newGradeLevel) ?? 8 : 8,
-      totalXp: 450,
-      totalCoins: 200,
-      isEmailVerified: true,
-    );
-  }
 }

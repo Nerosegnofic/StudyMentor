@@ -6,7 +6,6 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/students/students_bloc.dart';
 import '../../../bloc/students/students_event.dart';
 import '../../../bloc/students/students_state.dart';
-import '../../../bloc/snapshot/snapshot_bloc.dart';
 import '../../../bloc/reports/reports_bloc.dart';
 import '../../../bloc/ai_summary/ai_summary_bloc.dart';
 import '../../../bloc/ai_summary/ai_summary_event.dart';
@@ -87,7 +86,6 @@ class ParentHomeDashboardState extends State<ParentHomeDashboard> {
         builder: (_) => MultiBlocProvider(
           providers: [
             BlocProvider.value(value: context.read<AuthBloc>()),
-            BlocProvider.value(value: context.read<SnapshotBloc>()),
             BlocProvider.value(value: context.read<ReportsBloc>()),
           ],
           child: StudentProfileDashboard(student: student),

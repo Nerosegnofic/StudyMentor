@@ -19,13 +19,11 @@ class GetInstalledAppsForStudentVariablesBuilder {
 
 @immutable
 class GetInstalledAppsForStudentInstalledApps {
-  final String id;
   final String packageName;
   final String appLabel;
   final bool isSystemApp;
   GetInstalledAppsForStudentInstalledApps.fromJson(dynamic json):
   
-  id = nativeFromJson<String>(json['id']),
   packageName = nativeFromJson<String>(json['packageName']),
   appLabel = nativeFromJson<String>(json['appLabel']),
   isSystemApp = nativeFromJson<bool>(json['isSystemApp']);
@@ -39,19 +37,17 @@ class GetInstalledAppsForStudentInstalledApps {
     }
 
     final GetInstalledAppsForStudentInstalledApps otherTyped = other as GetInstalledAppsForStudentInstalledApps;
-    return id == otherTyped.id && 
-    packageName == otherTyped.packageName && 
+    return packageName == otherTyped.packageName && 
     appLabel == otherTyped.appLabel && 
     isSystemApp == otherTyped.isSystemApp;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, isSystemApp.hashCode]);
+  int get hashCode => Object.hashAll([packageName.hashCode, appLabel.hashCode, isSystemApp.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['id'] = nativeToJson<String>(id);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
     json['isSystemApp'] = nativeToJson<bool>(isSystemApp);
@@ -59,7 +55,6 @@ class GetInstalledAppsForStudentInstalledApps {
   }
 
   GetInstalledAppsForStudentInstalledApps({
-    required this.id,
     required this.packageName,
     required this.appLabel,
     required this.isSystemApp,

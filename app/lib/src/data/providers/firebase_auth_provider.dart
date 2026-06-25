@@ -52,12 +52,6 @@ class FirebaseAuthProvider {
     }
   }
 
-  Future<String?> getIdToken() async {
-    final user = _auth.currentUser;
-    if (user == null) return null;
-    return await user.getIdToken(true);
-  }
-
   // ── profile update helpers ─────────────────────────────────────────────────
 
   Future<void> reauthenticate(String currentPassword) async {
@@ -190,24 +184,4 @@ class FirebaseAuthProvider {
     _cachedPassword = null;
   }
 
-  Future<bool?> checkEmailVerifiedForCredentials(
-    String email,
-    String password,
-  ) async {
-    try {
-      final secondaryAuth = await _getSecondaryAuth();
-      final credential = await secondaryAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      await credential.user?.reload();
-      final verified = secondaryAuth.currentUser?.emailVerified;
-      await secondaryAuth.signOut();
-      return verified;
-    } on FirebaseAuthException {
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
 }

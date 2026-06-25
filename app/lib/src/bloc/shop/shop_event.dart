@@ -56,20 +56,6 @@ class EquipItemToggled extends ShopEvent {
   List<Object?> get props => [studentUid, item.id];
 }
 
-/// Update gender or skin tone.
-class AvatarCustomizationChanged extends ShopEvent {
-  final String studentUid;
-  final AvatarConfig newConfig;
-
-  const AvatarCustomizationChanged({
-    required this.studentUid,
-    required this.newConfig,
-  });
-
-  @override
-  List<Object?> get props => [studentUid, newConfig.gender, newConfig.skinTone];
-}
-
 /// Persist the current avatar config to Firebase — fired once when the user taps Done.
 class SaveAvatarRequested extends ShopEvent {
   final String studentUid;

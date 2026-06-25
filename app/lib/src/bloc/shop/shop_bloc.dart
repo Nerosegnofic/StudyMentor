@@ -16,7 +16,6 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
     on<LoadShopRequested>(_onLoad);
     on<PurchaseItemRequested>(_onPurchase);
     on<EquipItemToggled>(_onEquipToggle);
-    on<AvatarCustomizationChanged>(_onCustomizationChanged);
     on<SaveAvatarRequested>(_onSaveAvatar);
   }
 
@@ -143,17 +142,6 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
 
     // Local update only — Firebase is written when the user taps Done.
     emit(current.copyWith(avatarConfig: newConfig));
-  }
-
-  Future<void> _onCustomizationChanged(
-    AvatarCustomizationChanged event,
-    Emitter<ShopState> emit,
-  ) async {
-    final current = state;
-    if (current is! ShopLoaded) return;
-
-    // Local update only — Firebase is written when the user taps Done.
-    emit(current.copyWith(avatarConfig: event.newConfig));
   }
 
   Future<void> _onSaveAvatar(

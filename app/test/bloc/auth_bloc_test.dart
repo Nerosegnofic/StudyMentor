@@ -47,8 +47,6 @@ class FakeAuthRepository implements AuthRepository {
         email: 'test@test.com',
         fullName: 'Test User',
         role: 'parent',
-        isActive: true,
-        createdAt: DateTime(2024),
       );
 
   @override
@@ -101,9 +99,6 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> markEmailVerifiedInDatabase(String uid) async {}
 
   @override
-  Future<String> getParentFullName(String studentUid) async => 'Parent Name';
-
-  @override
   Future<String> getParentUidForStudent(String studentUid) async =>
       'parent-uid';
 
@@ -144,20 +139,10 @@ class FakeAuthRepository implements AuthRepository {
       user ?? _defaultUser;
 
   @override
-  Future<List<StudentModel>> refreshStudentVerificationStatus(
-      List<StudentModel> students) async => students;
-
-  @override
   Future<void> deleteStudent({
     required String studentUid,
     required String studentEmail,
     required String studentPassword,
-  }) async {}
-
-  @override
-  Future<void> updateStudentFullName({
-    required String studentUid,
-    required String fullName,
   }) async {}
 
   @override
@@ -260,11 +245,6 @@ class FakeAuthRepository implements AuthRepository {
       String quizAttemptId, {String? studentUid}) async => const [];
 
   @override
-  Future<QuestionDetailModel> getQuestionDetail(
-      String quizAttemptId, int questionNumber) async =>
-      throw UnimplementedError();
-
-  @override
   Future<WeeklyReportModel> getWeeklyReport(String studentUid) async =>
       throw UnimplementedError();
 
@@ -282,11 +262,6 @@ class FakeAuthRepository implements AuthRepository {
       throw UnimplementedError();
 
   @override
-  Future<DailyStudentSnapshotModel> getDailySnapshot(
-          String studentUid) async =>
-      throw UnimplementedError();
-
-  @override
   Future<AiSummaryModel> getAiSummary(List<StudentModel> children) async =>
       throw UnimplementedError();
 
@@ -300,6 +275,21 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> markAllNotificationsRead(String parentUid) async {}
+
+  @override
+  Future<void> markAllStudentNotificationsRead(String studentUid) async {}
+
+  @override
+  Future<void> toggleParentNotificationRead(String id, {required bool isRead}) async {}
+
+  @override
+  Future<void> toggleStudentNotificationRead(String id, {required bool isRead}) async {}
+
+  @override
+  Future<void> deleteParentNotification(String id) async {}
+
+  @override
+  Future<void> deleteStudentNotification(String id) async {}
 }
 
 // ---------------------------------------------------------------------------
@@ -311,18 +301,8 @@ UserModel _parentUser({String role = 'parent'}) => UserModel(
       email: 'parent@test.com',
       fullName: 'Parent',
       role: role,
-      isActive: true,
-      createdAt: DateTime(2024),
     );
 
-UserModel _studentUser() => UserModel(
-      uid: 'uid-student',
-      email: 'student@test.com',
-      fullName: 'Student',
-      role: 'student',
-      isActive: true,
-      createdAt: DateTime(2024),
-    );
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -618,57 +598,5 @@ void main() {
       );
     });
 
-    // ── LoadParentNameRequested ──────────────────────────────────────────────
-
-    group('LoadParentNameRequested', () {
-      blocTest<AuthBloc, AuthState>(
-        'emits ParentNameLoaded with the fetched name',
-        build: () => AuthBloc(repository: FakeAuthRepository()),
-        act: (bloc) => bloc.add(
-          LoadParentNameRequested(studentUid: 'uid-student'),
-        ),
-        expect: () => [
-          isA<ParentNameLoaded>().having(
-            (s) => s.parentFullName,
-            'parentFullName',
-            'Parent Name',
-          ),
-        ],
-      );
-
-      blocTest<AuthBloc, AuthState>(
-        'emits ParentNameLoaded with "Unknown" fallback on error',
-        build: () => AuthBloc(
-          repository: FakeAuthRepository(shouldThrow: true),
-        ),
-        // getParentFullName is called; FakeAuthRepository.shouldThrow only
-        // affects signIn/signUp/getUserProfile — this override always succeeds.
-        act: (bloc) => bloc.add(
-          LoadParentNameRequested(studentUid: 'uid-student'),
-        ),
-        expect: () => [isA<ParentNameLoaded>()],
-      );
-    });
-
-    // ── UpdateStudentFullNameRequested ───────────────────────────────────────
-
-    group('UpdateStudentFullNameRequested', () {
-      blocTest<AuthBloc, AuthState>(
-        'emits [StudentNameUpdateLoading, StudentNameUpdateSuccess]',
-        build: () => AuthBloc(repository: FakeAuthRepository()),
-        act: (bloc) => bloc.add(
-          UpdateStudentFullNameRequested(
-            studentUid: 'uid-student',
-            fullName: 'New Name',
-          ),
-        ),
-        expect: () => [
-          isA<StudentNameUpdateLoading>(),
-          isA<StudentNameUpdateSuccess>()
-              .having((s) => s.studentUid, 'studentUid', 'uid-student')
-              .having((s) => s.newFullName, 'newFullName', 'New Name'),
-        ],
-      );
-    });
   });
 }

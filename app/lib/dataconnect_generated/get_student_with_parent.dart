@@ -19,11 +19,9 @@ class GetStudentWithParentVariablesBuilder {
 
 @immutable
 class GetStudentWithParentStudent {
-  final String uid;
   final GetStudentWithParentStudentParent parent;
   GetStudentWithParentStudent.fromJson(dynamic json):
   
-  uid = nativeFromJson<String>(json['uid']),
   parent = GetStudentWithParentStudentParent.fromJson(json['parent']);
   @override
   bool operator ==(Object other) {
@@ -35,23 +33,20 @@ class GetStudentWithParentStudent {
     }
 
     final GetStudentWithParentStudent otherTyped = other as GetStudentWithParentStudent;
-    return uid == otherTyped.uid && 
-    parent == otherTyped.parent;
+    return parent == otherTyped.parent;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, parent.hashCode]);
+  int get hashCode => parent.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['uid'] = nativeToJson<String>(uid);
     json['parent'] = parent.toJson();
     return json;
   }
 
   GetStudentWithParentStudent({
-    required this.uid,
     required this.parent,
   });
 }
@@ -59,11 +54,9 @@ class GetStudentWithParentStudent {
 @immutable
 class GetStudentWithParentStudentParent {
   final String uid;
-  final GetStudentWithParentStudentParentUser user;
   GetStudentWithParentStudentParent.fromJson(dynamic json):
   
-  uid = nativeFromJson<String>(json['uid']),
-  user = GetStudentWithParentStudentParentUser.fromJson(json['user']);
+  uid = nativeFromJson<String>(json['uid']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -74,68 +67,21 @@ class GetStudentWithParentStudentParent {
     }
 
     final GetStudentWithParentStudentParent otherTyped = other as GetStudentWithParentStudentParent;
-    return uid == otherTyped.uid && 
-    user == otherTyped.user;
+    return uid == otherTyped.uid;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, user.hashCode]);
+  int get hashCode => uid.hashCode;
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     json['uid'] = nativeToJson<String>(uid);
-    json['user'] = user.toJson();
     return json;
   }
 
   GetStudentWithParentStudentParent({
     required this.uid,
-    required this.user,
-  });
-}
-
-@immutable
-class GetStudentWithParentStudentParentUser {
-  final String uid;
-  final String fullName;
-  final String email;
-  GetStudentWithParentStudentParentUser.fromJson(dynamic json):
-  
-  uid = nativeFromJson<String>(json['uid']),
-  fullName = nativeFromJson<String>(json['fullName']),
-  email = nativeFromJson<String>(json['email']);
-  @override
-  bool operator ==(Object other) {
-    if(identical(this, other)) {
-      return true;
-    }
-    if(other.runtimeType != runtimeType) {
-      return false;
-    }
-
-    final GetStudentWithParentStudentParentUser otherTyped = other as GetStudentWithParentStudentParentUser;
-    return uid == otherTyped.uid && 
-    fullName == otherTyped.fullName && 
-    email == otherTyped.email;
-    
-  }
-  @override
-  int get hashCode => Object.hashAll([uid.hashCode, fullName.hashCode, email.hashCode]);
-  
-
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> json = {};
-    json['uid'] = nativeToJson<String>(uid);
-    json['fullName'] = nativeToJson<String>(fullName);
-    json['email'] = nativeToJson<String>(email);
-    return json;
-  }
-
-  GetStudentWithParentStudentParentUser({
-    required this.uid,
-    required this.fullName,
-    required this.email,
   });
 }
 

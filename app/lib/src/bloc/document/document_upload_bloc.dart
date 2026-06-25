@@ -26,12 +26,12 @@ class DocumentUploadBloc
   ) async {
     emit(DocumentUploadLoading());
     try {
-      final response = await repository.uploadDocument(
+      await repository.uploadDocument(
         pdfFile: event.file,
         subjectName: event.subjectName,
         studentUid: event.studentUid,
       );
-      emit(DocumentUploadAccepted(response));
+      emit(DocumentUploadAccepted());
     } on SubjectStillProcessingException {
       emit(DocumentUploadError(kSubjectStillProcessingError));
     } catch (e) {
