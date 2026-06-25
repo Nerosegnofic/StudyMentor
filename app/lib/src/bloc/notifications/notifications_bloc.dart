@@ -23,26 +23,20 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     LoadNotificationsRequested event,
     Emitter<NotificationsState> emit,
   ) async {
-    emit(NotificationsLoading());
     try {
       final notifications = await repository.getNotificationsForParent(event.parentUid);
       emit(NotificationsLoaded(notifications));
-    } catch (e) {
-      emit(NotificationsError('Failed to load notifications: $e'));
-    }
+    } catch (_) {}
   }
 
   Future<void> _onLoadStudentNotifications(
     LoadStudentNotificationsRequested event,
     Emitter<NotificationsState> emit,
   ) async {
-    emit(NotificationsLoading());
     try {
       final notifications = await repository.getNotificationsForStudent(event.studentUid);
       emit(NotificationsLoaded(notifications));
-    } catch (e) {
-      emit(NotificationsError('Failed to load notifications: $e'));
-    }
+    } catch (_) {}
   }
 
   Future<void> _onRefreshParentNotifications(

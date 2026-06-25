@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/models/student_model.dart';
 import '../../domain/models/app_config_model.dart';
 
 abstract class StudentsEvent extends Equatable {
@@ -46,15 +45,6 @@ class CreateStudentRequested extends StudentsEvent {
         rules,
         config,
       ];
-}
-
-class RefreshStudentVerificationsRequested extends StudentsEvent {
-  final List<StudentModel> currentStudents;
-
-  const RefreshStudentVerificationsRequested({required this.currentStudents});
-
-  @override
-  List<Object?> get props => [currentStudents];
 }
 
 class DeleteStudentRequested extends StudentsEvent {

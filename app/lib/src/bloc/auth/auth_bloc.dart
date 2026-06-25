@@ -15,7 +15,6 @@ import '../../services/streak_reminder_service.dart';
 import '../../services/parent_notification_poll_service.dart';
 import '../../services/parent_inactivity_check_service.dart';
 import '../../services/notification_preferences_cache.dart';
-import '../../domain/models/installed_app_model.dart';
 import '../../domain/models/app_config_model.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -23,26 +22,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({required this.repository}) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
-    on<ResetAuthState>(_onResetAuthState);
     on<RegisterRequested>(_onRegister);
     on<LoginRequested>(_onLogin);
     on<LogoutRequested>(_onLogout);
     on<SendEmailVerificationRequested>(_onSendEmailVerification);
     on<CheckEmailVerificationRequested>(_onCheckEmailVerification);
     on<PasswordResetRequested>(_onPasswordReset);
-    on<LoadParentNameRequested>(_onLoadParentName);
     on<StudentLogoutVerificationRequested>(_onStudentLogoutVerification);
     on<VerifyParentAndLogoutRequested>(_onVerifyParentAndLogout);
-    on<UpdateProfileRequested>(_onUpdateProfile);
-    on<LegacyLoadAppRulesRequested>(_onLoadAppRules);
-    on<LegacySaveAppRulesRequested>(_onSaveAppRules);
     on<LoadStudentAppConfigRequested>(_onLoadStudentAppConfig);
     on<SyncInstalledAppsRequested>(_onSyncInstalledApps);
     on<LoadInstalledAppsForStudentRequested>(_onLoadInstalledAppsForStudent);
-    on<LegacyRefreshStudentDataRequested>(_onRefreshStudentData);
-    on<UpdateStudentFullNameRequested>(_onUpdateStudentFullName);
-    on<DeleteParentAccountRequested>(_onDeleteParentAccount);
-    on<UpdateStudentProfileRequested>(_onUpdateStudentProfile);
     on<DeleteStudentRequested>(_onDeleteStudent);
   }
 
@@ -71,26 +61,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             );
           }
         }
-      } else {
-        emit(AuthUnauthenticated());
-      }
-    } catch (e) {
-      emit(AuthUnauthenticated());
-    }
-  }
-
-  /// Restores the authenticated state after a sub-flow (e.g. AddStudentScreen)
-  /// is cancelled or dismissed without completing. Prevents the BLoC from
-  /// staying stuck in AuthLoading or AuthError and causing RootPage to show
-  /// a spinner when the parent navigates back.
-  Future<void> _onResetAuthState(
-    ResetAuthState event,
-    Emitter<AuthState> emit,
-  ) async {
-    try {
-      final profile = await repository.getUserProfile();
-      if (profile != null) {
-        emit(AuthAuthenticated(profile));
       } else {
         emit(AuthUnauthenticated());
       }
@@ -227,18 +197,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onLoadParentName(
-    LoadParentNameRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    try {
-      final parentName = await repository.getParentFullName(event.studentUid);
-      emit(ParentNameLoaded(parentName));
-    } catch (e) {
-      emit(ParentNameLoaded('Unknown'));
-    }
-  }
-
   Future<void> _onStudentLogoutVerification(
     StudentLogoutVerificationRequested event,
     Emitter<AuthState> emit,
@@ -289,78 +247,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onUpdateProfile(
-    UpdateProfileRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(LegacyProfileUpdateLoading());
-    try {
-      final updatedUser = await repository.updateProfile(
-        parentUid: '', // parentUid no longer readily available in this event, but this event is unused in UI.
-        newFullName: event.newFullName,
-        newEmail: event.newEmail,
-        currentPassword: event.currentPassword,
-        newPassword: event.newPassword,
-      );
-
-      if (event.newEmail != null && event.newEmail!.isNotEmpty) {
-        emit(EmailUpdateVerificationSent(event.newEmail!));
-      }
-
-      emit(LegacyProfileUpdateSuccess(updatedUser));
-      emit(AuthAuthenticated(updatedUser));
-    } catch (e) {
-      emit(LegacyProfileUpdateError(_mapProfileUpdateException(e)));
-    }
-  }
-
   // ── App Configuration Handlers ────────────────────────────────────────────
-
-  Future<void> _onLoadAppRules(
-    LegacyLoadAppRulesRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(LegacyAppConfigLoading());
-    try {
-      final (:config, :rules) = await repository.getAppConfigForStudent(
-        event.studentUid,
-      );
-      emit(
-        LegacyAppRulesLoaded(
-          studentUid: event.studentUid,
-          rules: rules,
-          config: config ?? const StudentConfigModel(),
-        ),
-      );
-    } catch (e, stack) {
-      debugPrint('[AuthBloc] _onLoadAppRules error: $e\n$stack');
-      emit(LegacyAppConfigError(_mapException(e)));
-    }
-  }
-
-  Future<void> _onSaveAppRules(
-    LegacySaveAppRulesRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(LegacyAppConfigSaving());
-    try {
-      await repository.saveAppConfigForStudent(
-        studentUid: event.studentUid,
-        rules: event.rules,
-        config: event.config,
-      );
-      emit(LegacyAppConfigSaved());
-    } catch (e, stack) {
-      debugPrint('[AuthBloc] _onSaveAppRules error: $e\n$stack');
-      emit(LegacyAppConfigError(_mapException(e)));
-    }
-  }
 
   Future<void> _onLoadStudentAppConfig(
     LoadStudentAppConfigRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(LegacyAppConfigLoading());
     try {
       final (:config, :rules) = await repository.getAppConfigForStudent(
         event.studentUid,
@@ -384,7 +276,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SyncInstalledAppsRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(InstalledAppsSyncing());
     try {
       final apps = await InstalledAppsService.instance.getFromDevice();
       await repository.syncInstalledAppsForStudent(
@@ -392,7 +283,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         apps: apps,
       );
       await InstalledAppsService.instance.markInventoryClean();
-      emit(InstalledAppsSynced());
     } catch (e) {
       debugPrint('[InstalledApps] sync error: $e');
     }
@@ -415,39 +305,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // sub-operation completes.
     final profile = await repository.getUserProfile();
     if (profile != null) emit(AuthAuthenticated(profile));
-  }
-
-  Future<void> _onRefreshStudentData(
-    LegacyRefreshStudentDataRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(LegacyStudentDataRefreshing());
-    try {
-      final results = await Future.wait([
-        repository.getInstalledAppsForStudent(event.studentUid),
-        repository.getAppConfigForStudent(event.studentUid),
-      ]);
-
-      emit(
-        InstalledAppsLoaded(
-          studentUid: event.studentUid,
-          apps: results[0] as List<InstalledAppModel>,
-        ),
-      );
-
-      final (:config, :rules) =
-          results[1]
-              as ({StudentConfigModel? config, List<AppRuleModel> rules});
-      emit(
-        LegacyAppRulesLoaded(
-          studentUid: event.studentUid,
-          rules: rules,
-          config: config ?? const StudentConfigModel(),
-        ),
-      );
-    } catch (e) {
-      emit(LegacyAppConfigError(_mapException(e)));
-    }
   }
 
   // ── Student Deletion ──────────────────────────────────────────────────────
@@ -476,73 +333,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e, stack) {
       debugPrint('[DeleteStudent] error: $e\n$stack');
       emit(StudentDeleteError(_mapDeletionException(e)));
-    }
-  }
-
-  // ── Student Full Name Update ──────────────────────────────────────────────
-
-  Future<void> _onUpdateStudentFullName(
-    UpdateStudentFullNameRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(StudentNameUpdateLoading());
-    try {
-      await repository.updateStudentFullName(
-        studentUid: event.studentUid,
-        fullName: event.fullName,
-      );
-      emit(
-        StudentNameUpdateSuccess(
-          studentUid: event.studentUid,
-          newFullName: event.fullName,
-        ),
-      );
-    } catch (e) {
-      emit(StudentNameUpdateError(_mapException(e)));
-    }
-  }
-
-  // ── Parent Account Deletion ───────────────────────────────────────────────
-
-  Future<void> _onDeleteParentAccount(
-    DeleteParentAccountRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(LegacyParentAccountDeleteLoading());
-    try {
-      await repository.deleteParentAccount(event.currentPassword);
-      emit(LegacyParentAccountDeleted());
-      emit(AuthUnauthenticated());
-    } catch (e) {
-      emit(LegacyParentAccountDeleteError(_mapProfileUpdateException(e)));
-    }
-  }
-
-  // ── Student Profile Update (parent-side) ─────────────────────────────────
-
-  Future<void> _onUpdateStudentProfile(
-    UpdateStudentProfileRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(StudentLegacyProfileUpdateLoading());
-    try {
-      await repository.updateStudentProfile(
-        studentUid: event.studentUid,
-        studentEmail: event.studentEmail,
-        newFullName: event.newFullName,
-        newEmail: event.newEmail,
-        currentPassword: event.currentPassword,
-        newPassword: event.newPassword,
-      );
-      emit(
-        StudentLegacyProfileUpdateSuccess(
-          studentUid: event.studentUid,
-          newFullName: event.newFullName,
-          pendingEmail: null,
-        ),
-      );
-    } catch (e) {
-      emit(LegacyStudentProfileUpdateError(_mapProfileUpdateException(e)));
     }
   }
 
@@ -636,28 +426,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return 'Network error. Check your connection and try again.';
     }
     return 'Invalid parent credentials. Logout denied.';
-  }
-
-  String _mapProfileUpdateException(dynamic e) {
-    final msg = e.toString();
-    if (msg.contains('wrong-password') ||
-        msg.contains('invalid-credential') ||
-        msg.contains('INVALID_LOGIN_CREDENTIALS')) {
-      return 'Current password is incorrect.';
-    }
-    if (msg.contains('weak-password')) {
-      return 'New password is too weak. Use at least 6 characters.';
-    }
-    if (msg.contains('requires-recent-login')) {
-      return 'Session expired. Please log out and log in again.';
-    }
-    if (msg.contains('network-request-failed')) {
-      return 'Network error. Check your connection and try again.';
-    }
-    if (msg.contains('email-already-in-use')) {
-      return 'That email address is already in use by another account.';
-    }
-    return 'Update failed. Please try again.';
   }
 
   /// Mapper for email verification errors. Distinct from [_mapException] so

@@ -138,12 +138,6 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                         result.success(null)
                     }
 
-                    "unblockTimerService" -> {
-                        timerService?.unblock()
-                            ?: startService(serviceIntent(ACTION_UNBLOCK))
-                        result.success(null)
-                    }
-
                     "updateTimerConfig" -> {
                         val studentUid    = call.argument<String>("studentUid") ?: ""
                         val apps          = call.argument<List<String>>("monitoredApps") ?: emptyList()
@@ -264,13 +258,6 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                         result.success(null)
                     }
 
-                    "getQuizLockActive" -> {
-                        val active = timerService?.getQuizLockActive()
-                            ?: UsageTimerService.prefs(activity)
-                                .getBoolean(UsageTimerService.KEY_QUIZ_LOCK_ACTIVE, false)
-                        result.success(active)
-                    }
-
                     "setTimerNotificationEnabled" -> {
                         val enabled = call.argument<Boolean>("enabled") ?: true
                         UsageTimerService.prefs(activity)
@@ -321,8 +308,6 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
 
     private val ACTION_START   = UsageTimerService.ACTION_START
     private val ACTION_STOP    = UsageTimerService.ACTION_STOP
-    private val ACTION_UNBLOCK = UsageTimerService.ACTION_UNBLOCK
-
     private fun serviceIntent(action: String) =
         Intent(activity, UsageTimerService::class.java).apply { this.action = action }
 

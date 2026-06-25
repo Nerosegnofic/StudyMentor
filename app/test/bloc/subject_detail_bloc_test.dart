@@ -10,7 +10,6 @@ import 'package:studymentor/src/bloc/subject_detail/subject_detail_state.dart';
 import 'package:studymentor/src/domain/models/skill_progress_model.dart';
 import 'package:studymentor/src/domain/models/subject_summary_model.dart';
 import 'package:studymentor/src/domain/models/quiz_attempt_model.dart';
-import 'package:studymentor/src/domain/models/question_detail_model.dart';
 
 import 'auth_bloc_test.dart' show FakeAuthRepository;
 
@@ -30,20 +29,14 @@ SubjectSummaryModel _fakeSummary(String key) => SubjectSummaryModel(
     );
 
 List<SkillProgressModel> _fakeSkills(String subjectKey) => [
-      SkillProgressModel(
-        studentUid: 'uid-student',
-        subjectKey: subjectKey,
+      const SkillProgressModel(
         skillKey: 'algebra',
         correctAnswers: 8,
-        wrongAnswers: 2,
         totalAttempts: 10,
       ),
-      SkillProgressModel(
-        studentUid: 'uid-student',
-        subjectKey: subjectKey,
+      const SkillProgressModel(
         skillKey: 'geometry',
         correctAnswers: 4,
-        wrongAnswers: 6,
         totalAttempts: 10,
       ),
     ];
@@ -99,20 +92,6 @@ class _FakeSubjectDetailRepo extends FakeAuthRepository {
     return _fakeQuizzes();
   }
 
-  @override
-  Future<QuestionDetailModel> getQuestionDetail(
-    String quizAttemptId,
-    int questionNumber,
-  ) async =>
-      QuestionDetailModel(
-        quizAttemptId: quizAttemptId,
-        questionNumber: questionNumber,
-        questionText: 'What is 2+2?',
-        options: ['4', '3', '2', '5'],
-        selectedAnswer: 'A',
-        correctAnswer: 'A',
-        isCorrect: true,
-      );
 }
 
 // ---------------------------------------------------------------------------
@@ -219,48 +198,6 @@ void main() {
             contains('Failed to load subject details'),
           ),
         ],
-      );
-    });
-
-    // ── FetchQuestionDetailRequested ─────────────────────────────────────────
-
-    group('FetchQuestionDetailRequested', () {
-      blocTest<SubjectDetailBloc, SubjectDetailState>(
-        'appends question detail to loaded state',
-        build: () => SubjectDetailBloc(
-          authRepository: _FakeSubjectDetailRepo(),
-        ),
-        seed: () => SubjectDetailLoaded(
-          studentUid: 'uid-student',
-          summary: _fakeSummary('math'),
-          skills: _fakeSkills('math'),
-          recentQuizzes: _fakeQuizzes(),
-        ),
-        act: (bloc) => bloc.add(
-          const FetchQuestionDetailRequested(
-            quizAttemptId: 'quiz-1',
-            questionNumber: 1,
-          ),
-        ),
-        verify: (bloc) {
-          final state = bloc.state as SubjectDetailLoaded;
-          expect(state.questionDetails.containsKey('quiz-1_1'), isTrue);
-        },
-      );
-
-      blocTest<SubjectDetailBloc, SubjectDetailState>(
-        'does nothing when state is not SubjectDetailLoaded',
-        build: () => SubjectDetailBloc(
-          authRepository: _FakeSubjectDetailRepo(),
-        ),
-        // starts at SubjectDetailInitial
-        act: (bloc) => bloc.add(
-          const FetchQuestionDetailRequested(
-            quizAttemptId: 'quiz-1',
-            questionNumber: 1,
-          ),
-        ),
-        expect: () => <SubjectDetailState>[],
       );
     });
 

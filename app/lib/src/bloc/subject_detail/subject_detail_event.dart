@@ -22,16 +22,6 @@ class LoadSubjectDetailRequested extends SubjectDetailEvent {
   List<Object?> get props => [studentUid, subjectId, subjectKey];
 }
 
-class FetchQuestionDetailRequested extends SubjectDetailEvent {
-  final String quizAttemptId;
-  final int questionNumber;
-
-  const FetchQuestionDetailRequested({required this.quizAttemptId, required this.questionNumber});
-
-  @override
-  List<Object?> get props => [quizAttemptId, questionNumber];
-}
-
 class FetchSessionQuestionsRequested extends SubjectDetailEvent {
   final String quizAttemptId;
 

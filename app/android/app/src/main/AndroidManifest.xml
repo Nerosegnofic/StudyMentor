@@ -12,7 +12,7 @@
     <!-- Required to enumerate installed apps on Android 11+ -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
-    <!-- Required to reschedule WorkManager tasks after device reboot -->
+    <!-- Required by BootReceiver to receive ACTION_BOOT_COMPLETED -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Required to post notifications on Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -121,8 +121,7 @@
             exactly when our prefs are readable, so direct-boot is unnecessary.
 
             directBootAware="false" is the default and is stated explicitly for
-            clarity. If you later migrate prefs to device-protected storage you
-            can flip this to true and add LOCKED_BOOT_COMPLETED to the filter.
+            clarity.
         -->
         <receiver
             android:name=".BootReceiver"
@@ -132,13 +131,6 @@
                 <!-- Fires after the device fully boots and the user unlocks
                      for the first time (credential-encrypted storage is ready). -->
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <!-- Fires on Android 7+ after a "quick boot" / soft reboot
-                     once the user profile is unlocked. Covers factory resets
-                     and OEM fast-boot implementations. -->
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <!-- HTC / some MediaTek OEMs use a different action name for
-                     the same quick-boot event. Belt-and-suspenders coverage. -->
-                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 

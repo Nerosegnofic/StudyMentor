@@ -4,8 +4,6 @@ query GetUserByUid($uid: String!) @auth(level: USER, insecureReason: "Users look
     email
     fullName
     role
-    isActive
-    createdAt
   }
 }
 
@@ -15,7 +13,6 @@ query GetStudentsByParent($parentUid: String!) @auth(level: USER, insecureReason
     user {
       fullName
       email
-      isActive
       isEmailVerified
       createdAt
     }
@@ -67,16 +64,6 @@ mutation DeleteAllInstalledAppsForStudent($studentUid: String!) @auth(level: USE
   installedApp_deleteMany(where: { studentUid: { eq: $studentUid } })
 }
 
-# ── Student Settings ──────────────────────────────────────────────────────────
-
-query GetStudentSettings($studentUid: String!) @auth(level: USER, insecureReason: "Students are authorized to read their own settings.") {
-  studentSettings(key: { studentUid: $studentUid }) {
-    notificationsEnabled
-    soundEffectsEnabled
-    backgroundMusicEnabled
-  }
-}
-
 # ── Avatar Shop ───────────────────────────────────────────────────────────────
 
 query GetStudentOwnedItems($studentUid: String!) @auth(level: USER, insecureReason: "Students read their own inventory.") {
@@ -119,21 +106,6 @@ query GetAppConfigForStudent($studentUid: String!) @auth(level: USER, insecureRe
 }
 
 # ── Notification System ───────────────────────────────────────────────────────
-
-query GetUnreadLocalNotificationEvents(
-  $toParentUid: String!
-) @auth(level: USER, insecureReason: "Parent reads their own unread events.") {
-  localNotificationEvents(where: {
-    toParentUid: { eq: $toParentUid },
-    isRead: { eq: false }
-  }) {
-    id
-    fromStudentUid
-    eventType
-    payload
-    createdAt
-  }
-}
 
 # Used by the 15-min poll to fetch events not yet dispatched as OS notifications.
 query GetUndispatchedLocalNotificationEvents(

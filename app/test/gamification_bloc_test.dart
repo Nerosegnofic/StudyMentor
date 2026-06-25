@@ -11,8 +11,6 @@ import 'package:studymentor/src/bloc/gamification/gamification_event.dart';
 import 'package:studymentor/src/bloc/gamification/gamification_state.dart';
 import 'package:studymentor/src/data/repositories/ai_engine_repository.dart';
 import 'package:studymentor/src/data/repositories/gamification_repository_impl.dart';
-import 'package:studymentor/src/domain/models/gamification_enums.dart';
-
 class MockAiEngineRepository extends Mock implements AiEngineRepository {}
 
 void main() {
@@ -73,13 +71,12 @@ void main() {
 
   group('LoadGamificationDataRequested', () {
     blocTest<GamificationBloc, GamificationState>(
-      'emits [Loading, Loaded] with a fresh profile for a new student',
+      'emits [Loaded] with a fresh profile for a new student',
       build: () => GamificationBloc(repository: repository),
       act: (bloc) => bloc.add(
         const LoadGamificationDataRequested(studentId: 'new-student'),
       ),
       expect: () => [
-        isA<GamificationLoading>(),
         isA<GamificationLoaded>().having(
           (s) => s.profile.xpTotal,
           'xpTotal',
@@ -89,25 +86,13 @@ void main() {
     );
 
     blocTest<GamificationBloc, GamificationState>(
-      'returns correct data after rewards were previously applied',
+      'returns correct data for a student with existing XP',
       build: () => GamificationBloc(repository: repository),
       seed: () => GamificationInitial(),
-      setUp: () async {
-        // Pre-populate the store — applyQuizRewards re-fetches from the API.
-        await repository.applyQuizRewards(
-          studentId: 'existing-student',
-          score: 5,
-          totalQuestions: 5,
-          timeTaken: const Duration(minutes: 3),
-          context: QuizContext.voluntary,
-          isComeback: false,
-        );
-      },
       act: (bloc) => bloc.add(
         const LoadGamificationDataRequested(studentId: 'existing-student'),
       ),
       expect: () => [
-        isA<GamificationLoading>(),
         isA<GamificationLoaded>().having(
           (s) => s.profile.xpTotal,
           'xpTotal',

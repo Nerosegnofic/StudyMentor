@@ -23,16 +23,12 @@ class GetUserByUidUser {
   final String email;
   final String fullName;
   final EnumValue<Role> role;
-  final bool isActive;
-  final Timestamp createdAt;
   GetUserByUidUser.fromJson(dynamic json):
   
   uid = nativeFromJson<String>(json['uid']),
   email = nativeFromJson<String>(json['email']),
   fullName = nativeFromJson<String>(json['fullName']),
-  role = roleDeserializer(json['role']),
-  isActive = nativeFromJson<bool>(json['isActive']),
-  createdAt = Timestamp.fromJson(json['createdAt']);
+  role = roleDeserializer(json['role']);
   @override
   bool operator ==(Object other) {
     if(identical(this, other)) {
@@ -46,13 +42,11 @@ class GetUserByUidUser {
     return uid == otherTyped.uid && 
     email == otherTyped.email && 
     fullName == otherTyped.fullName && 
-    role == otherTyped.role && 
-    isActive == otherTyped.isActive && 
-    createdAt == otherTyped.createdAt;
+    role == otherTyped.role;
     
   }
   @override
-  int get hashCode => Object.hashAll([uid.hashCode, email.hashCode, fullName.hashCode, role.hashCode, isActive.hashCode, createdAt.hashCode]);
+  int get hashCode => Object.hashAll([uid.hashCode, email.hashCode, fullName.hashCode, role.hashCode]);
   
 
   Map<String, dynamic> toJson() {
@@ -63,8 +57,6 @@ class GetUserByUidUser {
     json['role'] = 
     roleSerializer(role)
     ;
-    json['isActive'] = nativeToJson<bool>(isActive);
-    json['createdAt'] = createdAt.toJson();
     return json;
   }
 
@@ -73,8 +65,6 @@ class GetUserByUidUser {
     required this.email,
     required this.fullName,
     required this.role,
-    required this.isActive,
-    required this.createdAt,
   });
 }
 

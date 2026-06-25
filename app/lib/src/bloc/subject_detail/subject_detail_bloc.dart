@@ -12,7 +12,6 @@ class SubjectDetailBloc extends Bloc<SubjectDetailEvent, SubjectDetailState> {
 
   SubjectDetailBloc({required this.authRepository}) : super(SubjectDetailInitial()) {
     on<LoadSubjectDetailRequested>(_onLoadSubjectDetailRequested);
-    on<FetchQuestionDetailRequested>(_onFetchQuestionDetailRequested);
     on<FetchSessionQuestionsRequested>(_onFetchSessionQuestionsRequested);
   }
 
@@ -37,25 +36,6 @@ class SubjectDetailBloc extends Bloc<SubjectDetailEvent, SubjectDetailState> {
       ));
     } catch (e) {
       emit(SubjectDetailError('Failed to load subject details: $e'));
-    }
-  }
-
-  Future<void> _onFetchQuestionDetailRequested(
-    FetchQuestionDetailRequested event,
-    Emitter<SubjectDetailState> emit,
-  ) async {
-    final currentState = state;
-    if (currentState is SubjectDetailLoaded) {
-      try {
-        final detail = await authRepository.getQuestionDetail(
-            event.quizAttemptId, event.questionNumber);
-        final updatedDetails =
-            Map<String, QuestionDetailModel>.from(currentState.questionDetails);
-        updatedDetails['${event.quizAttemptId}_${event.questionNumber}'] = detail;
-        emit(currentState.copyWith(questionDetails: updatedDetails));
-      } catch (e) {
-        // silently ignore — bottom sheet shows loading spinner
-      }
     }
   }
 

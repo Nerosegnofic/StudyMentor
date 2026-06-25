@@ -2,8 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
 
 // ── Channel IDs ───────────────────────────────────────────────────────────────
 
@@ -81,20 +79,6 @@ int stableIntFromUuid(String uuid) => uuid.hashCode & 0x7FFFFFFF;
 ///   body: 'One quiz keeps your 5-day streak alive.',
 /// );
 ///
-/// // Schedule a daily recurring notification:
-/// await LocalNotificationService.instance.schedule(
-///   id: kNotifIdStreakReminder,
-///   channelId: kChannelChildStreak,
-///   title: 'Don\'t break your streak! 🔥',
-///   body: 'One quiz keeps your 5-day streak alive.',
-///   scheduledDate: tz.TZDateTime.now(tz.local).add(const Duration(hours: 1)),
-/// );
-///
-/// // Cancel one:
-/// await LocalNotificationService.instance.cancel(kNotifIdStreakReminder);
-///
-/// // Cancel all (call on logout):
-/// await LocalNotificationService.instance.cancelAll();
 /// ```
 class LocalNotificationService {
   LocalNotificationService._();
@@ -117,9 +101,6 @@ class LocalNotificationService {
   /// Must be called after [Firebase.initializeApp()] in main().
   Future<void> init() async {
     if (_initialised) return;
-
-    // Timezone data — required for [schedule].
-    tz.initializeTimeZones();
 
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -160,52 +141,6 @@ class LocalNotificationService {
       notificationDetails: _details(channelId),
       payload: payload,
     );
-  }
-
-  /// Schedules a daily recurring notification on [channelId].
-  ///
-  /// [matchDateTimeComponents: DateTimeComponents.time] repeats the
-  /// notification every day at the same hour and minute — correct for streak
-  /// reminders and garden nudges.
-  ///
-  /// If a notification with the same [id] is already pending it is replaced,
-  /// so calling this again with an updated time effectively reschedules it.
-  ///
-  /// [scheduledDate] must be a [tz.TZDateTime] — use [tz.TZDateTime.now] or
-  /// convert with [tz.TZDateTime.from].
-  Future<void> schedule({
-    required int id,
-    required String channelId,
-    required String title,
-    required String body,
-    required tz.TZDateTime scheduledDate,
-    String? payload,
-  }) async {
-    _assertInitialised();
-    await _plugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduledDate,
-      notificationDetails: _details(channelId),
-      payload: payload,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
-  }
-
-  /// Cancels the pending or displayed notification with [id].
-  Future<void> cancel(int id) async {
-    _assertInitialised();
-    await _plugin.cancel(id: id);
-  }
-
-  /// Cancels every pending and displayed notification.
-  ///
-  /// Call this on logout so stale notifications are not shown after sign-out.
-  Future<void> cancelAll() async {
-    _assertInitialised();
-    await _plugin.cancelAll();
   }
 
   // ── Channel creation ────────────────────────────────────────────────────────

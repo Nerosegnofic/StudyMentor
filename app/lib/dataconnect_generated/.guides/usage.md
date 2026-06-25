@@ -4,13 +4,13 @@
 ExampleConnector.instance.InsertUser(insertUserVariables).execute();
 ExampleConnector.instance.UpsertCurrentUser(upsertCurrentUserVariables).execute();
 ExampleConnector.instance.DeleteUser().execute();
-ExampleConnector.instance.InsertParent(insertParentVariables).execute();
+ExampleConnector.instance.InsertParent().execute();
 ExampleConnector.instance.InsertStudent(insertStudentVariables).execute();
 ExampleConnector.instance.SetUserInactive().execute();
 ExampleConnector.instance.MarkEmailVerified().execute();
 ExampleConnector.instance.InsertAppRule(insertAppRuleVariables).execute();
 ExampleConnector.instance.DeleteAllAppRulesForStudent(deleteAllAppRulesForStudentVariables).execute();
-ExampleConnector.instance.UpsertStudentSettings(upsertStudentSettingsVariables).execute();
+ExampleConnector.instance.InsertStudentOwnedItem(insertStudentOwnedItemVariables).execute();
 
 ```
 

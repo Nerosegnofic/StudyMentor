@@ -16,8 +16,6 @@ type User @table(name: "users", key: ["uid"]) {
 type Parent @table(name: "parents", key: ["uid"]) {
   uid: String! @default(expr: "auth.uid")
   user: User!
-  pinCode: String @col(dataType: "varchar(10)")
-  phoneNumber: String @col(dataType: "varchar(20)")
 }
 
 type Student @table(name: "students", key: ["uid"]) {

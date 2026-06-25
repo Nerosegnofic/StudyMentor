@@ -33,7 +33,7 @@ void main() {
 
   group('LoadNotificationsRequested', () {
     blocTest<NotificationsBloc, NotificationsState>(
-      'emits [Loading, Loaded] on success',
+      'emits [Loaded] on success',
       build: () {
         when(() => mockRepo.getNotificationsForParent('parent1'))
             .thenAnswer((_) async => [_fakeNotif()]);
@@ -41,7 +41,6 @@ void main() {
       },
       act: (bloc) => bloc.add(const LoadNotificationsRequested('parent1')),
       expect: () => [
-        NotificationsLoading(),
         isA<NotificationsLoaded>().having(
           (s) => s.notifications.length,
           'notifications count',
@@ -51,21 +50,14 @@ void main() {
     );
 
     blocTest<NotificationsBloc, NotificationsState>(
-      'emits [Loading, Error] when repository throws',
+      'emits nothing when repository throws (silent failure)',
       build: () {
         when(() => mockRepo.getNotificationsForParent(any()))
             .thenThrow(Exception('network error'));
         return NotificationsBloc(repository: mockRepo);
       },
       act: (bloc) => bloc.add(const LoadNotificationsRequested('parent1')),
-      expect: () => [
-        NotificationsLoading(),
-        isA<NotificationsError>().having(
-          (s) => s.message,
-          'message',
-          contains('Failed to load notifications'),
-        ),
-      ],
+      expect: () => <NotificationsState>[],
     );
 
     blocTest<NotificationsBloc, NotificationsState>(
@@ -76,16 +68,13 @@ void main() {
         return NotificationsBloc(repository: mockRepo);
       },
       act: (bloc) => bloc.add(const LoadNotificationsRequested('parent1')),
-      expect: () => [
-        NotificationsLoading(),
-        NotificationsLoaded(const []),
-      ],
+      expect: () => [NotificationsLoaded(const [])],
     );
   });
 
   group('LoadStudentNotificationsRequested', () {
     blocTest<NotificationsBloc, NotificationsState>(
-      'emits [Loading, Loaded] on success',
+      'emits [Loaded] on success',
       build: () {
         when(() => mockRepo.getNotificationsForStudent('student1'))
             .thenAnswer((_) async => [_fakeNotif()]);
@@ -93,14 +82,11 @@ void main() {
       },
       act: (bloc) =>
           bloc.add(const LoadStudentNotificationsRequested('student1')),
-      expect: () => [
-        NotificationsLoading(),
-        isA<NotificationsLoaded>(),
-      ],
+      expect: () => [isA<NotificationsLoaded>()],
     );
 
     blocTest<NotificationsBloc, NotificationsState>(
-      'emits [Loading, Error] when repository throws',
+      'emits nothing when repository throws (silent failure)',
       build: () {
         when(() => mockRepo.getNotificationsForStudent(any()))
             .thenThrow(Exception('timeout'));
@@ -108,10 +94,7 @@ void main() {
       },
       act: (bloc) =>
           bloc.add(const LoadStudentNotificationsRequested('student1')),
-      expect: () => [
-        NotificationsLoading(),
-        isA<NotificationsError>(),
-      ],
+      expect: () => <NotificationsState>[],
     );
   });
 
@@ -136,7 +119,7 @@ void main() {
     );
 
     blocTest<NotificationsBloc, NotificationsState>(
-      'emits Error when markAllNotificationsRead throws',
+      'reverts optimistic update when markAllNotificationsRead throws',
       build: () {
         when(() => mockRepo.markAllNotificationsRead(any()))
             .thenThrow(Exception('server error'));
@@ -146,10 +129,17 @@ void main() {
       act: (bloc) =>
           bloc.add(const MarkAllNotificationsReadRequested('parent1')),
       expect: () => [
-        isA<NotificationsError>().having(
-          (s) => s.message,
-          'message',
-          contains('Failed to mark all as read'),
+        // optimistic update (all read)
+        isA<NotificationsLoaded>().having(
+          (s) => s.notifications.every((n) => n.isRead),
+          'optimistically all read',
+          isTrue,
+        ),
+        // revert (back to unread)
+        isA<NotificationsLoaded>().having(
+          (s) => s.notifications.every((n) => !n.isRead),
+          'reverted to unread',
+          isTrue,
         ),
       ],
     );
@@ -157,7 +147,6 @@ void main() {
     blocTest<NotificationsBloc, NotificationsState>(
       'does nothing when state is not NotificationsLoaded',
       build: () => NotificationsBloc(repository: mockRepo),
-      // state is NotificationsInitial (the default)
       act: (bloc) =>
           bloc.add(const MarkAllNotificationsReadRequested('parent1')),
       expect: () => <NotificationsState>[],

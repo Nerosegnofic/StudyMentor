@@ -1,7 +1,6 @@
 // lib/src/domain/models/question_detail_model.dart
 
 class QuestionDetailModel {
-  final String quizAttemptId;
   final int questionNumber;
   final bool isCorrect;
   final String questionText;
@@ -10,7 +9,6 @@ class QuestionDetailModel {
   final String correctAnswer;
 
   const QuestionDetailModel({
-    required this.quizAttemptId,
     required this.questionNumber,
     required this.isCorrect,
     required this.questionText,
@@ -21,7 +19,6 @@ class QuestionDetailModel {
 
   factory QuestionDetailModel.fromJson(Map<String, dynamic> json) {
     return QuestionDetailModel(
-      quizAttemptId: json['quiz_attempt_id'] as String,
       questionNumber: json['question_number'] as int,
       isCorrect: json['is_correct'] as bool? ?? false,
       questionText: json['question_text'] as String,
@@ -33,7 +30,6 @@ class QuestionDetailModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'quiz_attempt_id': quizAttemptId,
       'question_number': questionNumber,
       'is_correct': isCorrect,
       'question_text': questionText,

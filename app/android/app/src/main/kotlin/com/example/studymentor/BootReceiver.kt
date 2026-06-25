@@ -6,9 +6,8 @@ import android.content.Intent
 import android.os.Build
 
 /**
- * Receives [Intent.ACTION_BOOT_COMPLETED] (and the faster
- * [Intent.ACTION_LOCKED_BOOT_COMPLETED] on Android 7+) after the device
- * starts up and restarts all StudyMentor background services.
+ * Receives [Intent.ACTION_BOOT_COMPLETED] after the device starts up
+ * and restarts all StudyMentor background services.
  *
  * Why this matters
  * ────────────────
@@ -38,11 +37,7 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
 
-        // Accept both the post-decryption boot (normal) and the
-        // direct-boot-aware early boot event (Android 7+).
-        if (action != Intent.ACTION_BOOT_COMPLETED &&
-            action != "android.intent.action.LOCKED_BOOT_COMPLETED"
-        ) return
+        if (action != Intent.ACTION_BOOT_COMPLETED) return
 
         // Only act when a student was logged in before the reboot.
         // This is the same SharedPreferences key that DeviceAdminPlugin

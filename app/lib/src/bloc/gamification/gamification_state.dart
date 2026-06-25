@@ -10,8 +10,6 @@ abstract class GamificationState extends Equatable {
 
 class GamificationInitial extends GamificationState {}
 
-class GamificationLoading extends GamificationState {}
-
 class GamificationLoaded extends GamificationState {
   final StudentGamificationModel profile;
 
@@ -45,11 +43,3 @@ class GamificationRewardProcessed extends GamificationState {
   List<Object?> get props => [profile, xpEarned, coinsEarned, leveledUpTo, streakIncremented, milestoneHit];
 }
 
-class GamificationError extends GamificationState {
-  final String message;
-
-  const GamificationError(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}
