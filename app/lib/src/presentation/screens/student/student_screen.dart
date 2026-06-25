@@ -260,6 +260,16 @@ class _StudentScreenState extends State<StudentScreen>
     if (!mounted) return;
     setState(() => _permissionsGranted = true);
     _onShellReady();
+
+    // The permission gate just finished. The initial post-frame start() in
+    // _initMascotService ran while SYSTEM_ALERT_WINDOW / accessibility /
+    // usage-stats were still missing, so the foreground-service start was refused
+    // and the accessibility service wasn't enabled — enforcement never engaged.
+    // Now that every permission is granted, engage it (mirrors the resume path)
+    // so apps are blocked immediately, without needing the user to reopen the app.
+    unawaited(MascotOverlayService.instance.ensureStarted());
+    unawaited(MascotOverlayService.instance.reassertBlockingState());
+    unawaited(_refreshMonitoredConfig());
   }
 
   void _onGateSignOut() {
