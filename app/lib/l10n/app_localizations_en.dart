@@ -1364,6 +1364,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your focus time is up. Let\'s do a quick quiz to keep your brain sharp!';
 
   @override
+  String get solveToUnlockButton => 'Solve to unlock';
+
+  @override
   String get startQuizButton => 'Start Quiz';
 
   @override
@@ -2207,12 +2210,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String earnedFreeTimeLockedSubtitle(String time) {
-    return 'You\'ve banked $time — it unlocks after cooldown.';
+    return 'You\'ve earned $time — it unlocks after cooldown.';
   }
 
   @override
   String get finishQuizUnlockApps =>
-      'Complete a quiz to bank free time for after cooldown.';
+      'Complete a quiz to earn free time for after cooldown.';
 
   @override
   String earnedFreeTimeUnlockedTitle(String time) {
@@ -2228,6 +2231,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enjoyFreeTimeSubtitle => 'Complete a quiz to earn more time.';
+
+  @override
+  String bankedTimeSubtitle(String time) {
+    return 'You\'ve banked $time of free time.';
+  }
+
+  @override
+  String earnedTodayTitle(String time) {
+    return 'You\'ve earned $time today';
+  }
+
+  @override
+  String get appsRestingUnlockSubtitle =>
+      'Apps are resting — they\'ll unlock when the timer ends.';
+
+  @override
+  String get appsRestingFinishQuizSubtitle =>
+      'Apps are resting — finish a quiz to unlock when the timer ends.';
 
   @override
   String get timeToRestTitle => 'Time to rest';

@@ -17,7 +17,7 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
-import '../../../services/overlay/mascot_overlay_service.dart';
+import '../../../features/mascot/mascot_loading_view.dart';
 import '../../../../l10n/app_localizations.dart';
 
 const _kGreen = Color(0xFF2E7D32);
@@ -164,14 +164,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           future: _skillsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: const MascotWithBubble(
-                    state: MascotState.thinking,
-                    showLoadingSpinner: true,
-                  ),
-                ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: MascotLoadingView(message: loc.commonLoading),
               );
             }
             if (snapshot.hasError) {
@@ -323,7 +318,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     : () async {
                         final gamificationBloc = context.read<GamificationBloc>();
                         final gardenBloc = context.read<GardenBloc>();
-                        final completed = await Navigator.of(context).push<bool?>(
+                        // Voluntary practice quizzes never grant reward time —
+                        // only forced quizzes unlock app time. XP/coins/mastery
+                        // are still awarded server-side on submission, so the
+                        // quiz result is not needed here.
+                        await Navigator.of(context).push<bool?>(
                           MaterialPageRoute<bool?>(
                             fullscreenDialog: true,
 
@@ -348,12 +347,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                             ),
                           ),
                         );
-                        if (completed == true) {
-                          final reward = MascotOverlayService.instance.config.rewardPerQuizSeconds;
-                          if (reward > 0) {
-                            MascotOverlayService.instance.addRewardTime(reward);
-                          }
-                        }
+                        // Refresh the skills list so updated mastery shows.
                         if (mounted) {
                           setState(() {
                             _skillsFuture = _repo.getSubjectSkills(widget.subjectId);

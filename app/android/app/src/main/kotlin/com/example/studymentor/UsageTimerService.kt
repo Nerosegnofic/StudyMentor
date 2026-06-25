@@ -101,6 +101,13 @@ class UsageTimerService : Service() {
         const val KEY_QUIZ_LOCK_ACTIVE   = "quiz_lock_active"
         const val EXTRA_QUIZ_RESTORE     = "EXTRA_QUIZ_RESTORE"
 
+        // Signals "the student is blocked and reached the app — show the unmet
+        // gate" (the quiz if it is unsolved, otherwise the cooldown status). Unlike
+        // EXTRA_QUIZ_ON_LAUNCH (which maps to onLimitReached and is a one-shot
+        // cooldown-entry transition), this is side-effect-free: it never mutates
+        // timer/reward/cooldown state, so it is safe to fire while already blocked.
+        const val EXTRA_SHOW_QUIZ        = "EXTRA_SHOW_QUIZ"
+
         // ── Per-student key suffixes ───────────────────────────────────────────
         private const val SUFFIX_TOTAL_USAGE        = "total_usage_seconds"
         private const val SUFFIX_IS_BLOCKED         = "is_blocked"
@@ -219,6 +226,28 @@ class UsageTimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // ── Enter the foreground FIRST, before any other work ────────────────────
+        // Every start path reaches us via startForegroundService() (TimerServiceBridge,
+        // BootReceiver, the accessibility watchdog). Android then requires a
+        // startForeground() call within a few seconds, or it kills the WHOLE PROCESS
+        // with ForegroundServiceDidNotStartInTimeException — this was the
+        // "app closes after the student logs in" crash: during login the main thread
+        // is saturated (asset/image decoding) and the old code did SharedPreferences
+        // I/O + extra parsing before startForeground(), blowing the deadline.
+        //
+        // Calling it as the very first statement (for ACTION_STOP/UNBLOCK too, since
+        // those also arrive via startForegroundService) guarantees we satisfy the
+        // contract immediately. The notification is refreshed below once the real
+        // per-student state is loaded.
+        val enteredForeground = startForegroundWithNotification()
+        if (!enteredForeground) {
+            // OS refused the foreground promotion (e.g. background-start restriction
+            // on Android 12+). Stop cleanly; a later valid foreground start
+            // (app resume → ensureStarted, accessibility reconnect) brings it back.
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         when (intent?.action) {
             ACTION_START -> {
                 val incomingUid = intent.getStringExtra(EXTRA_STUDENT_UID).orEmpty()
@@ -257,7 +286,10 @@ class UsageTimerService : Service() {
                     }
                 }
 
-                startForegroundWithNotification()
+                // Now that the real per-student state is loaded, refresh the
+                // (initially generic) foreground notification.
+                updateFgNotification()
+
                 if (!isRunning) {
                     isRunning = true
                     handler.post(tickRunnable)
@@ -269,7 +301,6 @@ class UsageTimerService : Service() {
             ACTION_UNBLOCK -> unblock()
 
             null -> {
-                startForegroundWithNotification()
                 if (studentLoggedIn && !isRunning) {
                     isRunning = true
                     handler.post(tickRunnable)
@@ -304,6 +335,21 @@ class UsageTimerService : Service() {
         }
         val isForegroundMonitored = foreground != null && monitoredApps.contains(foreground) && !isPaused
 
+        // Effective lock state: the native cooldown countdown (isBlocked) OR the
+        // Dart-owned zero-reward lock, which is mirrored onto the accessibility
+        // static by setBlocked() / restoreStudentState(). Enforcement must cover
+        // BOTH. Previously the tick only bounced a monitored app while isBlocked
+        // (cooldown) was true, so in the far more common zero-reward state the
+        // tick safety net was inert: the only enforcement was the accessibility
+        // TYPE_WINDOW_STATE_CHANGED listener, which a monitored app resumed from
+        // recents does not always re-fire on many OEMs — leaving it usable until
+        // the next in-app window change. We read the in-process static rather than
+        // AppPrefs.KEY_IS_BLOCKED because the static has no transient-false window
+        // during a cooldown→zero-reward flip (native unblock() writes the pref
+        // false a tick before Dart re-asserts setBlocked(true)).
+        val effectivelyBlocked = isBlocked || StudyMentorAccessibilityService.isBlocked
+
+        // Cooldown countdown is driven solely by the native cooldown flag.
         if (isBlocked) {
             if (cooldownRemSecs > 0) {
                 cooldownRemSecs--
@@ -314,13 +360,22 @@ class UsageTimerService : Service() {
                 unblock()
                 return
             }
+        }
 
+        if (effectivelyBlocked) {
+            // Reliable safety net: force a monitored foreground app off-screen.
+            // The grace window suppresses repeat HOME presses driven by stale
+            // UsageStats foreground data right after we move the foreground —
+            // which would otherwise close StudyMentor's own quiz. Re-arm the
+            // grace on every enforced press so the next ticks don't self-close
+            // the app we just brought forward.
             val inGracePeriod = System.currentTimeMillis() - blockTimestampMs < BLOCK_GRACE_MS
             if (isForegroundMonitored && !inGracePeriod) {
                 StudyMentorAccessibilityService.instance?.performGlobalAction(
                     android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME,
                 )
                 OverlayPlugin.instance?.notifyMonitoredAppIntercepted(foreground!!)
+                blockTimestampMs = System.currentTimeMillis()
             }
 
         } else {
@@ -337,7 +392,7 @@ class UsageTimerService : Service() {
             }
         }
 
-        monitoredInForeground = !isBlocked && isForegroundMonitored
+        monitoredInForeground = !effectivelyBlocked && isForegroundMonitored
 
         // Quiz lock enforcement backup: the Dart-side AppLifecycleState.paused
         // handler is the primary mechanism (immediate, no OEM delay). This tick
@@ -653,14 +708,89 @@ class UsageTimerService : Service() {
             .setContentIntent(pi).build()
     }
 
-    private fun startForegroundWithNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                FG_NOTIF_ID, buildFgNotification(),
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-            )
+    /**
+     * Ensures the CHILD_TIMER notification channel exists before we post the
+     * foreground notification.
+     *
+     * Normally LocalNotificationService (Dart) creates it during app startup,
+     * but this service can be launched in a process where Flutter main() has
+     * NEVER run — the BootReceiver and the accessibility-service watchdog both
+     * start it without an Activity/engine. In that case the channel is missing
+     * and startForeground() throws "bad notification for startForeground:
+     * NotificationChannel not found", which crashes the whole app.
+     *
+     * Creating it here is idempotent and conflict-free: we only create it when it
+     * does not already exist, so we never override the settings LocalNotificationService
+     * applied. Importance HIGH matches the Dart-side definition (kChannelChildTimer).
+     */
+    private fun ensureTimerChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val mgr = notificationManager ?: return
+        if (mgr.getNotificationChannel(CHILD_TIMER_CHANNEL_ID) != null) return
+        mgr.createNotificationChannel(
+            NotificationChannel(
+                CHILD_TIMER_CHANNEL_ID,
+                "App Timer",
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
+        )
+    }
+
+    /**
+     * Enters the foreground. Returns true on success, false if the OS refused the
+     * foreground-service start. **Never throws** — a failed start must not crash
+     * the app. This can happen when the service is started from the background on
+     * Android 12+ (ForegroundServiceStartNotAllowedException) or under OEM FGS
+     * restrictions; callers should bail out and let a later valid foreground start
+     * (app resume / accessibility reconnect / START_STICKY) bring it back.
+     */
+    private fun startForegroundWithNotification(): Boolean {
+        ensureTimerChannel()
+        return try {
+            when {
+                // Android 14+ (API 34): use specialUse — it is exempt from the
+                // dataSync ~6 h/day cumulative runtime cap that would otherwise
+                // stop this always-on monitor.
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
+                    startForeground(
+                        FG_NOTIF_ID, buildFgNotification(),
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                    )
+                }
+                // Android 10–13 (API 29–33): dataSync (no runtime cap on these versions).
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                    startForeground(
+                        FG_NOTIF_ID, buildFgNotification(),
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                    )
+                }
+                else -> startForeground(FG_NOTIF_ID, buildFgNotification())
+            }
+            true
+        } catch (e: Exception) {
+            android.util.Log.w("UsageTimerService", "startForeground failed: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Belt-and-suspenders against a system-imposed foreground-service timeout.
+     *
+     * The specialUse type used on Android 14+ is not time-restricted, so this is
+     * not expected to fire — but if a future Android version (or an OEM) ever caps
+     * it, re-assert the foreground state and keep ticking so the monitor revives
+     * itself instead of being silently stopped.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    override fun onTimeout(startId: Int) {
+        super.onTimeout(startId)
+        if (studentLoggedIn && startForegroundWithNotification()) {
+            if (!isRunning) {
+                isRunning = true
+                handler.post(tickRunnable)
+            }
         } else {
-            startForeground(FG_NOTIF_ID, buildFgNotification())
+            stopSelf()
         }
     }
 

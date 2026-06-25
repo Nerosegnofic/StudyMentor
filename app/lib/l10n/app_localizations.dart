@@ -2383,6 +2383,12 @@ abstract class AppLocalizations {
   /// **'Your focus time is up. Let\'s do a quick quiz to keep your brain sharp!'**
   String get quizPromptMessage;
 
+  /// No description provided for @solveToUnlockButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Solve to unlock'**
+  String get solveToUnlockButton;
+
   /// No description provided for @startQuizButton.
   ///
   /// In en, this message translates to:
@@ -3778,13 +3784,13 @@ abstract class AppLocalizations {
   /// No description provided for @earnedFreeTimeLockedSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve banked {time} — it unlocks after cooldown.'**
+  /// **'You\'ve earned {time} — it unlocks after cooldown.'**
   String earnedFreeTimeLockedSubtitle(String time);
 
   /// No description provided for @finishQuizUnlockApps.
   ///
   /// In en, this message translates to:
-  /// **'Complete a quiz to bank free time for after cooldown.'**
+  /// **'Complete a quiz to earn free time for after cooldown.'**
   String get finishQuizUnlockApps;
 
   /// No description provided for @earnedFreeTimeUnlockedTitle.
@@ -3810,6 +3816,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Complete a quiz to earn more time.'**
   String get enjoyFreeTimeSubtitle;
+
+  /// No description provided for @bankedTimeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve banked {time} of free time.'**
+  String bankedTimeSubtitle(String time);
+
+  /// No description provided for @earnedTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve earned {time} today'**
+  String earnedTodayTitle(String time);
+
+  /// No description provided for @appsRestingUnlockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps are resting — they\'ll unlock when the timer ends.'**
+  String get appsRestingUnlockSubtitle;
+
+  /// No description provided for @appsRestingFinishQuizSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps are resting — finish a quiz to unlock when the timer ends.'**
+  String get appsRestingFinishQuizSubtitle;
 
   /// No description provided for @timeToRestTitle.
   ///

@@ -32,7 +32,16 @@ class StudentHome extends StatefulWidget {
   final String fullName;
   final String uid;
 
-  const StudentHome({super.key, required this.fullName, required this.uid});
+  /// Launches the focused (reward-earning) quiz. Wired by [StudentScreen] to its
+  /// existing forced-quiz launcher so behavior matches the overlay-triggered quiz.
+  final VoidCallback? onStartFocusedQuiz;
+
+  const StudentHome({
+    super.key,
+    required this.fullName,
+    required this.uid,
+    this.onStartFocusedQuiz,
+  });
 
   @override
   State<StudentHome> createState() => StudentHomeState();
@@ -232,6 +241,12 @@ class StudentHomeState extends State<StudentHome> {
                 _buildGardenArea(),
                 const SizedBox(height: 16),
 
+                // 2b ── Focused-quiz CTA (only when the screen-time system is on)
+                if (!_rulesLoading && activeRules.isNotEmpty) ...[
+                  _buildStartQuizButton(),
+                  const SizedBox(height: 16),
+                ],
+
                 // 3 ── Rank progress ───────────────────────────────────────────
                 RankProgressCard(xpTotal: _xp, currentLevel: _level),
                 const SizedBox(height: 16),
@@ -241,6 +256,8 @@ class StudentHomeState extends State<StudentHome> {
                   ScreenTimeRing(config: _config),
                   const SizedBox(height: 16),
                   FreeTimeBanner(
+                    dailyEarnedSeconds:
+                        MascotOverlayService.instance.dailyRewardSeconds,
                     remainingSeconds:
                         MascotOverlayService.instance.remainingRewardSeconds,
                     perQuizRewardSeconds: _config.rewardPerQuizSeconds,
@@ -248,11 +265,6 @@ class StudentHomeState extends State<StudentHome> {
                     isLocked: isResting,
                     cooldownConfigured: _config.cooldownSeconds > 0,
                   ),
-                  if (_config.cooldownSeconds > 0 &&
-                      MascotOverlayService.instance.isInCooldown) ...[
-                    const SizedBox(height: 16),
-                    _buildCooldownCard(),
-                  ],
                   const SizedBox(height: 16),
                 ],
 
@@ -524,70 +536,6 @@ class StudentHomeState extends State<StudentHome> {
     return ((_avgGardenMastery() ?? 0.0) / 100).clamp(0.0, 1.0);
   }
 
-  Widget _buildCooldownCard() {
-    final loc = AppLocalizations.of(context);
-    final remaining = MascotOverlayService.instance.remainingSeconds;
-    final mins = remaining ~/ 60;
-    final secs = remaining % 60;
-    final countdown =
-        '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFE082)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFC107).withValues(alpha: 0.20),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.bedtime_rounded,
-              color: Color(0xFFF57F17),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  loc.timeToRestTitle,
-                  style: GoogleFonts.cairo(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF8D6E00),
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  countdown,
-                  style: GoogleFonts.cairo(
-                    fontSize: 12,
-                    color: const Color(0xFF8D6E00).withValues(alpha: 0.75),
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLoadingCard() {
     return Container(
       width: double.infinity,
@@ -604,6 +552,34 @@ class StudentHomeState extends State<StudentHome> {
         ],
       ),
       child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    );
+  }
+
+  /// Full-width CTA that launches the focused (reward-earning) quiz. Label adapts
+  /// to the screen-time state: "Solve to unlock" whenever apps are blocked —
+  /// out of reward time OR in cooldown (both block app access) — otherwise
+  /// "Start a quiz" (the student proactively earns/banks more time).
+  Widget _buildStartQuizButton() {
+    final loc = AppLocalizations.of(context);
+    final svc = MascotOverlayService.instance;
+    final blocked = svc.isBlocked; // includes cooldown — apps are blocked either way
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => widget.onStartFocusedQuiz?.call(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF4CAF50), // Primary Green
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+        ),
+        icon: const Icon(Icons.quiz_rounded, size: 22),
+        label: Text(
+          blocked ? loc.solveToUnlockButton : loc.startQuizButton,
+          style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+      ),
     );
   }
 

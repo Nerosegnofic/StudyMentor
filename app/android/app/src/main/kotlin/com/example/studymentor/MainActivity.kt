@@ -25,6 +25,11 @@ class MainActivity : FlutterActivity() {
     // by task removal or device reboot.
     private var pendingQuizRestore = false
 
+    // True when the app was brought forward because the student is blocked and
+    // tried to open a locked app — the Dart side decides whether to show the quiz
+    // or the cooldown status. Side-effect-free (does not touch cooldown state).
+    private var pendingShowQuiz = false
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -67,6 +72,10 @@ class MainActivity : FlutterActivity() {
             pendingQuizRestore = true
             intent.removeExtra(UsageTimerService.EXTRA_QUIZ_RESTORE)
         }
+        if (intent?.getBooleanExtra(UsageTimerService.EXTRA_SHOW_QUIZ, false) == true) {
+            pendingShowQuiz = true
+            intent.removeExtra(UsageTimerService.EXTRA_SHOW_QUIZ)
+        }
     }
 
     /**
@@ -89,6 +98,10 @@ class MainActivity : FlutterActivity() {
             pendingQuizRestore = false
             dispatchQuizRestore()
         }
+        if (pendingShowQuiz) {
+            pendingShowQuiz = false
+            dispatchShowQuiz()
+        }
     }
 
     /**
@@ -110,6 +123,10 @@ class MainActivity : FlutterActivity() {
         if (intent.getBooleanExtra(UsageTimerService.EXTRA_QUIZ_RESTORE, false)) {
             dispatchQuizRestore()
             intent.removeExtra(UsageTimerService.EXTRA_QUIZ_RESTORE)
+        }
+        if (intent.getBooleanExtra(UsageTimerService.EXTRA_SHOW_QUIZ, false)) {
+            dispatchShowQuiz()
+            intent.removeExtra(UsageTimerService.EXTRA_SHOW_QUIZ)
         }
     }
 
@@ -148,6 +165,10 @@ class MainActivity : FlutterActivity() {
 
     private fun dispatchQuizRestore() {
         timerChannel?.invokeMethod("onQuizRestore", null)
+    }
+
+    private fun dispatchShowQuiz() {
+        timerChannel?.invokeMethod("onShowQuiz", null)
     }
 
     override fun onDestroy() {

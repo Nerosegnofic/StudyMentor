@@ -40,6 +40,28 @@ class ScreenTimeRing extends StatelessWidget {
     // Use the service getter which correctly ignores stale usage during cooldown.
     final int remaining = svc.remainingRewardSeconds.clamp(0, earned == 0 ? 0 : earned);
 
+    // ── Cooldown mode (highest priority): apps resting, show countdown ──────────
+    if (svc.isInCooldown && cooldownTotal > 0) {
+      final remainingCd = svc.remainingSeconds.clamp(0, 1 << 31);
+      final fraction =
+          ((cooldownTotal - remainingCd) / cooldownTotal).clamp(0.0, 1.0);
+      return _shell(
+        child: Column(
+          children: [
+            _title(loc.timeToRestTitle),
+            const SizedBox(height: 16),
+            _ring(
+              fraction: fraction,
+              color: _amber,
+              center: _restingCenter(loc, remainingCd),
+            ),
+            const SizedBox(height: 16),
+            _footer(loc, perQuizSecs, cooldownTotal),
+          ],
+        ),
+      );
+    }
+
     // ── No earned time (initial, post-cooldown with no quiz, or no quizzes yet) ─
     if (earned <= 0) {
       return _shell(
@@ -137,6 +159,34 @@ class ScreenTimeRing extends StatelessWidget {
     );
   }
 
+  Widget _restingCenter(AppLocalizations loc, int remainingSeconds) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.bedtime_rounded, color: _amber, size: 24),
+        const SizedBox(height: 4),
+        Text(
+          _mmss(remainingSeconds),
+          style: GoogleFonts.cairo(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: _amber,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          loc.restingLabel,
+          style: GoogleFonts.cairo(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade500,
+          ),
+        ),
+      ],
+    );
+  }
+
   // ── Layout helpers ─────────────────────────────────────────────────────────
 
   Widget _title(String text) => Align(
@@ -204,6 +254,12 @@ class ScreenTimeRing extends StatelessWidget {
     if (hours == 0) return '$minutes$m';
     if (minutes == 0) return '$hours$h';
     return '$hours$h $minutes$m';
+  }
+
+  String _mmss(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }
 

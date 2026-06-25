@@ -3,6 +3,8 @@ package com.example.studymentor
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.view.accessibility.AccessibilityEvent
 
 class StudyMentorAccessibilityService : AccessibilityService() {
@@ -123,6 +125,10 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         )
     }
 
+    // Timestamp of the last throttled isBlocked refresh-from-prefs in
+    // onAccessibilityEvent (self-heal for a stale static after login).
+    private var lastBlockedRefreshMs = 0L
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
@@ -142,14 +148,36 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         isInPermissionSetup = prefs.getBoolean(AppPrefs.KEY_PERMISSION_SETUP, false)
         isBlocked           = prefs.getBoolean(AppPrefs.KEY_IS_BLOCKED, false)
 
-        // Restore monitored apps from UsageTimerService shared prefs
+        // Restore monitored apps from UsageTimerService shared prefs. The live
+        // set is persisted per-student under "<uid>_monitored_apps"
+        // (UsageTimerService.saveMonitoredApps + OverlayPlugin.setMonitoredApps);
+        // the bare "monitored_apps" key is only a legacy fallback. Reading the
+        // per-student key is what makes a fresh-process reconnect recover the set
+        // instead of leaving it empty until a Dart push lands.
         val timerPrefs = UsageTimerService.prefs(applicationContext)
-        val savedApps = timerPrefs.getStringSet("monitored_apps", null)
+        val restoreUid = timerPrefs.getString("student_uid", "") ?: ""
+        val savedApps = timerPrefs.getStringSet(
+            UsageTimerService.studentKey(restoreUid, "monitored_apps"), null,
+        ) ?: timerPrefs.getStringSet("monitored_apps", null)
         if (savedApps != null) {
             synchronized(monitoredApps) {
                 monitoredApps.clear()
                 monitoredApps.addAll(savedApps)
             }
+        }
+
+        // ── Watchdog: revive the usage-timer service ─────────────────────────
+        //
+        // The system restarts accessibility services independently of our app
+        // process, which makes this the single most reliable revival point after
+        // an aggressive OEM kills the process and swallows the UsageTimerService
+        // START_STICKY restart. If a student is logged in, (re)start the timer
+        // service with a null-action intent so it falls into the onStartCommand
+        // `null` branch — restoring persisted state and resuming the tick loop.
+        // No-op if the service is already running. Starting a FGS from the
+        // background here is permitted because the app holds SYSTEM_ALERT_WINDOW.
+        if (isStudentLoggedIn) {
+            startTimerServiceIfNeeded()
         }
 
         serviceInfo = AccessibilityServiceInfo().apply {
@@ -190,6 +218,35 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         }
 
         // ── App-blocking guard (existing feature) ────────────────────────────
+
+        // ONE-DIRECTIONAL self-heal of the blocked flag from prefs (throttled to
+        // ≤ once/sec). Only ever ADOPT blocked=true — recovering a stale-false
+        // static after login (the Dart setBlocked(true) push can lag behind the
+        // heavy login render: the "not blocked until I reopen the app" bug). It must
+        // NEVER copy false onto the static: native unblock() writes
+        // KEY_IS_BLOCKED=false on a cooldown flip while the student should stay
+        // blocked (reward 0), and the only thing that legitimately unblocks the
+        // static is Dart setBlocked(false), which sets it directly. Copying false
+        // here disabled the instant accessibility bounce and forced the slow
+        // native-tick fallback — the post-quiz re-bounce delay.
+        val nowMs = System.currentTimeMillis()
+        if (nowMs - lastBlockedRefreshMs > 1000L) {
+            lastBlockedRefreshMs = nowMs
+            if (getSharedPreferences(AppPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+                    .getBoolean(AppPrefs.KEY_IS_BLOCKED, false)
+            ) {
+                isBlocked = true
+            }
+        }
+
+        // TEMP diagnostics — logged BEFORE the guard so a logcat distinguishes
+        // "isBlocked=false" from "no event at all". Remove once verified.
+        android.util.Log.d(
+            "StudyMentorA11y",
+            "evt pkg=$pkg isBlocked=$isBlocked monitored=${monitoredApps.size} " +
+                "contains=${monitoredApps.contains(pkg)}",
+        )
+
         if (!isBlocked) return
 
         val isLauncher  = LAUNCHER_PACKAGES.any { pkg.startsWith(it) }
@@ -197,6 +254,25 @@ class StudyMentorAccessibilityService : AccessibilityService() {
         // Fetch studentUid from UsageTimerService shared prefs
         val timerPrefs = UsageTimerService.prefs(this)
         val studentUid = timerPrefs.getString("student_uid", "") ?: ""
+
+        // Self-heal an empty monitored set from prefs — the missing half of the
+        // isBlocked self-heal above. On every login the Dart setMonitoredApps push
+        // can fail to "stick" during the heavy first render; isBlocked recovers
+        // (so the quiz fires) but monitoredApps did not, so nothing was recognised
+        // as blockable until a manual reopen re-pushed it. Repair from the
+        // per-student key UsageTimerService persists. Only when empty, so a live
+        // Dart push always wins; runs only while blocked (after the guard above).
+        if (monitoredApps.isEmpty() && studentUid.isNotEmpty()) {
+            val saved = timerPrefs.getStringSet(
+                UsageTimerService.studentKey(studentUid, "monitored_apps"), null,
+            )
+            if (!saved.isNullOrEmpty()) {
+                synchronized(monitoredApps) {
+                    monitoredApps.clear()
+                    monitoredApps.addAll(saved)
+                }
+            }
+        }
 
         // Fetch paused packages from FlutterSharedPreferences
         val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", android.content.Context.MODE_PRIVATE)
@@ -221,7 +297,47 @@ class StudyMentorAccessibilityService : AccessibilityService() {
 
         justIntercepted = true
         performGlobalAction(GLOBAL_ACTION_HOME)
+
+        // Bring StudyMentor forward and show the unmet gate (quiz or cooldown).
+        // We start MainActivity directly with EXTRA_SHOW_QUIZ rather than relying
+        // solely on OverlayPlugin.instance, which is null whenever the Flutter
+        // engine/activity has been destroyed (e.g. after a process kill). The
+        // intent guarantees the gate appears even on a cold start; the Dart side
+        // decides quiz-vs-cooldown. Background activity launch is permitted via
+        // the app's SYSTEM_ALERT_WINDOW permission.
+        startActivity(
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                        or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                        or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                )
+                putExtra(UsageTimerService.EXTRA_SHOW_QUIZ, true)
+            },
+        )
+
+        // Fast path when the engine is already alive — brings the app forward
+        // immediately without waiting for the Activity launch above to settle.
         OverlayPlugin.instance?.notifyMonitoredAppIntercepted(pkg)
+    }
+
+    /**
+     * (Re)starts [UsageTimerService] with a null-action intent so it restores
+     * persisted per-student state and resumes ticking. Idempotent — a no-op when
+     * the service is already running. Used by the onServiceConnected watchdog.
+     */
+    private fun startTimerServiceIfNeeded() {
+        try {
+            val intent = Intent(applicationContext, UsageTimerService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                applicationContext.startForegroundService(intent)
+            } else {
+                applicationContext.startService(intent)
+            }
+        } catch (_: Exception) {
+            // Background-start may be refused on some OEMs without SYSTEM_ALERT_WINDOW;
+            // the START_STICKY / boot-receiver paths remain as fallbacks.
+        }
     }
 
     override fun onInterrupt() {

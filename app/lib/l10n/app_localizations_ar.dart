@@ -1354,6 +1354,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهى وقت التركيز. لنقم باختبار سريع لتنشيط عقلك!';
 
   @override
+  String get solveToUnlockButton => 'حل لفتح التطبيقات';
+
+  @override
   String get startQuizButton => 'ابدأ الاختبار';
 
   @override
@@ -2186,11 +2189,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String earnedFreeTimeLockedSubtitle(String time) {
-    return 'رصيدك $time — ينفتح بعد انتهاء وقت الراحة.';
+    return 'ربحت $time — ينفتح بعد انتهاء وقت الراحة.';
   }
 
   @override
-  String get finishQuizUnlockApps => 'أكمل اختبارًا لتجميع وقت حر بعد الراحة.';
+  String get finishQuizUnlockApps => 'أكمل اختبارًا لربح وقت حر بعد الراحة.';
 
   @override
   String earnedFreeTimeUnlockedTitle(String time) {
@@ -2206,6 +2209,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get enjoyFreeTimeSubtitle => 'أكمل اختبارًا لكسب المزيد من الوقت.';
+
+  @override
+  String bankedTimeSubtitle(String time) {
+    return 'رصيدك $time من الوقت الحر.';
+  }
+
+  @override
+  String earnedTodayTitle(String time) {
+    return 'كسبت $time اليوم';
+  }
+
+  @override
+  String get appsRestingUnlockSubtitle =>
+      'التطبيقات في راحة — ستُفتح عند انتهاء المؤقت.';
+
+  @override
+  String get appsRestingFinishQuizSubtitle =>
+      'التطبيقات في راحة — أكمل اختبارًا لتُفتح عند انتهاء المؤقت.';
 
   @override
   String get timeToRestTitle => 'وقت الراحة';

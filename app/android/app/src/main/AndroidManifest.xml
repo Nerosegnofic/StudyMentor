@@ -3,8 +3,15 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- Required for DATA_SYNC foreground service type on Android 14+ (API 34+) -->
+    <!-- Required for DATA_SYNC foreground service type (used on Android 10–13). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!--
+        Required for the SPECIAL_USE foreground service type, used on Android 14+
+        (API 34+). Unlike dataSync, specialUse is exempt from the ~6 h/day
+        cumulative runtime cap the system enforces on dataSync FGS, so the
+        always-on parental-control monitor keeps running indefinitely.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
@@ -54,16 +61,28 @@
 
         <!--
             Background usage timer foreground service.
-            • foregroundServiceType="dataSync" satisfies Android 14 (API 34)
-              requirements and is supported down to Android 10 (API 29).
+            • foregroundServiceType="specialUse|dataSync": the service picks the
+              type at runtime — specialUse on Android 14+ (API 34, exempt from the
+              dataSync ~6 h/day cap) and dataSync on Android 10–13 (API 29–33,
+              where no such cap exists). Both are declared so both are valid for
+              startForeground().
             • exported="false" — only started from within the app.
             • START_STICKY ensures the OS restarts it after a process kill.
         -->
         <service
             android:name=".UsageTimerService"
             android:exported="false"
-            android:foregroundServiceType="dataSync"
-            android:stopWithTask="false" />
+            android:foregroundServiceType="specialUse|dataSync"
+            android:stopWithTask="false">
+            <!--
+                Required when declaring the specialUse FGS type. This app is a
+                parental-control monitor distributed outside the Play Store, so the
+                Play Console review flow for specialUse does not apply.
+            -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="parental_control_app_monitoring" />
+        </service>
 
         <service
             android:name=".StudyMentorAccessibilityService"

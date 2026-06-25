@@ -22,6 +22,30 @@ class MascotOverlayService {
     'com.example.studymentor/timer_service',
   );
 
+  // ── Ownership token ──────────────────────────────────────────────────────
+  //
+  // This service is a process-wide singleton, but StudentScreen (which drives
+  // it) can be built more than once during the login/auth-settling render — the
+  // old State is disposed AFTER the new one has already initialised the service.
+  // That stale dispose used to call stop(), which pushes setBlocked(false) and
+  // nulls _studentUid, clobbering the blocked state the live instance just set
+  // (the "lock not active until I reopen the app" bug). Each StudentScreen
+  // acquires a monotonically increasing token on init; dispose only tears the
+  // service down if it is still the current owner, so a superseded instance can
+  // never stop a session a newer instance owns.
+  int _ownerToken = 0;
+
+  /// Claims ownership of the singleton for the calling screen. Returns the token
+  /// the caller must pass to [isOwner] before invoking [stop] on teardown.
+  int acquireOwnership() {
+    _ownerToken += 1;
+    return _ownerToken;
+  }
+
+  /// True only if [token] is the most recently issued ownership token, i.e. no
+  /// newer StudentScreen instance has taken over the singleton.
+  bool isOwner(int token) => token == _ownerToken;
+
   // ── Mirrored state ─────────────────────────────────────────────────────────
 
   bool _running = false;
@@ -44,6 +68,18 @@ class MascotOverlayService {
   //
   // Key: 'reward_earned_<studentUid>'
   int _earnedRewardSeconds = 0;
+
+  // ── Cumulative daily reward total ──────────────────────────────────────────
+  //
+  // Sum of reward time granted by forced quizzes *today*, regardless of how much
+  // was used or expired. Unlike _earnedRewardSeconds (the usable bank, capped at
+  // one session) this accumulates across the whole day and resets at local
+  // midnight. Drives the home banner headline ("You've earned X today").
+  //
+  // Keys: 'reward_today_<studentUid>' (int) and 'reward_today_date_<studentUid>'
+  // (the 'yyyy-MM-dd' the total belongs to).
+  int _dailyRewardSeconds = 0;
+  String _dailyRewardDate = '';
 
   // ── Student UID ────────────────────────────────────────────────────────────
 
@@ -113,6 +149,9 @@ class MascotOverlayService {
   // ── Config ─────────────────────────────────────────────────────────────────
 
   Set<String> _monitoredPackages = {};
+  // Tracked so updateMonitoredApps can no-op when the rule set is unchanged,
+  // collapsing the redundant calls from the login/resume/AuthBloc paths.
+  Set<String> _pausedPackages = {};
   StudentConfigModel _config = const StudentConfigModel();
 
   // ── Public API ─────────────────────────────────────────────────────────────
@@ -126,7 +165,25 @@ class MascotOverlayService {
     _monitoredPackages = {for (var r in rules) if (!r.isPaused) r.packageName};
     _config = config;
 
-    if (_studentUid != null && _studentUid!.isNotEmpty) {
+    // When init is called without rules (the normal login path), seed the
+    // monitored set from the locally-cached last-known config so app-blocking is
+    // active IMMEDIATELY — before the network config fetch (which may fail/lag).
+    // The fresh fetch (updateMonitoredApps) overwrites this when it lands. This is
+    // what makes blocking resilient to a failed/slow getAppConfigForStudent.
+    if (_monitoredPackages.isEmpty) {
+      final cached = await _loadCachedMonitoredApps();
+      if (cached.isNotEmpty) {
+        _monitoredPackages = cached.toSet();
+        debugPrint(
+          '[MascotOverlayService] init: seeded ${_monitoredPackages.length} '
+          'monitored apps from cache.',
+        );
+      }
+    }
+
+    // Only overwrite the persisted paused list when we actually have real rules;
+    // never clobber the cache with the empty login-path rules.
+    if (_studentUid != null && _studentUid!.isNotEmpty && rules.isNotEmpty) {
       try {
         final prefs = await SharedPreferences.getInstance();
         final pausedPackages =
@@ -144,13 +201,42 @@ class MascotOverlayService {
       'apps': _monitoredPackages.toList(),
       'studentUid': _studentUid,
     });
+    debugPrint(
+      '[MascotOverlayService] init: pushed ${_monitoredPackages.length} '
+      'monitored apps to accessibility for $_studentUid.',
+    );
 
     await _loadEarnedReward();
+    await _loadDailyReward();
+
+    // Fresh login: clear any stale "quiz dismissed" flag (it persists in native
+    // prefs across sessions) so the forced quiz auto-shows when blocked instead of
+    // staying suppressed from a previous session. Done BEFORE _syncStateFromNative
+    // so its getTimerState read returns dismissed=false and fires the quiz.
+    _quizDismissedForThisCooldown = false;
+    try {
+      await _timerServiceChannel
+          .invokeMethod('setQuizDismissed', {'dismissed': false});
+    } catch (_) {}
+
     await _syncStateFromNative();
 
     final settings = await _getSettings();
     await setTimerNotificationEnabled(settings.timerNotificationEnabled);
     await setCooldownNotificationEnabled(settings.cooldownNotificationEnabled);
+  }
+
+  /// Re-issues the native foreground-service start. Called on app resume to
+  /// recover monitoring if an earlier start was refused by the OS (e.g. the app
+  /// was briefly in the background during the login / permission flow, where a
+  /// background foreground-service start is rejected on Android 12+). The native
+  /// side treats a repeated ACTION_START for the same student as an idempotent
+  /// config refresh, and now bails out cleanly instead of crashing if it still
+  /// cannot enter the foreground.
+  Future<void> ensureStarted() async {
+    if (_studentUid == null || _studentUid!.isEmpty) return;
+    _running = true;
+    await _startNativeTimerService();
   }
 
   void start() {
@@ -191,8 +277,10 @@ class MascotOverlayService {
     _cooldownNotificationVisible = false;
     _remainingCooldownSeconds = 0;
     _totalUsageSeconds = 0;
-    // Reset in-memory only — persisted value stays for next login.
+    // Reset in-memory only — persisted values stay for next login.
     _earnedRewardSeconds = 0;
+    _dailyRewardSeconds = 0;
+    _dailyRewardDate = '';
     _studentUid = null;
     _quizDismissedForThisCooldown = false;
     _quizController?.close();
@@ -205,18 +293,47 @@ class MascotOverlayService {
     required String studentUid,
     StudentConfigModel config = const StudentConfigModel(),
   }) async {
+    final newMonitored = {
+      for (var r in rules)
+        if (!r.isPaused) r.packageName,
+    };
+    final newPaused =
+        rules.where((r) => r.isPaused).map((r) => r.packageName).toSet();
+
+    // Idempotence: this is invoked from several sync paths (login refresh, resume
+    // refresh, AuthBloc rule-load listeners), often with identical data. When the
+    // rule set + student are unchanged, skip the channel pushes / native config /
+    // persistence. The check is a cheap set comparison (~tens of short strings,
+    // a few times per session) that AVOIDS the far costlier redundant
+    // platform-channel round-trips + prefs write — a net performance win and the
+    // thing that removes the resume-time churn.
+    final unchanged = studentUid == _studentUid &&
+        setEquals(newMonitored, _monitoredPackages) &&
+        setEquals(newPaused, _pausedPackages);
+
     _studentUid = studentUid;
-    _monitoredPackages = {for (var r in rules) if (!r.isPaused) r.packageName};
+    _monitoredPackages = newMonitored;
+    _pausedPackages = newPaused;
     _config = config;
+
+    if (unchanged) {
+      debugPrint(
+        '[MascotOverlayService] updateMonitoredApps: unchanged '
+        '(${newMonitored.length} apps) — skipping pushes.',
+      );
+      return;
+    }
 
     if (_studentUid != null && _studentUid!.isNotEmpty) {
       try {
         final prefs = await SharedPreferences.getInstance();
-        final pausedPackages =
-            rules.where((r) => r.isPaused).map((r) => r.packageName).toList();
-        await prefs.setStringList('paused_packages_$_studentUid', pausedPackages);
+        await prefs.setStringList(
+            'paused_packages_$_studentUid', _pausedPackages.toList());
+        // Cache the fresh monitored set so the next login can block immediately
+        // and survive a failed/slow config fetch (overwrites the previous cache).
+        await prefs.setStringList(_monitoredCacheKey, _monitoredPackages.toList());
       } catch (e) {
-        debugPrint('[MascotOverlayService] Failed to save paused packages: $e');
+        debugPrint('[MascotOverlayService] Failed to save monitored/paused apps: $e');
       }
     }
 
@@ -236,8 +353,8 @@ class MascotOverlayService {
     }
 
     debugPrint(
-      '[MascotOverlayService] Monitored apps updated: '
-      '${_monitoredPackages.toList()}',
+      '[MascotOverlayService] updateMonitoredApps: ${_monitoredPackages.length} '
+      'monitored apps (from network), cached: ${_monitoredPackages.toList()}',
     );
   }
 
@@ -271,6 +388,15 @@ class MascotOverlayService {
       ? _earnedRewardSeconds.clamp(0, 1 << 31)
       : (_earnedRewardSeconds - _totalUsageSeconds).clamp(0, 1 << 31);
 
+  /// Cumulative reward time earned from forced quizzes so far *today*. Resets at
+  /// local midnight. Read every second by the home screen ticker, so the
+  /// rollover check here keeps the displayed total correct even if the app stays
+  /// open past midnight.
+  int get dailyRewardSeconds {
+    _rolloverDailyIfNeeded();
+    return _dailyRewardSeconds;
+  }
+
   MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
 
@@ -298,20 +424,134 @@ class MascotOverlayService {
     } catch (_) {}
   }
 
+  // ── Daily reward total persistence ─────────────────────────────────────────
+
+  String get _dailyRewardKey => 'reward_today_${_studentUid ?? 'unknown'}';
+  String get _dailyRewardDateKey =>
+      'reward_today_date_${_studentUid ?? 'unknown'}';
+
+  /// Local calendar day as 'yyyy-MM-dd', used to detect a midnight rollover.
+  String _todayKey() {
+    final now = DateTime.now();
+    final m = now.month.toString().padLeft(2, '0');
+    final d = now.day.toString().padLeft(2, '0');
+    return '${now.year}-$m-$d';
+  }
+
+  Future<void> _loadDailyReward() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _dailyRewardSeconds = prefs.getInt(_dailyRewardKey) ?? 0;
+      _dailyRewardDate = prefs.getString(_dailyRewardDateKey) ?? '';
+    } catch (e) {
+      debugPrint('[MascotOverlayService] load daily reward error: $e');
+      _dailyRewardSeconds = 0;
+      _dailyRewardDate = '';
+    }
+    // Drop a stale total left over from a previous day.
+    _rolloverDailyIfNeeded();
+    debugPrint(
+      '[MascotOverlayService] Loaded daily reward: ${_dailyRewardSeconds}s '
+      '($_dailyRewardDate).',
+    );
+  }
+
+  Future<void> _persistDailyReward() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_dailyRewardKey, _dailyRewardSeconds);
+      await prefs.setString(_dailyRewardDateKey, _dailyRewardDate);
+    } catch (_) {}
+  }
+
+  /// Resets the cumulative daily total to 0 when the local day has changed.
+  /// In-memory update is synchronous (so getters see the reset immediately);
+  /// the persisted value is updated fire-and-forget.
+  void _rolloverDailyIfNeeded() {
+    final today = _todayKey();
+    if (_dailyRewardDate != today) {
+      _dailyRewardSeconds = 0;
+      _dailyRewardDate = today;
+      unawaited(_persistDailyReward());
+    }
+  }
+
+  // ── Monitored-apps cache (resilience) ───────────────────────────────────────
+  // Locally-cached last-known monitored package set, keyed per student. Lets
+  // app-blocking work the instant the student logs in and survive a failed/slow
+  // config fetch. Overwritten on every successful updateMonitoredApps, so it is a
+  // cache (never the permanent source of truth — the live fetch refreshes it).
+
+  String get _monitoredCacheKey => 'monitored_apps_${_studentUid ?? 'unknown'}';
+
+  Future<List<String>> _loadCachedMonitoredApps() async {
+    if (_studentUid == null || _studentUid!.isEmpty) return const [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getStringList(_monitoredCacheKey) ?? const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Re-pushes the current monitored apps + blocked state to the native side so a
+  /// stale/empty accessibility static self-heals (e.g. after the service was
+  /// reconnected in a fresh process, or init pushed an empty set before the cache
+  /// existed). Reloads the cached apps if the in-memory set is empty. Safe to call
+  /// on every app resume.
+  Future<void> reassertBlockingState() async {
+    if (_studentUid == null || _studentUid!.isEmpty) return;
+    if (_monitoredPackages.isEmpty) {
+      final cached = await _loadCachedMonitoredApps();
+      if (cached.isNotEmpty) _monitoredPackages = cached.toSet();
+    }
+    try {
+      await _accessibilityChannel.invokeMethod('setMonitoredApps', {
+        'apps': _monitoredPackages.toList(),
+        'studentUid': _studentUid,
+      });
+      await _accessibilityChannel
+          .invokeMethod('setBlocked', {'blocked': isBlocked});
+      debugPrint(
+        '[MascotOverlayService] reassertBlockingState: '
+        '${_monitoredPackages.length} apps, blocked=$isBlocked.',
+      );
+    } catch (_) {}
+  }
+
   // ── Quiz completion: add reward time ───────────────────────────────────────
 
-  /// Called when the student successfully completes a quiz. Adds [perQuizSeconds]
-  /// to their earned reward pool. If not currently in cooldown, the native timer
-  /// limit is updated so the new time is immediately available.
+  /// Called when the student successfully completes a *forced* quiz. Grants
+  /// [perQuizSeconds] of reward time. If not currently in cooldown, the native
+  /// timer limit is updated so the new time is immediately available.
+  ///
+  /// Two quantities are updated, and they behave oppositely:
+  ///   • the usable bank ([_earnedRewardSeconds]) is **capped at one session**
+  ///     ([StudentConfigModel.rewardPerQuizSeconds]) — solving more quizzes never
+  ///     grows it beyond a single session's worth;
+  ///   • the daily total ([_dailyRewardSeconds]) is **cumulative** — it sums the
+  ///     full per-quiz amount every time, across the whole day.
   Future<void> addRewardTime(int perQuizSeconds) async {
     if (perQuizSeconds <= 0) return;
 
-    _earnedRewardSeconds += perQuizSeconds;
+    // Usable bank: cap at one session so reward time is non-cumulative. In the
+    // normal flow the bank is already 0 when a forced quiz fires, so this just
+    // sets it to one session; the cap only bites if a quiz is solved while time
+    // is still banked.
+    final sessionCap = _config.rewardPerQuizSeconds;
+    _earnedRewardSeconds =
+        (_earnedRewardSeconds + perQuizSeconds).clamp(0, sessionCap);
     await _persistEarnedReward();
+
+    // Daily total: cumulative across the day (the banner headline).
+    _rolloverDailyIfNeeded();
+    _dailyRewardSeconds += perQuizSeconds;
+    await _persistDailyReward();
 
     debugPrint(
       '[MascotOverlayService] addRewardTime(${perQuizSeconds}s) → '
-      'total earned: ${_earnedRewardSeconds}s',
+      'usable bank: ${_earnedRewardSeconds}s (cap ${sessionCap}s), '
+      'today total: ${_dailyRewardSeconds}s',
     );
 
     if (!_isInCooldown) {
@@ -329,8 +569,8 @@ class MascotOverlayService {
         _startNativeTimerService();
       }
     }
-    // If in cooldown: just accumulate. When cooldown ends, _onUnblocked() will
-    // start the timer with the earned total.
+    // If in cooldown: the (capped) bank is just held. When cooldown ends,
+    // _onUnblocked() starts the timer with the banked one-session reward.
   }
 
   // ── Quiz state ─────────────────────────────────────────────────────────────
@@ -517,6 +757,48 @@ class MascotOverlayService {
           _pendingQuizRestoreTrigger = true;
         }
         break;
+
+      case 'onShowQuiz':
+        debugPrint('[MascotOverlayService] onShowQuiz received from native.');
+        await _showUnmetGate();
+        break;
+    }
+  }
+
+  // ── Show the currently-unmet unlock gate ───────────────────────────────────
+  //
+  // Unblocking is a dual gate: apps unlock only when the cooldown has finished
+  // AND the forced quiz has been solved this cycle. When the student is blocked
+  // and reaches the app (opened a locked app, or it was brought forward), show
+  // whichever gate is still unmet:
+  //   • quiz unsolved (_earnedRewardSeconds <= 0) → bring app forward + show the
+  //     start-quiz screen (clearing any prior "Not now" dismissal);
+  //   • quiz already solved, only cooldown remaining (_earnedRewardSeconds > 0) →
+  //     just bring the app forward (home shows the cooldown banner/ring), do NOT
+  //     re-force a quiz they already completed.
+  // This is side-effect-free — it never mutates timer/reward/cooldown state.
+  Future<void> _showUnmetGate() async {
+    if (!isBlocked) return;
+
+    try {
+      await _overlayChannel.invokeMethod('bringAppToForeground');
+    } catch (_) {}
+
+    // If init() has not yet run for this student, _earnedRewardSeconds is not
+    // loaded — defer the quiz/cooldown decision to _syncStateFromNative (which
+    // runs during init() and fires the quiz when appropriate).
+    if (_studentUid == null) return;
+
+    if (_earnedRewardSeconds <= 0) {
+      _quizDismissedForThisCooldown = false;
+      _timerServiceChannel
+          .invokeMethod('setQuizDismissed', {'dismissed': false})
+          .catchError((_) {});
+      if (_quizStream.hasListener) {
+        _quizStream.add(null);
+      } else {
+        _pendingQuizTrigger = true;
+      }
     }
   }
 
@@ -535,15 +817,11 @@ class MascotOverlayService {
         break;
 
       case 'onMonitoredAppIntercepted':
-        if (isBlocked) {
-          debugPrint(
-            '[MascotOverlayService] Monitored app intercepted — '
-            'bringing Flutter quiz screen to foreground.',
-          );
-          try {
-            await _overlayChannel.invokeMethod('bringAppToForeground');
-          } catch (_) {}
-        }
+        debugPrint(
+          '[MascotOverlayService] Monitored app intercepted — '
+          'showing the unmet unlock gate.',
+        );
+        await _showUnmetGate();
         break;
 
       case 'onQuizRequested':

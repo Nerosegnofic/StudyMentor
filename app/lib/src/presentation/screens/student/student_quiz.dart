@@ -17,6 +17,7 @@ import '../../../features/mascot/mascot_cubit.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_widget.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
+import '../../../features/mascot/mascot_loading_view.dart';
 import '../../../services/quiz_lock_service.dart';
 import '../../../services/overlay/mascot_overlay_service.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -128,7 +129,8 @@ class _QuizOverlayScaffold extends StatefulWidget {
   State<_QuizOverlayScaffold> createState() => _QuizOverlayScaffoldState();
 }
 
-class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
+class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold>
+    with WidgetsBindingObserver {
   double? _preQuizMastery;
   String? _quizzedSubjectName;
   int? _quizzedSubjectId;
@@ -146,6 +148,7 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final restored = widget.restoredSession;
     if (restored != null) {
       _restoredIndex = restored.currentIndex;
@@ -161,6 +164,31 @@ class _QuizOverlayScaffoldState extends State<_QuizOverlayScaffold> {
               ),
             );
       });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    if (lifecycle != AppLifecycleState.paused &&
+        lifecycle != AppLifecycleState.hidden) {
+      return;
+    }
+    // Single quiz-lock enforcement point for the whole overlay: while a quiz is
+    // in progress the student must not be able to leave. This covers loading,
+    // loaded AND submitting — including the gap before/after _QuizActiveView is
+    // mounted — so a quick home-press during generation or submission can't
+    // escape. QuizInitial (start panel / "Not now"), results and error states are
+    // intentionally escapable. The native UsageTimerService tick is the fallback
+    // for when the engine is suspended.
+    final s = context.read<QuizBloc>().state;
+    if (s is QuizLoading || s is QuizLoaded || s is QuizSubmitting) {
+      MascotOverlayService.instance.bringToForeground();
     }
   }
 
@@ -416,26 +444,6 @@ class _AutoStartPanel extends StatelessWidget {
                 color: _kMuted,
               ),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFBDBDBD),
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(60),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                loc.notNowButton,
-                style: GoogleFonts.cairo(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -565,10 +573,9 @@ class _QuizActiveViewState extends State<_QuizActiveView>
         _stopwatch.stop();
         _questionBackgroundedAt = DateTime.now();
         _persistSession(context);
-        // Primary foreground-recovery mechanism for Home button and app-switch:
-        // fires immediately via Flutter lifecycle, unlike the native service's
-        // UsageStatsManager poll which can lag several seconds on many OEMs.
-        MascotOverlayService.instance.bringToForeground();
+        // Foreground-recovery (bringToForeground) is handled once at the
+        // _QuizOverlayScaffold level so it also covers the loading/submitting
+        // states; here we only pause the stopwatch and persist progress.
         break;
       case AppLifecycleState.resumed:
         _stopwatch.start();
@@ -1453,15 +1460,9 @@ class _LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: MascotWithBubble(
-          state: MascotState.thinking,
-          mascotSize: 100,
-          message: message,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: MascotLoadingView(message: message),
     );
   }
 }
@@ -1473,45 +1474,45 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              AppLocalizations.of(context).somethingWentWrongTitle,
-              style: GoogleFonts.cairo(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: _kInk,
-              ),
+    final loc = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const Spacer(),
+          Text(
+            loc.somethingWentWrongTitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.cairo(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _kInk,
             ),
-            const SizedBox(height: 16),
-            MascotWithBubble(
-              state: MascotState.sad,
-              mascotSize: 90,
-              message: message,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () =>
-                  context.read<QuizBloc>().add(ResetQuizEvent()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kGreen,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => context.read<QuizBloc>().add(ResetQuizEvent()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(
-                AppLocalizations.of(context).tryAgainButton,
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-              ),
+              elevation: 0,
             ),
-          ],
-        ),
+            child: Text(
+              loc.tryAgainButton,
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const Spacer(),
+          MascotWithBubble(
+            state: MascotState.sad,
+            mascotSize: 90,
+            message: message,
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }

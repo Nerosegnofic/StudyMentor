@@ -407,6 +407,7 @@
   "submittingAnswersMessage": "جارٍ إرسال الإجابات…",
   "timeToPracticeTitle": "حان وقت التدريب!",
   "quizPromptMessage": "انتهى وقت التركيز. لنقم باختبار سريع لتنشيط عقلك!",
+  "solveToUnlockButton": "حل لفتح التطبيقات",
   "startQuizButton": "ابدأ الاختبار",
   "tailoredToLevelMessage": "مصمم خصيصًا لمستواك الحالي",
   "notNowButton": "ليس الآن",
@@ -850,13 +851,13 @@
     }
   },
   "appsRestingTitle": "التطبيقات في وضع الراحة الآن",
-  "earnedFreeTimeLockedSubtitle": "رصيدك {time} — ينفتح بعد انتهاء وقت الراحة.",
+  "earnedFreeTimeLockedSubtitle": "ربحت {time} — ينفتح بعد انتهاء وقت الراحة.",
   "@earnedFreeTimeLockedSubtitle": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "finishQuizUnlockApps": "أكمل اختبارًا لتجميع وقت حر بعد الراحة.",
+  "finishQuizUnlockApps": "أكمل اختبارًا لربح وقت حر بعد الراحة.",
   "earnedFreeTimeUnlockedTitle": "تبقى لديك {time} من الوقت الحر",
   "@earnedFreeTimeUnlockedTitle": {
     "placeholders": {
@@ -866,6 +867,20 @@
   "appsUnlockedEnjoySubtitle": "أكمل المزيد من الاختبارات لكسب وقت إضافي.",
   "appsUnlockedTitle": "تطبيقاتك مفتوحة",
   "enjoyFreeTimeSubtitle": "أكمل اختبارًا لكسب المزيد من الوقت.",
+  "bankedTimeSubtitle": "رصيدك {time} من الوقت الحر.",
+  "@bankedTimeSubtitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "earnedTodayTitle": "كسبت {time} اليوم",
+  "@earnedTodayTitle": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "appsRestingUnlockSubtitle": "التطبيقات في راحة — ستُفتح عند انتهاء المؤقت.",
+  "appsRestingFinishQuizSubtitle": "التطبيقات في راحة — أكمل اختبارًا لتُفتح عند انتهاء المؤقت.",
   "timeToRestTitle": "وقت الراحة",
   "screenTimeTitle": "وقت الشاشة",
   "limitRestSummaryLabel": "اكسب {limit} لكل اختبار   ·   الراحة {rest}",

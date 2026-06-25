@@ -1,0 +1,222 @@
+==================================================
+QUIZ GENERATION DEBUG REPORT
+==================================================
+
+1. SKILLS PICKED FOR QUIZ
+--------------------------------------------------
+  1. فهم مفهوم قابلية التمثيل القطري للمصفوفات
+  2. تحديد التعدد الجبري للقيم الذاتية
+  3. تحديد التعدد الهندسي للقيم الذاتية
+  4. بناء أساس متعامد ومعياري متعامد من المتجهات الذاتية
+  5. تطبيق شروط قابلية التمثيل القطري للمصفوفات
+
+2. PAYLOAD DETAILS & MASTERY LEVELS
+--------------------------------------------------
+  • Skill: فهم مفهوم قابلية التمثيل القطري للمصفوفات
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 3
+    - Current Mastery Level: 0.06536799226046308
+
+  • Skill: تحديد التعدد الجبري للقيم الذاتية
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 3
+    - Current Mastery Level: 0.033427528729741536
+
+  • Skill: تحديد التعدد الهندسي للقيم الذاتية
+    - Zone: frontier
+    - Requested Difficulty: 1
+    - Question Count: 2
+    - Current Mastery Level: 0.01
+
+  • Skill: بناء أساس متعامد ومعياري متعامد من المتجهات الذاتية
+    - Zone: preview
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.01
+
+  • Skill: تطبيق شروط قابلية التمثيل القطري للمصفوفات
+    - Zone: preview
+    - Requested Difficulty: 1
+    - Question Count: 1
+    - Current Mastery Level: 0.01
+
+3. FETCHED CHUNKS (RAG Context)
+--------------------------------------------------
+$\implies |\lambda| = 1$  
+ALADIB
+تم المسح الضوئي بـ  
+(2) let $v_0$ be an eigen vector of $\lambda$
+i.e. $T(v_0) = \lambda v_0$
+$\implies T^*(v_0) = \bar{\lambda} v_0 = \lambda v_0$
+$\implies v_0(\lambda - \bar{\lambda}) = 0 \implies v_0=0$ (refused) $\lambda = \bar{\lambda}$  
+نظرية لتكن $V$ فراغ قياسي $T = \mathcal{L}(V, V)$
+بحيث $T = T^*$ إذن
+يوجد أساس معياري متعامد لـ $V$ من المتجهات الذاتية لـ $T$  
+البرهان $K = \mathbb{R}$ باستخدام الاستنتاج الرياضي على $\dim V$
+ملاحظة: $T = T^* \implies \Delta_T(t) = (t-\alpha_1)^{m_1} \dots (t-\alpha_r)^{m_r}$
+$\alpha_i \in \mathbb{R}$  
+$T$ متماثلة $\implies$ كل القيم الذاتية حقيقية
+وبالتالي $T$ لها على الأقل قيمة ذاتية $\lambda \in \mathbb{R}$
+$\implies T$ لها على الأقل متجه ذاتي واحد وليكن $u \in V$  
+Let $W = span(\{u\}) = \{\alpha u : \alpha \in \mathbb{R}\} \subset V$
+let $T^0 = T|W : W \xrightarrow{T} W$
+restriction of $T$ on $W$
+$(T^0)^* = T^0$ دالة خطية $T^0$  
+هل يوجد أساس معياري متعامد لـ $W$
+النظرية صادقة في حالة $\dim V = 1$  
+ALADIB
+تم المسح الضوئي بـ  
+$V = W \oplus W^{\perp}$
+$\dim W^{\perp} = \dim V - 1$
+$= n - 1$  
+> **Remark**
+> $T(W) \subseteq W$
+> $\implies T^*(W^{\perp}) \subseteq W^{\perp}$  
+نفرض صحة النظرية لأي فراغ قياسي بعده $n-1$ ونحاول إثباته عند $\dim V = n$  
+$T|_{W^{\perp}} : W^{\perp} \longrightarrow W^{\perp}$
+$T(W) \subseteq W \implies T^*(W^{\perp}) \subseteq W^{\perp}$
+$\xrightarrow{T^*=T} T(W^{\perp}) \subseteq W^{\perp}$  
+$\hat{T} = T|_{W^{\perp}} : W^{\perp} \longrightarrow W^{\perp}$
+$(\hat{T})^* = \hat{T}$  
+وتحقق
+إذن من فرض الاستنتاج
+يوجد أساس معياري متعامد لـ $W^{\perp}$ من المتجهات الذاتية لـ $\hat{T}$
+وليكن $\{v_1, \dots, v_{n-1}\}$  
+$u \perp v_i \quad \forall 1 \leq i \leq n-1$
+$\therefore \{ \frac{u}{\|u\|}, v_1, \dots, v_{n-1} \}$
+أساس معياري متعامد  
+ALADiB
+تم المسح الضوئي بـ  
+<u>مثال</u>: لتكن
+$$A = \begin{bmatrix} 1 & 3 & 0 \\ 3 & 1 & 0 \\ 0 & 0 & -2 \end{bmatrix}$$
+هي مصفوفة متماثلة.
+القيم الذاتية:
+
+---
+
+# جبر خطي  
+## Diagonalization قابلية التمثيل القطري  
+For $A$ is diagonalization  
+$A$ متشابهة مع مصفوفة قطرية $B$
+i.e $\exists P$ invertible $\ni P^{-1}AP = B$  
+يوجد $n$ متجه ذاتي مستقلة خطياً
+$P = [v_1, v_2, \dots, v_n]$  
+**ملاحظة**: لتكن $A \in M_{n \times n}(K)$ إذا كانت $K$ algebraic closed field
+$\forall p(x) \in K[x], \deg p(x) = n$
+$p(x) = \alpha(x - a_1)(x - a_2) \dots (x - a_n)$  
+**ملاحظة**: إذا كانت $A \in M_{n \times n}$
+$\Delta_A(t) = (t - \alpha_1)^{m_1} (t - \alpha_2)^{m_2} \dots (t - \alpha_r)^{m_r}$
+i.e $m_1 + m_2 + \dots + m_r = n$  
+① $m_i$ is called algebraic multiplicity of $\alpha_i$ (تعريف: يسمى بالتعدد الجبري)  
+② $\dim V_{\lambda_i}$ is called the geometric multiplicity of $\lambda_i$ (العدد الهندسي)
+عدد المتجهات الذاتية المستقلة خطياً لـ $\lambda_i$  
+ALADIB
+تم المسح الضوئي بـ  
+إذن A قابلة للتمثيل القطري إذا كان
+$\dim V_{\lambda_i} = m_i \quad \forall 1 \le i \le r$  
+② IF $m_i = 1 \quad \forall 1 \le i \le n$
+i.e $\Delta_A(t) = (t-\alpha_1)(t-\alpha_2) \dots (t-\alpha_n)$
+$\implies \exists n$ eigenvector lin. ind.
+$\implies Diag.$  
+قابلة للتمثيل القطري في الفراغ القياسي
+ليكن $V_K$ فراغ قياسي على $K = \mathbb{R}$ أو $\mathbb{C}$
+نظرية: لتكن $T \in L(V,V)$ $\lambda$ قيمة ذاتية لـ $T$
+$|\lambda| = 1 \longleftarrow$ unitary/orthogonal $T^{-1} = T^*$ ①
+$\lambda \in \mathbb{R} \longleftarrow$ symmetric $T = T^*$ ②
+$\lambda \in \mathbb{R} \longleftarrow$ anti-hermitian or antisymm $T = -T^*$ ③  
+$T^{-1} = T^* \implies T T^* = I_V = T^* T$ ①
+let $V_0$ is an eigen vector of $\lambda$
+$T(V_0) = \lambda V_0$
+$<V_0, V_0> = <T^* T(V_0), V_0>$
+$= <T(V_0), T(V_0)> = <\lambda V_0, \lambda V_0>$
+$<V_0, V_0> = \lambda \bar{\lambda} <V_0, V_0>$
+$<V_0, V_0> (1 - \lambda \bar{\lambda}) = 0$
+$V_0 \neq 0$ bec. eigenvector
+$\implies (1 - \lambda \bar{\lambda}) = 0 \quad \lambda \bar{\lambda} = 1$
+$\implies |\lambda| = 1$  
+ALADIB
+تم المسح الضوئي بـ  
+(2) let $v_0$ be an eigen vector of $\lambda$
+i.e. $T(v_0) = \lambda v_0$
+
+---
+
+$$[x \quad y] \begin{pmatrix} 2 & 2 \\ 2 & 3 \end{pmatrix} \begin{pmatrix} x \\ y \end{pmatrix} \implies \exists P \ni P^{-1}AP = \begin{pmatrix} \alpha & 0 \\ 0 & \beta \end{pmatrix}$$  
+$$[x \quad y] P P^{-1} \begin{pmatrix} 2 & 2 \\ 2 & 3 \end{pmatrix} P P^{-1} \begin{pmatrix} x \\ y \end{pmatrix}$$  
+$$\implies [x' \quad y'] \begin{pmatrix} \alpha & 0 \\ 0 & \beta \end{pmatrix} \begin{pmatrix} x' \\ y' \end{pmatrix}$$  
+$$\implies \alpha x'^2 + \beta y'^2 = 0$$  
+LADIB
+
+---
+
+أساس معياري متعامد  
+ALADiB
+تم المسح الضوئي بـ  
+<u>مثال</u>: لتكن
+$$A = \begin{bmatrix} 1 & 3 & 0 \\ 3 & 1 & 0 \\ 0 & 0 & -2 \end{bmatrix}$$
+هي مصفوفة متماثلة.
+القيم الذاتية:
+$$\Delta_A(t) = \begin{vmatrix} t-1 & -3 & 0 \\ -3 & t-1 & 0 \\ 0 & 0 & t+2 \end{vmatrix}$$
+$$= (t+2) ((t-1)^2 - 9)$$
+$$= (t+2) (t+2) (t-4)$$
+$$\implies \lambda = -2, -2, 4$$  
+$$V_4 = \begin{bmatrix} 1 & 3 & 0 \\ 3 & 1 & 0 \\ 0 & 0 & -2 \end{bmatrix} \begin{bmatrix} x \\ y \\ z \end{bmatrix} = 4 \begin{bmatrix} x \\ y \\ z \end{bmatrix}$$
+$$\implies x = y \quad z = 0$$
+$$V_4 = \text{span} \{ (1, 1, 0) \}$$  
+$$V_{-2}: \begin{bmatrix} 1 & 3 & 0 \\ 3 & 1 & 0 \\ 0 & 0 & -2 \end{bmatrix} \begin{bmatrix} x \\ y \\ z \end{bmatrix} = -2 \begin{bmatrix} x \\ y \\ z \end{bmatrix}$$
+$$x = -y \quad z \text{ is free}$$
+$$V_{-2} = \text{span} \{ (1, -1, 0), (0, 0, 1) \}$$  
+ALADIB
+تم المسح الضوئي بـ  
+{ (0, 0, 1) , (1, -1, 0) , (1, 1, 0) }
+أساس متعامد لـ V  
+{ (0, 0, 1) , $\frac{(1, -1, 0)}{\sqrt{2}}$ , $\frac{(1, 1, 0)}{\sqrt{2}}$ }
+أساس عياري متعامد لـ V  
+∴ A لها 3 متجهات ذاتية عيارية متعامدة  
+$$P = \begin{bmatrix} \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} & 0 \\ \frac{1}{\sqrt{2}} & -\frac{1}{\sqrt{2}} & 0 \\ 0 & 0 & 1 \end{bmatrix}$$  
+P مصفوفة متعامدة $\iff$ الصفوف والأعمدة تمثل مجموعة عيارية متعامدة  
+$$det P = -1$$  
+<u>H.W</u>
+① P متعامدة $\iff det P = \pm 1$
+② إذا كان $det P = 1$ في $P \in M_{2\times2}$ توجد $\theta \in \mathbb{R}$  
+$$P = \begin{bmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{bmatrix}$$  
+$\theta$ يمثل دوران حول نقطة الأصل  
+تم المسح الضوئي بـ  
+$$P^{-1}AP = B = \begin{pmatrix} -2 & 0 & 0 \\ 0 & -2 & 0 \\ 0 & 0 & 4 \end{pmatrix}$$  
+$$(ax^2 + by^2 + cxy) + dx + ey + f = 0$$
+الصيغة التربيعية  
+مثال
+$$2x^2 + 3y^2 + 4xy$$  
+$$[x \quad y] \begin{pmatrix} 2 & 2 \\ 2 & 3 \end{pmatrix} \begin{pmatrix} x \\ y \end{pmatrix} \implies \exists P \ni P^{-1}AP = \begin{pmatrix} \alpha & 0 \\ 0 & \beta \end{pmatrix}$$
+
+⚠️ PREVIOUSLY ASKED QUESTIONS (DO NOT REPEAT):
+  - "ما هو الرمز الذي يعبر عن التعدد الهندسي لقيمة ذاتية ؟..."
+  - "لكي تكون المصفوفة A قابلة للتمثيل القطري، كم عدد المتجهات الذاتية المستقلة خطياً التي يجب أن توجد لديها؟..."
+  - "إذا كانت المصفوفة A من الحجم ، فما هو مجموع التعددات الجبرية لجميع قيمها الذاتية؟..."
+  - "ماذا تعني عبارة أن المصفوفة A قابلة للتمثيل القطري؟..."
+  - "إذا كانت المصفوفة A قابلة للتمثيل القطري، فماذا يجب أن يوجد لديها من المتجهات الذاتية؟..."
+  - "لكي تكون المصفوفة A قابلة للتمثيل القطري، ما هي العلاقة التي يجب أن تتحقق بين التعدد الجبري  والتعدد الهندسي  لكل قيمة ذاتية ؟..."
+  - "ماذا يسمى عدد المتجهات الذاتية المستقلة خطيًا لقيمة ذاتية معينة ؟..."
+  - "ما هو الرمز الذي يشير إلى المصفوفة القطرية التي تتشابه معها المصفوفة A القابلة للتمثيل القطري؟..."
+  - "ما هو الشرط المتعلق بالمتجهات الذاتية لكي تكون المصفوفة A قابلة للتمثيل القطري؟..."
+  - "ماذا يمثل التعدد الهندسي لقيمة ذاتية ؟..."
+  - "ماذا يسمى العدد الذي يمثل بعد الفراغ الجزئي للمتجهات الذاتية لقيمة ذاتية معينة ؟..."
+  - "ما هي خاصية المصفوفة P التي تُستخدم في عملية التمثيل القطري، حيث ؟..."
+  - "ماذا يسمى  في سياق القيم الذاتية؟..."
+  - "إذا كان المؤثر  متماثلاً عكسيًا (أي ) في فراغ قياسي، فما هي خاصية القيم الذاتية  لهذا المؤثر وفقًا للنص؟..."
+  - "إذا كان كثير الحدود المميز لمصفوفة هو , فما هو التعدد الجبري للقيمة الذاتية 7؟..."
+  - "إذا كان كثير الحدود المميز لمصفوفة يحتوي على العامل , فما هو التعدد الجبري للقيمة الذاتية 5؟..."
+  - "ماذا يعني أن تكون المصفوفة A قابلة للتمثيل القطري؟..."
+  - "ماذا تعني قابلية المصفوفة A للتمثيل القطري؟..."
+  - "إذا كانت التعددات الجبرية لجميع القيم الذاتية لمصفوفة A تساوي 1، فماذا نستنتج عن قابلية المصفوفة A للتمثيل القطري؟..."
+  - "ما هو الشرط الذي يجعل المصفوفة A قابلة للتمثيل القطري من حيث التشابه مع مصفوفة أخرى؟..."
+  - "إذا كان المؤثر  متماثلاً (أي ) على فراغ قياسي ، فماذا يوجد لـ  من المتجهات الذاتية لـ ؟..."
+  - "ماذا تسمى التعبيرات الرياضية التي تكون على شكل ؟..."
+  - "ما هو تعريف التعدد الهندسي لقيمة ذاتية ؟..."
+  - "ماذا يمثل التعدد الهندسي لقيمة ذاتية معينة؟..."
+  - "في كثير الحدود المميز ، ماذا يسمى الأس ؟..."
+
+Generate COMPLETELY DIFFERENT questions with different numbers, names, and scenarios.
+

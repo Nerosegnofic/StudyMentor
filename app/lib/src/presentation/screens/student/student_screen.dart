@@ -94,6 +94,22 @@ class _StudentScreenState extends State<StudentScreen>
   /// after the route pops.
   bool _quizIsOpen = false;
 
+  /// True while [_openQuizOverlay] / [_onQuizRestoreTriggered] are awaiting the
+  /// async `QuizLockService.loadSession()` lookup. Guards the await gap so two
+  /// concurrent triggers (e.g. the forced-quiz stream racing the native restore
+  /// signal on relaunch) cannot both open a quiz. Always paired with [_quizIsOpen].
+  bool _quizResolving = false;
+
+  /// True while [_refreshMonitoredConfig] has a fetch in flight. Stops overlapping
+  /// resumes from launching concurrent config fetches.
+  bool _refreshingConfig = false;
+
+  /// Ownership token for the [MascotOverlayService] singleton. Acquired in
+  /// [initState]; dispose only tears the service down if this instance is still
+  /// the owner, so a superseded StudentScreen (built twice during the login
+  /// render) cannot stop a session a newer instance already started.
+  int _mascotOwnerToken = 0;
+
   /// Whether the student has at least one subject uploaded by the parent.
   /// null = garden not loaded yet, false = no subjects, true = has subjects.
   bool? _hasSubjects;
@@ -151,6 +167,10 @@ class _StudentScreenState extends State<StudentScreen>
     )..add(LoadGamificationDataRequested(studentId: widget.uid))
      ..add(CheckDailyLoginRewardRequested(studentId: widget.uid));
 
+    // Claim ownership before init so a later (superseding) instance's dispose
+    // cannot stop the service this instance is about to start.
+    _mascotOwnerToken = MascotOverlayService.instance.acquireOwnership();
+
     _quizSub = MascotOverlayService.instance.listenForQuiz(_onQuizTriggered);
     _quizRestoreSub =
         MascotOverlayService.instance.listenForQuizRestore(_onQuizRestoreTriggered);
@@ -189,31 +209,32 @@ class _StudentScreenState extends State<StudentScreen>
     }
 
     if (mounted) {
-      try {
-        final repo = context.read<AuthBloc>().repository;
-        final (:config, :rules) = await repo.getAppConfigForStudent(widget.uid);
-        if (mounted) {
-          final resolvedConfig = config ?? const StudentConfigModel();
-          _quizCount = resolvedConfig.quizCount;
-          await MascotOverlayService.instance.updateMonitoredApps(
-            rules,
-            studentUid: widget.uid,
-            config: resolvedConfig,
-          );
-        }
-      } catch (e) {
-        debugPrint(
-          '[StudentScreen] Config pre-load failed, using defaults: $e',
-        );
-      }
-    }
-
-    MascotOverlayService.instance.start();
-
-    if (mounted) {
       setState(() => _initializing = false);
       _onShellReady();
     }
+
+    // Fetch the live locked-app config and refresh the monitored set (single
+    // attempt). init() already seeded blocking from the local cache, so a
+    // slow/failed fetch here never leaves the student unblocked — this just brings
+    // the latest config.
+    unawaited(_refreshMonitoredConfig());
+
+    // After the first frame:
+    //  1. Re-assert the blocked state + monitored apps. The login-time
+    //     setBlocked/setMonitoredApps channel pushes run during the heavy login
+    //     render and don't reliably "stick" (the accessibility static stays
+    //     isBlocked=false until a resume re-asserts) — that was the "not blocked
+    //     until I reopen the app" bug. Doing the same reassert the resume path
+    //     does, right after login, makes blocking active immediately.
+    //  2. Start the native foreground service. Starting it inline races the heavy
+    //     initial render and can starve onStartCommand past the
+    //     startForegroundService→startForeground deadline
+    //     (ForegroundServiceDidNotStartInTimeException — the "app closes after
+    //     login" crash). Post-frame gives the main thread room.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(MascotOverlayService.instance.reassertBlockingState());
+      MascotOverlayService.instance.start();
+    });
   }
 
   Future<void> _checkPermissions() async {
@@ -239,6 +260,16 @@ class _StudentScreenState extends State<StudentScreen>
     if (!mounted) return;
     setState(() => _permissionsGranted = true);
     _onShellReady();
+
+    // The permission gate just finished. The initial post-frame start() in
+    // _initMascotService ran while SYSTEM_ALERT_WINDOW / accessibility /
+    // usage-stats were still missing, so the foreground-service start was refused
+    // and the accessibility service wasn't enabled — enforcement never engaged.
+    // Now that every permission is granted, engage it (mirrors the resume path)
+    // so apps are blocked immediately, without needing the user to reopen the app.
+    unawaited(MascotOverlayService.instance.ensureStarted());
+    unawaited(MascotOverlayService.instance.reassertBlockingState());
+    unawaited(_refreshMonitoredConfig());
   }
 
   void _onGateSignOut() {
@@ -276,27 +307,54 @@ class _StudentScreenState extends State<StudentScreen>
     } catch (_) {}
   }
 
-  /// Re-fetch the parent-configured quiz count so a change made while the student
-  /// app was backgrounded takes effect on the next forced quiz. (The voluntary path
-  /// already reloads config when the subject screen opens.) The count is also
-  /// enforced server-side: a pre-warmed quiz with a stale count is not reused — a
-  /// fresh quiz is generated for the new count instead.
-  Future<void> _refreshQuizCount() async {
+  /// Fetches the parent-configured locked-app rules + quiz count and pushes them
+  /// to [MascotOverlayService] (which caches them locally). Single attempt — no
+  /// retry loop: the local cache keeps blocking working from last-known meanwhile,
+  /// and a fresh sync happens on the next resume / AuthBloc rule-load anyway. The
+  /// in-flight guard stops overlapping resumes from launching concurrent fetches.
+  Future<void> _refreshMonitoredConfig() async {
+    if (!mounted || _refreshingConfig) return;
+    _refreshingConfig = true;
     try {
       final repo = context.read<AuthBloc>().repository;
-      final config = (await repo.getAppConfigForStudent(widget.uid)).config;
-      if (mounted && config != null) {
-        setState(() => _quizCount = config.quizCount);
-      }
-    } catch (_) {}
+      final (:config, :rules) = await repo.getAppConfigForStudent(widget.uid);
+      if (!mounted) return;
+      final resolvedConfig = config ?? const StudentConfigModel();
+      setState(() => _quizCount = resolvedConfig.quizCount);
+      await MascotOverlayService.instance.updateMonitoredApps(
+        rules,
+        studentUid: widget.uid,
+        config: resolvedConfig,
+      );
+      debugPrint(
+        '[StudentScreen] Monitored config refreshed: ${rules.length} rules.',
+      );
+    } catch (e) {
+      // Keep the cached/last-known monitored apps (never cleared); the next
+      // resume / rule-load will re-sync.
+      debugPrint('[StudentScreen] Monitored config refresh failed: $e');
+    } finally {
+      _refreshingConfig = false;
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
 
-    // Pick up parent config changes (e.g. quiz count) made while backgrounded.
-    _refreshQuizCount();
+    // Pick up parent config changes (quiz count + locked apps) made while
+    // backgrounded, with retry. Refreshes the cached monitored-apps list.
+    _refreshMonitoredConfig();
+
+    // Recover the monitoring service if an earlier foreground-service start was
+    // refused by the OS (e.g. the app was briefly backgrounded during the login /
+    // permission flow), and re-assert the monitored apps + blocked state so a
+    // stale/empty accessibility static self-heals. Idempotent; the native side now
+    // bails out cleanly instead of crashing when it cannot enter the foreground.
+    if (_permissionsGranted && !_initializing && !_checkingPermissions) {
+      unawaited(MascotOverlayService.instance.ensureStarted());
+      unawaited(MascotOverlayService.instance.reassertBlockingState());
+    }
 
     // Reload home data (XP/streak/garden/daily snapshot) so the dashboard isn't
     // stale after returning from background or from a quiz. Skipped while a quiz
@@ -323,14 +381,15 @@ class _StudentScreenState extends State<StudentScreen>
       }
     });
 
+    // On every resume, re-run the quiz gate. It resumes an in-progress session
+    // if one exists (covers a voluntary quiz that was swiped away even when the
+    // student is not blocked), otherwise opens a fresh quiz only when
+    // shouldShowQuiz. Cheap: a single SharedPreferences read when not already open.
     if (_permissionsGranted &&
         !_initializing &&
         !_checkingPermissions &&
         !_quizIsOpen &&
-        MascotOverlayService.instance.shouldShowQuiz) {
-      debugPrint(
-        '[StudentScreen] warm-resume: shouldShowQuiz=true and no quiz open — re-arming.',
-      );
+        !_quizResolving) {
       _openQuizOverlay();
     }
   }
@@ -340,7 +399,13 @@ class _StudentScreenState extends State<StudentScreen>
     _quizSub?.cancel();
     _quizRestoreSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    MascotOverlayService.instance.stop();
+    // Only tear the singleton down if we still own it. A StudentScreen that was
+    // superseded during the login render must NOT stop() — doing so pushed
+    // setBlocked(false) and nulled the studentUid, leaving app-locking inert
+    // until a manual reopen (the "lock not active after login" bug).
+    if (MascotOverlayService.instance.isOwner(_mascotOwnerToken)) {
+      MascotOverlayService.instance.stop();
+    }
     _shopBloc.close();
     _gardenBloc.close();
     _gamificationBloc.close();
@@ -351,14 +416,6 @@ class _StudentScreenState extends State<StudentScreen>
   // ── Quiz overlay ──────────────────────────────────────────────────────────
 
   void _onQuizTriggered() {
-    if (!MascotOverlayService.instance.shouldShowQuiz) {
-      debugPrint(
-        '[StudentScreen] quiz trigger suppressed — already dismissed '
-        'for this cooldown.',
-      );
-      return;
-    }
-
     final shellReady =
         !_initializing && !_checkingPermissions && _permissionsGranted;
     if (!shellReady) {
@@ -368,6 +425,8 @@ class _StudentScreenState extends State<StudentScreen>
       _pendingQuizAfterInit = true;
       return;
     }
+    // _openQuizOverlay() is the single gate: it restores an in-progress session
+    // if one exists, otherwise opens a fresh quiz only when shouldShowQuiz.
     _openQuizOverlay();
   }
 
@@ -409,20 +468,16 @@ class _StudentScreenState extends State<StudentScreen>
       return;
     }
 
-    if (_pendingQuizAfterInit && MascotOverlayService.instance.shouldShowQuiz) {
+    if (_pendingQuizAfterInit) {
       _pendingQuizAfterInit = false;
       debugPrint(
         '[StudentScreen] shell ready — flushing buffered quiz trigger.',
       );
+      // The gate (_openQuizOverlay) restores an in-progress session if present,
+      // otherwise opens a fresh quiz only when shouldShowQuiz is still true.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openQuizOverlay();
       });
-    } else if (_pendingQuizAfterInit) {
-      _pendingQuizAfterInit = false;
-      debugPrint(
-        '[StudentScreen] shell ready — buffered quiz trigger dropped '
-        '(quiz dismissed for this cooldown).',
-      );
     }
 
     // Top up the quiz cache for every active subject on dashboard load so the
@@ -433,6 +488,13 @@ class _StudentScreenState extends State<StudentScreen>
     unawaited(_aiRepo.warmAllQuizzes());
   }
 
+  /// Single entry point for showing the quiz overlay. Enforces **restore
+  /// precedence**: if an in-progress quiz session is persisted on disk
+  /// (`QuizLockService.loadSession()` non-null), it is resumed exactly — a fresh
+  /// quiz is **never** generated while a session exists. This closes the bug
+  /// where swiping mid-quiz spawned a new quiz (different subject, lost progress)
+  /// and let the student dodge submission. A fresh quiz is opened only when no
+  /// session exists AND `shouldShowQuiz` is true.
   void _openQuizOverlay() {
     if (!mounted) return;
 
@@ -449,20 +511,31 @@ class _StudentScreenState extends State<StudentScreen>
       return;
     }
 
-    // ── Defense-in-depth guard ─────────────────────────────────────────────
-    // The primary guard lives in MascotOverlayService._onLimitReached()
-    // (the _isBlocked early-return). This flag catches any duplicate signal
-    // that slips through — e.g. a race between broadcastState PATH 1 and the
-    // startActivity PATH 2 on a warm resume where both arrive after _isBlocked
-    // has already been set to true by the first call but before the stream
-    // listener fires for the second.
-    if (_quizIsOpen) {
-      debugPrint(
-        '[StudentScreen] _openQuizOverlay called while quiz is already open — ignoring duplicate.',
-      );
-      return;
-    }
+    // Already open, or another trigger is mid-resolution — ignore duplicates.
+    if (_quizIsOpen || _quizResolving) return;
 
+    // Restore precedence: check for a saved in-progress session before deciding
+    // whether to resume it or generate a new quiz. _quizResolving guards the
+    // await gap so a concurrent trigger cannot also open a quiz.
+    _quizResolving = true;
+    QuizLockService.instance.loadSession().then((session) {
+      _quizResolving = false;
+      if (!mounted || _quizIsOpen) return;
+      if (session != null) {
+        _openQuizOverlayWithRestore(session);
+      } else if (MascotOverlayService.instance.shouldShowQuiz) {
+        _pushFreshQuiz();
+      }
+    }).catchError((_) {
+      _quizResolving = false;
+    });
+  }
+
+  /// Pushes a brand-new quiz with no in-progress session. Defaults to
+  /// [QuizContext.forced] (the overlay-triggered case); the home-screen button
+  /// passes [QuizContext.voluntary] when the student starts one while not blocked.
+  void _pushFreshQuiz({QuizContext quizContext = QuizContext.forced}) {
+    if (!mounted || _quizIsOpen) return;
     _quizIsOpen = true;
 
     MascotOverlayService.instance.markQuizShown();
@@ -480,7 +553,7 @@ class _StudentScreenState extends State<StudentScreen>
               child: QuizOverlayPage(
                 repository: _aiRepo,
                 studentId: widget.uid,
-                contextType: QuizContext.forced,
+                contextType: quizContext,
                 studentGrade: _studentGrade,
                 totalQuestions: switch (_quizCount) {
                   Auto() => 5,
@@ -511,6 +584,35 @@ class _StudentScreenState extends State<StudentScreen>
         });
   }
 
+  /// User-initiated focused quiz from the home-screen button. Unlike
+  /// [_openQuizOverlay], this does not require [MascotOverlayService.shouldShowQuiz]
+  /// — the student may proactively earn/bank reward time even while unlocked, and
+  /// it overrides a prior dismissal. Still honors the no-subjects guard,
+  /// session-restore precedence, and the single-open lock.
+  void _startFocusedQuizFromButton() {
+    if (!mounted || _quizIsOpen || _quizResolving) return;
+    if (_hasSubjects != true) return; // nothing to quiz on yet (or garden not loaded)
+    _quizResolving = true;
+    QuizLockService.instance.loadSession().then((session) {
+      _quizResolving = false;
+      if (!mounted || _quizIsOpen) return;
+      if (session != null) {
+        _openQuizOverlayWithRestore(session);
+      } else {
+        // Forced when apps are currently blocked (this quiz is required to
+        // unlock / bank time); voluntary when the student starts one proactively
+        // while they still have free time.
+        _pushFreshQuiz(
+          quizContext: MascotOverlayService.instance.isBlocked
+              ? QuizContext.forced
+              : QuizContext.voluntary,
+        );
+      }
+    }).catchError((_) {
+      _quizResolving = false;
+    });
+  }
+
   // ── Quiz restore (after task removal / reboot) ────────────────────────────
 
   /// Called when the native side signals that a quiz session must be restored.
@@ -519,10 +621,12 @@ class _StudentScreenState extends State<StudentScreen>
     // If the quiz overlay is already in the navigation stack (warm resume
     // where the process was not killed), there is nothing to do — the existing
     // overlay is still live and will resume normally.
-    if (_quizIsOpen) return;
+    if (_quizIsOpen || _quizResolving) return;
 
+    _quizResolving = true;
     QuizLockService.instance.loadSession().then((session) {
-      if (session == null || !mounted) return;
+      _quizResolving = false;
+      if (session == null || !mounted || _quizIsOpen) return;
       final shellReady =
           !_initializing && !_checkingPermissions && _permissionsGranted;
       if (!shellReady) {
@@ -530,6 +634,8 @@ class _StudentScreenState extends State<StudentScreen>
         return;
       }
       _openQuizOverlayWithRestore(session);
+    }).catchError((_) {
+      _quizResolving = false;
     });
   }
 
@@ -573,10 +679,15 @@ class _StudentScreenState extends State<StudentScreen>
           _quizIsOpen = false;
           if (completed == true) {
             MascotOverlayService.instance.markQuizCompleted();
-            final reward =
-                MascotOverlayService.instance.config.rewardPerQuizSeconds;
-            if (reward > 0) {
-              MascotOverlayService.instance.addRewardTime(reward);
+            // Only forced quizzes grant reward time. A restored session can be
+            // voluntary (e.g. a practice quiz interrupted by task removal), so
+            // gate the grant on its context type.
+            if (session.contextType == QuizContext.forced) {
+              final reward =
+                  MascotOverlayService.instance.config.rewardPerQuizSeconds;
+              if (reward > 0) {
+                MascotOverlayService.instance.addRewardTime(reward);
+              }
             }
           } else {
             MascotOverlayService.instance.markQuizDismissed();
@@ -869,6 +980,7 @@ class _StudentScreenState extends State<StudentScreen>
                           key: _homeKey,
                           fullName: widget.fullName,
                           uid: widget.uid,
+                          onStartFocusedQuiz: _startFocusedQuizFromButton,
                         ),
                       ],
                     ),
