@@ -157,7 +157,10 @@ class _StudentScreenState extends State<StudentScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _aiRepo = AiEngineRepository(baseUrl: AiEngineRepository.defaultBaseUrl);
+    // Reuse the shared singleton so HTTP keep-alive / connection pooling / TLS
+    // sessions are reused across the app instead of spinning up (and leaking) a
+    // second http.Client.
+    _aiRepo = AiEngineRepository.instance;
 
     _shopBloc = ShopBloc();
     _gardenBloc = GardenBloc();

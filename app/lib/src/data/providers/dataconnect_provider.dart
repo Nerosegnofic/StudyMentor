@@ -569,38 +569,37 @@ class DataConnectProvider {
     List<SkillProgressModel> skills = [];
 
     try {
-      final analyticsList = await AiEngineRepository.instance.getSubjectsAnalytics(studentUid: studentUid);
-      final a = analyticsList.firstWhere(
-        (element) => (element['subject_id'] as int?) == subjectId,
-        orElse: () => <String, dynamic>{},
-      );
+      // Previously this first fetched ALL subjects' analytics just to confirm
+      // the subject existed before fetching its mastery tree — two sequential
+      // network calls on every subject-detail open. The analytics result was
+      // used only as an existence guard (`a.isNotEmpty`); none of its fields fed
+      // the skills, so we fetch the tree directly. An empty/absent tree yields no
+      // skills, exactly as the guarded version did.
+      final masteryTree = await AiEngineRepository.instance
+          .getSubjectMasteryTree(subjectId, studentUid: studentUid);
+      final units = masteryTree['units'] as List? ?? [];
 
-      if (a.isNotEmpty) {
-        final masteryTree = await AiEngineRepository.instance.getSubjectMasteryTree(subjectId, studentUid: studentUid);
-        final units = masteryTree['units'] as List? ?? [];
-        
-        for (final u in units) {
-          final lessons = u['lessons'] as List? ?? [];
-          for (final l in lessons) {
-            final skillList = l['skills'] as List? ?? [];
-            for (final s in skillList) {
-              final skillName = s['name'] as String;
-              final mastery = ((s['mastery'] as num? ?? 0.0).toDouble() * 100).round();
-              final attempts = s['attempts'] as int? ?? 0;
-              
-              final correctAnswers = ((mastery / 100) * attempts).round();
-              final wrongAnswers = attempts - correctAnswers;
+      for (final u in units) {
+        final lessons = u['lessons'] as List? ?? [];
+        for (final l in lessons) {
+          final skillList = l['skills'] as List? ?? [];
+          for (final s in skillList) {
+            final skillName = s['name'] as String;
+            final mastery = ((s['mastery'] as num? ?? 0.0).toDouble() * 100).round();
+            final attempts = s['attempts'] as int? ?? 0;
 
-              skills.add(SkillProgressModel(
-                studentUid: studentUid,
-                subjectKey: subjectKey,
-                skillKey: skillName,
-                correctAnswers: correctAnswers,
-                wrongAnswers: wrongAnswers >= 0 ? wrongAnswers : 0,
-                totalAttempts: attempts,
-                lastPracticedAt: DateTime.now(),
-              ));
-            }
+            final correctAnswers = ((mastery / 100) * attempts).round();
+            final wrongAnswers = attempts - correctAnswers;
+
+            skills.add(SkillProgressModel(
+              studentUid: studentUid,
+              subjectKey: subjectKey,
+              skillKey: skillName,
+              correctAnswers: correctAnswers,
+              wrongAnswers: wrongAnswers >= 0 ? wrongAnswers : 0,
+              totalAttempts: attempts,
+              lastPracticedAt: DateTime.now(),
+            ));
           }
         }
       }

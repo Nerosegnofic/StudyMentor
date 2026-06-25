@@ -243,6 +243,26 @@ class AiEngineRepository {
   final FirebaseAuth _auth;
   final http.Client _client;
 
+  /// In-flight `warmAllQuizzes` request, used to dedupe overlapping calls.
+  Future<void>? _warmInFlight;
+
+  /// In-flight read requests keyed by a per-call string, so concurrent
+  /// identical reads (e.g. N parent child-cards each loading the same student's
+  /// weekly report) share a single network call instead of issuing N. Entries
+  /// clear as soon as the request completes — no stale caching across time.
+  final Map<String, Future<Object?>> _inFlightReads = {};
+
+  Future<T> _dedupeRead<T>(String key, Future<T> Function() fetch) {
+    final existing = _inFlightReads[key];
+    if (existing != null) return existing.then((v) => v as T);
+    final future = fetch();
+    _inFlightReads[key] = future;
+    future.whenComplete(() {
+      if (identical(_inFlightReads[key], future)) _inFlightReads.remove(key);
+    });
+    return future;
+  }
+
   AiEngineRepository({
     required this.baseUrl,
     FirebaseAuth? auth,
@@ -332,7 +352,19 @@ class AiEngineRepository {
   /// on app foreground / dashboard load (fills subjects that went cold via ingestion
   /// while the app was closed). The response is discarded and any error is swallowed —
   /// warming is best-effort and must never surface to the user.
-  Future<void> warmAllQuizzes() async {
+  Future<void> warmAllQuizzes() {
+    // Dedupe overlapping warm requests — this is fired both after every submit
+    // AND on shell-ready, often unawaited. A concurrent second call reuses the
+    // in-flight request instead of issuing a redundant one; sequential warms
+    // (e.g. after each submit, with freshly-updated mastery) still run normally.
+    final existing = _warmInFlight;
+    if (existing != null) return existing;
+    final future = _doWarmAllQuizzes().whenComplete(() => _warmInFlight = null);
+    _warmInFlight = future;
+    return future;
+  }
+
+  Future<void> _doWarmAllQuizzes() async {
     try {
       final headers = await _getJsonHeaders();
       await _client.post(
@@ -466,14 +498,18 @@ class AiEngineRepository {
   // -------------------------------------------------------------------------
 
   /// `GET /gamification/student/{uid}/profile` — fetch XP, coins, level.
-  Future<Map<String, dynamic>> getGamificationProfile(String studentUid) async {
-    final headers = await _getJsonHeaders();
-    final response = await _client.get(
-      Uri.parse('$baseUrl/api/v1/gamification/student/$studentUid/profile'),
-      headers: headers,
-    );
-    _assertSuccess(response, 'getGamificationProfile');
-    return jsonDecode(response.body) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getGamificationProfile(String studentUid) {
+    // Dedupe concurrent reads for the same student (parent dashboard renders one
+    // child card per student, each loading this on mount).
+    return _dedupeRead('gamification:$studentUid', () async {
+      final headers = await _getJsonHeaders();
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/v1/gamification/student/$studentUid/profile'),
+        headers: headers,
+      );
+      _assertSuccess(response, 'getGamificationProfile');
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    });
   }
 
   /// `POST /gamification/student/{uid}/daily-login` — award daily bonus.
@@ -670,7 +706,15 @@ class AiEngineRepository {
   }
 
   /// `GET /gamification/student/{uid}/weekly-report` — real 7-day stats.
-  Future<WeeklyReportModel> getWeeklyReport(String studentUid) async {
+  Future<WeeklyReportModel> getWeeklyReport(String studentUid) {
+    // Dedupe concurrent reads for the same student (multiple child cards).
+    return _dedupeRead(
+      'weekly:$studentUid',
+      () => _getWeeklyReportUncached(studentUid),
+    );
+  }
+
+  Future<WeeklyReportModel> _getWeeklyReportUncached(String studentUid) async {
     final headers = await _getJsonHeaders();
     final uri = Uri.parse(
       '$baseUrl/api/v1/gamification/student/$studentUid/weekly-report',
@@ -800,26 +844,40 @@ class AiEngineRepository {
   /// skill tree). Strong = mastery ≥ 75%; Needs-work = attempted but < 50%.
   Future<SubjectMasteryReport> getSubjectMasteryReport(
     String studentUid,
-    int subjectId,
-  ) async {
+    int subjectId, {
+    double? knownTotalMasteryPercent,
+  }) async {
+    // When the caller already knows this subject's overall mastery (e.g. from the
+    // chip list produced by getReportSubjects), skip the all-subjects analytics
+    // fetch entirely — it was previously fetched just to read one number, on top
+    // of getReportSubjects having already fetched the same payload.
     final results = await Future.wait([
-      getSubjectsAnalytics(studentUid: studentUid),
       getSubjectMasteryTree(subjectId, studentUid: studentUid),
       getSubjectErrorBreakdown(subjectId, studentUid: studentUid),
       getSubjectMasteryHistory(subjectId, studentUid: studentUid),
+      if (knownTotalMasteryPercent == null)
+        getSubjectsAnalytics(studentUid: studentUid),
     ]);
-    final subjects = results[0] as List<Map<String, dynamic>>;
-    final tree = results[1] as Map<String, dynamic>;
-    final breakdown = results[2] as Map<String, dynamic>;
-    final historyData = results[3] as Map<String, dynamic>;
+    final tree = results[0] as Map<String, dynamic>;
+    final breakdown = results[1] as Map<String, dynamic>;
+    final historyData = results[2] as Map<String, dynamic>;
 
-    final meta = subjects.firstWhere(
-      (s) => s['subject_id'] == subjectId,
-      orElse: () => <String, dynamic>{},
-    );
-    final totalMastery = ((meta['average_mastery'] as num?)?.toDouble() ?? 0.0) * 100.0;
-    final subjectName =
-        (tree['subject_name'] as String?) ?? (meta['name'] as String?) ?? '';
+    final double totalMastery;
+    final String subjectName;
+    if (knownTotalMasteryPercent != null) {
+      totalMastery = knownTotalMasteryPercent;
+      subjectName = (tree['subject_name'] as String?) ?? '';
+    } else {
+      final subjects = results[3] as List<Map<String, dynamic>>;
+      final meta = subjects.firstWhere(
+        (s) => s['subject_id'] == subjectId,
+        orElse: () => <String, dynamic>{},
+      );
+      totalMastery =
+          ((meta['average_mastery'] as num?)?.toDouble() ?? 0.0) * 100.0;
+      subjectName =
+          (tree['subject_name'] as String?) ?? (meta['name'] as String?) ?? '';
+    }
 
     final all = <MasterySkill>[];
     for (final unit in (tree['units'] as List? ?? const [])) {

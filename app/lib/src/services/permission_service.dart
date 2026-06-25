@@ -91,22 +91,27 @@ class PermissionService {
 
   static const _channel = MethodChannel('com.example.studymentor/permissions');
 
-  /// Iterates all permissions in declaration order and returns the first one
-  /// that is not yet granted, or null if every permission has been granted.
+  /// Returns the first permission (in declaration order) that is not yet
+  /// granted, or null if every permission has been granted.
+  ///
+  /// The native `isGranted` checks run concurrently (instead of 6 sequential
+  /// round-trips) — the result is identical because we still pick the first
+  /// not-granted permission in [RequiredPermission.values] order.
   static Future<RequiredPermission?> firstMissingPermission() async {
-    for (final permission in RequiredPermission.values) {
-      final granted = await isGranted(permission);
-      if (!granted) return permission;
+    const permissions = RequiredPermission.values;
+    final results = await Future.wait(permissions.map(isGranted));
+    for (var i = 0; i < permissions.length; i++) {
+      if (!results[i]) return permissions[i];
     }
     return null;
   }
 
-  /// Iterates [parentPermissions] in order and returns the first one that is
-  /// not yet granted, or null if both parent permissions have been granted.
+  /// Returns the first not-yet-granted [parentPermissions] entry (in order), or
+  /// null if both are granted. Checks run concurrently; order is preserved.
   static Future<RequiredPermission?> firstMissingParentPermission() async {
-    for (final permission in parentPermissions) {
-      final granted = await isGranted(permission);
-      if (!granted) return permission;
+    final results = await Future.wait(parentPermissions.map(isGranted));
+    for (var i = 0; i < parentPermissions.length; i++) {
+      if (!results[i]) return parentPermissions[i];
     }
     return null;
   }

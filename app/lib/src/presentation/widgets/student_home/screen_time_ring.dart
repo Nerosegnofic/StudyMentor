@@ -15,8 +15,9 @@ import '../../../../l10n/app_localizations.dart';
 ///   • **No time** — grey ring (0 earned, not in cooldown).
 ///     Centre prompts the student to complete a quiz.
 ///
-/// The parent screen rebuilds every second (via its Timer), which drives
-/// the live countdown animations.
+/// The home screen rebuilds this widget every second (via a confined
+/// `ListenableBuilder` bound to a 1s ticker, not a whole-tree setState), which
+/// drives the live countdown animations.
 class ScreenTimeRing extends StatelessWidget {
   final StudentConfigModel config;
 
@@ -209,9 +210,12 @@ class ScreenTimeRing extends StatelessWidget {
       SizedBox(
         width: 150,
         height: 150,
-        child: CustomPaint(
-          painter: _RingPainter(fraction: fraction, color: color),
-          child: Center(child: center),
+        // Isolate the per-second ring repaint from the rest of the card.
+        child: RepaintBoundary(
+          child: CustomPaint(
+            painter: _RingPainter(fraction: fraction, color: color),
+            child: Center(child: center),
+          ),
         ),
       );
 

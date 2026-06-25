@@ -53,6 +53,10 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
   void _onAnswer(AnswerQuestionEvent event, Emitter<QuizState> emit) {
     if (state is! QuizLoaded) return;
     final current = state as QuizLoaded;
+    // NOTE: copying the whole answer map on each answer is O(n) per answer, i.e.
+    // O(n²) over a full quiz. This is fine for current quiz sizes (≤ ~20). If
+    // quizzes ever grow much larger, switch to a mutable map + manual state
+    // notification (or a list) to avoid the repeated copies.
     final updated = Map<String, StudentAnswer>.from(current.currentAnswers);
     updated[event.answer.questionId] = event.answer;
     emit(current.copyWith(currentAnswers: updated));

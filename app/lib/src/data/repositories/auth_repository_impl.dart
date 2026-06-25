@@ -153,6 +153,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  bool isEmailVerifiedCached() =>
+      firebase.currentUser?.emailVerified ?? false;
+
+  @override
   Future<void> signOut() => firebase.signOut();
 
   @override
@@ -538,8 +542,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId) {
-    return AiEngineRepository.instance.getSubjectMasteryReport(studentUid, subjectId);
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId, {double? knownTotalMasteryPercent}) {
+    return AiEngineRepository.instance.getSubjectMasteryReport(studentUid, subjectId, knownTotalMasteryPercent: knownTotalMasteryPercent);
   }
 
   @override

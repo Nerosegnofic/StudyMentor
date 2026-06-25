@@ -16,17 +16,19 @@ class MascotWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Image.asset(
-        'assets/mascot/${state.name}.png',
+    return RepaintBoundary(
+      child: SizedBox(
         width: size,
         height: size,
-        // Decode at 2x the default display size — saves RAM vs. loading
-        // the full 300px source everywhere it's used.
-        cacheWidth: 240,
-        fit: BoxFit.contain,
+        child: Image.asset(
+          'assets/mascot/${state.name}.png',
+          width: size,
+          height: size,
+          // Decode at 2x the default display size — saves RAM vs. loading
+          // the full 300px source everywhere it's used.
+          cacheWidth: 240,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

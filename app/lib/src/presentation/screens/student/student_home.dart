@@ -72,7 +72,16 @@ class StudentHomeState extends State<StudentHome> {
   final ScrollController _gardenScrollController = ScrollController();
 
   // ── Screen-time live refresh ───────────────────────────────────────────────
+  // A single 1-second ticker drives ONLY the live screen-time widgets instead of
+  // rebuilding the whole home tree. [_liveTick] increments every second and
+  // rebuilds the countdown widgets (ring + free-time banner). [_isResting]
+  // mirrors MascotOverlayService.isBlocked but, being a ValueNotifier, only
+  // notifies when the blocked state actually flips — so the start-quiz button and
+  // monitored-apps card rebuild on block/unblock, not 60×/min.
   Timer? _usageTicker;
+  final ValueNotifier<int> _liveTick = ValueNotifier<int>(0);
+  final ValueNotifier<bool> _isResting =
+      ValueNotifier<bool>(MascotOverlayService.instance.isBlocked);
 
   @override
   void initState() {
@@ -87,13 +96,17 @@ class StudentHomeState extends State<StudentHome> {
     _loadDailyData();
 
     _usageTicker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+      // Drive only the live screen-time subtrees — no whole-tree setState.
+      _liveTick.value++;
+      _isResting.value = MascotOverlayService.instance.isBlocked;
     });
   }
 
   @override
   void dispose() {
     _usageTicker?.cancel();
+    _liveTick.dispose();
+    _isResting.dispose();
     _gardenScrollController.dispose();
     super.dispose();
   }
@@ -102,43 +115,49 @@ class StudentHomeState extends State<StudentHome> {
   /// (study time / accuracy / per-subject questions), and the weekly study
   /// series — all used by the rank card, Today card, and weekly chart.
   Future<void> _loadDailyData() async {
-    try {
-      final profile =
-          await AiEngineRepository.instance.getGamificationProfile(widget.uid);
-      if (mounted) {
-        setState(() {
+    // Fire the three independent calls concurrently (was sequential — total
+    // latency was the sum of all three). Each is guarded so one failure doesn't
+    // sink the others; a single setState applies whatever succeeded, replacing
+    // the previous three partial rebuilds with one. NOTE: `.instance` is read
+    // inside each try because lazily constructing the singleton can throw (e.g.
+    // FirebaseAuth.instance before Firebase init) — that access must stay guarded.
+    await Future.wait([
+      () async {
+        try {
+          final profile = await AiEngineRepository.instance
+              .getGamificationProfile(widget.uid);
           _streak = (profile['current_streak'] as int?) ?? _streak;
           _xp = (profile['xp_total'] as int?) ?? _xp;
           _level = (profile['current_level'] as int?) ?? _level;
-        });
-      }
-    } catch (e, s) {
-      debugPrint('[StudentHome] _loadDailyData gamification error: $e\n$s');
-    }
-
-    try {
-      final snapshot =
-          await AiEngineRepository.instance.getDailySnapshot(widget.uid);
-      if (mounted) {
-        setState(() {
+        } catch (e, s) {
+          debugPrint('[StudentHome] _loadDailyData gamification error: $e\n$s');
+        }
+      }(),
+      () async {
+        try {
+          final snapshot =
+              await AiEngineRepository.instance.getDailySnapshot(widget.uid);
           _studyTimeToday = snapshot.totalStudyTimeToday;
           _accuracyToday = snapshot.averageAccuracyToday;
           _questionsBySubject = snapshot.questionsBySubject;
-        });
-      }
-    } catch (e, s) {
-      debugPrint('[StudentHome] _loadDailyData daily snapshot error: $e\n$s');
-    }
+        } catch (e, s) {
+          debugPrint(
+            '[StudentHome] _loadDailyData daily snapshot error: $e\n$s',
+          );
+        }
+      }(),
+      () async {
+        try {
+          final habits = await AiEngineRepository.instance
+              .getStudyHabitsReport(widget.uid);
+          _weeklyStudy = habits.dailyStudy;
+        } catch (e, s) {
+          debugPrint('[StudentHome] _loadDailyData study habits error: $e\n$s');
+        }
+      }(),
+    ]);
 
-    try {
-      final habits =
-          await AiEngineRepository.instance.getStudyHabitsReport(widget.uid);
-      if (mounted) {
-        setState(() => _weeklyStudy = habits.dailyStudy);
-      }
-    } catch (e, s) {
-      debugPrint('[StudentHome] _loadDailyData study habits error: $e\n$s');
-    }
+    if (mounted) setState(() {});
   }
 
   Future<void> refresh() async {
@@ -173,7 +192,8 @@ class StudentHomeState extends State<StudentHome> {
   Widget build(BuildContext context) {
     final firstName = widget.fullName.split(' ').first;
     final activeRules = _appRules.where((r) => !r.isPaused).toList();
-    final isResting = MascotOverlayService.instance.isBlocked;
+    // Live blocked/countdown state is no longer read here — it is read inside the
+    // ticker-driven builders below so the rest of the tree doesn't rebuild 1×/s.
 
     return MultiBlocListener(
       listeners: [
@@ -243,7 +263,12 @@ class StudentHomeState extends State<StudentHome> {
 
                 // 2b ── Focused-quiz CTA (only when the screen-time system is on)
                 if (!_rulesLoading && activeRules.isNotEmpty) ...[
-                  _buildStartQuizButton(),
+                  // Label flips between "start" / "solve to unlock" on block
+                  // changes only — rebuild just this button when that happens.
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _isResting,
+                    builder: (context, _, _) => _buildStartQuizButton(),
+                  ),
                   const SizedBox(height: 16),
                 ],
 
@@ -252,18 +277,29 @@ class StudentHomeState extends State<StudentHome> {
                 const SizedBox(height: 16),
 
                 // 4 ── Screen-time ring + free-time (rules-driven) ─────────────
+                // These show the live countdown, so they rebuild every second —
+                // but confined to this subtree via the [_liveTick] listener
+                // instead of rebuilding the whole home tree.
                 if (!_rulesLoading && activeRules.isNotEmpty) ...[
-                  ScreenTimeRing(config: _config),
-                  const SizedBox(height: 16),
-                  FreeTimeBanner(
-                    dailyEarnedSeconds:
-                        MascotOverlayService.instance.dailyRewardSeconds,
-                    remainingSeconds:
-                        MascotOverlayService.instance.remainingRewardSeconds,
-                    perQuizRewardSeconds: _config.rewardPerQuizSeconds,
-                    isInCooldown: MascotOverlayService.instance.isInCooldown,
-                    isLocked: isResting,
-                    cooldownConfigured: _config.cooldownSeconds > 0,
+                  ListenableBuilder(
+                    listenable: _liveTick,
+                    builder: (context, _) {
+                      final svc = MascotOverlayService.instance;
+                      return Column(
+                        children: [
+                          ScreenTimeRing(config: _config),
+                          const SizedBox(height: 16),
+                          FreeTimeBanner(
+                            dailyEarnedSeconds: svc.dailyRewardSeconds,
+                            remainingSeconds: svc.remainingRewardSeconds,
+                            perQuizRewardSeconds: _config.rewardPerQuizSeconds,
+                            isInCooldown: svc.isInCooldown,
+                            isLocked: svc.isBlocked,
+                            cooldownConfigured: _config.cooldownSeconds > 0,
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -285,10 +321,13 @@ class StudentHomeState extends State<StudentHome> {
                 if (_rulesLoading)
                   _buildLoadingCard()
                 else
-                  MonitoredAppsCard(
-                    rules: _appRules,
-                    iconCache: _iconCache,
-                    isResting: isResting,
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _isResting,
+                    builder: (context, resting, _) => MonitoredAppsCard(
+                      rules: _appRules,
+                      iconCache: _iconCache,
+                      isResting: resting,
+                    ),
                   ),
               ],
             ),
