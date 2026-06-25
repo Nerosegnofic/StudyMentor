@@ -75,13 +75,11 @@ class GetAppConfigForStudentStudentConfig {
 
 @immutable
 class GetAppConfigForStudentAppRules {
-  final String id;
   final String packageName;
   final String appLabel;
   final bool? isPaused;
   GetAppConfigForStudentAppRules.fromJson(dynamic json):
   
-  id = nativeFromJson<String>(json['id']),
   packageName = nativeFromJson<String>(json['packageName']),
   appLabel = nativeFromJson<String>(json['appLabel']),
   isPaused = json['isPaused'] == null ? null : nativeFromJson<bool>(json['isPaused']);
@@ -95,19 +93,17 @@ class GetAppConfigForStudentAppRules {
     }
 
     final GetAppConfigForStudentAppRules otherTyped = other as GetAppConfigForStudentAppRules;
-    return id == otherTyped.id && 
-    packageName == otherTyped.packageName && 
+    return packageName == otherTyped.packageName && 
     appLabel == otherTyped.appLabel && 
     isPaused == otherTyped.isPaused;
     
   }
   @override
-  int get hashCode => Object.hashAll([id.hashCode, packageName.hashCode, appLabel.hashCode, isPaused.hashCode]);
+  int get hashCode => Object.hashAll([packageName.hashCode, appLabel.hashCode, isPaused.hashCode]);
   
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
-    json['id'] = nativeToJson<String>(id);
     json['packageName'] = nativeToJson<String>(packageName);
     json['appLabel'] = nativeToJson<String>(appLabel);
     if (isPaused != null) {
@@ -117,7 +113,6 @@ class GetAppConfigForStudentAppRules {
   }
 
   GetAppConfigForStudentAppRules({
-    required this.id,
     required this.packageName,
     required this.appLabel,
     this.isPaused,

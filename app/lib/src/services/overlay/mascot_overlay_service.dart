@@ -380,7 +380,6 @@ class MascotOverlayService {
     return _dailyRewardSeconds;
   }
 
-  MascotState get currentState => _mascotState;
   StudentConfigModel get config => _config;
 
   // ── Earned reward persistence ──────────────────────────────────────────────

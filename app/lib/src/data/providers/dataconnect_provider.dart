@@ -180,7 +180,6 @@ class DataConnectProvider {
     final rules = result.data.appRules
         .map(
           (r) => {
-            'id': r.id,
             'package_name': r.packageName,
             'app_label': r.appLabel,
             'is_paused': r.isPaused,
