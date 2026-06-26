@@ -345,7 +345,6 @@ class DataConnectProvider {
           .deleteAllOwnedItemsForStudent(studentUid: studentUid)
           .execute(),
       _connector.deleteStudentAvatar(studentUid: studentUid).execute(),
-      _connector.deleteStudentSettings(studentUid: studentUid).execute(),
       _connector.deleteStudentConfig(studentUid: studentUid).execute(),
       _connector.deleteAllAppRulesForStudent(studentUid: studentUid).execute(),
       _connector

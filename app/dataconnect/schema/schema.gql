@@ -59,15 +59,6 @@ type StudentConfig @table(name: "student_configs", key: ["studentUid"]) {
   quizCount: String @col(dataType: "varchar(4)") @default(expr: "'auto'")
 }
 
-# Per-student app preferences (notifications, sounds, music).
-type StudentSettings @table(name: "student_settings", key: ["studentUid"]) {
-  studentUid: String!
-  student: Student!
-  notificationsEnabled: Boolean! @default(expr: "true")
-  soundEffectsEnabled: Boolean! @default(expr: "true")
-  backgroundMusicEnabled: Boolean! @default(expr: "false")
-}
-
 # Records a shop item purchased by a student.
 type StudentOwnedItem @table(name: "student_owned_items", key: ["id"]) {
   id: UUID! @default(expr: "uuidV4()")

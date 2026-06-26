@@ -147,10 +147,6 @@ mutation DeleteStudentAvatar($studentUid: String!) @auth(level: USER, insecureRe
   studentAvatar_delete(key: { studentUid: $studentUid })
 }
 
-mutation DeleteStudentSettings($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's settings.") {
-  studentSettings_delete(key: { studentUid: $studentUid })
-}
-
 mutation DeleteStudentConfig($studentUid: String!) @auth(level: USER, insecureReason: "Parents can delete their children's config.") {
   studentConfig_delete(key: { studentUid: $studentUid })
 }
