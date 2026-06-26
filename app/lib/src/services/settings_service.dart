@@ -2,17 +2,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Persists per-device student app preferences via SharedPreferences.
 class SettingsService {
-  static const _keyTimerNotification = 'student_timer_notification_enabled';
-  static const _keyCooldownNotification =
-      'student_cooldown_notification_enabled';
   final SharedPreferences _prefs;
+  final String _studentUid;
 
-  SettingsService._(this._prefs);
+  SettingsService._(this._prefs, this._studentUid);
 
-  static Future<SettingsService> create() async {
+  static Future<SettingsService> create(String studentUid) async {
     final prefs = await SharedPreferences.getInstance();
-    return SettingsService._(prefs);
+    return SettingsService._(prefs, studentUid);
   }
+
+  String get _keyTimerNotification =>
+      'student_${_studentUid}_timer_notification_enabled';
+  String get _keyCooldownNotification =>
+      'student_${_studentUid}_cooldown_notification_enabled';
 
   bool get timerNotificationEnabled =>
       _prefs.getBool(_keyTimerNotification) ?? true;
