@@ -132,7 +132,7 @@ class MascotOverlayService {
   SettingsService? _settingsService;
 
   Future<SettingsService> _getSettings() async {
-    _settingsService ??= await SettingsService.create();
+    _settingsService ??= await SettingsService.create(_studentUid!);
     return _settingsService!;
   }
 
@@ -152,6 +152,7 @@ class MascotOverlayService {
     StudentConfigModel config = const StudentConfigModel(),
   }) async {
     _studentUid = studentUid;
+    _settingsService = null;
     _monitoredPackages = {for (var r in rules) if (!r.isPaused) r.packageName};
     _config = config;
 

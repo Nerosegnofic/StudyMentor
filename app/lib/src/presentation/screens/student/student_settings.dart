@@ -31,7 +31,7 @@ class _StudentSettingsState extends State<StudentSettings> {
   }
 
   Future<void> _init() async {
-    final settings = await SettingsService.create();
+    final settings = await SettingsService.create(widget.uid);
     if (!mounted) return;
     setState(() {
       _settings = settings;
