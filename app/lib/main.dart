@@ -140,6 +140,11 @@ final _studentThemeData =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Cairo is bundled under assets/google_fonts/, so google_fonts must load it
+  // from the asset bundle and never hit the network — eliminates the first-render
+  // font-fetch jank on the splash and every screen.
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   // ── Critical-path init only ──────────────────────────────────────────────
   // Only Firebase (the whole auth tree depends on it) and the saved locale
   // (drives MaterialApp.locale) must resolve before the first frame. Everything

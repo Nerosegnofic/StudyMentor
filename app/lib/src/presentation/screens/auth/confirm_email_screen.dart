@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
@@ -31,17 +31,29 @@ class ConfirmEmailScreen extends StatelessWidget {
           }
           if (state is AuthEmailUnverified) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppLocalizations.of(context).emailNotVerifiedYetMessage)),
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context).emailNotVerifiedYetMessage,
+                ),
+              ),
             );
           }
           if (state is EmailVerificationSent) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppLocalizations.of(context).emailVerificationLinkSentMessage)),
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context).emailVerificationLinkSentMessage,
+                ),
+              ),
             );
           }
           if (state is EmailVerificationError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(localizeError(state.message, AppLocalizations.of(context)))),
+              SnackBar(
+                content: Text(
+                  localizeError(state.message, AppLocalizations.of(context)),
+                ),
+              ),
             );
           }
         },
@@ -52,7 +64,9 @@ class ConfirmEmailScreen extends StatelessWidget {
             body: Column(
               children: [
                 // No back affordance — back is blocked on this screen.
-                AuthHeader(subtitle: AppLocalizations.of(context).confirmEmailSubtitle),
+                AuthHeader(
+                  subtitle: AppLocalizations.of(context).confirmEmailSubtitle,
+                ),
                 Expanded(
                   child: isLoading
                       ? const Center(
@@ -79,7 +93,9 @@ class ConfirmEmailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 24),
                                 Text(
-                                  AppLocalizations.of(context).confirmEmailInstructions,
+                                  AppLocalizations.of(
+                                    context,
+                                  ).confirmEmailInstructions,
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.cairo(
                                     fontSize: 15,
@@ -89,25 +105,31 @@ class ConfirmEmailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 32),
                                 authPrimaryButton(
-                                  label: AppLocalizations.of(context).sendEmailVerificationButton,
+                                  label: AppLocalizations.of(
+                                    context,
+                                  ).sendEmailVerificationButton,
                                   onPressed: () => context.read<AuthBloc>().add(
                                     SendEmailVerificationRequested(),
                                   ),
                                 ),
                                 const SizedBox(height: 12),
                                 authSecondaryButton(
-                                  label: AppLocalizations.of(context).emailVerifiedButton,
+                                  label: AppLocalizations.of(
+                                    context,
+                                  ).emailVerifiedButton,
                                   onPressed: () => context.read<AuthBloc>().add(
                                     CheckEmailVerificationRequested(),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 authTextLink(
-                                  text: AppLocalizations.of(context).logOutButton,
+                                  text: AppLocalizations.of(
+                                    context,
+                                  ).logOutButton,
                                   color: Colors.grey.shade600,
-                                  onPressed: () => context
-                                      .read<AuthBloc>()
-                                      .add(LogoutRequested()),
+                                  onPressed: () => context.read<AuthBloc>().add(
+                                    LogoutRequested(),
+                                  ),
                                 ),
                               ],
                             ),

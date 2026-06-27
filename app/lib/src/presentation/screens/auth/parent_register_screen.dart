@@ -32,9 +32,6 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Computed above the Scaffold so the keyboard is detected (a Scaffold zeroes
-    // viewInsets.bottom for its body subtree).
-    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       backgroundColor: kAuthBackground,
       body: BlocConsumer<AuthBloc, AuthState>(
@@ -51,7 +48,12 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
             if (ModalRoute.of(context)?.isCurrent ?? false) {
               _passCtl.clear();
               _confirmCtl.clear();
-              setState(() => _error = localizeError(state.message, AppLocalizations.of(context)));
+              setState(
+                () => _error = localizeError(
+                  state.message,
+                  AppLocalizations.of(context),
+                ),
+              );
             }
           }
         },
@@ -62,7 +64,6 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
             children: [
               AuthHeader(
                 subtitle: loc.createParentAccountSubtitle,
-                keyboardOpen: keyboardOpen,
                 onBack: () => Navigator.of(context).maybePop(),
               ),
               Expanded(
@@ -79,7 +80,8 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                           label: loc.fieldFullName,
                           icon: Icons.person_outline,
                         ),
-                        validator: (v) => v!.isEmpty ? loc.validatorFullNameRequired : null,
+                        validator: (v) =>
+                            v!.isEmpty ? loc.validatorFullNameRequired : null,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
@@ -89,7 +91,8 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                           label: loc.fieldEmail,
                           icon: Icons.email_outlined,
                         ),
-                        validator: (v) => v!.contains('@') ? null : loc.loginEmailValidator,
+                        validator: (v) =>
+                            v!.contains('@') ? null : loc.loginEmailValidator,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
@@ -111,7 +114,9 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                           ),
                         ),
                         obscureText: _obscurePassword,
-                        validator: (v) => v!.length >= 6 ? null : loc.validatorPasswordMinLength,
+                        validator: (v) => v!.length >= 6
+                            ? null
+                            : loc.validatorPasswordMinLength,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
@@ -133,8 +138,9 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                           ),
                         ),
                         obscureText: _obscureConfirm,
-                        validator: (v) =>
-                            v == _passCtl.text ? null : loc.validatorPasswordsDoNotMatch,
+                        validator: (v) => v == _passCtl.text
+                            ? null
+                            : loc.validatorPasswordsDoNotMatch,
                       ),
                       const SizedBox(height: 24),
                       authPrimaryButton(

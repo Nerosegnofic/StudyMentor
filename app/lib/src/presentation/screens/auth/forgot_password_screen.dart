@@ -20,29 +20,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   String? _error;
   @override
   Widget build(BuildContext context) {
-    // Computed above the Scaffold so the keyboard is detected (a Scaffold zeroes
-    // viewInsets.bottom for its body subtree).
-    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       backgroundColor: kAuthBackground,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           final loc = AppLocalizations.of(context);
           if (state is PasswordResetEmailSent) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(loc.passwordResetLinkSentMessage)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(loc.passwordResetLinkSentMessage)),
+            );
             Navigator.pop(context);
           }
           if (state is AuthError) {
-            setState(() => _error = localizeError(state.message, AppLocalizations.of(context)));
+            setState(
+              () => _error = localizeError(
+                state.message,
+                AppLocalizations.of(context),
+              ),
+            );
           }
         },
         child: Column(
           children: [
             AuthHeader(
               subtitle: AppLocalizations.of(context).resetPasswordSubtitle,
-              keyboardOpen: keyboardOpen,
               onBack: () => Navigator.of(context).maybePop(),
               mascotAsset: 'assets/mascot/sad.png',
             ),
@@ -63,7 +64,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           label: AppLocalizations.of(context).fieldEmail,
                           icon: Icons.email_outlined,
                         ),
-                        validator: (v) => v!.contains('@') ? null : AppLocalizations.of(context).loginEmailValidator,
+                        validator: (v) => v!.contains('@')
+                            ? null
+                            : AppLocalizations.of(context).loginEmailValidator,
                       ),
                       SizedBox(height: 24),
                       authPrimaryButton(

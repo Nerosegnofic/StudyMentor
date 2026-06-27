@@ -109,6 +109,9 @@ flutter:
     - assets/plants/
     - assets/mascot/
     - assets/icon/
+    # Bundled Cairo weights (400/500/600/700/800/900) so google_fonts loads them
+    # from the asset bundle instead of fetching over the network on first render.
+    - assets/google_fonts/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

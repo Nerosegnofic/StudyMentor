@@ -56,20 +56,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthEmailUnverified(profile.email));
         } else {
           emit(AuthAuthenticated(profile));
+          // Background scheduling + context caching don't gate the UI — run them
+          // fire-and-forget so the splash dismisses as soon as auth state is
+          // known (mirrors the _onLogin change).
           if (profile.role.toLowerCase() != 'parent') {
-            await GardenNudgeService.scheduleNext(
-              policy: ExistingWorkPolicy.keep,
-            );
-            await StreakReminderService.scheduleNext(
-              policy: ExistingWorkPolicy.keep,
-            );
-            await _cacheStudentContext(profile);
+            unawaited(_postLoginStudentSetup(profile));
           } else {
-            await _cacheParentContext(profile);
-            await ParentNotificationPollService.register();
-            await ParentInactivityCheckService.scheduleNext(
-              policy: ExistingWorkPolicy.keep,
-            );
+            unawaited(_postLoginParentSetup(profile));
           }
         }
       } else {
