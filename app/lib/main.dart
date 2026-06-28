@@ -37,6 +37,7 @@ import 'src/presentation/screens/auth/parent_register_screen.dart';
 import 'src/presentation/screens/student/student_screen.dart';
 import 'src/services/installed_apps_service.dart';
 import 'src/services/device_admin_service.dart';
+import 'src/services/overlay/mascot_overlay_service.dart';
 import 'src/services/local_notification_service.dart';
 import 'src/services/garden_nudge_service.dart';
 import 'src/services/streak_reminder_service.dart';
@@ -315,8 +316,10 @@ class RootPage extends StatelessWidget {
         if (state is AuthAuthenticated) {
           final isStudent = state.user.role.toLowerCase() != 'parent';
           if (!isStudent) {
-            // Parent logged in — ensure the Settings guard is disabled.
+            // Parent logged in — ensure the Settings guard is disabled and the
+            // student monitoring service is torn down (no student session).
             await DeviceAdminService.onStudentLogout();
+            await MascotOverlayService.instance.stop();
           }
           // Do NOT activate student mode for students here. The Settings block
           // must not be enabled until ALL required permissions have been
@@ -328,8 +331,13 @@ class RootPage extends StatelessWidget {
           // before navigating to student_home.
         } else if (state is AuthUnauthenticated ||
             state is AuthEmailUnverified) {
-          // Logged out or unverified — disable the guard.
+          // Logged out or unverified — disable the guard and stop the monitoring
+          // service. This is the single teardown point for the MascotOverlayService
+          // (it is intentionally NOT stopped from StudentScreen.dispose, which
+          // fires during login navigation churn and would clobber the blocked
+          // state — the "lock not active until I reopen the app" bug).
           await DeviceAdminService.onStudentLogout();
+          await MascotOverlayService.instance.stop();
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
