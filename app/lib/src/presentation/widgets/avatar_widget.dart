@@ -23,7 +23,7 @@ const Map<String, int> _safeDefaults = {
   'graphicType': 0,
 };
 
-class AvatarWidget extends StatelessWidget {
+class AvatarWidget extends StatefulWidget {
   final AvatarConfig config;
   final double size;
 
@@ -34,7 +34,51 @@ class AvatarWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  State<AvatarWidget> createState() => _AvatarWidgetState();
+}
+
+class _AvatarWidgetState extends State<AvatarWidget> {
+  late String _svgString;
+  late String _cacheKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _cacheKey = _configKey(widget.config);
+    _svgString = _buildSvg(widget.config);
+  }
+
+  @override
+  void didUpdateWidget(AvatarWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Regenerate the (expensive) SVG only when the equipped slots actually
+    // change. AvatarConfig has no value equality, so compare a derived key
+    // rather than the instance — otherwise a new-but-identical config (common
+    // on rebuilds) would needlessly re-run Fluttermoji generation + parsing.
+    final newKey = _configKey(widget.config);
+    if (newKey != _cacheKey) {
+      _cacheKey = newKey;
+      _svgString = _buildSvg(widget.config);
+    }
+  }
+
+  /// Key over only the fields that affect the rendered SVG (the equipped slots).
+  static String _configKey(AvatarConfig c) => [
+        c.equippedHair,
+        c.equippedOutfit,
+        c.equippedHairColor,
+        c.equippedOutfitColor,
+        c.equippedAccessory,
+        c.equippedBackground,
+        c.equippedFacialHair,
+        c.equippedFacialHairColor,
+        c.equippedEyes,
+        c.equippedEyebrow,
+        c.equippedMouth,
+        c.equippedSkinTone,
+      ].join('|');
+
+  static String _buildSvg(AvatarConfig config) {
     final controller = Get.put(FluttermojiController());
 
     // Start from safe defaults to avoid null cast errors when selectedOptions
@@ -61,17 +105,22 @@ class AvatarWidget extends StatelessWidget {
     apply(config.equippedSkinTone);
 
     controller.selectedOptions = options;
-    final svgString = controller.getFluttermojiFromOptions();
+    return controller.getFluttermojiFromOptions();
+  }
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ClipOval(
-        child: Container(
-          color: Colors.white,
-          child: SvgPicture.string(
-            svgString,
-            fit: BoxFit.cover,
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: ClipOval(
+          child: Container(
+            color: Colors.white,
+            child: SvgPicture.string(
+              _svgString,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
       ),

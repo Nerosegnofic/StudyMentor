@@ -33,23 +33,43 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // Tabs load lazily — Overview eagerly on open, Mastery/Habits the first time
+  // their tab is shown. These flags both dedupe the dispatch and let each tab's
+  // builder show a loader until its first load is requested (avoids a flash of
+  // the empty state before the bloc sets its loading flag).
+  bool _masteryLoaded = false;
+  bool _habitsLoaded = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
+    // Only the Overview tab loads on open; the other two load on first view.
     context.read<ReportsBloc>().add(
       LoadWeeklyReportRequested(studentUid: widget.student.uid),
     );
-    context.read<ReportsBloc>().add(
-      LoadReportSubjectsRequested(studentUid: widget.student.uid),
-    );
-    context.read<ReportsBloc>().add(
-      LoadStudyHabitsRequested(studentUid: widget.student.uid),
-    );
+  }
+
+  void _onTabChanged() {
+    // Fires repeatedly during a swipe; the flags make each load happen once.
+    final index = _tabController.index;
+    if (index == 1 && !_masteryLoaded) {
+      _masteryLoaded = true;
+      context.read<ReportsBloc>().add(
+        LoadReportSubjectsRequested(studentUid: widget.student.uid),
+      );
+    } else if (index == 2 && !_habitsLoaded) {
+      _habitsLoaded = true;
+      context.read<ReportsBloc>().add(
+        LoadStudyHabitsRequested(studentUid: widget.student.uid),
+      );
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -252,8 +272,11 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       SizedBox(
                         height: 140,
                         width: double.infinity,
-                        child: CustomPaint(
-                          painter: _AccuracyTrendPainter(report.accuracyTrend),
+                        child: RepaintBoundary(
+                          child: CustomPaint(
+                            painter:
+                                _AccuracyTrendPainter(report.accuracyTrend),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -846,7 +869,9 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
             SizedBox(
               height: 140,
               width: double.infinity,
-              child: CustomPaint(painter: _AccuracyTrendPainter(points)),
+              child: RepaintBoundary(
+                child: CustomPaint(painter: _AccuracyTrendPainter(points)),
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -984,7 +1009,11 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     return BlocBuilder<ReportsBloc, ReportsState>(
       builder: (context, state) {
         // First load (no chips yet): show spinner / error / empty for the whole tab.
-        if (state.isMasteryLoading && state.subjects.isEmpty) {
+        // `!_masteryLoaded` covers the window before this tab is first viewed
+        // (incl. TabBarView pre-building the adjacent tab) so the empty state
+        // doesn't flash before the lazy load is dispatched.
+        if (!_masteryLoaded ||
+            (state.isMasteryLoading && state.subjects.isEmpty)) {
           return const Center(child: CircularProgressIndicator());
         }
         if (state.masteryError != null && state.masteryReport == null) {
@@ -1268,7 +1297,9 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
           SizedBox(
             height: 14,
             width: double.infinity,
-            child: CustomPaint(painter: _ErrorAnalyticsPainter(analytics)),
+            child: RepaintBoundary(
+              child: CustomPaint(painter: _ErrorAnalyticsPainter(analytics)),
+            ),
           ),
           const SizedBox(height: 20),
           _errorDetailItem(
@@ -1408,7 +1439,9 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
     final loc = AppLocalizations.of(context);
     return BlocBuilder<ReportsBloc, ReportsState>(
       builder: (context, state) {
-        if (state.isHabitsLoading) {
+        // `!_habitsLoaded` covers the window before this tab is first viewed so
+        // the empty state doesn't flash before the lazy load is dispatched.
+        if (!_habitsLoaded || state.isHabitsLoading) {
           return const Center(child: CircularProgressIndicator());
         }
         if (state.habitsError != null) {
@@ -1539,8 +1572,10 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       SizedBox(
                         height: 180,
                         width: double.infinity,
-                        child: CustomPaint(
-                          painter: _DailyStudyPainter(report.dailyStudy, hLabel: loc.hourUnitLabel, mLabel: loc.minuteUnitLabel),
+                        child: RepaintBoundary(
+                          child: CustomPaint(
+                            painter: _DailyStudyPainter(report.dailyStudy, hLabel: loc.hourUnitLabel, mLabel: loc.minuteUnitLabel),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1733,9 +1768,11 @@ class _ReportsAnalysisScreenState extends State<ReportsAnalysisScreen>
                       SizedBox(
                         width: 184,
                         height: 103,
-                        child: CustomPaint(
-                          painter: _ActivityHeatmapPainter(
-                            studyMinutes: studyMinutes,
+                        child: RepaintBoundary(
+                          child: CustomPaint(
+                            painter: _ActivityHeatmapPainter(
+                              studyMinutes: studyMinutes,
+                            ),
                           ),
                         ),
                       ),
@@ -1858,6 +1895,15 @@ class _AccuracyTrendPainter extends CustomPainter {
   final List<WeeklyAccuracyPoint> data;
   _AccuracyTrendPainter(this.data);
 
+  // Size-independent gradient built once (not per paint).
+  static final LinearGradient _fillGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [_kPrimary.withValues(alpha: 0.3), _kPrimary.withValues(alpha: 0.0)],
+  );
+  Shader? _cachedShader;
+  Size? _cachedSize;
+
   @override
   void paint(Canvas canvas, Size size) {
     final points = data.map((d) => d.accuracy / 100.0).toList();
@@ -1868,12 +1914,13 @@ class _AccuracyTrendPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
+    if (_cachedShader == null || _cachedSize != size) {
+      _cachedShader = _fillGradient
+          .createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      _cachedSize = size;
+    }
     final paintFill = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [_kPrimary.withValues(alpha: 0.3), _kPrimary.withValues(alpha: 0.0)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..shader = _cachedShader
       ..style = PaintingStyle.fill;
 
     final path = Path();

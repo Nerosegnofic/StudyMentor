@@ -17,7 +17,6 @@ import '../../../bloc/garden/garden_bloc.dart';
 import '../../../bloc/garden/garden_state.dart';
 import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
-import '../../../features/mascot/mascot_loading_view.dart';
 import '../../../../l10n/app_localizations.dart';
 
 const _kGreen = Color(0xFF2E7D32);
@@ -137,7 +136,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
       listener: (context, state) {
         if (state is GardenLoaded) {
           final plant = state.plants.where((p) => p.subjectId == widget.subjectId).firstOrNull;
-          if (plant != null && mounted) {
+          // Only refetch skills when this subject's mastery actually changed —
+          // the garden bloc can re-emit GardenLoaded for unrelated reasons.
+          if (plant != null &&
+              mounted &&
+              plant.masteryPercent != _masteryPercent) {
             setState(() {
               _masteryPercent = plant.masteryPercent;
               _skillsFuture = _repo.getSubjectSkills(widget.subjectId);
@@ -160,31 +163,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           ),
           iconTheme: const IconThemeData(color: _kGreen),
         ),
-        body: FutureBuilder<List<SkillDetailModel>>(
-          future: _skillsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: MascotLoadingView(message: loc.commonLoading),
-              );
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: MascotWithBubble(
-                    state: MascotState.sad,
-                    message: loc.loadSkillsErrorMessage,
-                  ),
-                ),
-              );
-            }
-
-            final skills = snapshot.data ?? [];
-            return _buildContent(context, stage, skills);
-          },
-        ),
+        // The header (hero, growth, mastery) and Practice CTA depend only on
+        // already-available state, so they render immediately; only the skills
+        // sections wait on the network (see the FutureBuilder in _buildContent).
+        body: _buildContent(context, stage),
       ),
     );
   }
@@ -192,11 +174,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   Widget _buildContent(
     BuildContext context,
     GrowthStage stage,
-    List<SkillDetailModel> skills,
   ) {
     final loc = AppLocalizations.of(context);
-    final strongSkills = skills.where((s) => s.isStrong).toList();
-    final weakSkills = skills.where((s) => s.isWeak).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -266,43 +245,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           ),
           const SizedBox(height: 20),
 
-          // ── Skills overview ──────────────────────────────────────────────
-          if (skills.isNotEmpty) ...[
-            Text(
-              loc.skillsTitle,
-              style: const TextStyle(
-
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E)),
-            ),
-            const SizedBox(height: 12),
-            ...skills.map((s) => _SkillRow(skill: s)),
-
-            const SizedBox(height: 20),
-          ],
-
-          // ── Strengths ─────────────────────────────────────────────────────
-          if (strongSkills.isNotEmpty) ...[
-            _SectionHeader(
-                icon: Icons.star_rounded,
-                label: loc.strengthsTitle,
-                color: const Color(0xFF34A853)),
-            const SizedBox(height: 8),
-            _SkillChipRow(skills: strongSkills, color: const Color(0xFF34A853)),
-            const SizedBox(height: 18),
-          ],
-
-          // ── Weaknesses ────────────────────────────────────────────────────
-          if (weakSkills.isNotEmpty) ...[
-            _SectionHeader(
-                icon: Icons.fitness_center_rounded,
-                label: loc.needsPracticeTitle,
-                color: const Color(0xFFEA4335)),
-            const SizedBox(height: 8),
-            _SkillChipRow(skills: weakSkills, color: const Color(0xFFEA4335)),
-            const SizedBox(height: 24),
-          ],
+          // ── Skills sections (the only part that waits on the network) ─────
+          _buildSkillsSection(context, loc),
 
           // ── Practice CTA ─────────────────────────────────────────────────
           // Gated while the subject's curriculum is still ingesting: the student
@@ -379,6 +323,79 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           }),
         ],
       ),
+    );
+  }
+
+  /// The all-skills / strengths / weaknesses sections — the only part of the
+  /// screen that depends on the networked skills fetch. Wrapped in its own
+  /// FutureBuilder so the hero, growth, mastery, and Practice CTA above paint
+  /// immediately while the list loads.
+  Widget _buildSkillsSection(BuildContext context, AppLocalizations loc) {
+    return FutureBuilder<List<SkillDetailModel>>(
+      future: _skillsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 28),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: MascotWithBubble(
+              state: MascotState.sad,
+              message: loc.loadSkillsErrorMessage,
+            ),
+          );
+        }
+
+        final skills = snapshot.data ?? [];
+        final strongSkills = skills.where((s) => s.isStrong).toList();
+        final weakSkills = skills.where((s) => s.isWeak).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Skills overview ──────────────────────────────────────────
+            if (skills.isNotEmpty) ...[
+              Text(
+                loc.skillsTitle,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E)),
+              ),
+              const SizedBox(height: 12),
+              ...skills.map((s) => _SkillRow(skill: s)),
+              const SizedBox(height: 20),
+            ],
+
+            // ── Strengths ────────────────────────────────────────────────
+            if (strongSkills.isNotEmpty) ...[
+              _SectionHeader(
+                  icon: Icons.star_rounded,
+                  label: loc.strengthsTitle,
+                  color: const Color(0xFF34A853)),
+              const SizedBox(height: 8),
+              _SkillChipRow(
+                  skills: strongSkills, color: const Color(0xFF34A853)),
+              const SizedBox(height: 18),
+            ],
+
+            // ── Weaknesses ───────────────────────────────────────────────
+            if (weakSkills.isNotEmpty) ...[
+              _SectionHeader(
+                  icon: Icons.fitness_center_rounded,
+                  label: loc.needsPracticeTitle,
+                  color: const Color(0xFFEA4335)),
+              const SizedBox(height: 8),
+              _SkillChipRow(skills: weakSkills, color: const Color(0xFFEA4335)),
+              const SizedBox(height: 24),
+            ],
+          ],
+        );
+      },
     );
   }
 

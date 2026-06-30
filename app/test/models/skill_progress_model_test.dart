@@ -13,8 +13,11 @@ void main() {
   group('masteryPercent', () {
     test('returns 0 when totalAttempts is 0', () {
       const model = SkillProgressModel(
+        studentUid: 'student-1',
+        subjectKey: 'math',
         skillKey: 'algebra',
         correctAnswers: 0,
+        wrongAnswers: 0,
         totalAttempts: 0,
       );
 
@@ -23,8 +26,11 @@ void main() {
 
     test('returns 100 when all answers are correct', () {
       const model = SkillProgressModel(
+        studentUid: 'student-1',
+        subjectKey: 'math',
         skillKey: 'algebra',
         correctAnswers: 10,
+        wrongAnswers: 0,
         totalAttempts: 10,
       );
 
@@ -33,8 +39,11 @@ void main() {
 
     test('returns 50 when half the answers are correct', () {
       const model = SkillProgressModel(
+        studentUid: 'student-1',
+        subjectKey: 'math',
         skillKey: 'algebra',
         correctAnswers: 5,
+        wrongAnswers: 5,
         totalAttempts: 10,
       );
 
@@ -43,8 +52,11 @@ void main() {
 
     test('returns 0 when no answers are correct', () {
       const model = SkillProgressModel(
+        studentUid: 'student-1',
+        subjectKey: 'math',
         skillKey: 'algebra',
         correctAnswers: 0,
+        wrongAnswers: 8,
         totalAttempts: 8,
       );
 
@@ -53,8 +65,11 @@ void main() {
 
     test('calculates fractional mastery correctly', () {
       const model = SkillProgressModel(
+        studentUid: 'student-1',
+        subjectKey: 'math',
         skillKey: 'algebra',
         correctAnswers: 1,
+        wrongAnswers: 2,
         totalAttempts: 3,
       );
 
@@ -69,8 +84,11 @@ void main() {
   group('isStrong', () {
     test('returns > 0 for non-zero mastery', () {
       const model = SkillProgressModel(
+        studentUid: 'student-1',
+        subjectKey: 'math',
         skillKey: 'algebra',
         correctAnswers: 8,
+        wrongAnswers: 2,
         totalAttempts: 10,
       );
 

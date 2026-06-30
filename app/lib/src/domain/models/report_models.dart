@@ -78,8 +78,13 @@ class SubjectTimeAllocation {
 class SubjectChipModel {
   final int id;
   final String name;
+  final double masteryPercent;
 
-  const SubjectChipModel({required this.id, required this.name});
+  const SubjectChipModel({
+    required this.id,
+    required this.name,
+    required this.masteryPercent,
+  });
 }
 
 /// A single skill row in the Mastery tab (Strong / Needs-Work lists).

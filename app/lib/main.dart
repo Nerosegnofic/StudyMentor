@@ -107,14 +107,14 @@ final _studentThemeData =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ── Critical-path init only ──────────────────────────────────────────────
+  // Only Firebase (the whole auth tree depends on it) and the saved locale
+  // (drives MaterialApp.locale) must resolve before the first frame. Everything
+  // else is deferred to _initDeferred() so the branded splash paints immediately
+  // instead of waiting on plugin/platform round-trips.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  final packageInfo = await PackageInfo.fromPlatform();
-  appVersion = 'v${packageInfo.version}';
-
-  await LocalNotificationService.instance.init();
-
-  await Workmanager().initialize(callbackDispatcher);
+  final initialLocale = await LocaleCubit.readSavedLocale();
 
   final firebaseProvider = FirebaseAuthProvider();
   final dataConnectProvider = DataConnectProvider();
@@ -123,9 +123,35 @@ Future<void> main() async {
     dataConnect: dataConnectProvider,
   );
 
-  final initialLocale = await LocaleCubit.readSavedLocale();
-
   runApp(StudyMentorApp(authRepository: authRepository, initialLocale: initialLocale));
+
+  // Run non-critical setup after the first frame is rendered. None of these are
+  // needed to show the splash or resolve auth state.
+  WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_initDeferred()));
+}
+
+/// Non-critical startup work, run after the first frame so it never delays the
+/// initial paint. Each step is independently guarded so one failure doesn't
+/// block the others.
+Future<void> _initDeferred() async {
+  try {
+    final packageInfo = await PackageInfo.fromPlatform();
+    appVersion = 'v${packageInfo.version}';
+  } catch (e) {
+    debugPrint('[main] PackageInfo init failed: $e');
+  }
+
+  try {
+    await LocalNotificationService.instance.init();
+  } catch (e) {
+    debugPrint('[main] LocalNotificationService init failed: $e');
+  }
+
+  try {
+    await Workmanager().initialize(callbackDispatcher);
+  } catch (e) {
+    debugPrint('[main] WorkManager init failed: $e');
+  }
 }
 
 class StudyMentorApp extends StatelessWidget {

@@ -28,6 +28,11 @@ class _ChildCardState extends State<ChildCard> {
   bool _statsLoading = true;
   bool _statsError = false;
   Timer? _refreshTimer;
+  int _pollAttempts = 0;
+
+  // Cap the unverified-student stat polling so N children don't each poll
+  // forever during account setup. With the backoff below this spans ~25 min.
+  static const int _maxPollAttempts = 20;
 
   @override
   void initState() {
@@ -56,11 +61,32 @@ class _ChildCardState extends State<ChildCard> {
   void _startPollingIfUnverified() {
     _refreshTimer?.cancel();
     _refreshTimer = null;
+    _pollAttempts = 0;
     if (!widget.student.isEmailVerified) {
-      _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-        if (mounted) _loadStats();
-      });
+      _scheduleNextPoll();
     }
+  }
+
+  /// Schedules the next unverified-student poll with backoff (30s for the first
+  /// couple of minutes, then 60s, then 120s), stopping once verified, unmounted,
+  /// or after the attempt cap.
+  void _scheduleNextPoll() {
+    _refreshTimer?.cancel();
+    if (!mounted ||
+        widget.student.isEmailVerified ||
+        _pollAttempts >= _maxPollAttempts) {
+      return;
+    }
+    final delay = _pollAttempts < 4
+        ? const Duration(seconds: 30)
+        : _pollAttempts < 10
+            ? const Duration(seconds: 60)
+            : const Duration(seconds: 120);
+    _refreshTimer = Timer(delay, () {
+      _pollAttempts++;
+      _loadStats();
+      _scheduleNextPoll();
+    });
   }
 
   Future<void> _loadStats() async {

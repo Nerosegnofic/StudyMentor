@@ -72,6 +72,9 @@ class FakeAuthRepository implements AuthRepository {
   Future<bool> isEmailVerified() async => emailVerified;
 
   @override
+  bool isEmailVerifiedCached() => emailVerified;
+
+  @override
   Future<void> signOut() async {}
 
   @override
@@ -254,7 +257,8 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<SubjectMasteryReport> getSubjectMasteryReport(
-          String studentUid, int subjectId) async =>
+          String studentUid, int subjectId,
+          {double? knownTotalMasteryPercent}) async =>
       throw UnimplementedError();
 
   @override

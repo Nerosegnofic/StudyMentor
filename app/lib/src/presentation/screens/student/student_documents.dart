@@ -340,6 +340,12 @@ class _PreparingView extends StatefulWidget {
 
 class _PreparingViewState extends State<_PreparingView> {
   Timer? _poll;
+  int _attempts = 0;
+
+  // Stop polling after a bounded number of attempts so a stuck or never-appearing
+  // ingestion doesn't hammer the API indefinitely. With the backoff below this
+  // covers roughly 12 minutes before giving up (the user can re-open / refresh).
+  static const int _maxAttempts = 35;
 
   /// Live state of the just-uploaded subject: "processing" | "ready" | "failed".
   /// Starts as processing (the upload was just accepted; ingestion runs in background).
@@ -349,14 +355,29 @@ class _PreparingViewState extends State<_PreparingView> {
   @override
   void initState() {
     super.initState();
-    _fetch();
-    _poll = Timer.periodic(const Duration(seconds: 12), (_) => _fetch());
+    _fetch(); // immediate first check; reschedules itself while still processing
   }
 
   @override
   void dispose() {
     _poll?.cancel();
     super.dispose();
+  }
+
+  /// Schedules the next poll with light backoff (12s for the first minute, then
+  /// 20s, then 30s), unless the attempt cap has been reached.
+  void _scheduleNext() {
+    _poll?.cancel();
+    if (!mounted || _attempts >= _maxAttempts) return;
+    final delay = _attempts < 5
+        ? const Duration(seconds: 12)
+        : _attempts < 12
+            ? const Duration(seconds: 20)
+            : const Duration(seconds: 30);
+    _poll = Timer(delay, () {
+      _attempts++;
+      _fetch();
+    });
   }
 
   Future<void> _fetch() async {
@@ -368,7 +389,10 @@ class _PreparingViewState extends State<_PreparingView> {
       final match = statuses
           .where((s) => s.subjectName.toLowerCase().trim() == name)
           .toList();
-      if (match.isEmpty) return; // not visible yet; keep "processing" and retry
+      if (match.isEmpty) {
+        _scheduleNext(); // not visible yet; keep "processing" and retry
+        return;
+      }
       final s = match.first;
       setState(() {
         _state = s.state;
@@ -377,9 +401,12 @@ class _PreparingViewState extends State<_PreparingView> {
       if (s.state != 'processing') {
         _poll?.cancel();
         _poll = null;
+      } else {
+        _scheduleNext();
       }
     } catch (_) {
       // Best-effort; keep last state and retry next tick.
+      _scheduleNext();
     }
   }
 

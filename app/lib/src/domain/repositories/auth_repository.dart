@@ -21,6 +21,11 @@ abstract class AuthRepository {
   Future<UserModel> signIn({required String email, required String password});
   Future<void> sendEmailVerification();
   Future<bool> isEmailVerified();
+
+  /// Returns the cached email-verification status WITHOUT a Firebase reload.
+  /// Safe to use right after [signIn] (which already reloads the user) to avoid
+  /// a redundant second network round-trip on the login path.
+  bool isEmailVerifiedCached();
   Future<void> signOut();
   Future<void> sendPasswordReset(String email);
   Future<UserModel?> getUserProfile();
@@ -80,7 +85,7 @@ abstract class AuthRepository {
   // ── Reports & Analytics ──────────────────────────────────────────────────
   Future<WeeklyReportModel> getWeeklyReport(String studentUid);
   Future<List<SubjectChipModel>> getReportSubjects(String studentUid);
-  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId);
+  Future<SubjectMasteryReport> getSubjectMasteryReport(String studentUid, int subjectId, {double? knownTotalMasteryPercent});
   Future<StudyHabitsReport> getStudyHabitsReport(String studentUid);
   // Dashboard additions
   Future<AiSummaryModel> getAiSummary(List<StudentModel> children);
