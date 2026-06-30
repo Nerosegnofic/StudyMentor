@@ -257,6 +257,9 @@ void main() {
         setUp: () {
           when(() => mockRepo.submitQuiz(any()))
               .thenAnswer((_) async => _fakeSubmissionResponse());
+          // Submit fires this warm-cache call fire-and-forget afterward —
+          // must be stubbed or the unawaited Future call throws.
+          when(() => mockRepo.warmAllQuizzes()).thenAnswer((_) async {});
         },
         act: (bloc) => bloc.add(SubmitQuizEvent('session-123', totalElapsedMs: 0)),
         expect: () => [

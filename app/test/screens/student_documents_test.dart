@@ -120,25 +120,38 @@ void main() {
       expect(find.byType(TextField), findsNothing);
     });
 
-    testWidgets('error state shows inline error message', (tester) async {
-      when(() => mockUploadBloc.state)
-          .thenReturn(DocumentUploadError('Upload failed'));
+    testWidgets('error state shows error via snackbar', (tester) async {
+      // The error is surfaced through BlocConsumer's listener (a SnackBar), which
+      // only fires on a state *transition* — not when the mock starts already in
+      // the error state. whenListen simulates Initial -> Error so the listener
+      // actually runs.
+      whenListen(
+        mockUploadBloc,
+        Stream.fromIterable([DocumentUploadError('Upload failed')]),
+        initialState: DocumentUploadInitial(),
+      );
       await tester.pumpWidget(
           _wrap(uploadBloc: mockUploadBloc, subjectBloc: mockSubjectBloc));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Upload failed'), findsOneWidget);
     });
 
-    testWidgets('error state still shows upload form alongside error banner',
+    testWidgets(
+        'error state still shows upload form alongside error snackbar',
         (tester) async {
-      when(() => mockUploadBloc.state)
-          .thenReturn(DocumentUploadError('Server error'));
+      whenListen(
+        mockUploadBloc,
+        Stream.fromIterable([DocumentUploadError('Server error')]),
+        initialState: DocumentUploadInitial(),
+      );
       await tester.pumpWidget(
           _wrap(uploadBloc: mockUploadBloc, subjectBloc: mockSubjectBloc));
       await tester.pump();
+      await tester.pump();
       // Form elements still visible.
       expect(find.byType(TextField), findsOneWidget);
-      // Error banner also visible.
+      // Error snackbar also visible.
       expect(find.text('Server error'), findsOneWidget);
     });
 

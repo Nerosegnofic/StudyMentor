@@ -54,7 +54,7 @@ NotificationModel _fakeNotif({
 void main() {
   setUpAll(() {
     GoogleFonts.config.allowRuntimeFetching = false;
-    registerFallbackValue(const MarkAllNotificationsReadRequested(''));
+    registerFallbackValue(const MarkAllStudentNotificationsReadRequested(''));
   });
 
   late MockNotificationsBloc mockBloc;
@@ -122,7 +122,7 @@ void main() {
     });
 
     testWidgets(
-        'tapping "Mark all as read" dispatches MarkAllNotificationsReadRequested',
+        'tapping "Mark all as read" dispatches MarkAllStudentNotificationsReadRequested',
         (tester) async {
       when(() => mockBloc.state).thenReturn(
         NotificationsLoaded([_fakeNotif(isRead: false)]),
@@ -138,7 +138,8 @@ void main() {
       await tester.tap(find.text('Mark all as read'));
       await tester.pump();
 
-      verify(() => mockBloc.add(const MarkAllNotificationsReadRequested('student1')))
+      verify(() =>
+              mockBloc.add(const MarkAllStudentNotificationsReadRequested('student1')))
           .called(1);
     });
 
