@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="app/assets/icon/app_icon.png" width="96" alt="StudyMentor icon" />
+<img src="docs/assets/app_icon.png" width="160" alt="StudyMentor mascot icon" />
 
 # StudyMentor
 
