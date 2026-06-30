@@ -29,9 +29,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final canGoBack = Navigator.of(context).canPop();
-    // Computed here (above the Scaffold) so the keyboard is actually detected —
-    // a Scaffold zeroes viewInsets.bottom for its body subtree.
-    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return PopScope(
       canPop: canGoBack,
       onPopInvokedWithResult: (didPop, _) {
@@ -57,7 +54,12 @@ class _LoginScreenState extends State<LoginScreen> {
             if (state is AuthError) {
               if (ModalRoute.of(context)?.isCurrent ?? false) {
                 _passCtl.clear();
-                setState(() => _error = localizeError(state.message, AppLocalizations.of(context)));
+                setState(
+                  () => _error = localizeError(
+                    state.message,
+                    AppLocalizations.of(context),
+                  ),
+                );
               }
             }
           },
@@ -69,7 +71,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 Column(
                   children: [
                     AuthHeader(
-                      keyboardOpen: keyboardOpen,
                       onBack: canGoBack
                           ? () => Navigator.of(context).maybePop()
                           : null,
@@ -93,8 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   label: loc.fieldEmail,
                                   icon: Icons.email_outlined,
                                 ),
-                                validator: (v) =>
-                                    v!.contains('@') ? null : loc.loginEmailValidator,
+                                validator: (v) => v!.contains('@')
+                                    ? null
+                                    : loc.loginEmailValidator,
                               ),
                               const SizedBox(height: 14),
                               TextFormField(
@@ -115,12 +117,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                       color: Colors.grey.shade500,
                                     ),
                                     onPressed: () => setState(
-                                      () => _obscurePassword = !_obscurePassword,
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
                                     ),
                                   ),
                                 ),
                                 obscureText: _obscurePassword,
-                                validator: (v) => v!.isNotEmpty ? null : loc.validatorPasswordRequired,
+                                validator: (v) => v!.isNotEmpty
+                                    ? null
+                                    : loc.validatorPasswordRequired,
                               ),
                               const SizedBox(height: 24),
                               authPrimaryButton(
@@ -177,7 +182,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextButton.styleFrom(
                         foregroundColor: kAuthGreen,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
