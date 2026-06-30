@@ -34,6 +34,7 @@ import 'src/presentation/screens/parent/parent_screen.dart';
 import 'src/presentation/screens/auth/parent_register_screen.dart';
 import 'src/presentation/screens/student/student_screen.dart';
 import 'src/services/device_admin_service.dart';
+import 'src/services/overlay/mascot_overlay_service.dart';
 import 'src/services/local_notification_service.dart';
 import 'src/services/garden_nudge_service.dart';
 import 'src/services/streak_reminder_service.dart';
@@ -107,14 +108,19 @@ final _studentThemeData =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Cairo is bundled under assets/google_fonts/, so google_fonts must load it
+  // from the asset bundle and never hit the network — eliminates the first-render
+  // font-fetch jank on the splash and every screen.
+  GoogleFonts.config.allowRuntimeFetching = false;
+
+  // ── Critical-path init only ──────────────────────────────────────────────
+  // Only Firebase (the whole auth tree depends on it) and the saved locale
+  // (drives MaterialApp.locale) must resolve before the first frame. Everything
+  // else is deferred to _initDeferred() so the branded splash paints immediately
+  // instead of waiting on plugin/platform round-trips.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  final packageInfo = await PackageInfo.fromPlatform();
-  appVersion = 'v${packageInfo.version}';
-
-  await LocalNotificationService.instance.init();
-
-  await Workmanager().initialize(callbackDispatcher);
+  final initialLocale = await LocaleCubit.readSavedLocale();
 
   final firebaseProvider = FirebaseAuthProvider();
   final dataConnectProvider = DataConnectProvider();
@@ -123,9 +129,35 @@ Future<void> main() async {
     dataConnect: dataConnectProvider,
   );
 
-  final initialLocale = await LocaleCubit.readSavedLocale();
-
   runApp(StudyMentorApp(authRepository: authRepository, initialLocale: initialLocale));
+
+  // Run non-critical setup after the first frame is rendered. None of these are
+  // needed to show the splash or resolve auth state.
+  WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_initDeferred()));
+}
+
+/// Non-critical startup work, run after the first frame so it never delays the
+/// initial paint. Each step is independently guarded so one failure doesn't
+/// block the others.
+Future<void> _initDeferred() async {
+  try {
+    final packageInfo = await PackageInfo.fromPlatform();
+    appVersion = 'v${packageInfo.version}';
+  } catch (e) {
+    debugPrint('[main] PackageInfo init failed: $e');
+  }
+
+  try {
+    await LocalNotificationService.instance.init();
+  } catch (e) {
+    debugPrint('[main] LocalNotificationService init failed: $e');
+  }
+
+  try {
+    await Workmanager().initialize(callbackDispatcher);
+  } catch (e) {
+    debugPrint('[main] WorkManager init failed: $e');
+  }
 }
 
 class StudyMentorApp extends StatelessWidget {
@@ -240,8 +272,10 @@ class RootPage extends StatelessWidget {
         if (state is AuthAuthenticated) {
           final isStudent = state.user.role.toLowerCase() != 'parent';
           if (!isStudent) {
-            // Parent logged in — ensure the Settings guard is disabled.
+            // Parent logged in — ensure the Settings guard is disabled and the
+            // student monitoring service is torn down (no student session).
             await DeviceAdminService.onStudentLogout();
+            await MascotOverlayService.instance.stop();
           }
           // Do NOT activate student mode for students here. The Settings block
           // must not be enabled until ALL required permissions have been
@@ -253,8 +287,13 @@ class RootPage extends StatelessWidget {
           // before navigating to student_home.
         } else if (state is AuthUnauthenticated ||
             state is AuthEmailUnverified) {
-          // Logged out or unverified — disable the guard.
+          // Logged out or unverified — disable the guard and stop the monitoring
+          // service. This is the single teardown point for the MascotOverlayService
+          // (it is intentionally NOT stopped from StudentScreen.dispose, which
+          // fires during login navigation churn and would clobber the blocked
+          // state — the "lock not active until I reopen the app" bug).
           await DeviceAdminService.onStudentLogout();
+          await MascotOverlayService.instance.stop();
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(

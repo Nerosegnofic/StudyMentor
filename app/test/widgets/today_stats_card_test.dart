@@ -3,13 +3,22 @@
 // Widget tests for TodayStatsCard — pure display widget, no blocs.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:studymentor/l10n/app_localizations.dart';
 import 'package:studymentor/src/domain/models/report_models.dart';
 import 'package:studymentor/src/presentation/widgets/student_home/today_stats_card.dart';
 
-Widget _wrap(Widget child) =>
-    MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child)));
+Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: SingleChildScrollView(child: child)),
+    );
 
 void main() {
   setUpAll(() {
@@ -126,7 +135,7 @@ void main() {
         accuracyPercent: 60,
       )));
       await tester.pump();
-      expect(find.text('Day streak'), findsOneWidget);
+      expect(find.text('Day Streak'), findsOneWidget);
       expect(find.text('Accuracy'), findsOneWidget);
     });
 

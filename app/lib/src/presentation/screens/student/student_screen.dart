@@ -104,12 +104,6 @@ class _StudentScreenState extends State<StudentScreen>
   /// resumes from launching concurrent config fetches.
   bool _refreshingConfig = false;
 
-  /// Ownership token for the [MascotOverlayService] singleton. Acquired in
-  /// [initState]; dispose only tears the service down if this instance is still
-  /// the owner, so a superseded StudentScreen (built twice during the login
-  /// render) cannot stop a session a newer instance already started.
-  int _mascotOwnerToken = 0;
-
   /// Whether the student has at least one subject uploaded by the parent.
   /// null = garden not loaded yet, false = no subjects, true = has subjects.
   bool? _hasSubjects;
@@ -157,7 +151,10 @@ class _StudentScreenState extends State<StudentScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _aiRepo = AiEngineRepository(baseUrl: AiEngineRepository.defaultBaseUrl);
+    // Reuse the shared singleton so HTTP keep-alive / connection pooling / TLS
+    // sessions are reused across the app instead of spinning up (and leaking) a
+    // second http.Client.
+    _aiRepo = AiEngineRepository.instance;
 
     _shopBloc = ShopBloc();
     _gardenBloc = GardenBloc();
@@ -166,10 +163,6 @@ class _StudentScreenState extends State<StudentScreen>
       repository: GamificationRepositoryImpl(),
     )..add(LoadGamificationDataRequested(studentId: widget.uid))
      ..add(CheckDailyLoginRewardRequested(studentId: widget.uid));
-
-    // Claim ownership before init so a later (superseding) instance's dispose
-    // cannot stop the service this instance is about to start.
-    _mascotOwnerToken = MascotOverlayService.instance.acquireOwnership();
 
     _quizSub = MascotOverlayService.instance.listenForQuiz(_onQuizTriggered);
     _quizRestoreSub =
@@ -399,13 +392,12 @@ class _StudentScreenState extends State<StudentScreen>
     _quizSub?.cancel();
     _quizRestoreSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    // Only tear the singleton down if we still own it. A StudentScreen that was
-    // superseded during the login render must NOT stop() — doing so pushed
-    // setBlocked(false) and nulled the studentUid, leaving app-locking inert
-    // until a manual reopen (the "lock not active after login" bug).
-    if (MascotOverlayService.instance.isOwner(_mascotOwnerToken)) {
-      MascotOverlayService.instance.stop();
-    }
+    // NOTE: deliberately do NOT stop the MascotOverlayService here. It is a
+    // process-wide singleton whose native services are meant to outlive the UI;
+    // StudentScreen is rebuilt during login navigation churn, and stopping on a
+    // transient dispose pushed setBlocked(false), leaving app-locking inert until
+    // a manual reopen. Teardown is driven by the auth lifecycle instead — the
+    // RootPage auth listener stops it on logout / parent-switch.
     _shopBloc.close();
     _gardenBloc.close();
     _gamificationBloc.close();

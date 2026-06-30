@@ -29,14 +29,20 @@ SubjectSummaryModel _fakeSummary(String key) => SubjectSummaryModel(
     );
 
 List<SkillProgressModel> _fakeSkills(String subjectKey) => [
-      const SkillProgressModel(
+      SkillProgressModel(
+        studentUid: 'uid-student',
+        subjectKey: subjectKey,
         skillKey: 'algebra',
         correctAnswers: 8,
+        wrongAnswers: 2,
         totalAttempts: 10,
       ),
-      const SkillProgressModel(
+      SkillProgressModel(
+        studentUid: 'uid-student',
+        subjectKey: subjectKey,
         skillKey: 'geometry',
         correctAnswers: 4,
+        wrongAnswers: 6,
         totalAttempts: 10,
       ),
     ];

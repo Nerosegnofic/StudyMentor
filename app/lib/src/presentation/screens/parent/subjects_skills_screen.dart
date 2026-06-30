@@ -59,7 +59,7 @@ class _SubjectsSkillsScreenState extends State<SubjectsSkillsScreen> {
   }
 
   void _openDocumentUpload(BuildContext context, List<String> existingKeys) {
-    final repo = AiEngineRepository(baseUrl: AiEngineRepository.defaultBaseUrl);
+    final repo = AiEngineRepository.instance;
     Navigator.push(
       context,
       MaterialPageRoute(

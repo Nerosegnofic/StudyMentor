@@ -3,13 +3,22 @@
 // Widget tests for RankProgressCard — pure display widget, no blocs.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:studymentor/l10n/app_localizations.dart';
 import 'package:studymentor/src/data/constants/gamification_levels.dart';
 import 'package:studymentor/src/presentation/widgets/student_home/rank_progress_card.dart';
 
-Widget _wrap(Widget child) =>
-    MaterialApp(home: Scaffold(body: Center(child: child)));
+Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: Center(child: child)),
+    );
 
 void main() {
   setUpAll(() {

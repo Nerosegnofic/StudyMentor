@@ -1,5 +1,6 @@
 // lib/src/bloc/auth/auth_bloc.dart
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,20 +46,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthEmailUnverified(profile.email));
         } else {
           emit(AuthAuthenticated(profile));
+          // Background scheduling + context caching don't gate the UI — run them
+          // fire-and-forget so the splash dismisses as soon as auth state is
+          // known (mirrors the _onLogin change).
           if (profile.role.toLowerCase() != 'parent') {
-            await GardenNudgeService.scheduleNext(
-              policy: ExistingWorkPolicy.keep,
-            );
-            await StreakReminderService.scheduleNext(
-              policy: ExistingWorkPolicy.keep,
-            );
-            await _cacheStudentContext(profile);
+            unawaited(_postLoginStudentSetup(profile));
           } else {
-            await _cacheParentContext(profile);
-            await ParentNotificationPollService.register();
-            await ParentInactivityCheckService.scheduleNext(
-              policy: ExistingWorkPolicy.keep,
-            );
+            unawaited(_postLoginParentSetup(profile));
           }
         }
       } else {
@@ -93,25 +87,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      final verified = await repository.isEmailVerified();
+      // signIn() already reloaded the Firebase user, so read the cached
+      // verification status instead of forcing a second network reload on the
+      // critical login path.
+      final verified = repository.isEmailVerifiedCached();
       if (!verified) {
         emit(AuthEmailUnverified(user.email));
       } else {
         emit(AuthAuthenticated(user));
+        // Background scheduling + context caching don't gate any UI — run them
+        // fire-and-forget so they don't contend with the screen mount / first
+        // paint right after navigation.
         if (user.role.toLowerCase() != 'parent') {
-          await GardenNudgeService.scheduleNext(
-            policy: ExistingWorkPolicy.keep,
-          );
-          await StreakReminderService.scheduleNext(
-            policy: ExistingWorkPolicy.keep,
-          );
-          await _cacheStudentContext(user);
+          unawaited(_postLoginStudentSetup(user));
         } else {
-          await _cacheParentContext(user);
-          await ParentNotificationPollService.register();
-          await ParentInactivityCheckService.scheduleNext(
-            policy: ExistingWorkPolicy.keep,
-          );
+          unawaited(_postLoginParentSetup(user));
         }
       }
     } catch (e) {
@@ -277,12 +267,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     try {
+      // Skip the expensive native enumeration (getFromDevice) on the common
+      // "nothing changed" login. Only run a full sync when the native dirty flag
+      // is set (a package was installed/removed since the last sync) or this
+      // device hasn't completed an initial sync for this student yet. The native
+      // dirty flag defaults to false on a fresh install, so the per-uid bootstrap
+      // flag is what guarantees the very first sync still runs.
+      final prefs = await SharedPreferences.getInstance();
+      final bootstrapKey = 'installed_apps_bootstrapped_${event.studentUid}';
+      final bootstrapped = prefs.getBool(bootstrapKey) ?? false;
+      final dirty = await InstalledAppsService.instance.isInventoryDirty();
+
+      if (bootstrapped && !dirty) {
+        debugPrint(
+          '[InstalledApps] inventory clean & bootstrapped — skipping sync',
+        );
+        return;
+      }
+
       final apps = await InstalledAppsService.instance.getFromDevice();
       await repository.syncInstalledAppsForStudent(
         studentUid: event.studentUid,
         apps: apps,
       );
       await InstalledAppsService.instance.markInventoryClean();
+      await prefs.setBool(bootstrapKey, true);
     } catch (e) {
       debugPrint('[InstalledApps] sync error: $e');
     }
@@ -334,6 +343,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       debugPrint('[DeleteStudent] error: $e\n$stack');
       emit(StudentDeleteError(_mapDeletionException(e)));
     }
+  }
+
+  /// Post-login background setup for a student — WorkManager job scheduling +
+  /// context caching. Runs fire-and-forget after `AuthAuthenticated` is emitted
+  /// so it never blocks navigation / first paint. Fully guarded since it is not
+  /// awaited.
+  Future<void> _postLoginStudentSetup(UserModel user) async {
+    try {
+      await GardenNudgeService.scheduleNext(policy: ExistingWorkPolicy.keep);
+    } catch (_) {}
+    try {
+      await StreakReminderService.scheduleNext(policy: ExistingWorkPolicy.keep);
+    } catch (_) {}
+    await _cacheStudentContext(user);
+  }
+
+  /// Post-login background setup for a parent — context caching + poll/inactivity
+  /// job registration. Runs fire-and-forget after `AuthAuthenticated` is emitted.
+  Future<void> _postLoginParentSetup(UserModel user) async {
+    await _cacheParentContext(user);
+    try {
+      await ParentNotificationPollService.register();
+    } catch (_) {}
+    try {
+      await ParentInactivityCheckService.scheduleNext(
+        policy: ExistingWorkPolicy.keep,
+      );
+    } catch (_) {}
   }
 
   /// Caches `parent_uid_{uid}` and `student_full_name_{uid}` in

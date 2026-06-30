@@ -92,13 +92,17 @@ class _LevelUpCelebrationScreenState extends State<LevelUpCelebrationScreen>
               const SizedBox(height: 12),
 
               // ── Animated glow ring + level number ────────────────────
-              AnimatedBuilder(
-                animation: _ctrl,
-                builder: (_, _) => Transform.scale(
-                  scale: 0.5 + 0.5 * _scale.value, // 0.5 → 1.0
-                  child: Opacity(
-                    opacity: _fade.value,
-                    child: _buildGlowRing(),
+              // Isolate the per-frame animation repaint from the rest of the
+              // celebration screen.
+              RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _ctrl,
+                  builder: (_, _) => Transform.scale(
+                    scale: 0.5 + 0.5 * _scale.value, // 0.5 → 1.0
+                    child: Opacity(
+                      opacity: _fade.value,
+                      child: _buildGlowRing(),
+                    ),
                   ),
                 ),
               ),

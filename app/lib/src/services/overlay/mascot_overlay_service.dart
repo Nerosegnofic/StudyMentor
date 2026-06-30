@@ -21,29 +21,12 @@ class MascotOverlayService {
     'com.example.studymentor/timer_service',
   );
 
-  // ── Ownership token ──────────────────────────────────────────────────────
-  //
-  // This service is a process-wide singleton, but StudentScreen (which drives
-  // it) can be built more than once during the login/auth-settling render — the
-  // old State is disposed AFTER the new one has already initialised the service.
-  // That stale dispose used to call stop(), which pushes setBlocked(false) and
-  // nulls _studentUid, clobbering the blocked state the live instance just set
-  // (the "lock not active until I reopen the app" bug). Each StudentScreen
-  // acquires a monotonically increasing token on init; dispose only tears the
-  // service down if it is still the current owner, so a superseded instance can
-  // never stop a session a newer instance owns.
-  int _ownerToken = 0;
-
-  /// Claims ownership of the singleton for the calling screen. Returns the token
-  /// the caller must pass to [isOwner] before invoking [stop] on teardown.
-  int acquireOwnership() {
-    _ownerToken += 1;
-    return _ownerToken;
-  }
-
-  /// True only if [token] is the most recently issued ownership token, i.e. no
-  /// newer StudentScreen instance has taken over the singleton.
-  bool isOwner(int token) => token == _ownerToken;
+  // Teardown is tied to the auth lifecycle (logout / parent-switch via the
+  // RootPage auth listener), NOT to StudentScreen.dispose — disposing the widget
+  // during login navigation churn used to call stop() and push setBlocked(false),
+  // clobbering the blocked state the freshly-mounted screen had just set (the
+  // "lock not active until I reopen the app" bug). The native services are
+  // designed to outlive the UI, so only a real logout should stop them.
 
   // ── Mirrored state ─────────────────────────────────────────────────────────
 
