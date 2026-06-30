@@ -114,13 +114,22 @@ Future<void> main() async {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   // ── Critical-path init only ──────────────────────────────────────────────
-  // Only Firebase (the whole auth tree depends on it) and the saved locale
-  // (drives MaterialApp.locale) must resolve before the first frame. Everything
-  // else is deferred to _initDeferred() so the branded splash paints immediately
-  // instead of waiting on plugin/platform round-trips.
+  // Only Firebase (the whole auth tree depends on it), the saved locale
+  // (drives MaterialApp.locale), and the package version (shown on the login
+  // screen's first frame, so it can't be deferred without a visible pop-in)
+  // must resolve before the first frame. Everything else is deferred to
+  // _initDeferred() so the branded splash paints immediately instead of
+  // waiting on plugin/platform round-trips.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final initialLocale = await LocaleCubit.readSavedLocale();
+
+  try {
+    final packageInfo = await PackageInfo.fromPlatform();
+    appVersion = 'v${packageInfo.version}';
+  } catch (e) {
+    debugPrint('[main] PackageInfo init failed: $e');
+  }
 
   final firebaseProvider = FirebaseAuthProvider();
   final dataConnectProvider = DataConnectProvider();
@@ -140,13 +149,6 @@ Future<void> main() async {
 /// initial paint. Each step is independently guarded so one failure doesn't
 /// block the others.
 Future<void> _initDeferred() async {
-  try {
-    final packageInfo = await PackageInfo.fromPlatform();
-    appVersion = 'v${packageInfo.version}';
-  } catch (e) {
-    debugPrint('[main] PackageInfo init failed: $e');
-  }
-
   try {
     await LocalNotificationService.instance.init();
   } catch (e) {
