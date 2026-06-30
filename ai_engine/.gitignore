@@ -11,6 +11,10 @@ ENV/
 .env
 .env.*
 
+# Credentials
+service_account.json
+*service_account*.json
+
 # IDEs
 .vscode/
 .idea/
