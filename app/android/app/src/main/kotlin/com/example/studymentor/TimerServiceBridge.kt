@@ -126,14 +126,17 @@ class TimerServiceBridge(private val activity: FlutterActivity) {
                     "stopTimerService" -> {
                         // Persist the logged-out flag directly so START_STICKY
                         // restarts do not re-enable the tick loop, then stop the
-                        // service cleanly. Writing to prefs directly avoids the
-                        // spurious ACTION_START → startForeground() call that
-                        // previously caused a brief foreground notification flash.
+                        // service cleanly. Delivered via plain startService() —
+                        // never startForegroundService() — because the service is
+                        // already running in the foreground at this point; routing
+                        // the stop through startForegroundService() forced
+                        // onStartCommand to re-promote (and briefly re-display the
+                        // notification) just before tearing itself down.
                         UsageTimerService.prefs(activity)
                             .edit()
                             .putBoolean(UsageTimerService.KEY_STUDENT_LOGGED_IN, false)
                             .apply()
-                        startService(serviceIntent(ACTION_STOP))
+                        activity.startService(serviceIntent(ACTION_STOP))
                         unbindService()
                         result.success(null)
                     }

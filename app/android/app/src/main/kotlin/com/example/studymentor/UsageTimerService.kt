@@ -226,17 +226,28 @@ class UsageTimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // ACTION_STOP is always delivered via a plain startService() call against
+        // an already-foregrounded service (see TimerServiceBridge.stopTimerService),
+        // so there is no startForeground() deadline to satisfy here. Handling it
+        // before the foreground promotion below avoids briefly re-posting the
+        // "StudyMentor is running…" notification on every logout just to tear the
+        // service down a moment later.
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         // ── Enter the foreground FIRST, before any other work ────────────────────
-        // Every start path reaches us via startForegroundService() (TimerServiceBridge,
-        // BootReceiver, the accessibility watchdog). Android then requires a
+        // Every other start path reaches us via startForegroundService() (TimerServiceBridge
+        // ACTION_START, BootReceiver, the accessibility watchdog). Android then requires a
         // startForeground() call within a few seconds, or it kills the WHOLE PROCESS
         // with ForegroundServiceDidNotStartInTimeException — this was the
         // "app closes after the student logs in" crash: during login the main thread
         // is saturated (asset/image decoding) and the old code did SharedPreferences
         // I/O + extra parsing before startForeground(), blowing the deadline.
         //
-        // Calling it as the very first statement (for ACTION_STOP/UNBLOCK too, since
-        // those also arrive via startForegroundService) guarantees we satisfy the
+        // Calling it as the very first statement (for ACTION_UNBLOCK too, since it
+        // also arrives via startForegroundService) guarantees we satisfy the
         // contract immediately. The notification is refreshed below once the real
         // per-student state is loaded.
         val enteredForeground = startForegroundWithNotification()
@@ -295,8 +306,6 @@ class UsageTimerService : Service() {
                     handler.post(tickRunnable)
                 }
             }
-
-            ACTION_STOP -> stopSelf()
 
             ACTION_UNBLOCK -> unblock()
 
