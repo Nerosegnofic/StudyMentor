@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../data/repositories/ai_engine_repository.dart';
 import '../../../data/providers/dataconnect_provider.dart';
 import '../../../domain/models/skill_detail_model.dart';
@@ -19,8 +20,14 @@ import '../../../features/mascot/mascot_state.dart';
 import '../../../features/mascot/mascot_with_bubble.dart';
 import '../../../../l10n/app_localizations.dart';
 
-const _kGreen = Color(0xFF2E7D32);
-const _kGreenLight = Color(0xFFE8F5E9);
+// ── Design tokens (Study Mentor student palette) ─────────────────────────────
+const _cloud = Color(0xFFF5F7FA); // scaffold background (Soft Cloud)
+const _green = Color(0xFF4CAF50); // primary action / growth
+const _greenDark = Color(0xFF43A047); // hero gradient top
+const _greenLight = Color(0xFFE8F5E9); // progress-track / chip fills
+const _ink = Color(0xFF1F2937); // primary text
+const _muted = Color(0xFF8B93A7); // secondary text
+const _danger = Color(0xFFEA4335); // weaknesses / needs-practice
 
 class SubjectDetailScreen extends StatefulWidget {
   final String studentUid;
@@ -149,52 +156,37 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: _kGreenLight,
-        appBar: AppBar(
-          backgroundColor: _kGreenLight,
-          elevation: 0,
-          title: Text(
-            loc.subjectGardenTitle(widget.subjectName),
-            style: const TextStyle(
-              color: _kGreen,
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
+        backgroundColor: _cloud,
+        // Immersive gradient hero (flat bottom) replaces the AppBar + plant hero.
+        // The header depends only on already-available state, so it paints
+        // immediately; only the skills sections wait on the network (see the
+        // FutureBuilder in _buildContent).
+        body: Column(
+          children: [
+            _HeroHeader(
+              title: loc.subjectGardenTitle(widget.subjectName),
+              stage: stage,
+              masteryPercent: _masteryPercent,
+              onBack: () => Navigator.of(context).maybePop(),
             ),
-          ),
-          iconTheme: const IconThemeData(color: _kGreen),
+            Expanded(child: _buildContent(context)),
+          ],
         ),
-        // The header (hero, growth, mastery) and Practice CTA depend only on
-        // already-available state, so they render immediately; only the skills
-        // sections wait on the network (see the FutureBuilder in _buildContent).
-        body: _buildContent(context, stage),
       ),
     );
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    GrowthStage stage,
-  ) {
+  Widget _buildContent(BuildContext context) {
     final loc = AppLocalizations.of(context);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Plant hero ──────────────────────────────────────────────────
-          _PlantHeroSection(
-
-            subjectName: widget.subjectName,
-            stage: stage,
-            masteryPercent: _masteryPercent,
-          ),
-          const SizedBox(height: 20),
-
           // ── Growth progress card ──────────────────────────────────────────
           _buildGrowthProgressCard(loc, _masteryPercent),
           const SizedBox(height: 12),
-
 
           // ── Mastery card ─────────────────────────────────────────────────
           _Card(
@@ -204,8 +196,6 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-
-
                     color: GrowthStageUtils.healthColor(_masteryPercent)
                         .withValues(alpha: 0.15),
                     shape: BoxShape.circle,
@@ -217,28 +207,28 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                             ? Icons.spa_rounded
                             : Icons.energy_savings_leaf_rounded,
                     color: GrowthStageUtils.healthColor(_masteryPercent),
-
-
                     size: 24,
                   ),
                 ),
                 const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _masteryLabel(loc, _masteryPercent),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: GrowthStageUtils.healthColor(_masteryPercent),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _masteryLabel(loc, _masteryPercent),
+                        style: GoogleFonts.cairo(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: GrowthStageUtils.healthColor(_masteryPercent),
+                        ),
                       ),
-                    ),
-                    Text(
-                      loc.overallMasteryLabel(_masteryPercent.toStringAsFixed(0)),
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                    ),
-                  ],
+                      Text(
+                        loc.overallMasteryLabel(_masteryPercent.toStringAsFixed(0)),
+                        style: GoogleFonts.cairo(fontSize: 12, color: _muted),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -269,7 +259,6 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         await Navigator.of(context).push<bool?>(
                           MaterialPageRoute<bool?>(
                             fullscreenDialog: true,
-
                             builder: (_) => MultiBlocProvider(
                               providers: [
                                 BlocProvider.value(value: gamificationBloc),
@@ -287,7 +276,6 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                                 },
                                 autoLength: _config.quizCount is Auto,
                               ),
-
                             ),
                           ),
                         );
@@ -299,13 +287,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         }
                       },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _kGreen,
+                  backgroundColor: _green,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: const Color(0xFFCED4DA),
                   shape: RoundedRectangleBorder(
-
                       borderRadius: BorderRadius.circular(14)),
-
                   elevation: 0,
                 ),
                 icon: Icon(
@@ -316,7 +302,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   isPreparing
                       ? loc.subjectPreparingPracticeDisabled
                       : loc.practiceNowButton,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.cairo(
+                      fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
             );
@@ -337,7 +324,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 28),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2, color: _green)),
           );
         }
         if (snapshot.hasError) {
@@ -361,10 +349,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             if (skills.isNotEmpty) ...[
               Text(
                 loc.skillsTitle,
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A2E)),
+                style: GoogleFonts.cairo(
+                    fontSize: 16, fontWeight: FontWeight.w800, color: _ink),
               ),
               const SizedBox(height: 12),
               ...skills.map((s) => _SkillRow(skill: s)),
@@ -376,10 +362,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               _SectionHeader(
                   icon: Icons.star_rounded,
                   label: loc.strengthsTitle,
-                  color: const Color(0xFF34A853)),
+                  color: _green),
               const SizedBox(height: 8),
-              _SkillChipRow(
-                  skills: strongSkills, color: const Color(0xFF34A853)),
+              _SkillChipRow(skills: strongSkills, color: _green),
               const SizedBox(height: 18),
             ],
 
@@ -388,9 +373,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               _SectionHeader(
                   icon: Icons.fitness_center_rounded,
                   label: loc.needsPracticeTitle,
-                  color: const Color(0xFFEA4335)),
+                  color: _danger),
               const SizedBox(height: 8),
-              _SkillChipRow(skills: weakSkills, color: const Color(0xFFEA4335)),
+              _SkillChipRow(skills: weakSkills, color: _danger),
               const SizedBox(height: 24),
             ],
           ],
@@ -417,40 +402,23 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             children: [
               Text(
                 loc.growthProgressTitle,
-                style: const TextStyle(
+                style: GoogleFonts.cairo(
                   fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
+                  fontWeight: FontWeight.w800,
+                  color: _ink,
                 ),
               ),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '${loc.levelNumberLabel(currentLevel)}  ',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                    ),
-                    TextSpan(
-                      text: isMax ? loc.maxLevelBadge : loc.levelNumberLabel(currentLevel + 1),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: _kGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _LevelPill(label: loc.levelNumberLabel(currentLevel)),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 8,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: const AlwaysStoppedAnimation<Color>(_kGreen),
+              minHeight: 10,
+              backgroundColor: _greenLight,
+              valueColor: const AlwaysStoppedAnimation<Color>(_green),
             ),
           ),
           const SizedBox(height: 8),
@@ -459,12 +427,12 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             children: [
               Text(
                 '${mastery.toStringAsFixed(0)}%',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                style: GoogleFonts.cairo(fontSize: 12, color: _muted),
               ),
               if (!isMax)
                 Text(
                   '${levelEnd.toStringAsFixed(0)}%',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: GoogleFonts.cairo(fontSize: 12, color: _muted),
                 ),
             ],
           ),
@@ -473,10 +441,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             isMax
                 ? loc.maxLevelReachedMessage
                 : loc.percentMoreToLevelMessage(remaining.toStringAsFixed(0), currentLevel + 1),
-            style: const TextStyle(
+            style: GoogleFonts.cairo(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: _kGreen,
+              color: _green,
             ),
           ),
         ],
@@ -495,17 +463,20 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PlantHeroSection extends StatelessWidget {
-  final String subjectName;
+/// Full-bleed gradient hero band with a flat bottom edge. Carries the back
+/// button, subject title, the growth-stage plant, and stage/mastery chips —
+/// replacing both the old AppBar and the separate plant card.
+class _HeroHeader extends StatelessWidget {
+  final String title;
   final GrowthStage stage;
   final double masteryPercent;
+  final VoidCallback onBack;
 
-  const _PlantHeroSection({
-
-    required this.subjectName,
+  const _HeroHeader({
+    required this.title,
     required this.stage,
     required this.masteryPercent,
-
+    required this.onBack,
   });
 
   @override
@@ -513,59 +484,123 @@ class _PlantHeroSection extends StatelessWidget {
     final loc = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
-      height: 200,
-      decoration: BoxDecoration(
-        color: _kGreenLight,
-        borderRadius: BorderRadius.circular(20),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_greenDark, _green],
+        ),
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          PlantWidget(stage: stage, size: 160),
-          Positioned(
-            top: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: _kGreen,
-                borderRadius: BorderRadius.circular(12),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 16),
+          child: Column(
+            children: [
+              // Back button + centered title.
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: onBack,
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white, size: 18),
+                    tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  ),
+                  Expanded(
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48), // balances the back button
+                ],
               ),
-              child: Text(
-                stage.label(loc),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(height: 4),
+              // Plant + stage/mastery chips. The stack is full-width and the
+              // chips are inset by 8 on top of the header's 8px padding (= 16px
+              // total) so their outer edges line up with the body cards below.
+              SizedBox(
+                width: double.infinity,
+                height: 150,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PlantWidget(stage: stage, size: 140),
+                    Positioned(
+                      top: 0,
+                      left: 8,
+                      child: _GlassChip(text: stage.label(loc)),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 8,
+                      child: _GlassChip(text: '${masteryPercent.toStringAsFixed(0)}%'),
+                    ),
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
-          Positioned(
-            top: 12,
-            right: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: GrowthStageUtils.healthColor(masteryPercent)
-                    .withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: GrowthStageUtils.healthColor(masteryPercent)
-                      .withValues(alpha: 0.4),
-                ),
-              ),
-              child: Text(
-                '${masteryPercent.toStringAsFixed(0)}%',
-                style: TextStyle(
-                  color: GrowthStageUtils.healthColor(masteryPercent),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Translucent-white pill used for the stage/mastery badges on the green hero.
+class _GlassChip extends StatelessWidget {
+  final String text;
+  const _GlassChip({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.cairo(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// Soft-amber level pill matching the rank card's gamification accent.
+class _LevelPill extends StatelessWidget {
+  final String label;
+  const _LevelPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFE082)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.cairo(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: const Color(0xFF8D6E00),
+        ),
       ),
     );
   }
@@ -582,12 +617,12 @@ class _Card extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -604,18 +639,15 @@ class _SectionHeader extends StatelessWidget {
   const _SectionHeader(
       {required this.icon, required this.label, required this.color});
 
-
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 6),
-
         Text(label,
-            style: TextStyle(
+            style: GoogleFonts.cairo(
                 fontSize: 15, fontWeight: FontWeight.w700, color: color)),
-
       ],
     );
   }
@@ -636,11 +668,11 @@ class _SkillRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: attempted
               ? healthColor.withValues(alpha: 0.3)
-              : Colors.grey.shade200,
+              : const Color(0xFFE3E8EF),
         ),
         boxShadow: [
           BoxShadow(
@@ -657,18 +689,16 @@ class _SkillRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: attempted
                   ? healthColor.withValues(alpha: 0.12)
-                  : Colors.grey.shade100,
+                  : const Color(0xFFF1F3F7),
               shape: BoxShape.circle,
             ),
             child: Icon(
               attempted
                   ? (skill.isStrong
-
                       ? Icons.emoji_events_rounded
                       : skill.isWeak
                           ? Icons.fitness_center_rounded
                           : Icons.trending_up_rounded)
-
                   : Icons.lock_outline_rounded,
               color: attempted ? healthColor : Colors.grey.shade400,
               size: 18,
@@ -681,24 +711,21 @@ class _SkillRow extends StatelessWidget {
               children: [
                 Text(
                   skill.name,
-                  style: TextStyle(
+                  style: GoogleFonts.cairo(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: attempted
-                        ? const Color(0xFF1A1A2E)
-                        : Colors.grey.shade400,
+                    color: attempted ? _ink : Colors.grey.shade400,
                   ),
                 ),
                 if (attempted)
                   Text(
                     loc.masteryAttemptsLabel(
                         skill.masteryPercent.toStringAsFixed(0), skill.attempts),
-                    style:
-                        TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    style: GoogleFonts.cairo(fontSize: 11, color: _muted),
                   )
                 else
                   Text(loc.skillNotStartedLabel,
-                      style: TextStyle(
+                      style: GoogleFonts.cairo(
                           fontSize: 11, color: Colors.grey.shade400)),
               ],
             ),
@@ -706,7 +733,7 @@ class _SkillRow extends StatelessWidget {
           if (attempted)
             Text(
               '${skill.masteryPercent.toStringAsFixed(0)}%',
-              style: TextStyle(
+              style: GoogleFonts.cairo(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: healthColor),
@@ -728,7 +755,6 @@ class _SkillChipRow extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: skills
-
           .map((s) => Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -739,13 +765,12 @@ class _SkillChipRow extends StatelessWidget {
                 ),
                 child: Text(
                   s.name,
-                  style: TextStyle(
+                  style: GoogleFonts.cairo(
                       fontSize: 11,
                       color: color,
                       fontWeight: FontWeight.w600),
                 ),
               ))
-
           .toList(),
     );
   }

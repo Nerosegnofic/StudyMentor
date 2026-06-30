@@ -5,21 +5,38 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:studymentor/l10n/app_localizations.dart';
 import 'package:studymentor/src/bloc/auth/auth_bloc.dart';
 import 'package:studymentor/src/bloc/auth/auth_event.dart';
 import 'package:studymentor/src/bloc/auth/auth_state.dart';
+import 'package:studymentor/src/bloc/locale/locale_cubit.dart';
 import 'package:studymentor/src/presentation/screens/auth/parent_register_screen.dart';
 
 class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
 
 Widget _wrap(Widget child, AuthBloc bloc) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       routes: {
         '/login': (_) => const Scaffold(body: Text('Login')),
       },
-      home: BlocProvider<AuthBloc>.value(value: bloc, child: child),
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: bloc),
+          // The auth header's language picker reads LocaleCubit's state.
+          BlocProvider<LocaleCubit>(
+              create: (_) => LocaleCubit(const Locale('en'))),
+        ],
+        child: child,
+      ),
     );
 
 void main() {
@@ -78,7 +95,7 @@ void main() {
       await tester.tap(find.text('Register'));
       await tester.pump();
 
-      expect(find.text('Passwords do not match'), findsOneWidget);
+      expect(find.text('Passwords do not match.'), findsOneWidget);
     });
 
     testWidgets('loading state shows CircularProgressIndicator', (tester) async {

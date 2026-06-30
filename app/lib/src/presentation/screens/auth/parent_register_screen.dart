@@ -161,8 +161,11 @@ class _ParentRegisterScreenState extends State<ParentRegisterScreen> {
                       const SizedBox(height: 4),
                       authTextLink(
                         text: loc.alreadyRegisteredButton,
-                        onPressed: () =>
-                            Navigator.pushReplacementNamed(context, '/login'),
+                        // Register is always *pushed* from login, so pop back to
+                        // the original login screen instead of pushing a second
+                        // one on top (which left a stray back arrow and leaked
+                        // screen state).
+                        onPressed: () => Navigator.of(context).maybePop(),
                       ),
                     ],
                   ),
