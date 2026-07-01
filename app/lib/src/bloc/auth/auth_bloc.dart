@@ -247,6 +247,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final (:config, :rules) = await repository.getAppConfigForStudent(
         event.studentUid,
       );
+      // Reset first: if the previous state was an equal LegacyAppRulesLoaded
+      // (e.g. still zero rules configured), Equatable would consider the
+      // re-emitted state unchanged and BlocListener would never fire, leaving
+      // student_home's "loading" flag stuck forever after a manual refresh.
+      emit(AuthIdle());
       emit(
         LegacyAppRulesLoaded(
           studentUid: event.studentUid,
@@ -256,6 +261,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
     } catch (e, stack) {
       debugPrint('[AuthBloc] _onLoadStudentAppConfig error: $e\n$stack');
+      emit(AuthIdle());
       emit(LegacyAppConfigError(_mapException(e)));
     }
   }
